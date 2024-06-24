@@ -1,0 +1,16 @@
+PREFIX rdf:     <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs:    <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX ies:     <http://ies.data.gov.uk/ontology/ies4#>
+PREFIX authz:   <http://telicent.io/security#>
+PREFIX :        <http://example/> 
+
+:s1 :p "Ordinary" .
+:s2 :p "Secret" .
+:s3 :p "Top Secret" .
+:s4 :p "NoLabel" .
+
+GRAPH authz:labels {
+  [ authz:pattern ':s1 :p "Ordinary"' ;   authz:label "clearance=ordinary" ] .
+  [ authz:pattern ':s2 :p "Secret"' ;     authz:label "clearance=secret" ] .
+  [ authz:pattern ':s3 :p "Top Secret"' ; authz:label "clearance=top-secret" ] .
+}

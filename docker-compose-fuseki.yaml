@@ -1,0 +1,8 @@
+services:
+  telicent-smart-cache-graph:
+    networks:
+      - graph
+    environment:
+      - FUSEKI_CONFIG=smart-cache-graph-config.ttl
+    image: telicent/smart-cache-graph:latest
+    

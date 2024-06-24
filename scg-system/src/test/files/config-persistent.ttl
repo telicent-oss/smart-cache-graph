@@ -1,0 +1,83 @@
+## Persistent database, persistent labels.
+
+PREFIX :        <#>
+PREFIX fuseki:  <http://jena.apache.org/fuseki#>
+PREFIX rdf:     <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs:    <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX ja:      <http://jena.hpl.hp.com/2005/11/Assembler#>
+PREFIX authz:   <http://telicent.io/security#>
+## PREFIX cqrs:    <http://telicent.io/cqrs#>
+## PREFIX graphql: <https://telicent.io/fuseki/modules/graphql#>
+PREFIX tdb2:    <http://jena.apache.org/2016/tdb#>
+
+## ---- Fuseki-Kafka connector
+PREFIX fk:      <http://jena.apache.org/fuseki/kafka#>
+
+[] rdf:type fuseki:Server ;
+   ## Disable SERVICE (call out) in SPARQL.
+   ja:context [ ja:cxtName "arq:httpServiceAllowed" ; ja:cxtValue "false" ] ;
+   ## Data services enabled.
+   fuseki:services (
+     :knowledgeService
+   ) .
+
+## --------
+
+:knowledgeService rdf:type fuseki:Service ;
+    # http://host:port/knowledge
+    fuseki:name "/knowledge" ;
+
+    fuseki:endpoint [
+        # SPARQL query service on "/knowledge/sparql"
+        fuseki:operation fuseki:query ;
+        fuseki:name "sparql" ;
+        ja:context [
+            ja:cxtName "arq:queryTimeout" ;
+            ja:cxtValue "120000,120000"
+        ] ;
+    ];
+    fuseki:endpoint [
+        # SPARQL query service on "/knowledge/query"
+        fuseki:operation fuseki:query ;
+        fuseki:name "query" ;
+        ja:context [
+            ja:cxtName "arq:queryTimeout" ;
+            ja:cxtValue "120000,120000"
+        ] ;
+    ] ;
+
+    fuseki:endpoint [
+        # SPARQL Graph Store Protocol (read) on "/knowledge/get"
+        fuseki:operation fuseki:gsp-r ;
+        fuseki:name "get"
+    ] ;
+
+    fuseki:endpoint [
+        # Authz upload operation on "/knowledge/upload"
+        fuseki:operation authz:upload ;
+        fuseki:name "upload"
+    ] ;
+
+    # Knowledge dataset to use
+    fuseki:dataset :datasetAuth ;
+    .
+
+## Dataset with security labels / ABAC.
+:datasetAuth rdf:type authz:DatasetAuthz ;
+
+    ## Config item where labels are stored (only define if not in memory)
+    authz:labelsStore [
+        authz:labelsStorePath "target/databases/knowledgeLabels.db"
+    ] ;
+
+    authz:dataset :datasetAuthBase;
+    authz:tripleDefaultLabels "!";
+    authz:attributes <file:attribute-store.ttl>;
+    .
+
+## Storage of data on filesystem.
+:datasetAuthBase rdf:type tdb2:DatasetTDB2 ;
+    tdb2:location "target/databases/knowledge" ;
+    .
+
+## No FusekiKafka connector - testing is done by directly injecting data into FKProcessorSCG.

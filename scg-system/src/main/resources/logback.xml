@@ -1,0 +1,3 @@
+<configuration>
+    <include file="${LOG_CONFIG_FILE:-scg-system/src/main/resources/logback-app.xml}"/>
+</configuration>

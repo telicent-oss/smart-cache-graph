@@ -1,0 +1,26 @@
+# Smart Cache Graph
+
+## 0.80.0
+
+JWT Authentication is now fully supported and tokens are strictly verified.
+
+Improved no auth mode for developer usage.
+
+## 0.70.0
+
+No support for securty labelling by wildcard patterns.
+
+Allow any datasets to have a GraphQL service.
+
+Depends on Apache Jena 5.0.0.
+
+## 0.60.0
+
+New in-memory label store.
+
+An in-memory labels store is always used if there is no `authz:labels` property
+of an ABAC dataset.
+
+An ABAC dataset no longer needs `authz:labels :databaseLabels` and the
+associated `:databaseLabels rdf:type ja:MemoryDataset .`. These cause a warning
+and are ignored.

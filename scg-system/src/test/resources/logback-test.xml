@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE xml>
+
+<configuration>
+    <!-- Console appender -->
+    <!-- Disables logging of Logback initialisation - remove if facing issue with logging config -->
+    <statusListener class="ch.qos.logback.core.status.NopStatusListener" />
+    <appender name="OUT" class="ch.qos.logback.core.ConsoleAppender">
+        <target>SYSTEM_OUT</target>
+        <encoder>
+            <pattern>%date{ISO8601} [%X{Request-ID:-Server}] [%X{JwtUser:-&lt;anon>}] %-5level %logger{0} - %msg%n</pattern>
+        </encoder>
+    </appender>
+    <root level="OFF">
+        <appender-ref ref="OUT" />
+    </root>
+</configuration>

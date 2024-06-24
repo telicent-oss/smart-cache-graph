@@ -1,0 +1,26 @@
+PREFIX authz: <http://telicent.io/security#>
+
+[] authz:user "TEST" ;
+   authz:userAttribute "UK"
+   .
+
+[] authz:user "u1" ;
+   authz:userAttribute "engineer" , "employee" ;
+   .
+
+[] authz:user "u2" ;
+   authz:userAttribute "engineer" , "contractor" ;
+   .
+
+[] authz:user "public" .
+
+[] authz:user "user1" ;
+   ## authz:userAttribute "e2e"; ## Not a hierarchy
+   ##authz:userAttribute "clearance=ordinary";
+   authz:userAttribute "clearance=secret";
+   ##authz:userAttribute "clearance=top-secret";
+   .
+
+[] authz:hierarchy [ authz:attribute "clearance" ;
+                     authz:attributeValues "ordinary, secret, top-secret" ];
+   .

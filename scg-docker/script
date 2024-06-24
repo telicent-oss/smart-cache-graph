@@ -1,0 +1,17 @@
+#!/bin/bash
+
+source ./docker-setup
+
+IMAGE_NAME_TAG="${IMAGE_NAME}-x:${IMAGE_TAG}"
+
+echo "== Docker build $IMAGE_NAME_TAG"
+
+echo "= Docker build"
+
+echo docker buildx build --force-rm -t "${IMAGE_NAME_TAG}" --load .
+
+echo docker buildx build --force-rm -t "${IMAGE_NAME_TAG}" --platform linux/amd64,linux/arm64 --load .
+
+## docker build --force-rm -t "${IMAGE_NAME_TAG}" .
+## 
+## docker tag "${IMAGE_NAME_TAG}" "${IMAGE_NAME}:latest" 

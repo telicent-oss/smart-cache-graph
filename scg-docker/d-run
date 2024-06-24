@@ -1,0 +1,91 @@
+#!/usr/bin/env bash
+
+## Run the smart-cache-graph container locally.
+## This needs a pass the Fuseki main command line into the container.
+## e.g.
+##   d-run --mem /ds
+##   d-run --conf config/config-replay.ttl
+##
+## config/ is locally mnt/config/ and mapped to /fuseki/config/ in the container.
+## ./fuseki is the container's working directory.
+
+source ./docker-setup
+
+echo "== Docker run $IMAGE_NAME"
+
+if [[ $# == 0 ]]
+then
+    echo "No arguments for the Fuseki server" 1>&2
+    exit 1
+fi
+
+## Clean previous
+##rm -rf mnt/databases/*
+
+# Map the the $MNT area
+MNT=$PWD/mnt
+
+## Or use --cidfile=$CIDFILE
+
+# -i : stdin
+# -d: detached ... > $CIDFILE
+
+## $CIDFILE acts as a lock file.
+##rm $CIDFILE
+
+## Better to test ourselves.
+if [ -n "$CID" -a -e "$CIDFILE" ]
+then
+    echo "Container PID file exists: $CIDFILE" 2>&1
+    exit 2
+fi
+
+if [ ! -e mnt/databases ]
+then
+    ## Database state files from container.
+    mkdir mnt/databases
+    chmod a+rwx mnt/databases
+fi
+
+if [ ! -e mnt/logs ]
+then
+    ## Database state files from container.
+    mkdir mnt/logs
+    chmod a+rwx mnt/logs
+fi
+
+PORT="${PORT:-3030}"
+## --net=host is a development convenience to work with a local kafka instance.
+## NETWORK="--net=host"
+
+NETWORK="-p $PORT:3030"
+
+## ADDITIONAL="--env USER_ATTRIBUTES_URL=$(USER_ATTRIBUTES_URL:http://localhost:9119/users/lookup/{user})"
+
+## SCG_AUTH - Authentication setting JWKS_URL
+
+echo "==== Docker run"
+
+IMAGE="${IMAGE_NAME}:latest"
+#IMAGE="${ECR_IMAGE_NAME}:0.11.0"
+
+## Docker container memory
+## Need to also set the docker run time environment.
+DOCKER_MEM="--memory 24G"
+DOCKER_RUN_OPTIONS="${DOCKER_RUN_OPTIONS} --env JAVA_OPTIONS=-Xmx16G"
+
+##--env ENV_JWKS_URL=disabled"
+docker run $NETWORK $DOCKER_MEM -t --rm $CID --name $PROC_NAME-$$          \
+       $ADDITIONAL     \
+       $SCG_AUTH       \
+       ${DOCKER_RUN_OPTIONS}     \
+       --mount "type=bind,src=$MNT/logs,dst=/fuseki/logs"      \
+       --mount "type=bind,src=$MNT/databases,dst=/fuseki/databases" \
+       --mount "type=bind,src=$MNT/config,dst=/fuseki/config"  \
+       "${IMAGE}" "$@"
+
+echo "RC = $?"
+if [ $? = "0" ]
+then
+    rm -f $CIDFILE
+fi

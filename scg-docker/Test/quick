@@ -1,0 +1,17 @@
+#!/usr/bin/bash
+
+echo "** load data"
+load-data
+echo
+
+echo "** query 1"
+query
+echo
+
+echo "** send-patch"
+send-patch
+echo
+
+echo "**query 2"
+query
+echo

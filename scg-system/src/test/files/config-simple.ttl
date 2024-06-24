@@ -1,0 +1,13 @@
+PREFIX :        <#>
+PREFIX fuseki:  <http://jena.apache.org/fuseki#>
+PREFIX rdf:     <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX tdb:    <http://jena.apache.org/2016/tdb#>
+
+:serviceSimple rdf:type fuseki:Service ;
+    fuseki:name "ds" ;
+    fuseki:dataset <#dataset> ;
+    .
+
+<#dataset> rdf:type      tdb:DatasetTDB ;
+    tdb:location "target/databases/simpleDB" ;
+    .

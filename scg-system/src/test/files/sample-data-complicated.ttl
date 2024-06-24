@@ -1,0 +1,38 @@
+@prefix ex: <http://example.org/> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+# Define classes
+ex:Person rdf:type rdfs:Class .
+ex:Product rdf:type rdfs:Class .
+ex:Order rdf:type rdfs:Class .
+
+# Define properties
+ex:hasName rdf:type rdf:Property .
+ex:hasPrice rdf:type rdf:Property .
+ex:belongsTo rdf:type rdf:Property .
+ex:orderedBy rdf:type rdf:Property .
+ex:containsProduct rdf:type rdf:Property .
+
+# Define individuals
+ex:John rdf:type ex:Person .
+ex:Mary rdf:type ex:Person .
+ex:Chair rdf:type ex:Product .
+ex:Table rdf:type ex:Product .
+ex:Order123 rdf:type ex:Order .
+ex:Order124 rdf:type ex:Order .
+
+# Add data
+ex:John ex:hasName "John" .
+ex:Mary ex:hasName "Mary" .
+ex:Chair ex:hasName "Chair" .
+ex:Table ex:hasName "Table" .
+ex:Chair ex:hasPrice "50"^^xsd:decimal .
+ex:Table ex:hasPrice "100"^^xsd:decimal .
+ex:Chair ex:belongsTo ex:Order123 .
+ex:Table ex:belongsTo ex:Order124 .
+ex:Order123 ex:orderedBy ex:John .
+ex:Order123 ex:containsProduct ex:Chair .
+ex:Order123 ex:orderedBy ex:Mary .
+ex:Order124 ex:containsProduct ex:Table .

@@ -1,0 +1,136 @@
+PREFIX :        <#>
+PREFIX fuseki:  <http://jena.apache.org/fuseki#>
+PREFIX rdf:     <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs:    <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX ja:      <http://jena.hpl.hp.com/2005/11/Assembler#>
+PREFIX tdb2:    <http://jena.apache.org/2016/tdb#>
+
+PREFIX authz:   <http://telicent.io/security#>
+PREFIX cqrs:    <http://telicent.io/cqrs#>
+PREFIX graphql: <https://telicent.io/fuseki/modules/graphql#>
+
+[] rdf:type fuseki:Server ;
+   fuseki:services (
+     :knowledgeService
+     :ontologyService
+   ) .
+
+:knowledgeService rdf:type fuseki:Service ;
+    fuseki:name "/knowledge" ;
+    fuseki:endpoint [ fuseki:operation fuseki:query ] ;
+
+    fuseki:endpoint [ 
+        fuseki:operation fuseki:query ;
+        fuseki:name "sparql" 
+    ];
+    fuseki:endpoint [
+        fuseki:operation fuseki:query ;
+        fuseki:name "query" 
+    ] ;
+    fuseki:endpoint [
+        fuseki:operation fuseki:gsp-r ;
+        fuseki:name "get"
+    ] ;
+
+    ## Only needed if also loading labelled data via HTTP.
+    fuseki:endpoint [ 
+        fuseki:operation authz:upload ;
+        fuseki:name "upload"
+    ] ;
+
+    # Using the GraphQL operations
+    fuseki:endpoint [ fuseki:operation graphql:graphql ;
+                      ja:context [ ja:cxtName "graphql:executor" ;
+                                   ja:cxtValue "io.telicent.jena.graphql.execution.telicent.graph.TelicentGraphExecutor"
+                                 ] ;
+                      fuseki:name "graphql" ];
+                      
+    ## CQRS update
+    ## Updates will be generate an RDF patch which is sent to the Kafka topic.
+    fuseki:endpoint [ fuseki:operation cqrs:update ;
+                      # This name (ja:cxtValue) must agree with the connector below.
+                      ja:context [ ja:cxtName "kafka:topic" ; ja:cxtValue "knowledge" ] ;
+                      fuseki:name "update" ] ;
+                      
+    fuseki:dataset :dataset ;
+    .
+
+#### Knowledge
+
+## No security labels.
+## # Transactional in-memory dataset.
+## :dataset rdf:type ja:MemoryDataset .
+
+## --- ABAC dataset
+:dataset rdf:type authz:DatasetAuthz ;
+    authz:dataset :datasetBase;
+    ## authz:tripleDefaultLabels "!";
+    ##
+    ## This substitutes the value of the environment variable
+    ## or Java system property "USER_ATTRIBUTES_URL".
+    ##
+    ##   USER_ATTRIBUTES_URL="http://host:port/users/lookup/{user}"
+    ##
+    ## {user} is replaced with the URL-safe encoding of the user id.
+    authz:attributesURL <env:USER_ATTRIBUTES_URL>;
+    .
+
+# Storage of data.
+:datasetBase rdf:type ja:MemoryDataset .
+
+## ---- Fuseki-Kafka connector
+PREFIX fk:      <http://jena.apache.org/fuseki/kafka#>
+
+<#connector> rdf:type fk:Connector ;
+    fk:bootstrapServers    "kafka1:19092";
+    fk:topic               "knowledge";
+    ## This should refer to an authz:upload endpoint
+    fk:fusekiServiceName   "/knowledge/upload";
+    
+    ##fk:syncTopic        false;
+    fk:replayTopic      true;
+    fk:stateFile        "databases/Replay-RDF.state";
+    .
+
+#### Ontology
+## Plain database (no ABAC, no connection to Kafka)
+
+:ontologyService rdf:type fuseki:Service ;
+    fuseki:name "/ontology" ;
+    fuseki:endpoint [ fuseki:operation fuseki:query ] ;
+    fuseki:endpoint [ fuseki:operation fuseki:update ] ;
+    fuseki:endpoint [ fuseki:operation fuseki:gsp-rw ] ;
+
+    fuseki:endpoint [ 
+        fuseki:operation fuseki:query ;
+        fuseki:name "sparql" 
+    ];
+    fuseki:endpoint [
+        fuseki:operation fuseki:query ;
+        fuseki:name "query" 
+    ] ;
+    fuseki:endpoint [
+        fuseki:operation fuseki:update ;
+        fuseki:name "update"
+    ] ;
+    fuseki:endpoint [
+        fuseki:operation fuseki:gsp-r ;
+        fuseki:name "get"
+    ] ;
+    fuseki:endpoint [ 
+        fuseki:operation fuseki:gsp-rw ; 
+        fuseki:name "data"
+    ] ; 
+    fuseki:endpoint [ 
+        fuseki:operation fuseki:upload ;
+        fuseki:name "upload"
+    ] ; 
+    fuseki:dataset :ontologyDataset ;
+    .
+
+# Transactional in-memory dataset.
+:knowledgeDataset rdf:type ja:MemoryDataset ;
+    ## Optional load with data on start-up
+    ## ja:data "data1.trig";
+    ## ja:data "data2.trig";
+    .

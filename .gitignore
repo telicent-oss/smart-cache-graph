@@ -1,0 +1,62 @@
+# maven
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/
+
+## Gradle
+.gradle
+/build/
+gradle-app.setting
+# Avoid ignoring Gradle wrapper jar file (.jar files are usually ignored)
+!gradle-wrapper.jar
+# Cache of project
+.gradletasknamecache
+
+## Eclipse files
+.classpath
+.project
+.settings
+.recommenders
+
+## IntelliJ IDEA files
+.idea
+.iws
+*.iml
+*.ipr
+
+# Compiled class file
+*.class
+# Calculated maven dependency classpath 
+*.classpath
+
+# Log file
+*.log
+
+# Package Files #
+*.jar
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# virtual machine crash logs
+hs_err_pid*
+
+## Development
+dependency-reduced-pom.xml
+scg-docker/mnt/databases/*
+scg-docker/mnt/logs/*
+scg-test/**
+DB*
+.#*
+\#*
+## Docker container ID file.
+*.cid

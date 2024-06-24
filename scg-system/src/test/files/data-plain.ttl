@@ -1,0 +1,7 @@
+PREFIX :        <http://example/> 
+
+# No labels.
+:s1 :p "abc" .
+:s2 :p "def" .
+:s3 :p "ghi" .
+:s4 :p "jkl" .

@@ -1,0 +1,152 @@
+## Licensed under the terms of http://www.apache.org/licenses/LICENSE-2.0
+
+## Configuration for integration testing features used in production.
+
+## !! Do not simply copy this file to production !!
+## !! Some values in this file are specific to development and testing !!
+
+PREFIX rdf:     <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs:    <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX fuseki:  <http://jena.apache.org/fuseki#>
+PREFIX ja:      <http://jena.hpl.hp.com/2005/11/Assembler#>
+PREFIX tdb2:    <http://jena.apache.org/2016/tdb#>
+PREFIX :        <#>
+PREFIX authz:   <http://telicent.io/security#>
+PREFIX fk:      <http://jena.apache.org/fuseki/kafka#>
+PREFIX graphql: <https://telicent.io/fuseki/modules/graphql#>
+
+## --------------------
+## Server setup
+
+:theServer rdf:type fuseki:Server ;
+
+    ## --- General settings
+    
+    ## Use RDF 1.1 style syntax.
+    ja:context [
+        ja:cxtName "ttl:directiveStyle" ;
+        ja:cxtValue "sparql"
+    ] ;
+    
+    ## Optional - if there is no list of services, the server startup
+    ## looks for all "? rdf:type fuseki:Service"
+
+    ## These two Fuseki services hare the ABAC database.
+    ## "serviceAPI" are the data-access (read-only) operations apps might use
+    ## "serviceData" are a full set of services including 
+    fuseki:services (
+      ## Access endpoints 
+      :serviceAPI
+      :serviceData
+    ) .
+
+## --------------------
+## Read-only services
+
+:serviceAPI rdf:type fuseki:Service ;
+    fuseki:name "/api/knowledge" ;
+
+    ## SPARQL from applications access point.
+    fuseki:endpoint [
+        fuseki:operation fuseki:query ;
+        fuseki:name "sparql" ;
+        ja:context [
+            ja:cxtName "arq:queryTimeout" ;
+            ja:cxtValue "120000,120000"
+        ] ;
+    ] ;
+
+    ## GraphQL (java implementation) - read-access
+    fuseki:endpoint [ fuseki:operation graphql:graphql ;
+                      ja:context
+                      [ ja:cxtName "graphql:executor" ;
+                        ja:cxtValue "io.telicent.jena.graphql.execution.telicent.graph.TelicentGraphExecutor"
+                      ] ;
+                      fuseki:name "graphql" ];
+
+    ## Application access.
+    ## GraphQL (external server) access point.
+    fuseki:endpoint [
+        fuseki:operation fuseki:query ;
+        fuseki:name "query" ;
+        ## Timeout - format (times in milliseconds)
+        #    "time to first result, time to complete"
+        ja:context [
+            ja:cxtName "arq:queryTimeout" ;
+            ja:cxtValue "10000,20000"
+        ] ;
+    ] ;
+
+    ## The database.
+    fuseki:dataset :dataset ;
+    .
+
+## --------------------
+## Access for other components on the CORE platform.
+## This allows read-write operations.
+## Complete set of services - do not allow external applications
+## access "/data/.*"
+
+:serviceData rdf:type fuseki:Service ;
+    fuseki:name "/data/knowledge" ;
+    fuseki:endpoint [ fuseki:operation fuseki:query ; fuseki:name "query" ] ;
+    fuseki:endpoint [ fuseki:operation fuseki:query ; fuseki:name "sparql" ] ;
+    fuseki:endpoint [ fuseki:operation fuseki:gsp-r ; fuseki:name "get" ] ;
+    
+    fuseki:endpoint [ fuseki:operation graphql:graphql ;
+                      ja:context
+                      [ ja:cxtName "graphql:executor" ;
+                        ja:cxtValue "io.telicent.jena.graphql.execution.telicent.graph.TelicentGraphExecutor"
+                      ] ;
+                      fuseki:name "graphql" ];
+
+    ## ABAC data upload
+    ## This is provided for HTTP access in development.
+    ## Not to be used in production which loads with Kafka.
+    ## It is not accessible via "/api/*"
+    fuseki:endpoint [ fuseki:operation authz:upload ; fuseki:name "upload" ] ;
+    
+    fuseki:dataset :dataset ;
+    .
+
+## --------------------
+## Database (in-memory)
+:dataset rdf:type authz:DatasetAuthz ;
+    ## Setup for the database.
+    ## Server wide settings are inherited.
+    ja:context [
+        ja:cxtName "arq:httpServiceAllowed" ;
+        ja:cxtValue "false"
+    ];
+
+    ## Development and testing - in-memory databases.
+    authz:dataset :datasetBase;
+
+    ## Default ABAC policy. This applies to unlabelled triples. "!" is "deny"
+    
+    authz:tripleDefaultAttributes "!";
+
+    ## User attribute and attribute hierarchy endpoints.
+    ## env:NAME is replaced by the value of environment variable NAME.
+    ## If not set in teh process envionment, the code also looks in
+    ## Java system properties ("-D" on the command line).
+    
+    authz:attributesURL <env:USER_ATTRIBUTES_URL>;
+    authz:hierarchiesURL <env:ABAC_HIERARCHIES_URL>;
+    .
+
+## --------------------
+## Transactional, in-memory dataset for the RDF data.
+
+:datasetBase rdf:type ja:MemoryDataset .
+
+## ---- Kafka connector. Connected to the /data/knowledge.
+
+:connector1  rdf:type         fk:Connector;
+    fk:bootstrapServers   "PLAINTEXT://localhost:32775";
+    ## Connected to the dataset of this service.
+    fk:fusekiServiceName  "/data/knowledge";
+    fk:replayTopic        true;
+    ## Location of the file that records the offset of how far through the topic has been read.
+    fk:stateFile          <../../../target/State/RDF1.state>;
+    fk:topic              "RDF1" .

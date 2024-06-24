@@ -1,0 +1,35 @@
+#!/usr/bin/bash
+
+URL="http://localhost:3030/ds"
+
+## ---------------------------------------
+## user: user1
+TOKEN1="VW5zZXQ.eyBlbWFpbDogInVzZXIxIn0.VW5zZXQ"
+
+## user: u1
+TOKEN2="VW5zZXQ.eyBlbWFpbDogInUxIn0.VW5zZXQ"
+
+## user: u2
+TOKEN3="VW5zZXQ.eyBlbWFpbDogInUyIn0.VW5zZXQ"
+## ---------------------------------------
+
+SERVICE="$URL/sparql?format=text"
+
+QUERY=$(cat <<EOF
+PREFIX :        <http://example/> 
+PREFIX rdf:     <http://www.w3.org/1999/02/22-rdf-syntax-ns#> 
+PREFIX rdfs:    <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX sh:      <http://www.w3.org/ns/shacl#>
+PREFIX xsd:     <http://www.w3.org/2001/XMLSchema#>
+
+SELECT * { ?s ?p ?o }
+EOF
+	)
+
+echo "$QUERY"
+
+curl --header "x-amzn-oidc-data: Bearer: $TOKEN1" -d query="$QUERY" "$SERVICE"
+echo
+curl --header "x-amzn-oidc-data: Bearer: $TOKEN2" -d query="$QUERY" "$SERVICE"
+echo
+curl --header "x-amzn-oidc-data: Bearer: $TOKEN3" -d query="$QUERY" "$SERVICE"

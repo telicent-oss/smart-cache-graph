@@ -1,0 +1,7 @@
+#!/usr/bin/bash
+
+URL="http://localhost:3030/ds"
+
+curl -XPOST --data-binary @data1.trig \
+     --header 'Content-type: application/trig' \
+     $URL/upload
