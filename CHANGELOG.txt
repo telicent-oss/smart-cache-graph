@@ -1,5 +1,11 @@
 # Smart Cache Graph
 
+## 0.80.1
+
+First public open source release
+
+Upgrades Telicent dependencies to current open source releases
+
 ## 0.80.0
 
 JWT Authentication is now fully supported and tokens are strictly verified.
@@ -8,7 +14,7 @@ Improved no auth mode for developer usage.
 
 ## 0.70.0
 
-No support for securty labelling by wildcard patterns.
+No support for security labelling by wildcard patterns.
 
 Allow any datasets to have a GraphQL service.
 
