@@ -21,7 +21,7 @@ jobs:
       jira-url: https://telicent.atlassian.net
       jira-project: CORE
       issue-mapping-file: .github/jira-mapping-rules.yml
-      extra-sync-options: "--skip-existing --include-comments --extra-labels stream/smart-caches --jira-repository-field customfield_10036 --close-after-sync"
+      extra-sync-options: "--skip-existing --include-comments --extra-labels stream/smart-caches --jira-repository-field customfield_10036"
     # NB - As we're using a shared workflow in another organisation we can't use
     #      secrets: inherit here and MUST pass the secrets explicitly.  GitHub 
     #      Actions takes care of ensuring these are securely passed between this
