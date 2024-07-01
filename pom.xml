@@ -100,6 +100,8 @@
     <ver.plugin.gpg>3.2.4</ver.plugin.gpg>
     <ver.plugin.nexus>1.7.0</ver.plugin.nexus>
 
+    <gpg.skip>true</gpg.skip>
+
   </properties>
 
   <modules>
