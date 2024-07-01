@@ -84,6 +84,7 @@ public class SmartCacheGraph {
                   , new FMod_JwtServletAuth()
                   , new FMod_OpenTelemetry()
                   , new FMod_TelicentGraphQL()
+                  , new FMod_RequestIDFilter()
                   ));
         return FusekiModules.create(mods);
     }
