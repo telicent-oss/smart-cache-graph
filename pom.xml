@@ -96,7 +96,7 @@
     <ver.plugin.site>3.9.1</ver.plugin.site>
     <ver.plugin.cyclonedx>2.8.0</ver.plugin.cyclonedx>
     <ver.plugin.shade>3.4.1</ver.plugin.shade>
-    <ver.plugin.versions>2.16.2</ver.plugin.versions>
+    <ver.plugin.versions>2.17.0</ver.plugin.versions>
     <ver.plugin.gpg>3.2.4</ver.plugin.gpg>
     <ver.plugin.nexus>1.7.0</ver.plugin.nexus>
 
