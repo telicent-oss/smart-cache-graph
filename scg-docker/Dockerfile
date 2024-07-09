@@ -41,7 +41,7 @@ ARG PROJECT_VERSION
 ARG SBOM=target/docker-${PROJECT_VERSION}-bom.json
 COPY ${SBOM} /opt/telicent/sbom/smart-cache-graph-${PROJECT_VERSION}-bom.json
 
-ADD logback.xml .
+COPY logback.xml .
 ## Default environment variables.
 ENV \
     JAVA_OPTIONS="-Xmx2048m -Xms2048m"  \
