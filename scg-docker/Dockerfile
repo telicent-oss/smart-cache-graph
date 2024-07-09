@@ -26,6 +26,8 @@ ARG AGENTS=${FUSEKI_DIR}/agents
 ARG SBOMS=/opt/telicent/sbom
 
 COPY entrypoint.sh .
+COPY logback.xml .
+
 RUN \
     mkdir -p $LOGS $DATA $CONFIGS $LIB $AGENTS $SBOMS && \
     chown -R fuseki ${FUSEKI_DIR} && \
@@ -41,7 +43,6 @@ ARG PROJECT_VERSION
 ARG SBOM=target/docker-${PROJECT_VERSION}-bom.json
 COPY ${SBOM} /opt/telicent/sbom/smart-cache-graph-${PROJECT_VERSION}-bom.json
 
-COPY logback.xml .
 ## Default environment variables.
 ENV \
     JAVA_OPTIONS="-Xmx2048m -Xms2048m"  \
