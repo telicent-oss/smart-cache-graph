@@ -25,7 +25,9 @@ ARG LIB=${FUSEKI_DIR}/lib
 ARG AGENTS=${FUSEKI_DIR}/agents
 ARG SBOMS=/opt/telicent/sbom
 
-COPY entrypoint.sh .
+COPY scg-docker/entrypoint.sh .
+COPY scg-docker/logback.xml .
+
 RUN \
     mkdir -p $LOGS $DATA $CONFIGS $LIB $AGENTS $SBOMS && \
     chown -R fuseki ${FUSEKI_DIR} && \
@@ -33,15 +35,14 @@ RUN \
 
 # Build location of the jars we need.
 ## Collected jars
-ARG JARS=target/dependency
+ARG JARS=scg-docker/target/dependency
 COPY ${JARS} lib
-ARG AGENTS=target/agents
+ARG AGENTS=scg-docker/target/agents
 COPY ${AGENTS} agents
 ARG PROJECT_VERSION
-ARG SBOM=target/docker-${PROJECT_VERSION}-bom.json
+ARG SBOM=scg-docker/target/docker-${PROJECT_VERSION}-bom.json
 COPY ${SBOM} /opt/telicent/sbom/smart-cache-graph-${PROJECT_VERSION}-bom.json
 
-ADD logback.xml .
 ## Default environment variables.
 ENV \
     JAVA_OPTIONS="-Xmx2048m -Xms2048m"  \
