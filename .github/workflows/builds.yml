@@ -41,8 +41,8 @@ jobs:
     with:
       APP_NAME: ${{ matrix.image }}
       APP_NAME_PREFIX: ""
-      PATH: scg-docker/
-      DOCKERFILE: Dockerfile
+      PATH: .
+      DOCKERFILE: scg-docker/Dockerfile
       VERSION: ${{ needs.maven-build.outputs.version }}
       TARGET: ${{ matrix.image }}
       JAVA_VERSION: 21
