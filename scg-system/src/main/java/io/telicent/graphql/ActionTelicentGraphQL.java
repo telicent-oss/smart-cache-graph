@@ -28,6 +28,7 @@ import io.telicent.jena.graphql.fuseki.ActionGraphQL;
 import io.telicent.jena.graphql.schemas.telicent.graph.TelicentGraphSchema;
 import io.telicent.jena.graphql.server.model.GraphQLRequest;
 import io.telicent.servlet.auth.jwt.JwtHttpConstants;
+import io.telicent.servlet.auth.jwt.JwtServletConstants;
 import io.telicent.servlet.auth.jwt.verifier.aws.AwsConstants;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.jena.fuseki.servlets.HttpAction;
@@ -54,11 +55,12 @@ public class ActionTelicentGraphQL extends ActionGraphQL implements ABAC_Process
         // for access.
 
         DatasetGraph dsgRequest;
-        if ( ABAC.isDatasetABAC(dsg) ) {
+        if (ABAC.isDatasetABAC(dsg)) {
             dsgRequest = ABAC_Request.decideDataset(action, dsg, getUser);
             String token = findAuthToken(action);
-            if ( token != null )
+            if (token != null) {
                 request.getExtensions().put(TelicentGraphSchema.EXTENSION_AUTH_TOKEN, token);
+            }
         } else {
             dsgRequest = dsg;
         }
@@ -66,28 +68,17 @@ public class ActionTelicentGraphQL extends ActionGraphQL implements ABAC_Process
     }
 
     /**
-     * Finds the authentication token that was supplied with this request, either via the AWS
-     * {@value AwsConstants#HEADER_DATA} header or the standard HTTP {@value HttpNames#hAuthorization} header
+     * Finds the authentication token that was supplied with this request, relies on the JWT Servlet Auth libraries
+     * behaviour of placing the raw JWT used to authenticate the user into the request attribute
+     * {@link JwtServletConstants#REQUEST_ATTRIBUTE_RAW_JWT}
      *
      * @param httpAction HTTP Action
      * @return Authentication token
      */
     private String findAuthToken(HttpAction httpAction) {
-        Enumeration<String> awsHeaders = httpAction.getRequestHeaders(AwsConstants.HEADER_DATA);
-        while (awsHeaders.hasMoreElements()) {
-            String awsHeader = awsHeaders.nextElement();
-            if (StringUtils.isNotBlank(awsHeader)) {
-                return awsHeader;
-            }
-        }
-        Enumeration<String> authHeaders = httpAction.getRequestHeaders(HttpNames.hAuthorization);
-        while (authHeaders.hasMoreElements()) {
-            String authHeader = authHeaders.nextElement();
-            if (StringUtils.isNotBlank(authHeader)) {
-                if (StringUtils.startsWith(authHeader, JwtHttpConstants.AUTH_SCHEME_BEARER)) {
-                    return StringUtils.trim(authHeader.substring(JwtHttpConstants.AUTH_SCHEME_BEARER.length()));
-                }
-            }
+        Object rawJwt = httpAction.getRequest().getAttribute(JwtServletConstants.REQUEST_ATTRIBUTE_RAW_JWT);
+        if (rawJwt instanceof String) {
+            return (String) rawJwt;
         }
         return null;
     }
