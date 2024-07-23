@@ -81,7 +81,7 @@
     <ver.junit5-platform>1.10.3</ver.junit5-platform>
     <ver.mockito>5.12.0</ver.mockito>
 
-    <ver.plugin.owasp-dependency-check>10.0.2</ver.plugin.owasp-dependency-check>
+    <ver.plugin.owasp-dependency-check>10.0.3</ver.plugin.owasp-dependency-check>
     <ver.plugin.compiler>3.13.0</ver.plugin.compiler>
     <ver.plugin.jar>3.4.2</ver.plugin.jar>
     <ver.plugin.source>3.3.1</ver.plugin.source>
