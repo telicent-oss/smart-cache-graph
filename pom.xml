@@ -61,7 +61,7 @@
 
     <ver.rdf-abac>0.71.2</ver.rdf-abac>
     <ver.fuseki-kafka>1.3.2</ver.fuseki-kafka>
-    <ver.jena>5.0.0</ver.jena>
+    <ver.jena>5.1.0</ver.jena>
     <ver.fuseki-server>${ver.jena}</ver.fuseki-server>
     <ver.graphql>0.7.0</ver.graphql>
     <ver.testcontainers>1.19.8</ver.testcontainers>
