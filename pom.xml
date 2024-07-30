@@ -60,7 +60,7 @@
     <java.version>21</java.version>
 
     <ver.rdf-abac>0.71.2</ver.rdf-abac>
-    <ver.fuseki-kafka>1.3.2</ver.fuseki-kafka>
+    <ver.fuseki-kafka>1.3.3</ver.fuseki-kafka>
     <ver.jena>5.0.0</ver.jena>
     <ver.fuseki-server>${ver.jena}</ver.fuseki-server>
     <ver.graphql>0.7.0</ver.graphql>
@@ -71,7 +71,7 @@
     <ver.otel-semconv>1.30.1-alpha</ver.otel-semconv>
 
     <ver.kotlin>2.0.0</ver.kotlin>
-    <ver.jwt-servlet-auth>0.15.2</ver.jwt-servlet-auth>
+    <ver.jwt-servlet-auth>0.15.3</ver.jwt-servlet-auth>
     <ver.smart-caches-core>0.21.1</ver.smart-caches-core>
     <ver.slf4j>2.0.13</ver.slf4j>
     <ver.log4j2>2.23.1</ver.log4j2>
