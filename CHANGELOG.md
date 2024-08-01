@@ -1,5 +1,18 @@
 # Smart Cache Graph
 
+## 0.81.0
+
+- Upgraded GraphQL implementation so Telicent Graph schema now allows `limit` and `offset`
+- Upgraded RDF-ABAC implementation to provide improved label lookup performance that provides for improved query
+  performance
+- Fixed a container packaging bug that led to class initialisation failures at runtime under certain configurations
+- Build improvements:
+    - Apache Jena upgraded to 5.1.0
+    - Fuseki Kafka Connector upgraded to 1.3.3
+    - GraphQL upgraded to 0.8.0
+    - RDF ABAC upgraded to 0.71.4
+    - Various build and test dependencies upgraded to latest available
+
 ## 0.80.1
 
 First public open source release
