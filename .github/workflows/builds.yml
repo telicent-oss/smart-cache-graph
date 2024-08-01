@@ -28,7 +28,6 @@ jobs:
       # If running in debug mode, use appropriate logging
       MAVEN_DEBUG_ARGS: -Dlogback.configurationFile=logback-debug.xml
       JAVA_VERSION: 21
-      CHANGELOG_FILE: CHANGELOG.txt
     secrets: inherit
 
   docker-build:
