@@ -1,0 +1,32 @@
+sequenceDiagram
+    autonumber
+    actor U as Authenticated User
+
+    box Purple Smart Cache Graph
+        participant SA as Update API (CQRS)
+        participant RTS as RDF Triple Store
+        participant L as Security Label Store
+        participant JF as Jena Fuseki Import
+    end
+
+    box Green CORE Platform
+        participant UAS as User Attributes Service
+        participant K as Knowledge
+    end
+
+    U->>SA: Submits Update Request
+    SA->>UAS: Requests User Attributes
+    UAS-->>SA: Returns User Attributes
+
+    SA->>K: Submits Update Transaction
+
+    JF->>+K: Polls for Knowledge Events
+    K->>-JF: Returns Knowledge Events
+
+    par RDF Triple Processing
+        JF->>JF: Extract RDF
+        JF->>+RTS: Insert into Triple Store
+    and Security Label Processing
+        JF->>JF: Extract Security Label
+        JF->>+L: Insert into Label Store
+    end
