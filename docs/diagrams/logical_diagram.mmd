@@ -1,0 +1,39 @@
+graph LR
+    subgraph User
+        Authenticated["Authenticated User"]
+    end
+
+    User <--> |HTTPS| Sparql
+    User <--> |HTTPS| Graphql
+
+    subgraph Core Platform
+
+        subgraph Identity Services
+            Identity[User Attributes Service]
+        end
+
+        subgraph Event Log
+            Knowledge[Knowledge]
+        end
+
+        Knowledge -- Event Log Protocol --> Import
+
+        subgraph Smart Cache Graph
+            Import[Event Importer]
+            Sparql[SPARQL API]
+            Graphql[GraphQL API]
+            Web[Fuseki Server]
+            Jena[(Apache Jena)]
+            Label[(Label Store)]
+            ABAC[ABAC]
+            Import -.-> |RDF| Jena
+            Jena -.-> |Unfiltered data| ABAC
+            ABAC -.-> |Redacted data| Web
+            ABAC <-.-> Label
+            Sparql <-.-> Web
+            Graphql <-.-> Web
+            Web <-- HTTPS --> Identity
+            Web -.-> |Data Query| Jena
+        end
+
+    end

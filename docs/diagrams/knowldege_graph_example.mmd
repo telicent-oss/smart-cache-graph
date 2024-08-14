@@ -1,0 +1,41 @@
+graph TD
+    A[The Great Gatsby]
+    B1[Author]
+    B2[Publication Year]
+    B3[Genre]
+    B4[ISBN]
+    B5[Type Of]
+    C1[F. Scott Fitzgerald]
+    C2[1925]
+    C3[Fiction]
+    C4[978-0743273565]
+    C5[Book]
+
+    A -- has author --> B1
+    A -- published in --> B2
+    A -- belongs to --> B3
+    A -- has ISBN --> B4
+    A -- is a --> B5
+
+    B1 --> C1
+    B2 --> C2
+    B3 --> C3
+    B4 --> C4
+    B5 --> C5
+
+%% Personal Information about F. Scott Fitzgerald
+    C1 -- born on --> D1[Birth Date]
+    C1 -- died on --> D2[Death Date]
+    C1 -- married to --> D3[Spouse]
+    C1 -- is author --> D4[Tender Is the Night]
+
+    D1 --> E1[September 24, 1896]
+    D2 --> E2[December 21, 1940]
+    D3 --> E3[Zelda Fitzgerald]
+    D4 -- published in --> E4[1934]
+
+
+%% Additional Book: Tender Is the Night details
+    D4 -- belongs to --> E5[Fiction]
+    D4 -- has ISBN --> E6[978-0684801544]
+    D4 -- is a --> E7[Book]

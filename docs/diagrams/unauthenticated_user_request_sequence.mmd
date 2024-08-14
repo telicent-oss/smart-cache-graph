@@ -1,0 +1,9 @@
+sequenceDiagram
+    autonumber
+    actor U as Unauthenticated User
+    box Purple Smart Cache Graph
+        participant A as GraphQL API
+    end
+
+    U->>+A: Submits Query Request
+    A->>-U: Rejects Query Results
