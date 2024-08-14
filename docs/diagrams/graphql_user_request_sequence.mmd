@@ -1,14 +1,14 @@
 sequenceDiagram
     autonumber
     actor U as Authenticated User
-    box Purple Smart Cache Graph
+    box Smart Cache Graph
         participant G as GraphQL API
         participant FS as Fuseki Server
         participant J as RDF Triple Store
         participant A as ABAC Security
         participant L as Security Label Store
     end
-    box Green CORE Platform
+    box CORE Platform
         participant UAS as User Attributes Service
     end
     U->>G: Submits Query Request
