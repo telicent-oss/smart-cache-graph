@@ -1,15 +1,13 @@
 graph
   G[Smart Cache Graph]
-  I[(Apache JENA)]
   Attr[User Attributes Service]
   U[Authenticated Users]
   IdP[Identity Provider]
   M[Service Mesh]
   E[Event Log]
 
-  U --> G
-  G --> I
-  G --> Attr
-  G --> IdP
-  G --> M
-  E --> G
+  U --> |makes request | M
+  G --> |interacts with | Attr
+  G --> |validates against | IdP
+  M --> |routes traffic| G
+  E --> |feeds data | G
