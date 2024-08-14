@@ -1,5 +1,18 @@
 # Smart Cache Graph
 
+## 0.81.1
+
+- Upgraded RDF-ABAC implementation to fix a bug that could cause data to fail to be ingested if it contained large 
+  literals
+- Upgraded Fuseki Kafka implementation to fix a bug that could cause data to be ingested in very small batches 
+  when consumer is caught up with active producer
+- Upgraded GraphQL implementation to fix a bug that could cause Nodes to not be returned if they only appeared as the
+  objects of triples in the graph
+- Build improvements:
+    - Fuseki Kafka Connector upgraded to 1.3.4
+    - RDF ABAC upgraded to 0.71.5
+    - GraphQL upgrade4d to 0.8.1
+
 ## 0.81.0
 
 - Upgraded GraphQL implementation so Telicent Graph schema now allows `limit` and `offset`
