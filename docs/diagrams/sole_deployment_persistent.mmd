@@ -1,0 +1,16 @@
+graph LR
+
+    U[Authenticated User]
+
+    subgraph SC[Persisted SC-Graph Server Deployment]
+        subgraph S[SCG Server]
+            LB[Server]
+            DB[(Datastore)]
+        end
+    end
+
+    I[(Event Log)]
+
+    U -- requests --> S
+    S -- updates --> I
+    I -- polls from --> S

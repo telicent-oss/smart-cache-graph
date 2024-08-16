@@ -1,0 +1,33 @@
+graph LR
+    U1[Authenticated Query User]
+    U2[Authenticated Update User]
+
+    subgraph SC[Controlled Access SC-Graph Server Deployment]
+        subgraph A1[SC-Graph 1]
+            S1[Server]
+        end
+        subgraph Ax[SC-Graph ...]
+            SX[Server]
+        end
+        subgraph AN[SC-Graph N]
+            SN[Server]
+        end
+        subgraph AU["SC-Graph (Update)"]
+            SU[Server]
+        end
+        LB[Load Balancer]
+        LB2[Load Balancer]
+    end
+
+    K[(Event Log)]
+
+    U1 -- queries --> LB
+    U2 -- updates --> LB2
+    LB -- routes --> A1
+    LB -- routes --> Ax
+    LB -- routes --> AN
+    LB2 -- routes --> AU
+    A1 -- reads --> K
+    Ax -- reads --> K
+    AN -- reads --> K
+    AU -- updates --> K

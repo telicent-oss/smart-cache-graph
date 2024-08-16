@@ -1,0 +1,19 @@
+sequenceDiagram
+    autonumber
+    actor U as Authenticated User
+    box Smart Cache Graph
+        participant G as GraphQL API
+        participant FS as Fuseki Server
+        participant J as RDF Triple Store
+        participant A as ABAC Security
+        participant L as Security Label Store
+    end
+    box CORE Platform
+        participant UAS as User Attributes Service
+    end
+    U->>G: Submits Query Validation Request
+    G->>FS: Submits Query
+    FS->>FS: Validates Query
+    FS-->>G: Returns Validation Results
+    G-->>U: Returns Results
+    note left of G: application/graphql-response+json
