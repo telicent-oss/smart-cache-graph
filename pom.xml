@@ -70,7 +70,7 @@
     <ver.otel>1.33.0</ver.otel>
     <ver.otel-semconv>1.30.1-alpha</ver.otel-semconv>
 
-    <ver.kotlin>2.0.0</ver.kotlin>
+    <ver.kotlin>2.0.10</ver.kotlin>
     <ver.jwt-servlet-auth>0.15.3</ver.jwt-servlet-auth>
     <ver.smart-caches-core>0.21.2</ver.smart-caches-core>
     <ver.slf4j>2.0.13</ver.slf4j>
@@ -94,10 +94,10 @@
     <ver.plugin.clean>3.3.2</ver.plugin.clean>
     <ver.plugin.install>3.1.1</ver.plugin.install>
     <ver.plugin.site>3.9.1</ver.plugin.site>
-    <ver.plugin.cyclonedx>2.8.0</ver.plugin.cyclonedx>
+    <ver.plugin.cyclonedx>2.8.1</ver.plugin.cyclonedx>
     <ver.plugin.shade>3.4.1</ver.plugin.shade>
     <ver.plugin.versions>2.17.1</ver.plugin.versions>
-    <ver.plugin.gpg>3.2.4</ver.plugin.gpg>
+    <ver.plugin.gpg>3.2.5</ver.plugin.gpg>
     <ver.plugin.nexus>1.7.0</ver.plugin.nexus>
 
   </properties>
