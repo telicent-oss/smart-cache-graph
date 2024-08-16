@@ -1,0 +1,14 @@
+graph LR
+    U[Authenticated User]
+
+    subgraph SC[Simple SC-Graph Server Deployment]
+        subgraph S[SCG Server]
+            Server
+        end
+    end
+
+    K[(Event Log)]
+
+    U -- requests --> S
+    K -- reads --> S
+    S -- updates --> K
