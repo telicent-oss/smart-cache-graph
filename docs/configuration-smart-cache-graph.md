@@ -4,8 +4,8 @@ Smart Cache Graph is an
 [Apache Jena Fuseki server](https://jena.apache.org/documentation/fuseki2/)
 with additional features:
 
-* [ABAC datasets](https://github.com/Telicent-io/rdf-abac/docs/abac.md)
-* [GraphQL](https://github.com/Telicent-io/graphql-jena/blob/main/docs/index.md)
+* [ABAC datasets](https://github.com/telicent-oss/rdf-abac/blob/main/docs/abac.md)
+* [GraphQL](https://github.com/Telicent-oss/graphql-jena/blob/main/docs/index.md)
 * [OpenTelemetry](./opentelemetry.md) support
 
 Smart Cache Graph is configured using a [Fuseki configuration
