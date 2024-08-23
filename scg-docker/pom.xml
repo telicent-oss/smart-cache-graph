@@ -26,12 +26,12 @@
   <parent>
     <groupId>io.telicent.smart-caches.graph</groupId>
     <artifactId>scg-base</artifactId>
-    <version>0.81.2-SNAPSHOT</version>
+    <version>0.81.3-SNAPSHOT</version>
   </parent>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <project.build.outputTimestamp>2024-08-14T13:48:56Z</project.build.outputTimestamp>
+    <project.build.outputTimestamp>2024-08-23T10:47:42Z</project.build.outputTimestamp>
   </properties>
 
   <dependencies>
