@@ -10,7 +10,7 @@ FROM --platform=${BUILDPLATFORM} eclipse-temurin:${JAVA_VERSION} AS smart-cache-
 ARG FUSEKI_DIR=/fuseki
 
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends tini && \
+    apt-get install -y --no-install-recommends dumb-init && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
@@ -50,13 +50,9 @@ ENV \
     FUSEKI_DIR="${FUSEKI_DIR}"          \
     LOG_CONFIG_FILE="/fuseki/logback.xml"
 
-ENV TINI_SUBREAPER=true
-
-ENV TINI_SUBREAPER=true
-
 USER fuseki
 
 EXPOSE 3030
 
-ENTRYPOINT [ "/usr/bin/tini", "--", "./entrypoint.sh" ]
+ENTRYPOINT [ "/usr/bin/dumb-init", "--", "./entrypoint.sh" ]
 CMD []
