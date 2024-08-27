@@ -1,11 +1,11 @@
 sequenceDiagram
     autonumber
-    box rgb(121,244,151) Core Platform
+    box Core Platform
         participant D as Data Pipeline
         participant K as Knowledge
     end
 
-    box rgb(88,71,229) Smart Cache Graph
+    box Smart Cache Graph
         participant J as Jena Fuseki Module
         participant I as Jena TDB
         participant L as Label Store
@@ -27,5 +27,3 @@ sequenceDiagram
         I->>-J: Returns Status
         deactivate J
     end
-
-    

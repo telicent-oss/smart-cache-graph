@@ -11,19 +11,9 @@ sequenceDiagram
     box CORE Platform
         participant UAS as User Attributes Service
     end
-    U->>G: Submits Query Request
-    G->>UAS: Requests User Attributes
-    UAS-->>G: Returns User Attributes
+    U->>G: Submits Query Validation Request
     G->>FS: Submits Query
-    FS->>J: Runs Query
-    J->>FS: Returns Raw Results
-    loop for each node
-        FS->>L: Retrieves Security Label
-        L-->>FS: Returns Security Label
-        FS->>A: Evaluates Security
-        A-->>FS: Returns Redacted Result
-    end
-    autonumber off
-    FS-->>G: Returns Redacted Results
-    G-->>U: Returns Redacted Results
+    FS->>FS: Validates Query
+    FS-->>G: Returns Validation Results
+    G-->>U: Returns Results
     note left of G: application/graphql-response+json

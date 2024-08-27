@@ -1,0 +1,24 @@
+graph LR
+    U[Authenticated User]
+    subgraph SC[Scaled SC-Graph Server Deployment]
+        subgraph A1[SCG Server 1]
+            S1[Server]
+        end
+        subgraph Ax[SCG Servers ...]
+            SX[Server]
+        end
+        subgraph AN[SCG Server N]
+            SN[Server]
+        end
+
+        LB[Load Balancer]
+    end
+    K[(Event Log)]
+
+    U -- queries --> LB
+    LB -- routes --> A1
+    LB -- routes --> Ax
+    LB -- routes --> AN
+    A1 -- reads --> K
+    Ax -- reads --> K
+    AN -- reads --> K

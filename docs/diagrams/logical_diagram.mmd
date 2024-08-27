@@ -1,10 +1,11 @@
-graph LR
+graph TD
     subgraph User
         Authenticated["Authenticated User"]
     end
 
     User <--> |HTTPS| Sparql
     User <--> |HTTPS| Graphql
+    User --> |HTTPS| Update
 
     subgraph Core Platform
 
@@ -17,11 +18,17 @@ graph LR
         end
 
         Knowledge -- Event Log Protocol --> Import
+        Update --> CQRS
+        CQRS --> Knowledge
 
         subgraph Smart Cache Graph
+            subgraph API
+                Update[SPARQL Update]
+                Sparql[SPARQL Request]
+                Graphql[GraphQL Request]
+            end
+            CQRS[CQRS Module]
             Import[Event Importer]
-            Sparql[SPARQL API]
-            Graphql[GraphQL API]
             Web[Fuseki Server]
             Jena[(Apache Jena)]
             Label[(Label Store)]

@@ -2,14 +2,14 @@ sequenceDiagram
     autonumber
     actor U as Authenticated User
 
-    box Purple Smart Cache Graph
+    box Smart Cache Graph
         participant SA as Update API (CQRS)
         participant RTS as RDF Triple Store
         participant L as Security Label Store
         participant JF as Jena Fuseki Import
     end
 
-    box Green CORE Platform
+    box CORE Platform
         participant UAS as User Attributes Service
         participant K as Knowledge
     end
