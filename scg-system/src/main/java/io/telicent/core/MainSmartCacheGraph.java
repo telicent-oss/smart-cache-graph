@@ -78,7 +78,7 @@ public class MainSmartCacheGraph {
 
     private static String ENV_USER_ATTRIBUTES_URL = "USER_ATTRIBUTES_URL";
     private static String PROPERTY_USER_ATTRIBUTES_URL = "USER_ATTRIBUTES_URL";
-    //private static String PROPERTY_USER_ATTRIBUTES_URL = "io.telicent.userAttributeStoreURL";
+
 
     private static String urlUserAttributeStore() {
         String s1 = System.getenv().get(ENV_USER_ATTRIBUTES_URL);

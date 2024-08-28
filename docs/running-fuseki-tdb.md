@@ -72,5 +72,5 @@ The database can grow quite large. It should be compacted from time-to-time.
 
 If the fuseki server is run with `--compact`, then the endpoint `/$/compact`
 will perform a database compaction. This can execute on a live server allowing
-read-operation to continue to be processed in parallel.  Noet that write
+read-operation to continue to be processed in parallel.  Note that write
 operations are held up.

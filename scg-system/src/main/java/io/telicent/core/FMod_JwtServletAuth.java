@@ -59,7 +59,7 @@ public class FMod_JwtServletAuth implements FusekiModule {
         // Note some of these URLs aren't actually enabled for SCG currently but useful to future-proof our exclusions
         // should we enable these features in future
         serverBuilder.addServletAttribute(JwtServletConstants.ATTRIBUTE_PATH_EXCLUSIONS,
-                                          PathExclusion.parsePathPatterns("/$/ping,/$/metrics,/$/stats/*"));
+                                          PathExclusion.parsePathPatterns("/$/ping,/$/metrics,/$/stats/*, $/compact/*"));
 
         // Register the filter
         serverBuilder.addFilter("/*", new FusekiJwtAuthFilter());
