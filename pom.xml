@@ -71,7 +71,7 @@
     <ver.otel-semconv>1.30.1-alpha</ver.otel-semconv>
 
     <ver.kotlin>2.0.20</ver.kotlin>
-    <ver.jwt-servlet-auth>0.15.3</ver.jwt-servlet-auth>
+    <ver.jwt-servlet-auth>0.16.0</ver.jwt-servlet-auth>
     <ver.smart-caches-core>0.21.2</ver.smart-caches-core>
     <ver.slf4j>2.0.13</ver.slf4j>
     <ver.log4j2>2.23.1</ver.log4j2>
