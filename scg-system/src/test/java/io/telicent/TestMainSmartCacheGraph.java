@@ -46,6 +46,7 @@ class TestMainSmartCacheGraph {
         FusekiLogging.setLogging();
         SysFusekiABAC.init();
         LibTestsSCG.teardownAuthentication();
+        LibTestsSCG.disableInitialCompaction();
     }
 
     @AfterEach

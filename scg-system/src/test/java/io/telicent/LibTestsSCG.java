@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import io.jsonwebtoken.JwtBuilder;
 import io.jsonwebtoken.Jwts;
+import io.telicent.core.FMod_InitialCompaction;
 import io.telicent.servlet.auth.jwt.JwtHttpConstants;
 import io.telicent.servlet.auth.jwt.verifier.aws.AwsConstants;
 import io.telicent.servlet.auth.jwt.verifier.aws.AwsElbKeyUrlRegistry;
@@ -174,5 +175,11 @@ public class LibTestsSCG {
     /** Execute with a given logging level. */
     public static void withLevel(Logger logger, String execLevel, Runnable action) {
         CtlLogback.withLevel(logger, execLevel, action);
+    }
+
+    public static void disableInitialCompaction() {
+        Properties properties = new Properties();
+        properties.put(FMod_InitialCompaction.DISABLE_INITIAL_COMPACTION, "true");
+        Configurator.addSource(new PropertiesSource(properties));
     }
 }

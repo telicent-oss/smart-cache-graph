@@ -16,10 +16,6 @@
 
 package io.telicent.graphql;
 
-import java.util.Enumeration;
-import java.util.Objects;
-import java.util.function.Function;
-
 import io.telicent.jena.abac.ABAC;
 import io.telicent.jena.abac.fuseki.ABAC_Processor;
 import io.telicent.jena.abac.fuseki.ABAC_Request;
@@ -27,13 +23,12 @@ import io.telicent.jena.graphql.execution.GraphQLOverDatasetExecutor;
 import io.telicent.jena.graphql.fuseki.ActionGraphQL;
 import io.telicent.jena.graphql.schemas.telicent.graph.TelicentGraphSchema;
 import io.telicent.jena.graphql.server.model.GraphQLRequest;
-import io.telicent.servlet.auth.jwt.JwtHttpConstants;
 import io.telicent.servlet.auth.jwt.JwtServletConstants;
-import io.telicent.servlet.auth.jwt.verifier.aws.AwsConstants;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.jena.fuseki.servlets.HttpAction;
-import org.apache.jena.riot.web.HttpNames;
 import org.apache.jena.sparql.core.DatasetGraph;
+
+import java.util.Objects;
+import java.util.function.Function;
 
 /**
  * A Fuseki action that evaluates GraphQL Requests that use the Telicent Graph schema

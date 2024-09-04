@@ -16,6 +16,10 @@
 
 package io.telicent.platform.play;
 
+import org.apache.jena.atlas.io.IO;
+import org.apache.jena.atlas.io.IOX;
+import org.apache.jena.atlas.lib.Bytes;
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -24,11 +28,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
-
-import org.apache.commons.io.IOUtils;
-import org.apache.jena.atlas.io.IO;
-import org.apache.jena.atlas.io.IOX;
-import org.apache.jena.atlas.lib.Bytes;
 
 /**
  * A message is a set of headers then a body.
@@ -67,7 +66,7 @@ public class MessageRequest {
         // Consume the body to give simple interface.
         byte[] bytes;
         try {
-            bytes = IOUtils.toByteArray(input);
+            bytes = input.readAllBytes();
             return new MessageRequest(headers, bytes);
         } catch (IOException ex) {
             throw IOX.exception(ex);
@@ -123,7 +122,7 @@ public class MessageRequest {
     */
     public byte[] getBodyBytes() {
         try {
-            return IOUtils.toByteArray(bodySource);
+            return bodySource.readAllBytes();
         } catch (IOException e) {
             throw IOX.exception(e);
         }

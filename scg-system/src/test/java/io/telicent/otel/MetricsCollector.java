@@ -23,7 +23,6 @@ import io.opentelemetry.sdk.common.CompletableResultCode;
 import io.opentelemetry.sdk.metrics.InstrumentType;
 import io.opentelemetry.sdk.metrics.data.*;
 import io.opentelemetry.sdk.metrics.export.MetricExporter;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.jena.atlas.lib.NotImplemented;
 
 import java.util.Collection;
@@ -65,7 +64,7 @@ public class MetricsCollector implements MetricExporter {
         Map<AttributeKey<?>, Object> map = attributes.asMap();
         AttributesBuilder builder = Attributes.builder();
         for (Map.Entry<AttributeKey<?>, Object> entry : map.entrySet()) {
-            if (StringUtils.equals(entry.getKey().getKey(), AttributeNames.INSTANCE_ID)) {
+            if (AttributeNames.INSTANCE_ID.equals(entry.getKey().getKey())) {
                 continue;
             }
             builder.put(entry.getKey().getKey(), (String) entry.getValue());

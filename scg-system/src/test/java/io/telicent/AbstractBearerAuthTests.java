@@ -30,6 +30,7 @@ public abstract class AbstractBearerAuthTests {
         FileOps.ensureDir(DIR);
         FileOps.clearAll(DIR);
         FusekiLogging.setLogging();
+        LibTestsSCG.disableInitialCompaction();
         server = launchServer("config-simple-auth.ttl");
         URL = "http://localhost:" + server.getHttpPort() + "/ds";
     }

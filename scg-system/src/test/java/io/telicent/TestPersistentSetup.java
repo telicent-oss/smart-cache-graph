@@ -61,6 +61,7 @@ public class TestPersistentSetup {
 
     @BeforeAll public static void beforeAll() throws Exception {
         LibTestsSCG.setupAuthentication();
+        LibTestsSCG.disableInitialCompaction();
         FusekiLogging.setLogging();
         FileOps.ensureDir(testArea);
     }

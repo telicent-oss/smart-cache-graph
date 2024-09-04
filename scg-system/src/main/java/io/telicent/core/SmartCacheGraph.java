@@ -21,7 +21,6 @@ import io.telicent.jena.abac.fuseki.FMod_ABAC;
 import io.telicent.otel.FMod_OpenTelemetry;
 import io.telicent.smart.cache.configuration.Configurator;
 import io.telicent.smart.caches.configuration.auth.AuthConstants;
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.jena.atlas.lib.Version;
 import org.apache.jena.fuseki.main.FusekiServer;
 import org.apache.jena.fuseki.main.cmds.FusekiMain;
@@ -71,21 +70,31 @@ public class SmartCacheGraph {
      * @return FusekiModules
      */
     public static FusekiModules modules() {
-        String jwksUrl = Configurator.get(AuthConstants.ENV_JWKS_URL);
-        boolean authEnabled = !Objects.equals(jwksUrl, AuthConstants.AUTH_DISABLED);
         List<FusekiModule> mods = new ArrayList<>();
-        CollectionUtils.addAll(mods, new FMod_CQRS());
+        mods.add(new FMod_CQRS());
         // Only add the ABAC mode when authentication is enabled
-        if (authEnabled) {
-            CollectionUtils.addAll(mods, new FMod_ABAC());
+        if (isAuthEnabled()) {
+            mods.add(new FMod_ABAC());
         }
-        CollectionUtils.addAll(mods, List.of(
+        mods.addAll(List.of(
                   new FMod_FusekiKafkaSCG()
                   , new FMod_JwtServletAuth()
                   , new FMod_OpenTelemetry()
                   , new FMod_TelicentGraphQL()
                   , new FMod_RequestIDFilter()
                   ));
+        if(isInitialCompactionEnabled()) {
+            mods.add(new FMod_InitialCompaction());
+        }
         return FusekiModules.create(mods);
+    }
+
+    private static boolean isAuthEnabled() {
+        String jwksUrl = Configurator.get(AuthConstants.ENV_JWKS_URL);
+        return !Objects.equals(jwksUrl, AuthConstants.AUTH_DISABLED);
+    }
+
+    private static boolean isInitialCompactionEnabled() {
+        return !Configurator.get(FMod_InitialCompaction.DISABLE_INITIAL_COMPACTION, Boolean::parseBoolean, false);
     }
 }
