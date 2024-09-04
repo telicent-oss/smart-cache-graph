@@ -3,7 +3,6 @@ package io.telicent.core;
 import jakarta.servlet.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.jena.atlas.lib.Version;
 import org.apache.jena.atlas.logging.FmtLog;
 import org.apache.jena.fuseki.Fuseki;
@@ -69,7 +68,7 @@ public class FMod_RequestIDFilter implements FusekiModule {
             HttpServletResponse response = (HttpServletResponse) servletResponse;
 
             String requestId = request.getHeader(REQUEST_ID);
-            if (StringUtils.isNotBlank(requestId)) {
+            if (isNotBlank(requestId)) {
                 // If the Client provided their own Request ID we append a unique suffix each time.  This allows each
                 // request to be uniquely identified while also allowing clients to use the same Request ID for a sequence
                 // of related requests.  We impose a maximum length on the client provided ID to avoid them supplying
@@ -97,5 +96,9 @@ public class FMod_RequestIDFilter implements FusekiModule {
             // Do nothing
             FmtLog.debug(Fuseki.configLog, "Destroying Telicent Request ID Filter Module");
         }
+    }
+
+    public static boolean isNotBlank(String str) {
+        return str != null && !str.trim().isEmpty();
     }
 }
