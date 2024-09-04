@@ -15,6 +15,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
+import org.mockito.stubbing.Answer;
 
 import java.util.Set;
 
@@ -72,12 +73,14 @@ public class TestInitialCompaction {
     @Test
     public void test_persistentDataset() {
         // given
+        mockDatabaseMgr.when(() -> DatabaseMgr.compact(any(),anyBoolean()))
+                .thenAnswer((Answer<Void>) invocation -> null);
         String configFile = "config-persistent.ttl";
         // when
         server = launchServer(configFile);
         // then
         assertNotNull(server.serverURL());
-        mockDatabaseMgr.verify(() -> DatabaseMgr.compact(any(), anyBoolean()));
+        mockDatabaseMgr.verify(() -> DatabaseMgr.compact(any(), anyBoolean()), times(2));
     }
 
     @Test
