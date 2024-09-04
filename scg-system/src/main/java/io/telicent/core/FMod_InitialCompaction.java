@@ -75,8 +75,6 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
      */
     public static DatasetGraph getTDB2(DatasetGraph dsg) {
         for (; ;) {
-            if (IS_NOT_TDB_2.test(dsg))
-                return null;
             if (IS_TDB_2.test(dsg))
                 return dsg;
             if (!(dsg instanceof DatasetGraphWrapper dsgw))
@@ -85,7 +83,5 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
         }
     }
 
-    private static final Predicate<DatasetGraph> IS_NOT_TDB_2 =
-            org.apache.jena.tdb1.sys.TDBInternal::isTDB1;
     private static final Predicate<DatasetGraph> IS_TDB_2 = TDBInternal::isTDB2;
 }

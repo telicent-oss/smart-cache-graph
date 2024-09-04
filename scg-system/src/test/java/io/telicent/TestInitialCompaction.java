@@ -2,20 +2,28 @@ package io.telicent;
 
 import io.telicent.core.FMod_InitialCompaction;
 import io.telicent.core.SmartCacheGraph;
+import io.telicent.jena.abac.ABAC;
+import io.telicent.jena.abac.SysABAC;
 import io.telicent.jena.abac.core.Attributes;
+import io.telicent.jena.abac.core.AttributesStoreLocal;
+import io.telicent.jena.abac.core.DatasetGraphABAC;
+import io.telicent.jena.abac.labels.Labels;
 import org.apache.jena.fuseki.main.FusekiServer;
 import org.apache.jena.fuseki.system.FusekiLogging;
 import org.apache.jena.sparql.core.DatasetGraph;
+import org.apache.jena.sparql.core.DatasetGraphFactory;
 import org.apache.jena.tdb1.TDB1Factory;
 import org.apache.jena.tdb1.base.file.Location;
 import org.apache.jena.tdb2.DatabaseMgr;
-import org.junit.jupiter.api.AfterEach;
+import org.apache.jena.tdb2.store.DatasetGraphSwitchable;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
+import java.nio.file.Path;
 import java.util.Set;
 
 import static io.telicent.TestSmartCacheGraphIntegration.launchServer;
@@ -38,6 +46,7 @@ public class TestInitialCompaction {
     @AfterEach
     void clearDown() {
        mockDatabaseMgr.clearInvocations();
+       mockDatabaseMgr.reset();
     }
 
     @AfterAll
@@ -72,12 +81,13 @@ public class TestInitialCompaction {
     @Test
     public void test_persistentDataset() {
         // given
+        mockDatabaseMgr.when(() -> DatabaseMgr.compact(any(), anyBoolean())).thenAnswer(invocationOnMock -> null);
         String configFile = "config-persistent.ttl";
         // when
         server = launchServer(configFile);
         // then
         assertNotNull(server.serverURL());
-        mockDatabaseMgr.verify(() -> DatabaseMgr.compact(any(), anyBoolean()), times(1));
+        mockDatabaseMgr.verify(() -> DatabaseMgr.compact(any(), anyBoolean()), times(2));
     }
 
     @Test
@@ -98,6 +108,35 @@ public class TestInitialCompaction {
         DatasetGraph actualDSG = FMod_InitialCompaction.getTDB2(tdb1_DG);
         // then
         assertNull(actualDSG);
+    }
+
+    @Test
+    public void test_ABACDSG_wrapped_memGraph() {
+        // given
+        DatasetGraphABAC dsgABAC = ABAC.authzDataset(DatasetGraphFactory.createTxnMem(),
+                SysABAC.allowLabel,
+                Labels.createLabelsStoreMem(),
+                SysABAC.denyLabel,
+                new AttributesStoreLocal());
+        // when
+        DatasetGraph actualDSG = FMod_InitialCompaction.getTDB2(dsgABAC);
+        // then
+        assertNull(actualDSG);
+    }
+
+    @Test
+    public void test_ABACDSG_wrapped_persistedGraph() {
+        // given
+        DatasetGraphSwitchable dsgPersists = new DatasetGraphSwitchable(Path.of("./"), null, DatasetGraphFactory.createTxnMem());
+        DatasetGraphABAC dsgABAC = ABAC.authzDataset(dsgPersists,
+                SysABAC.allowLabel,
+                Labels.createLabelsStoreMem(),
+                SysABAC.denyLabel,
+                new AttributesStoreLocal());
+        // when
+        DatasetGraph actualDSG = FMod_InitialCompaction.getTDB2(dsgABAC);
+        // then
+        assertNotNull(actualDSG);
     }
 
     @Test
