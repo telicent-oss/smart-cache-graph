@@ -54,5 +54,5 @@ USER fuseki
 
 EXPOSE 3030
 
-ENTRYPOINT [ "/usr/bin/dumb-init", "--", "./entrypoint.sh" ]
-CMD ["-v"]
+ENTRYPOINT [ "/usr/bin/dumb-init", "-v", "--", "./entrypoint.sh" ]
+CMD []
