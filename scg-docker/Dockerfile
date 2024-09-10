@@ -5,7 +5,7 @@
 ARG JAVA_VERSION=21
 
 ##FROM openjdk:${JAVA_VERSION}
-FROM --platform=${BUILDPLATFORM} eclipse-temurin:${JAVA_VERSION} AS smart-cache-graph
+FROM eclipse-temurin:${JAVA_VERSION} AS smart-cache-graph
 
 ARG FUSEKI_DIR=/fuseki
 
