@@ -112,7 +112,7 @@ public class FKProcessorSender {
             Map<TopicPartition, List<ConsumerRecord<String, RequestFK>>> records =
                     Map.of(partition, recordsList);
             ConsumerRecords<String, RequestFK> cRecords = new ConsumerRecords<>(records);
-            fkBatchProcessor.processBatch(topic, 999, cRecords);
+            fkBatchProcessor.processBatch(topic, 999, List.of(cRecords));
 
             // Old way. Directly call the fkProcessor. This bypasses the batch processor.
 //                RequestFK requestFK = new RequestFK(topic, headers, bytes);

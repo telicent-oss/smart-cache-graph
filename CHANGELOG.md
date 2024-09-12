@@ -1,5 +1,19 @@
 # Smart Cache Graph
 
+## 0.81.4
+
+- Upgraded Fuseki Kafka implementation to further improve message batching strategy
+- Upgraded GraphQL implementation to pick up Telicent Graph Schema enhancements
+- Build improvements:
+    - Fix issues with the Docker image not being correctly build for multi-platform architectures
+    - RDF ABAC upgraded to 0.71.7
+    - GraphQL upgraded to 0.8.2
+    - JWT Servlet Auth upgraded to 0.16.0
+    - Log4j upgraded to 2.24.0
+    - Logback upgraded to 1.5.8
+    - Smart Caches Core upgraded to 0.22.0
+    - Various build and test dependencies upgraded to latest available
+
 ## 0.81.1
 
 - Upgraded RDF-ABAC implementation to fix a bug that could cause data to fail to be ingested if it contained large 
@@ -11,7 +25,7 @@
 - Build improvements:
     - Fuseki Kafka Connector upgraded to 1.3.4
     - RDF ABAC upgraded to 0.71.5
-    - GraphQL upgrade4d to 0.8.1
+    - GraphQL upgraded to 0.8.1
 
 ## 0.81.0
 
