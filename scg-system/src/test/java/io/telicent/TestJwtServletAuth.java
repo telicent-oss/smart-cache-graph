@@ -105,7 +105,7 @@ public class TestJwtServletAuth {
         Configurator.addSource(new PropertiesSource(properties));
     }
 
-    class TestJwtVerifier implements JwtVerifier {
+    private static class TestJwtVerifier implements JwtVerifier {
 
         @Override
         public Jws<Claims> verify(String s) {
@@ -113,7 +113,7 @@ public class TestJwtServletAuth {
         }
     }
 
-    static void assertExclusionListsEqual(List<PathExclusion> expected, List<PathExclusion> actual) {
+    private static void assertExclusionListsEqual(List<PathExclusion> expected, List<PathExclusion> actual) {
         assertEquals(expected.size(), actual.size());
         for (int i = 0; i < expected.size(); i++) {
             assertEquals(expected.get(i).getPattern(), actual.get(i).getPattern());
