@@ -11,6 +11,7 @@ import io.telicent.smart.cache.configuration.sources.PropertiesSource;
 import io.telicent.smart.caches.configuration.auth.AuthConstants;
 import org.apache.jena.fuseki.main.FusekiServer;
 import org.apache.jena.rdf.model.Model;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -24,6 +25,11 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 public class TestJwtServletAuth {
+
+    @AfterEach
+    void clear() {
+        Configurator.reset();
+    }
 
     @Test
     public void test_name() {
@@ -49,7 +55,6 @@ public class TestJwtServletAuth {
 
         // then
         verifyNoInteractions(mockBuilder, mockConfig);
-        Configurator.reset();
     }
 
     @Test
@@ -100,7 +105,7 @@ public class TestJwtServletAuth {
         Configurator.addSource(new PropertiesSource(properties));
     }
 
-    private static class TestJwtVerifier implements JwtVerifier {
+    class TestJwtVerifier implements JwtVerifier {
 
         @Override
         public Jws<Claims> verify(String s) {
@@ -108,7 +113,7 @@ public class TestJwtServletAuth {
         }
     }
 
-    private static void assertExclusionListsEqual(List<PathExclusion> expected, List<PathExclusion> actual) {
+    static void assertExclusionListsEqual(List<PathExclusion> expected, List<PathExclusion> actual) {
         assertEquals(expected.size(), actual.size());
         for (int i = 0; i < expected.size(); i++) {
             assertEquals(expected.get(i).getPattern(), actual.get(i).getPattern());
