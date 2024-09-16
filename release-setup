@@ -8,8 +8,8 @@
 ## Revert:
 ##    mvn versions:set -DnewVersion=???-SNAPSHOT
 
-export VER=0.80.0
-VER_NEXT=0.80.1-SNAPSHOT
+export VER=0.81.5
+VER_NEXT=0.81.5-SNAPSHOT
 TAG="v$VER"
 
 ## Set release and next version.
