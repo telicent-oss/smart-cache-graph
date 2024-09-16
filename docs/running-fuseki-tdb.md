@@ -70,7 +70,25 @@ happens in PostgreSQL, which provides the "vacuum" operation.
 
 The database can grow quite large. It should be compacted from time-to-time.
 
+Due to this problem, we have an additional module, `Initial Compaction`, has been added
+which will call the compact operation at application start-up prior to the server becoming
+available. This is automatically turned on but can be disabled by setting the 
+environment variable `DISABLE_INITIAL_COMPACTION`.
+
 If the fuseki server is run with `--compact`, then the endpoint `/$/compact`
 will perform a database compaction. This can execute on a live server allowing
-read-operation to continue to be processed in parallel.  Noet that write
-operations are held up.
+read-operation to continue to be processed in parallel.  *Note:* write
+operations are held up during this action.
+
+## Exclusions
+
+There is an additional Fuseki module `JWT Servlet Auth` that applies authentication to all the endpoints offered by the server.
+
+We have disabled authentication for a number of the utility endpoints listed below:
+- `/$/compact` 
+- `/$/ping`
+- `/$/metrics` 
+- `/$/stats`
+
+At present, they are hard-coded.  As mentioned above, though, the compact operation can disable write operations during the compaction process and be accessible by non-authorised users. 
+Users need to be aware of this when deploying with the `--compact` command line setting. We recommend disabling remote access to this via other means.
