@@ -4,22 +4,34 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import io.telicent.core.FMod_JwtServletAuth;
 import io.telicent.core.SmartCacheGraph;
+import io.telicent.jena.abac.core.Attributes;
 import io.telicent.servlet.auth.jwt.PathExclusion;
 import io.telicent.servlet.auth.jwt.verification.JwtVerifier;
 import io.telicent.smart.cache.configuration.Configurator;
 import io.telicent.smart.cache.configuration.sources.PropertiesSource;
 import io.telicent.smart.caches.configuration.auth.AuthConstants;
+import org.apache.jena.atlas.web.HttpException;
 import org.apache.jena.fuseki.main.FusekiServer;
+import org.apache.jena.fuseki.main.cmds.FusekiMain;
+import org.apache.jena.fuseki.main.sys.FusekiModules;
+import org.apache.jena.http.HttpEnv;
+import org.apache.jena.http.HttpLib;
 import org.apache.jena.rdf.model.Model;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
+import java.io.InputStream;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.util.List;
 import java.util.Properties;
 
 import static graphql.Assert.assertNotEmpty;
 import static io.telicent.servlet.auth.jwt.JwtServletConstants.ATTRIBUTE_JWT_VERIFIER;
 import static io.telicent.servlet.auth.jwt.JwtServletConstants.ATTRIBUTE_PATH_EXCLUSIONS;
+import static org.apache.jena.graph.Graph.emptyGraph;
+import static org.apache.jena.http.HttpLib.*;
+import static org.apache.jena.riot.web.HttpNames.METHOD_POST;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -84,8 +96,8 @@ public class TestJwtServletAuth {
         List<PathExclusion> expectedList = List.of(
                 new PathExclusion("/$/ping"),
                 new PathExclusion("/$/metrics"),
-                new PathExclusion("/$/stats/*"),
-                new PathExclusion("/$/compact/*")
+                new PathExclusion("/\\$/stats/*"),
+                new PathExclusion("/\\$/compact/*")
         );
         FMod_JwtServletAuth jwtServletAuth = new FMod_JwtServletAuth();
         FusekiServer.Builder builder = SmartCacheGraph.serverBuilder().addServletAttribute(ATTRIBUTE_JWT_VERIFIER, new TestJwtVerifier());
@@ -97,6 +109,54 @@ public class TestJwtServletAuth {
         List<PathExclusion> actualList = (List<PathExclusion>) actualExclusions;
         assertNotEmpty(actualList);
         assertExclusionListsEqual(expectedList, actualList);
+    }
+
+    @Test
+    public void test_exclusionLogic() {
+        FMod_JwtServletAuth jwtServletAuth = new FMod_JwtServletAuth();
+        Attributes.buildStore(emptyGraph);
+        FusekiServer server = FusekiMain.builder("--port=0", "--empty")
+                .fusekiModules(FusekiModules.create(List.of(jwtServletAuth)))
+                .addServletAttribute(ATTRIBUTE_JWT_VERIFIER, new TestJwtVerifier())
+                .enablePing(true)
+                .enableCompact(true)
+                .enableMetrics(true)
+                .enableStats(true)
+                .build().start();
+
+        // Correct path
+        HttpResponse<InputStream> pingResponse = makePOSTCallWithPath(server, "$/ping");
+        assertEquals(200, pingResponse.statusCode());
+
+        // Correct path
+        HttpResponse<InputStream> metricsResponse = makePOSTCallWithPath(server, "$/metrics");
+        assertEquals(200, metricsResponse.statusCode());
+
+        // Fails - due to missing dataset (see --empty above) but NOT due to Auth.
+        HttpResponse<InputStream> compactResponse = makePOSTCallWithPath(server, "$/compact/anything");
+        assertEquals(400, compactResponse.statusCode());
+        HttpException httpException = assertThrows(HttpException.class, () -> handleResponseNoBody(compactResponse));
+        assertTrue(httpException.getResponse().startsWith("Dataset not found"));
+
+        // Fails - due to missing dataset (see --empty above) but NOT due to Auth.
+        HttpResponse<InputStream> compactDeleteResponse = makePOSTCallWithPath(server, "$/compact/anything?deleteOld=true");
+        assertEquals(400, compactDeleteResponse.statusCode());
+        httpException = assertThrows(HttpException.class, () -> handleResponseNoBody(compactDeleteResponse));
+        assertTrue(httpException.getResponse().startsWith("Dataset not found"));
+
+        // Fails - due to missing path but NOT due to Auth.
+        HttpResponse<InputStream> statsResponse = makePOSTCallWithPath(server, "$/stats/unrecognised");
+        assertEquals(404, statsResponse.statusCode());
+        httpException = assertThrows(HttpException.class, () -> handleResponseNoBody(statsResponse));
+        assertTrue(httpException.getResponse().startsWith("/unrecognised"));
+
+        // Fails - due to Auth not path which is missing
+        HttpResponse<InputStream> otherResponse = makePOSTCallWithPath(server, "$/unrecognisedPath");
+        assertEquals(401, otherResponse.statusCode());
+        httpException = assertThrows(HttpException.class, () -> handleResponseNoBody(otherResponse));
+        assertTrue(httpException.getResponse().contains("Unauthorized"));
+
+        server.stop();
     }
 
     private void disableAuth() {
@@ -118,5 +178,13 @@ public class TestJwtServletAuth {
         for (int i = 0; i < expected.size(); i++) {
             assertEquals(expected.get(i).getPattern(), actual.get(i).getPattern());
         }
+    }
+
+    private HttpResponse<InputStream> makePOSTCallWithPath(FusekiServer server, String path) {
+        HttpRequest.Builder builder =
+                HttpLib.requestBuilderFor(server.serverURL())
+                        .uri(toRequestURI(server.serverURL()+ path))
+                        .method(METHOD_POST, HttpRequest.BodyPublishers.noBody());
+        return execute(HttpEnv.getDftHttpClient(), builder.build());
     }
 }
