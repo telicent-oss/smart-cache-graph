@@ -16,6 +16,7 @@
 
 package io.telicent.core;
 
+import io.telicent.core.queryTracker.QueryMapEndpoint;
 import io.telicent.graphql.FMod_TelicentGraphQL;
 import io.telicent.jena.abac.fuseki.FMod_ABAC;
 import io.telicent.otel.FMod_OpenTelemetry;
@@ -50,6 +51,8 @@ public class SmartCacheGraph {
                 .builder(args)
                 .fusekiModules(fmods)
                 .enablePing(true)
+                .enableTasks(true)
+                .addServlet("/$/queries", new QueryMapEndpoint())
                 .build();
         return server;
     }
@@ -86,6 +89,7 @@ public class SmartCacheGraph {
         if(isInitialCompactionEnabled()) {
             mods.add(new FMod_InitialCompaction());
         }
+        mods.add(new FMod_QueryTracker());
         return FusekiModules.create(mods);
     }
 
