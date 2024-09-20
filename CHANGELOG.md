@@ -1,5 +1,12 @@
 # Smart Cache Graph
 
+## 0.81.8
+- Build improvements:
+  - Upgrading RDF ABAC to 0.71.9
+  - Fixed typos in specification documentation
+  - Exclude compact from authentication
+  - Fixing logging
+
 ## 0.81.4
 
 - Upgraded Fuseki Kafka implementation to further improve message batching strategy
