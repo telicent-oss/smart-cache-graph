@@ -81,6 +81,8 @@
     <ver.junit5-platform>1.11.0</ver.junit5-platform>
     <ver.mockito>5.13.0</ver.mockito>
 
+    <ver.protobuf>4.27.5</ver.protobuf> <!-- CVE-2024-7254 -->
+
     <ver.plugin.owasp-dependency-check>10.0.4</ver.plugin.owasp-dependency-check>
     <ver.plugin.compiler>3.13.0</ver.plugin.compiler>
     <ver.plugin.jar>3.4.2</ver.plugin.jar>
@@ -126,6 +128,11 @@
           <exclusion>
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
+          </exclusion>
+          <!-- CVE-2024-7254 -->
+          <exclusion>
+            <groupId>com.google.protobuf</groupId>
+            <artifactId>protobuf-java</artifactId>
           </exclusion>
         </exclusions>
       </dependency>
@@ -304,6 +311,13 @@
         <artifactId>mockito-junit-jupiter</artifactId>
         <version>${ver.mockito}</version>
         <scope>test</scope>
+      </dependency>
+
+      <!-- CVE-2024-7254 -->
+      <dependency>
+        <groupId>com.google.protobuf</groupId>
+        <artifactId>protobuf-java</artifactId>
+        <version>${ver.protobuf}</version>
       </dependency>
 
       <!-- Testing -->
