@@ -81,6 +81,8 @@
     <ver.junit5-platform>1.11.0</ver.junit5-platform>
     <ver.mockito>5.13.0</ver.mockito>
 
+    <ver.protobuf>4.27.5</ver.protobuf> <!-- CVE-2024-7254 -->
+
     <ver.plugin.owasp-dependency-check>10.0.4</ver.plugin.owasp-dependency-check>
     <ver.plugin.compiler>3.13.0</ver.plugin.compiler>
     <ver.plugin.jar>3.4.2</ver.plugin.jar>
@@ -127,6 +129,11 @@
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
           </exclusion>
+          <!-- CVE-2024-7254 -->
+          <exclusion>
+            <groupId>com.google.protobuf</groupId>
+            <artifactId>protobuf-java</artifactId>
+          </exclusion>
         </exclusions>
       </dependency>
 
@@ -149,6 +156,12 @@
         <groupId>io.telicent.jena</groupId>
         <artifactId>rdf-abac-fuseki</artifactId>
         <version>${ver.rdf-abac}</version>
+        <exclusions>
+          <exclusion>
+                  <groupId>org.apache.logging.log4j</groupId>
+                  <artifactId>log4j-slf4j2-impl</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
       <dependency>
         <groupId>io.telicent.jena</groupId>
@@ -298,6 +311,13 @@
         <artifactId>mockito-junit-jupiter</artifactId>
         <version>${ver.mockito}</version>
         <scope>test</scope>
+      </dependency>
+
+      <!-- CVE-2024-7254 -->
+      <dependency>
+        <groupId>com.google.protobuf</groupId>
+        <artifactId>protobuf-java</artifactId>
+        <version>${ver.protobuf}</version>
       </dependency>
 
       <!-- Testing -->
