@@ -5,6 +5,7 @@
   - Upgrading RDF ABAC to 0.71.9
   - Fixed typos in specification documentation
   - Exclude compact from authentication
+  - Fixing logging
 
 ## 0.81.4
 
