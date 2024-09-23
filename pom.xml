@@ -22,7 +22,7 @@
   <groupId>io.telicent.smart-caches.graph</groupId>
   <artifactId>scg-base</artifactId>
   <packaging>pom</packaging>
-  <version>0.81.8-SNAPSHOT</version>
+  <version>0.82.1-SNAPSHOT</version>
 
   <name>Telicent Smart Cache Graph - Parent</name>
   <description>Telicent Smart Cache Graph</description>
@@ -55,7 +55,7 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <project.build.outputTimestamp>2024-09-20T13:10:48Z</project.build.outputTimestamp>
+    <project.build.outputTimestamp>2024-09-23T10:20:21Z</project.build.outputTimestamp>
 
     <java.version>21</java.version>
 
