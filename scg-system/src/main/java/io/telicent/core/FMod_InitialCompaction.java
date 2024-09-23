@@ -43,55 +43,45 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
         this.datasets.addAll(names);
     }
 
-    /**
-     * Compact the existing TDB2 after initial data-load
-     *
-     * @param server underlying Fuseki server Note: We will only run this module at server start-up.
-     */
-    @Override
-    public void serverBeforeStarting(FusekiServer server) {
-        // Run before starting to clean up any bloat from the previous instance
-        compactDatabases("BeforeStart", server);
-    }
-
     @Override
     public void serverAfterStarting(FusekiServer server) {
-        // Run after starting to clean up any additional bloat created from data (re)-load
-        compactDatabases("AfterStart", server);
+        // Run after starting
+        compactDatabases(server);
     }
 
     /**
      * Compacts the database
      *
-     * @param phase  Server lifecycle phase to note in the log messages
      * @param server Server
      */
-    private void compactDatabases(String phase, FusekiServer server) {
+    private void compactDatabases(FusekiServer server) {
         for (String name : datasets) {
             Optional<DatasetGraph> optionalDatasetGraph = FKS.findDataset(server, name);
             if (optionalDatasetGraph.isPresent()) {
                 DatasetGraph dsg = getTDB2(optionalDatasetGraph.get());
                 if (dsg != null) {
-                    // See how big the database is, and if we're in the after starting compactions check if it's size
-                    // has increased from the previous compaction, if not then we don't need to compact it again
+                    // See how big the database is, and whether it's size has changed
+                    // NB - Due to how the module is registered twice (see SmartCacheGraph) we'll get called twice, once
+                    //      before Kafka connectors are started, and again after they are started, this gives us two
+                    //      opportunities to compact stuff
                     long sizeBefore = findDatabaseSize(dsg);
                     if (this.sizes.containsKey(name)) {
                         if (sizeBefore <= this.sizes.get(name)) {
                             FmtLog.info(LOG,
-                                        "[%s] Additional compaction not required for %s as it is already maximally compacted at %s",
-                                        phase, name, humanReadableSize(sizeBefore));
+                                        "[Compaction] Additional compaction not required for %s as it is already maximally compacted at %s",
+                                        name, humanReadableSize(sizeBefore));
                             continue;
                         }
                     }
 
-                    FmtLog.info(LOG, "[%s] >>>> Start compact %s, current size is %s", phase, name,
+                    FmtLog.info(LOG, "[Compaction] >>>> Start compact %s, current size is %s", name,
                                 humanReadableSize(sizeBefore));
                     Timer timer = new Timer();
                     timer.startTimer();
                     DatabaseMgr.compact(dsg, DELETE_OLD);
                     long sizeAfter = findDatabaseSize(dsg);
-                    FmtLog.info(LOG, "[%s] <<<< Finish compact %s. Took %s seconds.  Compacted size is %s", phase, name,
-                                Timer.timeStr(timer.endTimer()), humanReadableSize(sizeAfter));
+                    FmtLog.info(LOG, "[Compaction] <<<< Finish compact %s. Took %s seconds.  Compacted size is %s",
+                                name, Timer.timeStr(timer.endTimer()), humanReadableSize(sizeAfter));
                     this.sizes.put(name, sizeAfter);
                 } else {
                     FmtLog.debug(LOG, "Compaction not required for %s as not TDB2", name);
