@@ -2,9 +2,9 @@
 
 # syntax=docker/dockerfile:1.7
 
+
 ARG JAVA_VERSION=21
 
-##FROM openjdk:${JAVA_VERSION}
 FROM eclipse-temurin:${JAVA_VERSION} AS smart-cache-graph
 
 ARG FUSEKI_DIR=/fuseki
@@ -25,8 +25,8 @@ ARG LIB=${FUSEKI_DIR}/lib
 ARG AGENTS=${FUSEKI_DIR}/agents
 ARG SBOMS=/opt/telicent/sbom
 
-COPY scg-docker/entrypoint.sh .
-COPY scg-docker/logback.xml .
+COPY ./entrypoint.sh .
+COPY ./logback.xml .
 
 RUN \
     mkdir -p $LOGS $DATA $CONFIGS $LIB $AGENTS $SBOMS && \
@@ -34,14 +34,17 @@ RUN \
     chmod a+x entrypoint.sh
 
 # Build location of the jars we need.
-## Collected jars
-ARG JARS=scg-docker/target/dependency
-COPY ${JARS} lib
-ARG AGENTS=scg-docker/target/agents
-COPY ${AGENTS} agents
 ARG PROJECT_VERSION
-ARG SBOM=scg-docker/target/docker-${PROJECT_VERSION}-bom.json
+ARG FUSKEI_JAR
+
+## Collected jars
+ARG JARS=target/dependency
+COPY ${JARS} lib
+ARG AGENTS=target/agents
+COPY ${AGENTS} agents
+ARG SBOM=target/docker-${PROJECT_VERSION}-bom.json
 COPY ${SBOM} /opt/telicent/sbom/smart-cache-graph-${PROJECT_VERSION}-bom.json
+COPY mnt/config/ $CONFIGS
 
 ## Default environment variables.
 ENV \

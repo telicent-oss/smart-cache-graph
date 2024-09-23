@@ -4,12 +4,38 @@
 ## This needs a pass the Fuseki main command line into the container.
 ## e.g.
 ##   d-run --mem /ds
-##   d-run --conf config/config-replay.ttl
+##   d-run --conf config/config-replay-plain.ttl
 ##
 ## config/ is locally mnt/config/ and mapped to /fuseki/config/ in the container.
 ## ./fuseki is the container's working directory.
 
-source ./docker-setup
+## Version to build
+## Set in pom.xml
+## Beware that this is not the version of the development pom.xml parent
+## which is likely a SNAPSHOT for the next release after a SCG jar release.
+
+## Make sure pom.xml in this directory is the release version intended.
+## Set this via choosing the parent
+CONTAINER_VERSION=$(mvn -q -f pom.xml -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)
+
+## Version of the Smart cache graph java code.
+SCG_VER="$CONTAINER_VERSION"
+
+BASENAME=smart-cache-graph
+
+## Also in docker-compose
+IMAGE_NAME="${BASENAME}"
+
+## Run locally
+CIDFILE="$BASENAME.cid"
+PROC_NAME=FusekiKafka
+
+# External port.
+PORT=3030
+
+echo "Settings:"
+echo "  CONTAINER_VERSION=$CONTAINER_VERSION"
+echo "  SCG_VER=$SCG_VER"
 
 echo "== Docker run $IMAGE_NAME"
 
@@ -34,7 +60,7 @@ MNT=$PWD/mnt
 ##rm $CIDFILE
 
 ## Better to test ourselves.
-if [ -n "$CID" -a -e "$CIDFILE" ]
+if [ -n "$CID" ] && [ -e "$CIDFILE" ]
 then
     echo "Container PID file exists: $CIDFILE" 2>&1
     exit 2
@@ -63,16 +89,14 @@ NETWORK="-p $PORT:3030"
 ## ADDITIONAL="--env USER_ATTRIBUTES_URL=$(USER_ATTRIBUTES_URL:http://localhost:9119/users/lookup/{user})"
 
 ## SCG_AUTH - Authentication setting JWKS_URL
-
 echo "==== Docker run"
 
 IMAGE="${IMAGE_NAME}:latest"
-#IMAGE="${ECR_IMAGE_NAME}:0.11.0"
 
 ## Docker container memory
 ## Need to also set the docker run time environment.
 DOCKER_MEM="--memory 24G"
-DOCKER_RUN_OPTIONS="${DOCKER_RUN_OPTIONS} --env JAVA_OPTIONS=-Xmx16G"
+DOCKER_RUN_OPTIONS="${DOCKER_RUN_OPTIONS} --env JAVA_OPTIONS=-Xmx16G --env JWKS_URL=disabled"
 
 ##--env ENV_JWKS_URL=disabled"
 docker run $NETWORK $DOCKER_MEM -t --rm $CID --name $PROC_NAME-$$          \
@@ -84,8 +108,9 @@ docker run $NETWORK $DOCKER_MEM -t --rm $CID --name $PROC_NAME-$$          \
        --mount "type=bind,src=$MNT/config,dst=/fuseki/config"  \
        "${IMAGE}" "$@"
 
-echo "RC = $?"
-if [ $? = "0" ]
+ret_code=$?
+echo "RC = $ret_code"
+if [ $ret_code = "0" ]
 then
     rm -f $CIDFILE
 fi
