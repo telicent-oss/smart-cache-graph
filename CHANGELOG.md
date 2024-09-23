@@ -1,5 +1,10 @@
 # Smart Cache Graph
 
+## 0.82.1
+
+- Database compaction moved to happen potentially twice, but both after HTTP Server is up to avoid crash restart loops
+  when time consuming compactions are needed
+
 ## 0.82.0
 
 - Upgraded GraphQL implementation to pick up a fix for intermittent "Not in a Transaction" errors during GraphQL query

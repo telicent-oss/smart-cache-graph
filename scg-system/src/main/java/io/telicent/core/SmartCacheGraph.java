@@ -32,19 +32,26 @@ import java.util.List;
 import java.util.Objects;
 
 public class SmartCacheGraph {
-    /** Software version taken from the jar file. */
-    public static final String VERSION      = version();
+    /**
+     * Software version taken from the jar file.
+     */
+    public static final String VERSION = version();
+
     private static String version() {
         return Version.versionForClass(SmartCacheGraph.class).orElse("<development>");
     }
 
-    /** FusekiServer.Builder for a Fuseki server configured for SmartCacheGraph */
+    /**
+     * FusekiServer.Builder for a Fuseki server configured for SmartCacheGraph
+     */
     public static FusekiServer.Builder smartCacheGraphBuilder() {
         return FusekiServer.create().fusekiModules(modules());
     }
 
-    /** Builder for a Fuseki server configured for SmartCacheGraph */
-    public static FusekiServer construct(String...args) {
+    /**
+     * Builder for a Fuseki server configured for SmartCacheGraph
+     */
+    public static FusekiServer construct(String... args) {
         FusekiModules fmods = modules();
         FusekiServer server = FusekiMain
                 .builder(args)
@@ -54,7 +61,9 @@ public class SmartCacheGraph {
         return server;
     }
 
-    /** Set up a builder for a Fuseki/SmartCacheGraph (used when embedding and testing SmartCacheGraph) */
+    /**
+     * Set up a builder for a Fuseki/SmartCacheGraph (used when embedding and testing SmartCacheGraph)
+     */
     public static FusekiServer.Builder serverBuilder() {
         FusekiModules fmods = modules();
         return FusekiServer.create().fusekiModules(fmods).enablePing(true);
@@ -63,10 +72,10 @@ public class SmartCacheGraph {
     /**
      * The fixed set of Fuseki Modules that are explicitly configured for the FusekiServer instance built for SCG
      * <p>
-     * Only modules in this list are loaded.
-     * Use of {@link java.util.ServiceLoader} and {@link org.apache.jena.fuseki.main.sys.FusekiAutoModule}
-     * for loading additional modules is not supported.
+     * Only modules in this list are loaded. Use of {@link java.util.ServiceLoader} and
+     * {@link org.apache.jena.fuseki.main.sys.FusekiAutoModule} for loading additional modules is not supported.
      * </p>
+     *
      * @return FusekiModules
      */
     public static FusekiModules modules() {
@@ -76,15 +85,28 @@ public class SmartCacheGraph {
         if (isAuthEnabled()) {
             mods.add(new FMod_ABAC());
         }
+
+        // Initial compaction gets applied twice, once before Kafka module and once after, this is because we want to
+        // clean up any bloat from previous instances of the service before we read new data from Kafka.  Then we want
+        // to clean up any further bloat created by catching up with Kafka.
+        // The same instance of the module is used in both places so it can use an instance variable to track the
+        // database sizes and see if further compactions are needed
+        FMod_InitialCompaction compaction = new FMod_InitialCompaction();
+        if (isInitialCompactionEnabled()) {
+            mods.add(compaction);
+        }
+
         mods.addAll(List.of(
-                  new FMod_FusekiKafkaSCG()
-                  , new FMod_JwtServletAuth()
-                  , new FMod_OpenTelemetry()
-                  , new FMod_TelicentGraphQL()
-                  , new FMod_RequestIDFilter()
-                  ));
-        if(isInitialCompactionEnabled()) {
-            mods.add(new FMod_InitialCompaction());
+                new FMod_FusekiKafkaSCG()
+                , new FMod_JwtServletAuth()
+                , new FMod_OpenTelemetry()
+                , new FMod_TelicentGraphQL()
+                , new FMod_RequestIDFilter()
+        ));
+
+        // Initial compaction gets added again per the earlier comments
+        if (isInitialCompactionEnabled()) {
+            mods.add(compaction);
         }
         return FusekiModules.create(mods);
     }
