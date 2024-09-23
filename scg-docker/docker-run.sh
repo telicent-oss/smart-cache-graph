@@ -35,7 +35,7 @@ FUSEKI_JAR_NAME=$(basename "$FUSEKI_JAR")
 # Build the Docker image, passing the FUSEKI_JAR file name and PROJECT_VERSION as build arguments
 docker build --build-arg FUSEKI_JAR="${FUSEKI_JAR_NAME}" \
              --build-arg PROJECT_VERSION="${PROJECT_VERSION}" \
-             -t smart-cache-graph:"${PROJECT_VERSION}" -f ${CURRENT_DIR}/Dockerfile_local
+             -t smart-cache-graph:"${PROJECT_VERSION}" -f ${CURRENT_DIR}/Dockerfile ${CURRENT_DIR}/..
 
 # Remove previous entry if exists
 EXISTING_CONTAINER=$(docker ps -a -q -f name=smart-cache-graph-container)
@@ -50,10 +50,15 @@ if [[ -z "$ARGS" ]]; then
     ARGS="--mem /ds"
 fi
 
+MNT_DIR=$(pwd)/${CURRENT_DIR}/mnt
+
 # Run the Docker container, mapping port 3030, setting the necessary environment variables
 docker run -d \
     -e JAVA_OPTIONS="-Xmx2048m -Xms2048m" \
     -e JWKS_URL="disabled" \
     -p 3030:3030 \
+    -v "$MNT_DIR/logs:/fuseki/logs"      \
+    -v "$MNT_DIR/databases:/fuseki/databases" \
+    -v "$MNT_DIR/config:/fuseki/config"  \
     --name smart-cache-graph-container \
     smart-cache-graph:"${PROJECT_VERSION}" $ARGS

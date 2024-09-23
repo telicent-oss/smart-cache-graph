@@ -106,7 +106,8 @@ and configuration files go into host `mnt/config/`.
 
 ### Try it out! 
 The provided script, [docker-run.sh](scg-docker/docker-run.sh), runs SCG in a docker container, with the contents of the local 
-[mnt/config](scg-docker/mnt/config) directory loaded into the newly generated docker image for ease of use. 
+[mnt/config](scg-docker/mnt/config) directory mounted into the newly generated docker image for ease of use. 
+Similarly, the [mnt/databases](scg-docker/mnt/databases) and [mnt/logs](scg-docker/mnt/logs) are moutned for easier analysis.
 
 #### Example configuration - *Default*
 ```bash
@@ -150,11 +151,6 @@ variables to be set as indicated in the script.
 
 It can be run with exactly the same configuration as docker-run.sh except with 
 no default configuration if nothing is provided.
-
-The directory `mnt/databases`, which is created by `d-run` if necessary, is the
-TDB databases if persistent and also the Kafka offset tracking files
-(`*.state`). This directory must be writable by the container; one way is to set the
-access to `a+rwx` on the host.
 
 #### Open Telemetry
 Open Telemetry for SCG will be enabled if any environment variables with `OTEL` in the
