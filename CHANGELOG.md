@@ -1,5 +1,22 @@
 # Smart Cache Graph
 
+## 0.82.0
+
+- Upgraded GraphQL implementation to pick up a fix for intermittent "Not in a Transaction" errors during GraphQL query
+  execution
+- Upgraded JWT Servlet Auth to reduce noise level of authentication exclusion warnings about health check paths i.e.
+  `/$/ping`
+- Fuseki Kafka Connections are started after the HTTP Server is up to avoid crash restart loops when signficantly behind
+  the Kafka topic(s)
+- Database compaction happens both before the server startup and after the Kafka Connector startup to maximise
+  opportunities for compacting the databases
+- Build improvements:
+    - JWT Servlet Auth upgraded to 0.17.0
+    - GraphQL Jena upgraded to 0.9.0
+    - Protobuf upgraded to 4.28.2
+    - Smart Caches Core upgraded to 0.23.0
+    - Various build and test dependencies upgraded to latest available
+
 ## 0.81.8
 - Build improvements:
   - Upgrading RDF ABAC to 0.71.9
@@ -19,7 +36,6 @@
     - Log4j upgraded to 2.24.0
     - Logback upgraded to 1.5.8
     - Smart Caches Core upgraded to 0.22.0
-    - Various build and test dependencies upgraded to latest available
 
 ## 0.81.1
 

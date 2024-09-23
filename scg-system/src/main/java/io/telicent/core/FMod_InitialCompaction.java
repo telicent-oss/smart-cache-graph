@@ -43,42 +43,62 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
 
     /**
      * Compact the existing TDB2 after initial data-load
-     * @param server underlying Fuseki server
-     * Note: We will only run this module at server start-up.
+     *
+     * @param server underlying Fuseki server Note: We will only run this module at server start-up.
      */
     @Override
     public void serverBeforeStarting(FusekiServer server) {
+        // Run before starting to clean up any bloat from the previous instance
+        compactDatabases("BeforeStart", server);
+    }
+
+    @Override
+    public void serverAfterStarting(FusekiServer server) {
+        // Run after starting to clean up any additional bloat created from data (re)-load
+        compactDatabases("AfterStart", server);
+    }
+
+    /**
+     * Compacts the database
+     *
+     * @param phase  Server lifecycle phase to note in the log messages
+     * @param server Server
+     */
+    private void compactDatabases(String phase, FusekiServer server) {
         for (String name : datasets) {
             Optional<DatasetGraph> optionalDatasetGraph = FKS.findDataset(server, name);
             if (optionalDatasetGraph.isPresent()) {
                 DatasetGraph dsg = getTDB2(optionalDatasetGraph.get());
                 if (dsg != null) {
-                    FmtLog.info(LOG, format("[Initial] >>>> Start compact %s", name));
+                    FmtLog.info(LOG, format("[%s] >>>> Start compact %s", phase, name));
                     Timer timer = new Timer();
                     timer.startTimer();
                     DatabaseMgr.compact(dsg, DELETE_OLD);
-                    FmtLog.info(LOG, format("[Initial] <<<< Finish compact %s. Took %s seconds", name, Timer.timeStr(timer.endTimer())));
+                    FmtLog.info(LOG, format("[%s] <<<< Finish compact %s. Took %s seconds", phase, name,
+                                            Timer.timeStr(timer.endTimer())));
                 } else {
-                    FmtLog.debug(LOG, format("Compaction not required for %s as not TDB2",name));
+                    FmtLog.debug(LOG, format("Compaction not required for %s as not TDB2", name));
                 }
             } else {
-                FmtLog.debug(LOG, format("Compaction not required for %s as no graph",name));
+                FmtLog.debug(LOG, format("Compaction not required for %s as no graph", name));
             }
         }
-
     }
 
     /**
      * Check the given Graph and, if possible, return the underlying TDB2 instance
+     *
      * @param dsg Graph
      * @return TDB2 compatible DSG or null
      */
     public static DatasetGraph getTDB2(DatasetGraph dsg) {
-        for (; ;) {
-            if (IS_TDB_2.test(dsg))
+        for (; ; ) {
+            if (IS_TDB_2.test(dsg)) {
                 return dsg;
-            if (!(dsg instanceof DatasetGraphWrapper dsgw))
+            }
+            if (!(dsg instanceof DatasetGraphWrapper dsgw)) {
                 return null;
+            }
             dsg = dsgw.getWrapped();
         }
     }
