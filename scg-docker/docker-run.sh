@@ -35,7 +35,7 @@ FUSEKI_JAR_NAME=$(basename "$FUSEKI_JAR")
 # Build the Docker image, passing the FUSEKI_JAR file name and PROJECT_VERSION as build arguments
 docker build --build-arg FUSEKI_JAR="${FUSEKI_JAR_NAME}" \
              --build-arg PROJECT_VERSION="${PROJECT_VERSION}" \
-             -t smart-cache-graph:"${PROJECT_VERSION}" ${CURRENT_DIR}
+             -t smart-cache-graph:"${PROJECT_VERSION}" -f ${CURRENT_DIR}/Dockerfile_local
 
 # Remove previous entry if exists
 EXISTING_CONTAINER=$(docker ps -a -q -f name=smart-cache-graph-container)
