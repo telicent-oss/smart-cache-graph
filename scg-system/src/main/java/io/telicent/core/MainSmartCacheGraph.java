@@ -62,14 +62,14 @@ public class MainSmartCacheGraph {
     public static FusekiServer build(String... args) {
         JenaSystem.init();
         FusekiLogging.markInitialized(true);
-        LOG.info(format("Smart Cache Graph: Args: %s", List.of(args)));
-        LOG.info(format("Smart Cache Graph (%s)", SmartCacheGraph.VERSION));
-        LOG.info(format("Apache Jena Fuseki (%s)", Fuseki.VERSION));
+        LOG.info("Smart Cache Graph: Args: {}", List.of(args));
+        LOG.info("Smart Cache Graph ({})", SmartCacheGraph.VERSION);
+        LOG.info("Apache Jena Fuseki ({})", Fuseki.VERSION);
         String userAttributeStore = urlUserAttributeStore();
         if ( userAttributeStore == null )
             LOG.info("No ENV_USER_ATTRIBUTES_URL setting");
         else
-            LOG.info(format("User attribute store: %s", userAttributeStore));
+            LOG.info("User attribute store: {}", userAttributeStore);
 
         // SmartCacheGraph.construct does the work of building a configured server.
         FusekiServer server = SmartCacheGraph.construct(args);

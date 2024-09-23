@@ -44,18 +44,31 @@ public class FMod_FusekiKafkaSCG extends FMod_FusekiKafka {
     }
 
     @Override
+    public void serverBeforeStarting(FusekiServer server) {
+        // No-op, intentionally DON'T start connectors prior to server start
+        // Otherwise the interaction with our batch processor means we can get into a crash restart
+        // loop if SCG is significantly behind the Kafka topic(s) it is configured to read
+    }
+
+    @Override
+    public void serverAfterStarting(FusekiServer server) {
+        // Start the connectors after the server has started otherwise we can find ourselves in a
+        // crash restart loop if SCG is significantly behind the Kafka topic(s) it is configured to read
+        super.startKafkaConnectors(server);
+
+        // Still need to call the regular serverAfterStarting() as that does some clean up
+        super.serverAfterStarting(server);
+    }
+
+    @Override
     protected FKBatchProcessor makeFKBatchProcessor(KConnectorDesc conn, FusekiServer server) {
-        if ( false )
-            // Use jena-fuseki-kafka default batch processor.
-            return super.makeFKBatchProcessor(conn, server);
         String dispatchPath = conn.getLocalDispatchPath();
         DatasetGraph dsg = determineDataset(server, dispatchPath);
         FKProcessor requestProcessor = new FKProcessorSCG(dsg, dispatchPath, server);
         // Pass dsg as the transactional. Each batch will executed by
         // requestProcessor inside a single transaction.
         // See FKBatchProcessor.batchProcess.
-        FKBatchProcessor batchProcessor = new FKBatchProcessor(/*Transactional*/dsg, requestProcessor);
-        return batchProcessor;
+        return new FKBatchProcessor(dsg, requestProcessor);
     }
 
     /** Find the dataset for direct operation, not via an endpoint */

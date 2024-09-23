@@ -46,7 +46,7 @@ public class FMod_JwtServletAuth implements FusekiModule {
 
         if (jwtVerifier == null) {
             FmtLog.error(Fuseki.configLog,
-                         "Failed to configure JWT Authentication, {} environment variable was missing or contained invalid value",
+                         "Failed to configure JWT Authentication, %s environment variable was missing or contained invalid value",
                          AuthConstants.ENV_JWKS_URL);
             throw new RuntimeException("Failed to configure JWT Authentication");
         } else {
