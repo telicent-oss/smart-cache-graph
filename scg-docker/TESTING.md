@@ -5,8 +5,8 @@ This file describes some testing for the Smart Cache Graph container.
 Set-up: in-memory DB, local attribute store, no Kafka connector
 with test data in `Test/`
 
-```
-d-run --config config/config-abac-local.ttl
+```bash
+docker-run --config config/config-abac-local.ttl
 ```
 
 ## Client calls:
@@ -47,7 +47,15 @@ $URL/sparql
 ```
 
 ## Testing with Kafka
+This assumes you have the pre-requisite Kafka instance up and running.
+```bash
+   docker-run --config config/config-replay-abac.ttl
+```
 
-```
-   d-run --config config/config-replay-abac.ttl
-```
+## Caveats
+
+### Authentication
+By default, this is disabled (via `JWK_URL=disabled`) which you will need to edit from the scripts.
+
+## Previous testing script
+The previous script,`d-run`, still exists which does the same as the above and is subject to the same caveats.

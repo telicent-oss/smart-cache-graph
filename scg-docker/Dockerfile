@@ -2,9 +2,9 @@
 
 # syntax=docker/dockerfile:1.7
 
+
 ARG JAVA_VERSION=21
 
-##FROM openjdk:${JAVA_VERSION}
 FROM eclipse-temurin:${JAVA_VERSION} AS smart-cache-graph
 
 ARG FUSEKI_DIR=/fuseki
@@ -34,12 +34,14 @@ RUN \
     chmod a+x entrypoint.sh
 
 # Build location of the jars we need.
+ARG PROJECT_VERSION
+ARG FUSKEI_JAR
+
 ## Collected jars
 ARG JARS=scg-docker/target/dependency
 COPY ${JARS} lib
 ARG AGENTS=scg-docker/target/agents
 COPY ${AGENTS} agents
-ARG PROJECT_VERSION
 ARG SBOM=scg-docker/target/docker-${PROJECT_VERSION}-bom.json
 COPY ${SBOM} /opt/telicent/sbom/smart-cache-graph-${PROJECT_VERSION}-bom.json
 

@@ -104,37 +104,55 @@ In the docker container we have:
 
 and configuration files go into host `mnt/config/`.
 
-#### Try it! Docker run
+### Try it out! 
+The provided script, [docker-run.sh](scg-docker/docker-run.sh), runs SCG in a docker container, with the contents of the local 
+[mnt/config](scg-docker/mnt/config) directory mounted into the newly generated docker image for ease of use. 
+Similarly, the [mnt/databases](scg-docker/mnt/databases) and [mnt/logs](scg-docker/mnt/logs) are moutned for easier analysis.
 
-Script `d-run` runs the container. A number of directories are mapped to the host
-filesystem including `config/`.
-
-Set the environment variables in `d-run` for the image required and fetch the
-image into the local docker repository.
-
-Example configuration:
-
+#### Example configuration - *Default*
+```bash
+   scg-docker/docker-run.sh
 ```
-    d-run --config config/config-replay-abac.ttl
-```
+Passing no parameters means that it will default to (`"--mem /ds"`)
 
-The configuration file `config/config-replay-abac.ttl` is on the host server. It is
-for an in-memory dataset at "/ds" which replays the "RDF" topic on start-up.
-Kafka must be up and running.
-
-The "mnt" area is mapped into the docker container. The configuration file is
-`./mnt/config/config-replay-abac.ttl` in the host. The `mnt/` is not included as
-an argument to the container.
-
-The directory `mnt/databases`, which is created by `d-run` if necessary, is the
-TDB databases if persistent and also the Kafka offset tracking files
-(`*.state`). This directory must be writable by the container; one way is to set the
-access to `a+rwx` on the host.
-
-This command assumes Kafka is running.
+It specifies an in-memory dataset at "/ds" which replays the "RDF" topic on start-up.
+It assumes that Kafka must be up and running, prior to launch.
 
 The Fuseki server is available at `http://localhost:3030/ds`.
 
+#### Example configuration - *ABAC*
+```bash
+   scg-docker/docker-run.sh --config config/config-local-abac.ttl
+```
+This runs the server using the configuration file [config-abac-local.ttl](scg-docker/mnt/config/config-abac-local.ttl.
+It specifies an in-memory dataset at "/ds" and that Attribute Based Access Control is enabled.
+
+*Note:* See caveat below re: authentication.
+
+
+#### Example configuration - *Kafka Replay* 
+```bash
+   scg-docker/docker-run.sh --config config/config-replay-abac.ttl
+```
+As this suggests, this runs server using the configuration file `config/config-replay-abac.ttl` 
+or [config-replay-abac.ttl](scg-docker/mnt/config/config-replay-abac.ttl) as it's known locally. 
+
+It specifies an in-memory dataset at "/ds" which replays the "RDF" topic on start-up.
+It assumes that Kafka must be up and running, prior to launch.
+
+The Fuseki server is available at `http://localhost:3030/ds`.
+
+
+#### More advanced testing - d-run
+Alternately, you can use the script `d-run` which will map the relevant config 
+and database directories from the local filesystem, pulling down the given image 
+and running it directly (not in `-d` mode). It requires a number of environment 
+variables to be set as indicated in the script.   
+
+It can be run with exactly the same configuration as docker-run.sh except with 
+no default configuration if nothing is provided.
+
+#### Open Telemetry
 Open Telemetry for SCG will be enabled if any environment variables with `OTEL` in the
 name are present at runtime.  If this is not the case then the Open Telemetry Agent is
 not attached to the JVM and no metrics/traces will be exported.
