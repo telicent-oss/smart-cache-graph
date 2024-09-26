@@ -90,6 +90,7 @@ class TestFKProcessorSCG {
     @BeforeAll
     static void beforeClass() throws Exception {
         LibTestsSCG.setupAuthentication();
+        LibTestsSCG.disableInitialCompaction();
     }
 
     @AfterAll

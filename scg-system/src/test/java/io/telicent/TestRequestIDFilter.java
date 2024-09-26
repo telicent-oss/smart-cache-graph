@@ -19,6 +19,7 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.UUID;
 
+import static io.telicent.LibTestsSCG.disableInitialCompaction;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class TestRequestIDFilter {
@@ -37,6 +38,7 @@ public class TestRequestIDFilter {
     static void createAndSetupFusekiServer(){
         AUTH_DISABLED_PROPERTIES.put(AuthConstants.ENV_JWKS_URL, AuthConstants.AUTH_DISABLED);
         Configurator.setSingleSource(AUTH_DISABLED_SOURCE);
+        disableInitialCompaction();
         server = SmartCacheGraph.smartCacheGraphBuilder()
                                              .port(0)
                                              .add(DATASET_NAME, DatasetGraphFactory.empty())

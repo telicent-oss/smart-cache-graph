@@ -45,6 +45,7 @@ public class TestSmartCacheGraphIntegration {
         FusekiLogging.markInitialized(false);
         FusekiLogging.setLogging();
         LibTestsSCG.setupAuthentication();
+        LibTestsSCG.disableInitialCompaction();
     }
 
     @AfterAll

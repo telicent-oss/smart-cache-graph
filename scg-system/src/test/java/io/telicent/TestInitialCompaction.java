@@ -23,13 +23,15 @@ import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
+import java.io.InputStream;
+import java.net.http.HttpResponse;
 import java.nio.file.Path;
 import java.util.Set;
 
+import static io.telicent.TestJwtServletAuth.makePOSTCallWithPath;
 import static io.telicent.TestSmartCacheGraphIntegration.launchServer;
 import static org.apache.jena.graph.Graph.emptyGraph;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 public class TestInitialCompaction {
@@ -157,8 +159,41 @@ public class TestInitialCompaction {
         FMod_InitialCompaction fModInitialCompaction = new FMod_InitialCompaction();
         fModInitialCompaction.prepare(null, Set.of("Missing", "NotThere"), null);
         // when
-        fModInitialCompaction.serverBeforeStarting(server);
+        fModInitialCompaction.serverAfterStarting(server);
         // then
         mockDatabaseMgr.verify(() -> DatabaseMgr.compact(any(), anyBoolean()), times(0));
+    }
+
+    @Test
+    public void test_databaseSize_handlesInvalidInput() {
+        // given
+        DatasetGraph emptyDsg = DatasetGraphFactory.create();
+        long expectedSize = -1;
+        // when
+        long actualSize = FMod_InitialCompaction.findDatabaseSize(emptyDsg);
+        // then
+        assertEquals(expectedSize, actualSize);
+    }
+
+    @Test
+    public void test_humanReadableSize_handlesInvalidInput() {
+        // given
+        String expectedSize = "Unknown";
+        // when
+        String actualSize = FMod_InitialCompaction.humanReadableSize(-5000);
+        // then
+        assertEquals(expectedSize, actualSize);
+    }
+
+    @Test
+    public void test_compactAll_happyPath() {
+        // given
+        mockDatabaseMgr.when(() -> DatabaseMgr.compact(any(), anyBoolean())).thenAnswer(invocationOnMock -> null);
+        String configFile = "config-persistent.ttl";
+        server = launchServer(configFile);
+        // when
+        HttpResponse<InputStream> compactResponse = makePOSTCallWithPath(server, "$/compactall");
+        // then
+        assertEquals(200, compactResponse.statusCode());
     }
 }
