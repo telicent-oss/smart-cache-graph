@@ -1,5 +1,8 @@
 # Smart Cache Graph
 
+## 0.82.2
+- Add "compactall" endpoint
+
 ## 0.82.1
 
 - Database compaction moved to happen potentially twice, but both after HTTP Server is up to avoid crash restart loops
