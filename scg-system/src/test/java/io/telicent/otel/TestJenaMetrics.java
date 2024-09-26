@@ -66,6 +66,7 @@ class TestJenaMetrics {
         FusekiLogging.setLogging();
         System.setProperty("otel.java.global-autoconfigure.enabled", "true");
         LibTestsSCG.setupAuthentication();
+        LibTestsSCG.disableInitialCompaction();
     }
 
     @Test

@@ -2,6 +2,7 @@ package io.telicent;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
+import io.telicent.core.FMod_InitialCompaction;
 import io.telicent.core.FMod_JwtServletAuth;
 import io.telicent.core.SmartCacheGraph;
 import io.telicent.jena.abac.core.Attributes;
@@ -97,7 +98,7 @@ public class TestJwtServletAuth {
                 new PathExclusion("/$/ping"),
                 new PathExclusion("/$/metrics"),
                 new PathExclusion("/\\$/stats/*"),
-                new PathExclusion("/\\$/compact/*")
+                new PathExclusion("/$/compactall")
         );
         FMod_JwtServletAuth jwtServletAuth = new FMod_JwtServletAuth();
         FusekiServer.Builder builder = SmartCacheGraph.serverBuilder().addServletAttribute(ATTRIBUTE_JWT_VERIFIER, new TestJwtVerifier());
@@ -114,12 +115,12 @@ public class TestJwtServletAuth {
     @Test
     public void test_exclusionLogic() {
         FMod_JwtServletAuth jwtServletAuth = new FMod_JwtServletAuth();
+        FMod_InitialCompaction initialCompaction = new FMod_InitialCompaction ();
         Attributes.buildStore(emptyGraph);
         FusekiServer server = FusekiMain.builder("--port=0", "--empty")
-                .fusekiModules(FusekiModules.create(List.of(jwtServletAuth)))
+                .fusekiModules(FusekiModules.create(List.of(jwtServletAuth, initialCompaction)))
                 .addServletAttribute(ATTRIBUTE_JWT_VERIFIER, new TestJwtVerifier())
                 .enablePing(true)
-                .enableCompact(true)
                 .enableMetrics(true)
                 .enableStats(true)
                 .build().start();
@@ -132,22 +133,14 @@ public class TestJwtServletAuth {
         HttpResponse<InputStream> metricsResponse = makePOSTCallWithPath(server, "$/metrics");
         assertEquals(200, metricsResponse.statusCode());
 
-        // Fails - due to missing dataset (see --empty above) but NOT due to Auth.
-        HttpResponse<InputStream> compactResponse = makePOSTCallWithPath(server, "$/compact/anything");
-        assertEquals(400, compactResponse.statusCode());
-        HttpException httpException = assertThrows(HttpException.class, () -> handleResponseNoBody(compactResponse));
-        assertTrue(httpException.getResponse().startsWith("Dataset not found"));
-
-        // Fails - due to missing dataset (see --empty above) but NOT due to Auth.
-        HttpResponse<InputStream> compactDeleteResponse = makePOSTCallWithPath(server, "$/compact/anything?deleteOld=true");
-        assertEquals(400, compactDeleteResponse.statusCode());
-        httpException = assertThrows(HttpException.class, () -> handleResponseNoBody(compactDeleteResponse));
-        assertTrue(httpException.getResponse().startsWith("Dataset not found"));
+        // Correct path
+        HttpResponse<InputStream> compactResponse = makePOSTCallWithPath(server, "$/compactall");
+        assertEquals(200, compactResponse.statusCode());
 
         // Fails - due to missing path but NOT due to Auth.
         HttpResponse<InputStream> statsResponse = makePOSTCallWithPath(server, "$/stats/unrecognised");
         assertEquals(404, statsResponse.statusCode());
-        httpException = assertThrows(HttpException.class, () -> handleResponseNoBody(statsResponse));
+        HttpException httpException = assertThrows(HttpException.class, () -> handleResponseNoBody(statsResponse));
         assertTrue(httpException.getResponse().startsWith("/unrecognised"));
 
         // Fails - due to Auth not path which is missing
@@ -180,7 +173,7 @@ public class TestJwtServletAuth {
         }
     }
 
-    private HttpResponse<InputStream> makePOSTCallWithPath(FusekiServer server, String path) {
+    public static HttpResponse<InputStream> makePOSTCallWithPath(FusekiServer server, String path) {
         HttpRequest.Builder builder =
                 HttpLib.requestBuilderFor(server.serverURL())
                         .uri(toRequestURI(server.serverURL()+ path))
