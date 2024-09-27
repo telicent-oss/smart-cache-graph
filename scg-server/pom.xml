@@ -47,8 +47,16 @@
 
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-shade-plugin</artifactId>
         <configuration>
+
+<!--          <minimizeJar>true</minimizeJar>-->
+
           <shadedArtifactAttached>false</shadedArtifactAttached>
 
           <transformers>
@@ -88,7 +96,13 @@
                 <exclude>META-INF/*.RSA</exclude>
                 <exclude>META-INF/MANIFEST.MF</exclude>
                 <exclude>META-INF.versions.9.module-info</exclude>
+                <exclude>META-INF/versions/9/module-info</exclude>
                 <exclude>META-INF/DEPENDENCIES</exclude>
+                <exclude>META-INF/LICENSE-notice.md</exclude>
+                <exclude>META-INF/maven/com.google.guava/guava/pom.properties</exclude>
+                <exclude>META-INF/maven/com.google.guava/guava/pom.xml</exclude>
+                <exclude>META-INF/proguard/*.pro</exclude>
+                <exclude>logback.xml</exclude>
               </excludes>
             </filter>
           </filters>
@@ -107,12 +121,6 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-source-plugin</artifactId>
       </plugin>
-
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-javadoc-plugin</artifactId>
-      </plugin>
-
 
     </plugins>
 
