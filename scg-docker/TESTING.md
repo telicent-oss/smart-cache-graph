@@ -6,7 +6,7 @@ Set-up: in-memory DB, local attribute store, no Kafka connector
 with test data in `Test/`
 
 ```bash
-docker-run --config config/config-abac-local.ttl
+./docker-run.sh --config config/config-abac-local.ttl
 ```
 
 ## Client calls:
@@ -49,7 +49,7 @@ $URL/sparql
 ## Testing with Kafka
 This assumes you have the pre-requisite Kafka instance up and running.
 ```bash
-   docker-run --config config/config-replay-abac.ttl
+   ./docker-run.sh --config config/config-replay-abac.ttl
 ```
 
 ## Caveats

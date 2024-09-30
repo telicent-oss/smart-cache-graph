@@ -45,7 +45,7 @@
     <dependency>
       <groupId>io.opentelemetry.javaagent</groupId>
       <artifactId>opentelemetry-javaagent</artifactId>
-      <version>${ver.otel}</version>
+      <version>${dependency.otel}</version>
       <scope>runtime</scope>
     </dependency>
     
@@ -60,7 +60,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
-        <version>${ver.plugin.dependency}</version>
+        <version>${plugin.dependency}</version>
         <executions>
           <execution>
             <id>copy-dependencies</id>

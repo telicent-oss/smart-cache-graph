@@ -54,54 +54,59 @@
   </developers>
 
   <properties>
+    <!-- Build properties -->
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.build.outputTimestamp>2024-09-27T08:20:34Z</project.build.outputTimestamp>
-
     <java.version>21</java.version>
 
-    <ver.rdf-abac>0.71.9</ver.rdf-abac>
-    <ver.fuseki-kafka>1.4.0</ver.fuseki-kafka>
-    <ver.jena>5.1.0</ver.jena>
-    <ver.fuseki-server>${ver.jena}</ver.fuseki-server>
-    <ver.graphql>0.9.0</ver.graphql>
-    <ver.testcontainers>1.20.1</ver.testcontainers>
+    <!-- Maven Plugin versions -->
+    <plugin.clean>3.3.2</plugin.clean>
+    <plugin.compiler>3.13.0</plugin.compiler>
+    <plugin.cyclonedx>2.8.1</plugin.cyclonedx>
+    <plugin.dependency>3.8.0</plugin.dependency>
+    <plugin.deploy>3.1.3</plugin.deploy>
+    <plugin.enforcer>3.4.1</plugin.enforcer>
+    <plugin.gpg>3.2.6</plugin.gpg>
+    <plugin.install>3.1.1</plugin.install>
+    <plugin.jar>3.4.2</plugin.jar>
+    <plugin.javadoc>3.10.0</plugin.javadoc>
+    <plugin.nexus>1.7.0</plugin.nexus>
+    <plugin.owasp-dependency-check>10.0.4</plugin.owasp-dependency-check>
+    <plugin.resources>3.3.1</plugin.resources>
+    <plugin.shade>3.4.1</plugin.shade>
+    <plugin.site>3.9.1</plugin.site>
+    <plugin.source>3.3.1</plugin.source>
+    <plugin.surefire>3.5.0</plugin.surefire>
+    <plugin.versions>2.17.1</plugin.versions>
 
-    <!-- These must be in-step. -->
-    <ver.otel>1.33.0</ver.otel>
-    <ver.otel-semconv>1.30.1-alpha</ver.otel-semconv>
+    <!-- Dependency versions -->
+    <!-- Internal dependencies -->
+    <dependency.rdf-abac>0.71.9</dependency.rdf-abac>
+    <dependency.fuseki-kafka>1.4.0</dependency.fuseki-kafka>
+    <dependency.jena>5.1.0</dependency.jena>
+    <dependency.fuseki-server>${dependency.jena}</dependency.fuseki-server>
+    <dependency.graphql>0.9.0</dependency.graphql>
+    <dependency.jwt-servlet-auth>0.17.0</dependency.jwt-servlet-auth>
+    <dependency.smart-caches-core>0.23.0</dependency.smart-caches-core>
 
-    <ver.kotlin>2.0.20</ver.kotlin>
-    <ver.jwt-servlet-auth>0.17.0</ver.jwt-servlet-auth>
-    <ver.smart-caches-core>0.23.0</ver.smart-caches-core>
-    <ver.slf4j>2.0.13</ver.slf4j>
-    <ver.log4j2>2.24.0</ver.log4j2>
-    <ver.logback>1.5.8</ver.logback>
+    <!-- External dependencies -->
+    <dependency.kotlin>2.0.20</dependency.kotlin>
+    <dependency.otel>1.33.0</dependency.otel> <!-- These two must be in-step. -->
+    <dependency.otel-semconv>1.30.1-alpha</dependency.otel-semconv> <!-- These two must be in-step. -->
 
-    <ver.junit5>5.11.0</ver.junit5>
-    <ver.junit5-platform>1.11.0</ver.junit5-platform>
-    <ver.mockito>5.13.0</ver.mockito>
+    <!-- Logging dependencies -->
+    <dependency.log4j2>2.24.0</dependency.log4j2>
+    <dependency.logback>1.5.8</dependency.logback>
+    <dependency.slf4j>2.0.13</dependency.slf4j>
 
-    <ver.protobuf>4.28.2</ver.protobuf> <!-- CVE-2024-7254 -->
+    <!-- Test dependencies -->
+    <dependency.junit5>5.11.0</dependency.junit5>
+    <dependency.junit5-platform>1.11.0</dependency.junit5-platform>
+    <dependency.mockito>5.13.0</dependency.mockito>
+    <dependency.testcontainers>1.20.1</dependency.testcontainers>
 
-    <ver.plugin.owasp-dependency-check>10.0.4</ver.plugin.owasp-dependency-check>
-    <ver.plugin.compiler>3.13.0</ver.plugin.compiler>
-    <ver.plugin.jar>3.4.2</ver.plugin.jar>
-    <ver.plugin.source>3.3.1</ver.plugin.source>
-    <ver.plugin.surefire>3.5.0</ver.plugin.surefire>
-    <ver.plugin.javadoc>3.10.0</ver.plugin.javadoc>
-    <ver.plugin.resources>3.3.1</ver.plugin.resources>
-    <ver.plugin.deploy>3.1.3</ver.plugin.deploy>
-    <ver.plugin.dependency>3.8.0</ver.plugin.dependency>
-    <ver.plugin.enforcer>3.4.1</ver.plugin.enforcer>
-    <ver.plugin.clean>3.3.2</ver.plugin.clean>
-    <ver.plugin.install>3.1.1</ver.plugin.install>
-    <ver.plugin.site>3.9.1</ver.plugin.site>
-    <ver.plugin.cyclonedx>2.8.1</ver.plugin.cyclonedx>
-    <ver.plugin.shade>3.4.1</ver.plugin.shade>
-    <ver.plugin.versions>2.17.1</ver.plugin.versions>
-    <ver.plugin.gpg>3.2.6</ver.plugin.gpg>
-    <ver.plugin.nexus>1.7.0</ver.plugin.nexus>
-
+    <!-- Temporary / Vulnerability fixes (to be periodically reviewed) -->
+    <dependency.protobuf>4.28.2</dependency.protobuf> <!-- CVE-2024-7254 -->
   </properties>
 
   <modules>
@@ -113,17 +118,11 @@
   <dependencyManagement>
     <dependencies>
 
-      <!-- Complete Fuseki Main server as a single jar -->
-      <dependency>
-        <groupId>org.apache.jena</groupId>
-        <artifactId>jena-fuseki-server</artifactId>
-        <version>${ver.jena}</version>
-      </dependency>
-
+      <!-- Internal dependencies-->
       <dependency>
         <groupId>org.apache.jena</groupId>
         <artifactId>jena-fuseki-main</artifactId>
-        <version>${ver.jena}</version>
+        <version>${dependency.jena}</version>
         <exclusions>
           <exclusion>
             <groupId>commons-io</groupId>
@@ -134,14 +133,24 @@
             <groupId>com.google.protobuf</groupId>
             <artifactId>protobuf-java</artifactId>
           </exclusion>
+          <exclusion>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-suite-engine</artifactId>
+          </exclusion>
         </exclusions>
+      </dependency>
+      <!-- Complete Fuseki Main server as a single jar -->
+      <dependency>
+        <groupId>org.apache.jena</groupId>
+        <artifactId>jena-fuseki-server</artifactId>
+        <version>${dependency.jena}</version>
       </dependency>
 
       <!-- Fuseki-Kafka connector -->
       <dependency>
         <groupId>io.telicent.jena</groupId>
         <artifactId>jena-fuseki-kafka-module</artifactId>
-        <version>${ver.fuseki-kafka}</version>
+        <version>${dependency.fuseki-kafka}</version>
         <exclusions>
           <exclusion>
             <groupId>commons-io</groupId>
@@ -155,7 +164,7 @@
         <!-- Used in scg-system -->
         <groupId>io.telicent.jena</groupId>
         <artifactId>rdf-abac-fuseki</artifactId>
-        <version>${ver.rdf-abac}</version>
+        <version>${dependency.rdf-abac}</version>
         <exclusions>
           <exclusion>
                   <groupId>org.apache.logging.log4j</groupId>
@@ -166,14 +175,14 @@
       <dependency>
         <groupId>io.telicent.jena</groupId>
         <artifactId>rdf-abac-fmod</artifactId>
-        <version>${ver.rdf-abac}</version>
+        <version>${dependency.rdf-abac}</version>
       </dependency>
 
       <!-- Authentication -->
       <dependency>
         <groupId>io.telicent.public</groupId>
         <artifactId>jwt-servlet-auth-aws</artifactId>
-        <version>${ver.jwt-servlet-auth}</version>
+        <version>${dependency.jwt-servlet-auth}</version>
         <exclusions>
           <exclusion>
             <groupId>commons-codec</groupId>
@@ -184,64 +193,19 @@
       <dependency>
         <groupId>io.telicent.public</groupId>
         <artifactId>jwt-servlet-auth-servlet5</artifactId>
-        <version>${ver.jwt-servlet-auth}</version>
+        <version>${dependency.jwt-servlet-auth}</version>
       </dependency>
       <dependency>
         <groupId>io.telicent.smart-caches</groupId>
         <artifactId>jwt-auth-common</artifactId>
-        <version>${ver.smart-caches-core}</version>
+        <version>${dependency.smart-caches-core}</version>
       </dependency>
 
-      <!-- 
-           Apache Jena has some level controls
-           and the scg-system test suite touches that code.
-      -->
-      <dependency>
-        <groupId>org.apache.logging.log4j</groupId>
-        <artifactId>log4j-slf4j2-impl</artifactId>
-        <version>${ver.log4j2}</version>
-        <scope>test</scope>
-        <exclusions>
-          <exclusion>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-          </exclusion>
-        </exclusions>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.logging.log4j</groupId>
-        <artifactId>log4j-api</artifactId>
-        <version>${ver.log4j2}</version>
-        <exclusions>
-          <exclusion>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-          </exclusion>
-        </exclusions>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.logging.log4j</groupId>
-        <artifactId>log4j-core</artifactId>
-        <version>${ver.log4j2}</version>
-        <exclusions>
-          <exclusion>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-          </exclusion>
-        </exclusions>
-      </dependency>
-
-
-      <dependency>
-        <groupId>ch.qos.logback</groupId>
-        <artifactId>logback-classic</artifactId>
-        <version>${ver.logback}</version>
-      </dependency>
       <!-- GraphQL -->
       <dependency>
         <groupId>io.telicent.jena.graphql</groupId>
         <artifactId>graphql-fuseki-module</artifactId>
-        <version>${ver.graphql}</version>
+        <version>${dependency.graphql}</version>
         <exclusions>
           <exclusion>
             <groupId>com.fasterxml.jackson.core</groupId>
@@ -253,80 +217,127 @@
           </exclusion>
         </exclusions>
       </dependency>
-
       <dependency>
         <groupId>io.telicent.jena.graphql</groupId>
         <artifactId>telicent-graph-schema</artifactId>
-        <version>${ver.graphql}</version>
+        <version>${dependency.graphql}</version>
       </dependency>
 
+      <!-- External Dependencies -->
+
+      <!-- Logging dependencies -->
+      <dependency>
+        <groupId>ch.qos.logback</groupId>
+        <artifactId>logback-classic</artifactId>
+        <version>${dependency.logback}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.logging.log4j</groupId>
+        <artifactId>log4j-api</artifactId>
+        <version>${dependency.log4j2}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.logging.log4j</groupId>
+        <artifactId>log4j-core</artifactId>
+        <version>${dependency.log4j2}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.logging.log4j</groupId>
+        <artifactId>log4j-slf4j2-impl</artifactId>
+        <version>${dependency.log4j2}</version>
+        <scope>test</scope>
+        <exclusions>
+          <exclusion>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+
+      <!-- Open Telemetry -->
       <dependency>
         <groupId>io.opentelemetry</groupId>
         <artifactId>opentelemetry-bom</artifactId>
-        <version>${ver.otel}</version>
+        <version>${dependency.otel}</version>
         <type>pom</type>
         <scope>import</scope>
-      </dependency>  
-      <dependency>
-        <groupId>io.opentelemetry</groupId>
-        <artifactId>opentelemetry-semconv</artifactId>
-        <version>${ver.otel-semconv}</version>
       </dependency>
-
-      <dependency>
-        <groupId>io.opentelemetry</groupId>
-        <artifactId>opentelemetry-sdk-testing</artifactId>
-        <version>${ver.otel}</version>
-        <scope>test</scope>
-      </dependency>
-
       <dependency>
         <groupId>io.opentelemetry.javaagent</groupId>
         <artifactId>opentelemetry-javaagent</artifactId>
         <scope>runtime</scope>
-        <version>${ver.otel}</version>
+        <version>${dependency.otel}</version>
       </dependency>
-      
-      <!-- For open telemetry -->
+      <dependency>
+        <groupId>io.opentelemetry</groupId>
+        <artifactId>opentelemetry-sdk-testing</artifactId>
+        <version>${dependency.otel}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>io.opentelemetry</groupId>
+        <artifactId>opentelemetry-semconv</artifactId>
+        <version>${dependency.otel-semconv}</version>
+      </dependency>
       <dependency>
         <groupId>org.jetbrains.kotlin</groupId>
         <artifactId>kotlin-stdlib</artifactId>
-        <version>${ver.kotlin}</version>
+        <version>${dependency.kotlin}</version>
       </dependency>
       <dependency>
         <groupId>org.jetbrains.kotlin</groupId>
         <artifactId>kotlin-stdlib-common</artifactId>
-        <version>${ver.kotlin}</version>
+        <version>${dependency.kotlin}</version>
       </dependency>
 
+      <!-- Testing dependencies -->
+      <!-- JUnit 5 -->
+      <dependency>
+        <groupId>org.junit.jupiter</groupId>
+        <artifactId>junit-jupiter</artifactId>
+        <version>${dependency.junit5}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.junit.jupiter</groupId>
+        <artifactId>junit-jupiter-engine</artifactId>
+        <version>${dependency.junit5}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.junit.platform</groupId>
+        <artifactId>junit-platform-suite</artifactId>
+        <version>${dependency.junit5-platform}</version>
+        <scope>test</scope>
+      </dependency>
       <dependency>
         <groupId>org.mockito</groupId>
         <artifactId>mockito-core</artifactId>
-        <version>${ver.mockito}</version>
+        <version>${dependency.mockito}</version>
         <scope>test</scope>
       </dependency>
-
       <dependency>
         <groupId>org.mockito</groupId>
         <artifactId>mockito-junit-jupiter</artifactId>
-        <version>${ver.mockito}</version>
+        <version>${dependency.mockito}</version>
         <scope>test</scope>
       </dependency>
-
-      <!-- CVE-2024-7254 -->
-      <dependency>
-        <groupId>com.google.protobuf</groupId>
-        <artifactId>protobuf-java</artifactId>
-        <version>${ver.protobuf}</version>
-      </dependency>
-
-      <!-- Testing -->
-
-      <!-- Testing with Kafka -->
       <dependency>
         <groupId>org.testcontainers</groupId>
         <artifactId>kafka</artifactId>
-        <version>${ver.testcontainers}</version>
+        <version>${dependency.testcontainers}</version>
         <scope>test</scope>
         <exclusions>
           <exclusion>
@@ -336,26 +347,13 @@
         </exclusions>
       </dependency>
 
-      <!-- JUnit 5 -->
+      <!-- Temporary Dependencies -->
+      <!-- CVE-2024-7254 -->
       <dependency>
-        <groupId>org.junit.platform</groupId>
-        <artifactId>junit-platform-suite</artifactId>
-        <version>${ver.junit5-platform}</version>
-        <scope>test</scope>
+        <groupId>com.google.protobuf</groupId>
+        <artifactId>protobuf-java</artifactId>
+        <version>${dependency.protobuf}</version>
       </dependency>
-      <dependency>
-        <groupId>org.junit.jupiter</groupId>
-        <artifactId>junit-jupiter-engine</artifactId>
-        <version>${ver.junit5}</version>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.junit.jupiter</groupId>
-        <artifactId>junit-jupiter</artifactId>
-        <version>${ver.junit5}</version>
-        <scope>test</scope>
-      </dependency>
-
     </dependencies>
   </dependencyManagement>
 
@@ -365,7 +363,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-compiler-plugin</artifactId>
-          <version>${ver.plugin.compiler}</version>
+          <version>${plugin.compiler}</version>
           <configuration>
             <release>${java.version}</release>
             <compilerArgument>-proc:none</compilerArgument>
@@ -374,8 +372,72 @@
 
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-dependency-plugin</artifactId>
+          <version>${plugin.dependency}</version>
+        </plugin>
+
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-deploy-plugin</artifactId>
+          <version>${plugin.deploy}</version>
+        </plugin>
+
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-jar-plugin</artifactId>
+          <version>${plugin.jar}</version>
+          <configuration>
+            <archive>
+              <manifest>
+                <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+              </manifest>
+            </archive>
+          </configuration>
+          <executions>
+            <execution>
+              <goals>
+                <goal>test-jar</goal>
+              </goals>
+            </execution>
+          </executions>
+        </plugin>
+
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-javadoc-plugin</artifactId>
+          <version>${plugin.javadoc}</version>
+          <configuration>
+            <doclint>none</doclint>
+          </configuration>
+          <executions>
+            <execution>
+              <phase>package</phase>
+              <goals>
+                <goal>jar</goal>
+              </goals>
+            </execution>
+          </executions>
+        </plugin>
+
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-resources-plugin</artifactId>
+          <version>${plugin.resources}</version>
+          <configuration>
+            <encoding>UTF-8</encoding>
+          </configuration>
+        </plugin>
+
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-shade-plugin</artifactId>
+          <version>3.6.0</version>
+        </plugin>
+
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-source-plugin</artifactId>
-          <version>${ver.plugin.source}</version>
+          <version>${plugin.source}</version>
           <executions>
             <execution>
               <id>attach-sources</id>
@@ -402,125 +464,53 @@
 
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-jar-plugin</artifactId>
-          <version>${ver.plugin.jar}</version>
-          <configuration>
-            <archive>
-              <manifest> 
-                <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
-              </manifest>
-            </archive>
-          </configuration>
-          <executions>
-            <execution>
-              <goals>
-                <goal>test-jar</goal>
-              </goals>
-            </execution>
-          </executions>
-        </plugin>
-
-        <plugin>
-          <groupId>org.owasp</groupId>
-          <artifactId>dependency-check-maven</artifactId>
-          <version>${ver.plugin.owasp-dependency-check}</version>
-        </plugin>
-        
-
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-surefire-plugin</artifactId>
-          <version>${ver.plugin.surefire}</version>
+          <version>${plugin.surefire}</version>
           <configuration>
-            <!-- Add Java argument here -->
             <argLine>-XX:+EnableDynamicAgentLoading</argLine>
           </configuration>
         </plugin>
 
         <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-javadoc-plugin</artifactId>
-          <version>${ver.plugin.javadoc}</version>
-          <configuration> 
-            <doclint>none</doclint>
-          </configuration>
-          <executions>
-            <execution>
-              <phase>package</phase>
-              <goals>
-                <goal>jar</goal>
-              </goals>
-            </execution>
-          </executions>
-        </plugin>
-
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-resources-plugin</artifactId>
-	        <version>${ver.plugin.resources}</version>
-          <configuration>
-            <encoding>UTF-8</encoding>
-          </configuration>
-        </plugin>
-
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-deploy-plugin</artifactId>
-          <version>${ver.plugin.deploy}</version>
-        </plugin>
-
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-dependency-plugin</artifactId>
-          <version>${ver.plugin.dependency}</version>
-        </plugin> 
-
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-shade-plugin</artifactId>
-          <version>3.6.0</version>
-         </plugin> 
-
-         <!-- SBOM : CycloneDX -->
-         <plugin>
-           <groupId>org.cyclonedx</groupId>
-           <artifactId>cyclonedx-maven-plugin</artifactId>
-           <version>${ver.plugin.cyclonedx}</version>
-           <executions>
-             <execution>
-               <id>build-sbom-cyclonedx</id>
-               <phase>package</phase>
-               <goals>
-              <goal>makeAggregateBom</goal>
-               </goals>
-             </execution>
-           </executions>
-           <configuration>
-             <outputName>${project.artifactId}-${project.version}-bom</outputName>
-           </configuration>
-         </plugin>
-        <plugin>
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>versions-maven-plugin</artifactId>
-          <version>${ver.plugin.versions}</version>
+          <version>${plugin.versions}</version>
           <configuration>
             <ignoredVersions>.*[-\.]M.*,.*-alpha.*,.*-beta.*,.*-RC.*,.*rc.*</ignoredVersions>
           </configuration>
         </plugin>
+
+        <plugin>
+          <groupId>org.cyclonedx</groupId>
+          <artifactId>cyclonedx-maven-plugin</artifactId>
+          <version>${plugin.cyclonedx}</version>
+          <executions>
+            <execution>
+              <id>build-sbom-cyclonedx</id>
+              <phase>package</phase>
+              <goals>
+                <goal>makeAggregateBom</goal>
+              </goals>
+            </execution>
+          </executions>
+          <configuration>
+            <outputName>${project.artifactId}-${project.version}-bom</outputName>
+          </configuration>
+        </plugin>
+
+        <plugin>
+          <groupId>org.owasp</groupId>
+          <artifactId>dependency-check-maven</artifactId>
+          <version>${plugin.owasp-dependency-check}</version>
+        </plugin>
       </plugins>
-      
     </pluginManagement>
 
     <plugins>
       <plugin>
-        <groupId>org.cyclonedx</groupId>
-        <artifactId>cyclonedx-maven-plugin</artifactId>
-      </plugin>
-
-      <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-gpg-plugin</artifactId>
-        <version>${ver.plugin.gpg}</version>
+        <version>${plugin.gpg}</version>
         <executions>
           <execution>
             <goals>
@@ -532,9 +522,14 @@
       </plugin>
 
       <plugin>
+        <groupId>org.cyclonedx</groupId>
+        <artifactId>cyclonedx-maven-plugin</artifactId>
+      </plugin>
+
+      <plugin>
         <groupId>org.sonatype.plugins</groupId>
         <artifactId>nexus-staging-maven-plugin</artifactId>
-        <version>${ver.plugin.nexus}</version>
+        <version>${plugin.nexus}</version>
         <extensions>true</extensions>
         <configuration>
           <serverId>sonatype-oss</serverId>
