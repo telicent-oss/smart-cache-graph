@@ -102,7 +102,7 @@
     <!-- Test dependencies -->
     <dependency.junit5>5.11.1</dependency.junit5>
     <dependency.junit5-platform>1.11.1</dependency.junit5-platform>
-    <dependency.mockito>5.13.0</dependency.mockito>
+    <dependency.mockito>5.14.1</dependency.mockito>
     <dependency.testcontainers>1.20.2</dependency.testcontainers>
 
     <!-- Temporary / Vulnerability fixes (to be periodically reviewed) -->
