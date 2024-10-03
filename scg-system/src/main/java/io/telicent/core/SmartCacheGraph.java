@@ -22,12 +22,17 @@ import io.telicent.otel.FMod_OpenTelemetry;
 import io.telicent.smart.cache.configuration.Configurator;
 import io.telicent.smart.caches.configuration.auth.AuthConstants;
 import org.apache.jena.atlas.lib.Version;
+import org.apache.jena.cmd.ArgModule;
+import org.apache.jena.cmd.ArgModuleGeneral;
 import org.apache.jena.fuseki.main.FusekiServer;
 import org.apache.jena.fuseki.main.cmds.FusekiMain;
 import org.apache.jena.fuseki.main.sys.FusekiModule;
 import org.apache.jena.fuseki.main.sys.FusekiModules;
+import records.RDFConfigGenerator;
+import records.YAMLConfigParser;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
@@ -52,6 +57,28 @@ public class SmartCacheGraph {
      * Builder for a Fuseki server configured for SmartCacheGraph
      */
     public static FusekiServer construct(String... args) {
+
+        //import your local yaml-parser library
+        //either take it out here (and take out the yaml file) and put a model in the arguments,
+        //or do it in the builder parseConfig or parseConfigFile? (You'll have to add the ArgModule in FusekiMain then as well)
+        // tests in testMainSCG, but add your own too
+        boolean isConfigYaml = Arrays.asList(args).contains("yaml-config");
+        args = Arrays.stream(args)
+                .filter(arg -> !arg.equals("yaml-config"))
+                .toArray(String[]::new);
+        if (isConfigYaml) {
+            YAMLConfigParser ycp = new YAMLConfigParser();
+            RDFConfigGenerator rcg = new RDFConfigGenerator();
+            String configPath;
+            for (int i = 0; i < args.length; i++) {
+                if (args[i].equalsIgnoreCase("config") && i + 1 < args.length) {
+                    // Return the next argument as the value of the current argument
+                    configPath = args[i + 1];
+                }
+            }
+
+        }
+
         FusekiModules fmods = modules();
         FusekiServer server = FusekiMain
                 .builder(args)
