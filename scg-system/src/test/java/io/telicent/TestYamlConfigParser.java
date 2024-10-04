@@ -106,7 +106,7 @@ class TestYamlConfigParser {
     @Test
     void yaml_config() {
         // given
-        List<String> arguments = List.of("--yaml-config", "--config",DIR + "/yaml/config-tim.yaml");
+        List<String> arguments = List.of("--config",DIR + "/yaml/config-tim.yaml");
         String[] args = arguments.toArray(new String[0]);
         // when
         server = construct(arguments.toArray(new String[0])).start();

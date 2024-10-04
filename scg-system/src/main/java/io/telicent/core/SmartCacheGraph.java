@@ -44,6 +44,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static records.ConfigConstants.log;
 
@@ -75,24 +77,18 @@ public class SmartCacheGraph {
         //either take it out here (and take out the yaml file) and put a model in the arguments,
         //or do it in the builder parseConfig or parseConfigFile? (You'll have to add the ArgModule in FusekiMain then as well)
         // tests in testMainSCG, but add your own too
-       //Configurator.setAllLevels(log.getName(), Level.getLevel("info"));
-
-        boolean isConfigYaml = Arrays.asList(args).contains("--yaml-config");
-        args = Arrays.stream(args)
-                .filter(arg -> !arg.equals("yaml-config"))
-                .toArray(String[]::new);
-        if (isConfigYaml) {
-            YAMLConfigParser ycp = new YAMLConfigParser();
-            RDFConfigGenerator rcg = new RDFConfigGenerator();
-            String configPath = "";
-            for (int i = 0; i < args.length; i++) {
-                // other cases, not full argument etc.
-                if (args[i].equalsIgnoreCase("--config") && i + 1 < args.length) {
-                    // Return the next argument as the value of the current argument
-                    configPath = args[i + 1];
-                    //System.out.println("YAML config path: " + configPath);
-                    //log.warn("YAML config path: " + configPath);
-                    //FmtLog.warn(Fuseki.configLog, "YAML config path: " + configPath);
+        YAMLConfigParser ycp = new YAMLConfigParser();
+        RDFConfigGenerator rcg = new RDFConfigGenerator();
+        String configPath = "";
+        String pattern = ".*\\.(yaml|yml)$";
+        Pattern regex = Pattern.compile(pattern);
+        for (int i = 0; i < args.length; i++) {
+            // other cases, not full argument etc.
+            if (args[i].equalsIgnoreCase("--config") && i + 1 < args.length ) {
+                // Return the next argument as the value of the current argument
+                configPath = args[i + 1];
+                Matcher matcher = regex.matcher(configPath);
+                if (matcher.matches()) {
                     try {
                         ConfigStruct configStruct = ycp.runYAMLParser(configPath);
                         Model configModel = rcg.createRDFModel(configStruct);
@@ -104,13 +100,10 @@ public class SmartCacheGraph {
                     } catch (RuntimeException ex) {
                         log.error(ex.getMessage());
                     }
-                    args[i+1] = "target/config.ttl";
+                    args[i + 1] = "target/config.ttl";
                 }
             }
-            /*if (configPath.isEmpty())
-                throw new RuntimeException("YAML config missing a file path.");*/
         }
-
         FusekiModules fmods = modules();
         FusekiServer server = FusekiMain
                 .builder(args)
