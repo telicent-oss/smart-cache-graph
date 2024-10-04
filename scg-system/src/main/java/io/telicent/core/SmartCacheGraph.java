@@ -86,6 +86,7 @@ public class SmartCacheGraph {
             RDFConfigGenerator rcg = new RDFConfigGenerator();
             String configPath = "";
             for (int i = 0; i < args.length; i++) {
+                // other cases, not full argument etc.
                 if (args[i].equalsIgnoreCase("--config") && i + 1 < args.length) {
                     // Return the next argument as the value of the current argument
                     configPath = args[i + 1];
