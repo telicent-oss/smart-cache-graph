@@ -18,20 +18,27 @@ package io.telicent;
 
 import io.telicent.jena.abac.fuseki.SysFusekiABAC;
 import io.telicent.smart.cache.configuration.Configurator;
+import org.apache.jena.atlas.logging.FmtLog;
 import org.apache.jena.cmd.CmdException;
+import org.apache.jena.fuseki.Fuseki;
 import org.apache.jena.fuseki.main.FusekiServer;
 import org.apache.jena.fuseki.system.FusekiLogging;
 import org.apache.jena.http.HttpOp;
 import org.apache.jena.riot.SysRIOT;
 import org.apache.jena.sparql.ARQException;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
 import static io.telicent.core.SmartCacheGraph.construct;
 import static org.junit.jupiter.api.Assertions.*;
+import static records.ConfigConstants.log;
 
 /*
 * Test SCG usage of varying configuration parameters.
@@ -253,5 +260,16 @@ class TestMainSmartCacheGraph {
     // Timeouts?
 
     // Format of Turtle.
+
+    @Test
+    void yaml_config() {
+        // given
+        List<String> arguments = List.of("--yaml-config", "--config",DIR + "/yaml/config-simple.yaml");
+        String[] args = arguments.toArray(new String[0]);
+        // when
+        server = construct(arguments.toArray(new String[0])).start();
+        // then
+        assertNotNull(server);
+    }
 
 }

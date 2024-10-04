@@ -16,31 +16,44 @@
 
 package io.telicent.core;
 
+import io.telicent.core.cmds.FusekiMain;
 import io.telicent.graphql.FMod_TelicentGraphQL;
 import io.telicent.jena.abac.fuseki.FMod_ABAC;
 import io.telicent.otel.FMod_OpenTelemetry;
 import io.telicent.smart.cache.configuration.Configurator;
 import io.telicent.smart.caches.configuration.auth.AuthConstants;
 import org.apache.jena.atlas.lib.Version;
+import org.apache.jena.atlas.logging.FmtLog;
 import org.apache.jena.cmd.ArgModule;
 import org.apache.jena.cmd.ArgModuleGeneral;
+import org.apache.jena.fuseki.Fuseki;
 import org.apache.jena.fuseki.main.FusekiServer;
-import org.apache.jena.fuseki.main.cmds.FusekiMain;
+//import org.apache.jena.fuseki.main.cmds.FusekiMain;
 import org.apache.jena.fuseki.main.sys.FusekiModule;
 import org.apache.jena.fuseki.main.sys.FusekiModules;
+import org.apache.jena.rdf.model.Model;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import records.ConfigStruct;
 import records.RDFConfigGenerator;
 import records.YAMLConfigParser;
 
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+
+import static records.ConfigConstants.log;
 
 public class SmartCacheGraph {
     /**
      * Software version taken from the jar file.
      */
     public static final String VERSION = version();
+
+    public final static Logger log = LoggerFactory.getLogger("fuseki-yaml-config");
 
     private static String version() {
         return Version.versionForClass(SmartCacheGraph.class).orElse("<development>");
@@ -62,21 +75,39 @@ public class SmartCacheGraph {
         //either take it out here (and take out the yaml file) and put a model in the arguments,
         //or do it in the builder parseConfig or parseConfigFile? (You'll have to add the ArgModule in FusekiMain then as well)
         // tests in testMainSCG, but add your own too
-        boolean isConfigYaml = Arrays.asList(args).contains("yaml-config");
+       //Configurator.setAllLevels(log.getName(), Level.getLevel("info"));
+
+        boolean isConfigYaml = Arrays.asList(args).contains("--yaml-config");
         args = Arrays.stream(args)
                 .filter(arg -> !arg.equals("yaml-config"))
                 .toArray(String[]::new);
         if (isConfigYaml) {
             YAMLConfigParser ycp = new YAMLConfigParser();
             RDFConfigGenerator rcg = new RDFConfigGenerator();
-            String configPath;
+            String configPath = "";
             for (int i = 0; i < args.length; i++) {
-                if (args[i].equalsIgnoreCase("config") && i + 1 < args.length) {
+                if (args[i].equalsIgnoreCase("--config") && i + 1 < args.length) {
                     // Return the next argument as the value of the current argument
                     configPath = args[i + 1];
+                    //System.out.println("YAML config path: " + configPath);
+                    //log.warn("YAML config path: " + configPath);
+                    //FmtLog.warn(Fuseki.configLog, "YAML config path: " + configPath);
+                    try {
+                        ConfigStruct configStruct = ycp.runYAMLParser(configPath);
+                        Model configModel = rcg.createRDFModel(configStruct);
+                        try (FileOutputStream out = new FileOutputStream("target/config.ttl")) {
+                            configModel.write(out, "TTL");
+                        } catch (IOException e) {
+                            log.error(e.getMessage());
+                        }
+                    } catch (RuntimeException ex) {
+                        log.error(ex.getMessage());
+                    }
+                    args[i+1] = "target/config.ttl";
                 }
             }
-
+            /*if (configPath.isEmpty())
+                throw new RuntimeException("YAML config missing a file path.");*/
         }
 
         FusekiModules fmods = modules();

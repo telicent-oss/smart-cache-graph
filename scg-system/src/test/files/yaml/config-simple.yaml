@@ -1,0 +1,11 @@
+version: "1.0"
+server:
+  name: "ServerSimple"
+services:
+  - name: "ds"
+    database:  "dataset"
+
+databases:
+  - name: "dataset"
+    dbtype: TDB2
+    location: "target/databases/simpleDB"
