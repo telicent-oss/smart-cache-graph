@@ -1,0 +1,10 @@
+PREFIX : <http://example/>
+
+:s :p1 123 .
+:s :p2 456 .
+:s :p2 789 .
+
+:s :q "No label" .
+
+:s1 :p1 1234 .
+:s1 :p2 2345 .

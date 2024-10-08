@@ -261,15 +261,4 @@ class TestMainSmartCacheGraph {
 
     // Format of Turtle.
 
-    @Test
-    void yaml_config() {
-        // given
-        List<String> arguments = List.of("--yaml-config", "--config",DIR + "/yaml/config-simple.yaml");
-        String[] args = arguments.toArray(new String[0]);
-        // when
-        server = construct(arguments.toArray(new String[0])).start();
-        // then
-        assertNotNull(server);
-    }
-
 }

@@ -1,0 +1,13 @@
+PREFIX authz: <http://telicent.io/security#>
+
+[] authz:user "u1" ;
+    authz:userAttribute "manager";
+    .
+    
+[] authz:user "u2" ;
+    authz:userAttribute "engineer";
+    .
+
+[] authz:user "u3" ;
+    authz:userAttribute "unused";
+    .

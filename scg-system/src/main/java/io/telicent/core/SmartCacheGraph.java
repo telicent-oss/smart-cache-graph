@@ -16,7 +16,7 @@
 
 package io.telicent.core;
 
-import io.telicent.core.cmds.FusekiMain;
+//import io.telicent.core.cmds.FusekiMain;
 import io.telicent.graphql.FMod_TelicentGraphQL;
 import io.telicent.jena.abac.fuseki.FMod_ABAC;
 import io.telicent.otel.FMod_OpenTelemetry;
@@ -29,6 +29,7 @@ import org.apache.jena.cmd.ArgModuleGeneral;
 import org.apache.jena.fuseki.Fuseki;
 import org.apache.jena.fuseki.main.FusekiServer;
 //import org.apache.jena.fuseki.main.cmds.FusekiMain;
+import org.apache.jena.fuseki.main.cmds.FusekiMain;
 import org.apache.jena.fuseki.main.sys.FusekiModule;
 import org.apache.jena.fuseki.main.sys.FusekiModules;
 import org.apache.jena.rdf.model.Model;
@@ -38,6 +39,7 @@ import records.ConfigStruct;
 import records.RDFConfigGenerator;
 import records.YAMLConfigParser;
 
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -72,35 +74,41 @@ public class SmartCacheGraph {
      * Builder for a Fuseki server configured for SmartCacheGraph
      */
     public static FusekiServer construct(String... args) {
-
-        //import your local yaml-parser library
-        //either take it out here (and take out the yaml file) and put a model in the arguments,
-        //or do it in the builder parseConfig or parseConfigFile? (You'll have to add the ArgModule in FusekiMain then as well)
-        // tests in testMainSCG, but add your own too
         YAMLConfigParser ycp = new YAMLConfigParser();
         RDFConfigGenerator rcg = new RDFConfigGenerator();
         String configPath = "";
+        //String rdfConfigPath = "target/config.ttl";
         String pattern = ".*\\.(yaml|yml)$";
         Pattern regex = Pattern.compile(pattern);
         for (int i = 0; i < args.length; i++) {
             // other cases, not full argument etc.
-            if (args[i].equalsIgnoreCase("--config") && i + 1 < args.length ) {
-                // Return the next argument as the value of the current argument
+            if (args[i].equalsIgnoreCase("--conf") && i + 1 < args.length ) {
                 configPath = args[i + 1];
                 Matcher matcher = regex.matcher(configPath);
                 if (matcher.matches()) {
+                    //rdfConfigPath = configPath.replaceAll("(?i)\\.(yaml|yml)$", ".ttl");
                     try {
                         ConfigStruct configStruct = ycp.runYAMLParser(configPath);
                         Model configModel = rcg.createRDFModel(configStruct);
-                        try (FileOutputStream out = new FileOutputStream("target/config.ttl")) {
+
+                        File rdfConfigPath = File.createTempFile("RDF.state", ".ttl");
+                        rdfConfigPath.deleteOnExit();
+
+                        try (FileOutputStream out = new FileOutputStream(rdfConfigPath)) {
                             configModel.write(out, "TTL");
+                            args[i + 1] = rdfConfigPath.getPath();
                         } catch (IOException e) {
                             log.error(e.getMessage());
+                            throw new RuntimeException(e.getMessage());
                         }
                     } catch (RuntimeException ex) {
                         log.error(ex.getMessage());
+                        //throw ex;
+                        throw new RuntimeException("Failure parsing the YAML config file: " + ex.getMessage());
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
                     }
-                    args[i + 1] = "target/config.ttl";
+                    //args[i + 1] = rdfConfigPath;
                 }
             }
         }
