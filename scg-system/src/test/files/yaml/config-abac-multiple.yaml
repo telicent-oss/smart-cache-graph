@@ -21,7 +21,7 @@ databases:
   - name: "abac-db"
     dbtype: ABAC
     dataset: "dataset-under"
-    attributes: "attribute-store.ttl"
+    attributes: "/Users/karolinakadzielawa/smart-cache-graph/scg-system/src/test/files/yaml/attribute-store.ttl"
 
   - name: "dataset-under"
     dbtype: TIM
@@ -30,7 +30,7 @@ databases:
   - name: "abac-db-2"
     dbtype: ABAC
     dataset: "dataset-under-2"
-    attributes: "attribute-store.ttl"
+    attributes: "/Users/karolinakadzielawa/smart-cache-graph/scg-system/src/test/files/yaml/attribute-store.ttl"
 
   - name: "dataset-under-2"
     dbtype: TIM

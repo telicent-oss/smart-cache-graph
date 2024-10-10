@@ -219,7 +219,7 @@ class TestYamlConfigParser {
         // then
         assertEquals(expectedResponse, actualResponse);
     }
-/*
+
     @Test
     void yaml_config_abac() {
         // given
@@ -235,6 +235,7 @@ class TestYamlConfigParser {
         assertTrue(equals);
     }
 
+
     @Test
     void yaml_config_kafka_connector() {
         String TOPIC = "RDF0";
@@ -242,8 +243,7 @@ class TestYamlConfigParser {
         FileOps.ensureDir(STATE_DIR);
         FileOps.clearDirectory(STATE_DIR);
         // given
-        List<String> arguments = List.of("--conf",DIR + "/yaml/config-multiple-connectors.yaml");
-        String[] args = arguments.toArray(new String[0]);
+        List<String> arguments = List.of("--conf",DIR + "/yaml/config-connector-integration-test-1.yaml");
         // when
         FKLib.sendFiles(producerProps(), TOPIC, List.of("src/test/files/yaml/data-no-labels.trig"));
         server = construct(arguments.toArray(new String[0])).start();
@@ -260,10 +260,26 @@ class TestYamlConfigParser {
             throw new RuntimeException(e);
         }
         // then
+    }
+
+    /*
+    @Test
+    void yaml_config_custom_prefix() {
+        // given
+        List<String> arguments = List.of("--conf",DIR + "/yaml/config-tdb2.yaml");
+        String[] args = arguments.toArray(new String[0]);
+        // when
+        server = construct(arguments.toArray(new String[0])).start();
+        int port = server.getPort();
+        String url = "http://localhost:" + port + "/ds/";
+        HttpOp.httpPost(url + update, WebContent.contentTypeSPARQLUpdate, sparqlUpdate);
+        String encodedQuery = java.net.URLEncoder.encode(sparqlQuery, java.nio.charset.StandardCharsets.UTF_8);
+        String actualResponse = HttpOp.httpGetString(url + query + encodedQuery);
+
+        // then
+        assertEquals(expectedResponse, actualResponse);
     }*/
 
-    //TODO
-    // I get an error about the .ttl file, which is not clear. Propagate the error from the yaml parser instead
     @Test
     void fail_yaml_config_bad_file() {
         // given
