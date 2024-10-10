@@ -29,12 +29,12 @@ connectors:
   - fuseki-service: "/ds"
     topic: "RDF0"
     bootstrap-servers: "localhost:9092"
-    state-file: "/Users/karolinakadzielawa/smart-cache-graph/scg-system/Replay-RDF0.state"
-    sync-topic: true
+    state-file: "/Users/karolinakadzielawa/smart-cache-graph/scg-system/Replay-RDF0-ds.state"
+    replay-topic: true
   - fuseki-service: "/ds2"
     topic: "RDF0"
     bootstrap-servers: "localhost:9092"
-    state-file: "/Users/karolinakadzielawa/smart-cache-graph/scg-system/Replay-RDF0.state"
-    sync-topic: true
+    state-file: "/Users/karolinakadzielawa/smart-cache-graph/scg-system/Replay-RDF0-ds2.state"
+    replay-topic: true
 
 

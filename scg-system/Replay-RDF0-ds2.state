@@ -1,0 +1,7 @@
+{ 
+  "dataset" : "/ds2" ,
+  "endpoint" : "" ,
+  "topic" : "RDF0" ,
+  "offset" : 0
+}
+

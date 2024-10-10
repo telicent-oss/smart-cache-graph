@@ -22,6 +22,7 @@ import io.telicent.jena.abac.fuseki.SysFusekiABAC;
 import io.telicent.jena.abac.services.AttributeService;
 import io.telicent.jena.abac.services.SimpleAttributesStore;
 import io.telicent.smart.cache.configuration.Configurator;
+import org.apache.jena.atlas.io.IO;
 import org.apache.jena.atlas.lib.FileOps;
 import org.apache.jena.cmd.CmdException;
 import org.apache.jena.datatypes.xsd.XSDDatatype;
@@ -54,8 +55,15 @@ import org.apache.jena.sparql.resultset.ResultSetCompare;
 import org.apache.jena.sys.JenaSystem;
 import org.apache.jena.system.G;
 import org.junit.jupiter.api.*;
+import org.testcontainers.shaded.org.apache.commons.lang3.StringUtils;
 import org.yaml.snakeyaml.scanner.ScannerException;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.List;
 import java.util.Properties;
 
@@ -228,7 +236,7 @@ class TestYamlConfigParser {
         server = construct(arguments.toArray(new String[0])).start();
         RowSetRewindable actualResponseRSR;
         load(server);
-        actualResponseRSR = query(server, "u1"); // 3
+        actualResponseRSR = query(server, "u1");
 
         // then
         boolean equals = ResultSetCompare.isomorphic(expectedRSR, actualResponseRSR);
@@ -239,14 +247,18 @@ class TestYamlConfigParser {
     @Test
     void yaml_config_kafka_connector() {
         String TOPIC = "RDF0";
-        Graph graph = configuration(DIR + "/yaml/config-connector-integration-test-1.ttl", mock.getServer());
         FileOps.ensureDir(STATE_DIR);
         FileOps.clearDirectory(STATE_DIR);
-        // given
-        List<String> arguments = List.of("--conf",DIR + "/yaml/config-connector-integration-test-1.yaml");
-        // when
+        //Graph graph = configuration(DIR + "/yaml/config-connector-integration-test-1.ttl", mock.getServer());
+
+        File originalConfig = new File(DIR + "/yaml/config-connector-integration-test-1.yaml");
+        File actualConfig = replacePlaceholder(originalConfig, "localhost:9092", mock.getServer());
+        List<String> arguments = List.of("--conf", actualConfig.getAbsolutePath());
+        //List<String> arguments = List.of("--conf",DIR + "/yaml/config-connector-integration-test-1.yaml");
+
+        server = construct(arguments.toArray(new String[0]));
         FKLib.sendFiles(producerProps(), TOPIC, List.of("src/test/files/yaml/data-no-labels.trig"));
-        server = construct(arguments.toArray(new String[0])).start();
+        server.start();
         try {
             String URL = "http://localhost:"+server.getHttpPort()+"/ds";
             RowSet rowSet = QueryExecHTTP.service(URL).query("SELECT (count(*) AS ?C) {?s ?p ?o}").select();
@@ -362,6 +374,19 @@ class TestYamlConfigParser {
         });
 
         return graph;
+    }
+
+    public static File replacePlaceholder(File input, String find, String replace) {
+        try {
+            File output =
+                    Files.createTempFile("temp", input.getName().substring(input.getName().lastIndexOf('.'))).toFile();
+            String contents = IO.readWholeFileAsUTF8(input.getAbsolutePath());
+            contents = StringUtils.replace(contents, find, replace);
+            IO.writeStringAsUTF8(output.getAbsolutePath(), contents);
+            return output;
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
 }
