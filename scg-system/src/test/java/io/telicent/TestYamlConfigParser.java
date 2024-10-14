@@ -243,6 +243,21 @@ class TestYamlConfigParser {
         assertTrue(equals);
     }
 
+    @Test
+    void yaml_config_abac_2() {
+        // given
+        List<String> arguments = List.of("--conf",DIR + "/yaml/config-abac-tim.yaml");
+        // when
+        server = construct(arguments.toArray(new String[0])).start();
+        RowSetRewindable actualResponseRSR;
+        load(server);
+        actualResponseRSR = query(server, "u1");
+
+        // then
+        boolean equals = ResultSetCompare.isomorphic(expectedRSR, actualResponseRSR);
+        assertTrue(equals);
+    }
+
 
     @Test
     void yaml_config_kafka_connector() {
@@ -271,26 +286,20 @@ class TestYamlConfigParser {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-        // then
     }
 
-    /*
     @Test
     void yaml_config_custom_prefix() {
-        // given
-        List<String> arguments = List.of("--conf",DIR + "/yaml/config-tdb2.yaml");
-        String[] args = arguments.toArray(new String[0]);
-        // when
+        List<String> arguments = List.of("--conf",DIR + "/yaml/config-prefixes-1.yaml");
         server = construct(arguments.toArray(new String[0])).start();
-        int port = server.getPort();
-        String url = "http://localhost:" + port + "/ds/";
-        HttpOp.httpPost(url + update, WebContent.contentTypeSPARQLUpdate, sparqlUpdate);
-        String encodedQuery = java.net.URLEncoder.encode(sparqlQuery, java.nio.charset.StandardCharsets.UTF_8);
-        String actualResponse = HttpOp.httpGetString(url + query + encodedQuery);
+        RowSetRewindable actualResponseRSR;
+        load(server);
+        actualResponseRSR = query(server, "u1");
 
         // then
-        assertEquals(expectedResponse, actualResponse);
-    }*/
+        boolean equals = ResultSetCompare.isomorphic(expectedRSR, actualResponseRSR);
+        assertTrue(equals);
+    }
 
     @Test
     void fail_yaml_config_bad_file() {
@@ -352,28 +361,6 @@ class TestYamlConfigParser {
         rowSet.reset();
         RowSetOps.out(System.out, rowSet);
         return rowSet;
-    }
-
-    private Graph configuration(String filename, String bootstrapServers) {
-        Graph graph = RDFParser.source(filename).toGraph();
-        List<Triple> triplesBootstrapServers = G.find(graph,
-                null,
-                KafkaConnectorAssembler.pKafkaBootstrapServers,
-                null).toList();
-        triplesBootstrapServers.forEach(t->{
-            graph.delete(t);
-            graph.add(t.getSubject(), t.getPredicate(), NodeFactory.createLiteralString(bootstrapServers));
-        });
-
-        FileOps.ensureDir("target/state");
-        List<Triple> triplesStateFile = G.find(graph, null, KafkaConnectorAssembler.pStateFile, null).toList();
-        triplesStateFile.forEach(t->{
-            graph.delete(t);
-            String fn = t.getObject().getLiteralLexicalForm();
-            graph.add(t.getSubject(), t.getPredicate(), NodeFactory.createLiteralString(STATE_DIR+"/"+fn));
-        });
-
-        return graph;
     }
 
     public static File replacePlaceholder(File input, String find, String replace) {
