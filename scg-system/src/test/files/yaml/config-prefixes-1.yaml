@@ -24,9 +24,9 @@ databases:
   - name: "abac-tdb2-db"
     dbtype: ABAC
     dataset: "dataset-under"
-    attributes: "/Users/karolinakadzielawa/smart-cache-graph/scg-system/src/test/files/yaml/attribute-store.ttl"
+    attributes: "attribute-store.ttl"
     labels-store: "target/labels"
 
   - name: "dataset-under"
     dbtype: TIM
-    data: "/Users/karolinakadzielawa/smart-cache-graph/scg-system/src/test/files/yaml/data-and-labels.trig"
+    data: "src/test/files/yaml/data-and-labels.trig"

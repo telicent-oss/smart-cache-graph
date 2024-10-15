@@ -95,7 +95,7 @@ public class SmartCacheGraph {
                         rdfConfigPath.deleteOnExit();
 
                         try (FileOutputStream out = new FileOutputStream(rdfConfigPath)) {
-                            configModel.write(out, "TTL");
+                            configModel.write(out, "TTL", new File(configPath).getAbsoluteFile().getParentFile().toURI().toString());
                             args[i + 1] = rdfConfigPath.getPath();
                         } catch (IOException e) {
                             log.error(e.getMessage());
