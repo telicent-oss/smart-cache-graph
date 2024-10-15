@@ -1,27 +1,30 @@
 version: "1.0"
 server:
   name: "Fuseki server simple"
+prefixes:
+  - prefix: "authz"
+    namespace: "http://telicent.io/security#"
 services:
   - name: "ds"
     endpoints:
-      - operation: query
+      - operation: authz:query
         settings:
       - name: "upload"
-        operation: upload
+        operation: authz:upload
     database:  "abac-db"
   - name: "ds-2"
     endpoints:
-      - operation: query
+      - operation: authz:query
         settings:
       - name: "upload"
-        operation: upload
+        operation: authz:upload
     database: "abac-db-2"
 
 databases:
   - name: "abac-db"
     dbtype: ABAC
     dataset: "dataset-under"
-    attributes: "/Users/karolinakadzielawa/smart-cache-graph/scg-system/src/test/files/yaml/attribute-store.ttl"
+    attributes: "attribute-store.ttl"
 
   - name: "dataset-under"
     dbtype: TIM
@@ -30,7 +33,7 @@ databases:
   - name: "abac-db-2"
     dbtype: ABAC
     dataset: "dataset-under-2"
-    attributes: "/Users/karolinakadzielawa/smart-cache-graph/scg-system/src/test/files/yaml/attribute-store.ttl"
+    attributes: "attribute-store.ttl"
 
   - name: "dataset-under-2"
     dbtype: TIM

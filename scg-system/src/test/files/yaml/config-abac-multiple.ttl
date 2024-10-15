@@ -10,7 +10,7 @@ PREFIX tdb2:   <http://jena.apache.org/2016/tdb#>
         ja:data   "src/test/files/yaml/data-and-labels.trig" .
 
 :abac-db  rdf:type        authz:DatasetAuthz;
-        authz:attributes  <file:/Users/karolinakadzielawa/smart-cache-graph/scg-system/src/test/files/yaml/attribute-store.ttl>;
+        authz:attributes  <file:src/test/files/yaml/attribute-store.ttl>;
         authz:cache       false;
         authz:dataset     :dataset-under .
 
@@ -26,7 +26,7 @@ PREFIX tdb2:   <http://jena.apache.org/2016/tdb#>
         fuseki:name      "ds-2" .
 
 :abac-db-2  rdf:type      authz:DatasetAuthz;
-        authz:attributes  <file:/Users/karolinakadzielawa/smart-cache-graph/scg-system/src/test/files/yaml/attribute-store.ttl>;
+        authz:attributes  <file:src/test/files/yaml/attribute-store.ttl>;
         authz:cache       false;
         authz:dataset     :dataset-under-2 .
 
