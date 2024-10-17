@@ -1,5 +1,11 @@
 # Smart Cache Graph
 
+## 0.82.4
+- Update Dockerfile to Rocks DB spawning issue by explicitly specifying C lib to use. 
+- Build improvements:
+  - Patching minor dependencies (as per dependabot).
+  - Tidying up POM file, consolidating version approach with other repos.
+
 ## 0.82.2
 - Add "compactall" endpoint
 
