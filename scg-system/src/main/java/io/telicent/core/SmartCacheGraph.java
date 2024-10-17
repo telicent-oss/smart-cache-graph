@@ -16,23 +16,17 @@
 
 package io.telicent.core;
 
-//import io.telicent.core.cmds.FusekiMain;
 import io.telicent.graphql.FMod_TelicentGraphQL;
 import io.telicent.jena.abac.fuseki.FMod_ABAC;
 import io.telicent.otel.FMod_OpenTelemetry;
 import io.telicent.smart.cache.configuration.Configurator;
 import io.telicent.smart.caches.configuration.auth.AuthConstants;
 import org.apache.jena.atlas.lib.Version;
-import org.apache.jena.atlas.logging.FmtLog;
-import org.apache.jena.cmd.ArgModule;
-import org.apache.jena.cmd.ArgModuleGeneral;
-import org.apache.jena.fuseki.Fuseki;
 import org.apache.jena.fuseki.main.FusekiServer;
-//import org.apache.jena.fuseki.main.cmds.FusekiMain;
 import org.apache.jena.fuseki.main.cmds.FusekiMain;
 import org.apache.jena.fuseki.main.sys.FusekiModule;
 import org.apache.jena.fuseki.main.sys.FusekiModules;
-import org.apache.jena.rdf.model.Model;
+import org.apache.jena.rdf.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import records.ConfigStruct;
@@ -43,13 +37,11 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static records.ConfigConstants.log;
 
 public class SmartCacheGraph {
     /**
@@ -81,7 +73,6 @@ public class SmartCacheGraph {
         String pattern = ".*\\.(yaml|yml)$";
         Pattern regex = Pattern.compile(pattern);
         for (int i = 0; i < args.length; i++) {
-            // other cases, not full argument etc.
             if (args[i].equalsIgnoreCase("--conf") && i + 1 < args.length ) {
                 configPath = args[i + 1];
                 Matcher matcher = regex.matcher(configPath);
@@ -91,11 +82,25 @@ public class SmartCacheGraph {
                         ConfigStruct configStruct = ycp.runYAMLParser(configPath);
                         Model configModel = rcg.createRDFModel(configStruct);
 
+                        StmtIterator iter = configModel.listStatements();
+                        while (iter.hasNext()) {
+                            Statement stmt = iter.nextStatement();
+                            RDFNode object = stmt.getObject();
+                            if (stmt.getSubject().isURIResource() && stmt.getSubject().getURI().contains("data") && object.isURIResource() && object.asResource().getURI().startsWith("file:")) {
+                                String oldFilePathURI = object.asResource().getURI();
+                                String updatedFilePathURI = convertToAbsolutePathURI(oldFilePathURI);
+                                Resource newFilePathResource = configModel.createResource(updatedFilePathURI);
+                                configModel.remove(stmt);
+                                configModel.add(stmt.getSubject(), stmt.getPredicate(), newFilePathResource); // Add updated one
+                            }
+                        }
+
                         File rdfConfigPath = File.createTempFile("RDF.state", ".ttl");
                         rdfConfigPath.deleteOnExit();
 
                         try (FileOutputStream out = new FileOutputStream(rdfConfigPath)) {
                             configModel.write(out, "TTL", new File(configPath).getAbsoluteFile().getParentFile().toURI().toString());
+                            log.info(new File(configPath).getAbsoluteFile().getParentFile().toURI().toString());
                             args[i + 1] = rdfConfigPath.getPath();
                         } catch (IOException e) {
                             log.error(e.getMessage());
@@ -178,5 +183,17 @@ public class SmartCacheGraph {
 
     private static boolean isInitialCompactionEnabled() {
         return !Configurator.get(FMod_InitialCompaction.DISABLE_INITIAL_COMPACTION, Boolean::parseBoolean, false);
+    }
+
+    private static String convertToAbsolutePathURI(String fileUri) {
+        // Remove the "file:" prefix to get the relative path
+        String relativePath = fileUri.substring(5);
+
+        // Convert the relative path to an absolute path
+        File file = new File(relativePath);
+        String absolutePath = file.getAbsolutePath();
+
+        // Return the absolute path as a file URI
+        return "file:" + absolutePath;
     }
 }

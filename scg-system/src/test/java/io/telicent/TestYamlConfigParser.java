@@ -16,33 +16,18 @@
 
 package io.telicent;
 
-import io.telicent.jena.abac.core.Attributes;
-import io.telicent.jena.abac.core.AttributesStore;
 import io.telicent.jena.abac.fuseki.SysFusekiABAC;
-import io.telicent.jena.abac.services.AttributeService;
-import io.telicent.jena.abac.services.SimpleAttributesStore;
 import io.telicent.smart.cache.configuration.Configurator;
 import org.apache.jena.atlas.io.IO;
 import org.apache.jena.atlas.lib.FileOps;
-import org.apache.jena.cmd.CmdException;
 import org.apache.jena.datatypes.xsd.XSDDatatype;
 import org.apache.jena.fuseki.kafka.lib.FKLib;
 import org.apache.jena.fuseki.main.FusekiServer;
 import org.apache.jena.fuseki.system.FusekiLogging;
-import org.apache.jena.graph.Graph;
-import org.apache.jena.graph.NodeFactory;
-import org.apache.jena.graph.Triple;
 import org.apache.jena.http.HttpOp;
-import org.apache.jena.kafka.KafkaConnectorAssembler;
-import org.apache.jena.query.Query;
-import org.apache.jena.query.QueryExecution;
-import org.apache.jena.query.QueryExecutionFactory;
-import org.apache.jena.query.QueryFactory;
+import org.apache.jena.query.*;
 import org.apache.jena.rdf.model.*;
-import org.apache.jena.riot.RDFParser;
-import org.apache.jena.riot.SysRIOT;
 import org.apache.jena.riot.WebContent;
-import org.apache.jena.sparql.ARQException;
 import org.apache.jena.sparql.core.DatasetGraphFactory;
 import org.apache.jena.sparql.exec.QueryExec;
 import org.apache.jena.sparql.exec.RowSet;
@@ -52,23 +37,16 @@ import org.apache.jena.sparql.exec.http.DSP;
 import org.apache.jena.sparql.exec.http.QueryExecHTTP;
 import org.apache.jena.sparql.exec.http.QueryExecHTTPBuilder;
 import org.apache.jena.sparql.resultset.ResultSetCompare;
-import org.apache.jena.sys.JenaSystem;
-import org.apache.jena.system.G;
 import org.junit.jupiter.api.*;
 import org.testcontainers.shaded.org.apache.commons.lang3.StringUtils;
-import org.yaml.snakeyaml.scanner.ScannerException;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.List;
 import java.util.Properties;
 
 import static io.telicent.core.SmartCacheGraph.construct;
-import static io.telicent.jena.abac.services.LibAuthService.serviceURL;
 import static org.junit.jupiter.api.Assertions.*;
 
 /*
@@ -140,7 +118,7 @@ class TestYamlConfigParser {
 
     @BeforeAll
     public static void before() {
-
+        // build a RowSetRewindable expectedRSR for checking the ABAC tests results
         Model comparisonModel = ModelFactory.createDefaultModel();
         String baseURI = "http://example/";
         Resource s1 = comparisonModel.createResource(baseURI + "s1");
@@ -151,13 +129,12 @@ class TestYamlConfigParser {
         Literal l2 = comparisonModel.createTypedLiteral(789, XSDDatatype.XSDinteger);
         comparisonModel.add(s1, p1, l1);
         comparisonModel.add(s2, p2, l2);
-
         String queryString = "SELECT ?s ?p ?o WHERE { ?s ?p ?o }";
         Query query = QueryFactory.create(queryString);
-        QueryExecution qe = QueryExecutionFactory.create(query, comparisonModel);
         QueryExec qExec = QueryExec.dataset(DatasetGraphFactory.create(comparisonModel.getGraph())).query(query).build();
         expectedRSR = qExec.select().rewindable();
 
+        // for the kafka connector tests
         mock = new MockKafka();
         Properties consumerProps = new Properties();
         consumerProps.put("bootstrap.servers", mock.getServer());
@@ -165,9 +142,9 @@ class TestYamlConfigParser {
         producerProps.put("bootstrap.servers", mock.getServer());
 
         mock.createTopic("RDF0");
-        mock.createTopic("RDF1");
-        mock.createTopic("RDF2");
-        mock.createTopic("RDF_Patch");
+        //mock.createTopic("RDF1");
+        //mock.createTopic("RDF2");
+        //mock.createTopic("RDF_Patch");
     }
 
 
@@ -196,64 +173,60 @@ class TestYamlConfigParser {
 
     @Test
     void yaml_config_tim() {
-        // given
         List<String> arguments = List.of("--conf",DIR + "/yaml/config-tim.yaml");
-        String[] args = arguments.toArray(new String[0]);
-        // when
         server = construct(arguments.toArray(new String[0])).start();
         int port = server.getPort();
         String url = "http://localhost:" + port + "/ds/";
         HttpOp.httpPost(url + update, WebContent.contentTypeSPARQLUpdate, sparqlUpdate);
         String encodedQuery = java.net.URLEncoder.encode(sparqlQuery, java.nio.charset.StandardCharsets.UTF_8);
         String actualResponse = HttpOp.httpGetString(url + query + encodedQuery);
+        assertEquals(expectedResponse, actualResponse);
+    }
 
-        // then
+    @Test
+    void yaml_config_tim_ttl() {
+        List<String> arguments = List.of("--conf",DIR + "/yaml/config-tim.ttl");
+        server = construct(arguments.toArray(new String[0])).start();
+        int port = server.getPort();
+        String url = "http://localhost:" + port + "/ds/";
+        HttpOp.httpPost(url + update, WebContent.contentTypeSPARQLUpdate, sparqlUpdate);
+        String encodedQuery = java.net.URLEncoder.encode(sparqlQuery, java.nio.charset.StandardCharsets.UTF_8);
+        String actualResponse = HttpOp.httpGetString(url + query + encodedQuery);
         assertEquals(expectedResponse, actualResponse);
     }
 
     @Test
     void yaml_config_tdb2() {
-        // given
         List<String> arguments = List.of("--conf",DIR + "/yaml/config-tdb2.yaml");
-        String[] args = arguments.toArray(new String[0]);
-        // when
         server = construct(arguments.toArray(new String[0])).start();
         int port = server.getPort();
         String url = "http://localhost:" + port + "/ds/";
         HttpOp.httpPost(url + update, WebContent.contentTypeSPARQLUpdate, sparqlUpdate);
         String encodedQuery = java.net.URLEncoder.encode(sparqlQuery, java.nio.charset.StandardCharsets.UTF_8);
         String actualResponse = HttpOp.httpGetString(url + query + encodedQuery);
-
-        // then
         assertEquals(expectedResponse, actualResponse);
     }
 
     @Test
     void yaml_config_abac() {
-        // given
         List<String> arguments = List.of("--conf",DIR + "/yaml/config-abac-multiple.yaml");
-        // when
         server = construct(arguments.toArray(new String[0])).start();
         RowSetRewindable actualResponseRSR;
         load(server);
         actualResponseRSR = query(server, "u1");
-
-        // then
+        expectedRSR.reset();
         boolean equals = ResultSetCompare.isomorphic(expectedRSR, actualResponseRSR);
         assertTrue(equals);
     }
 
     @Test
     void yaml_config_abac_2() {
-        // given
         List<String> arguments = List.of("--conf",DIR + "/yaml/config-abac-tim.yaml");
-        // when
         server = construct(arguments.toArray(new String[0])).start();
         RowSetRewindable actualResponseRSR;
         load(server);
         actualResponseRSR = query(server, "u1");
-
-        // then
+        expectedRSR.reset();
         boolean equals = ResultSetCompare.isomorphic(expectedRSR, actualResponseRSR);
         assertTrue(equals);
     }
@@ -264,12 +237,10 @@ class TestYamlConfigParser {
         String TOPIC = "RDF0";
         FileOps.ensureDir(STATE_DIR);
         FileOps.clearDirectory(STATE_DIR);
-        //Graph graph = configuration(DIR + "/yaml/config-connector-integration-test-1.ttl", mock.getServer());
 
         File originalConfig = new File(DIR + "/yaml/config-connector-integration-test-1.yaml");
         File actualConfig = replacePlaceholder(originalConfig, "localhost:9092", mock.getServer());
         List<String> arguments = List.of("--conf", actualConfig.getAbsolutePath());
-        //List<String> arguments = List.of("--conf",DIR + "/yaml/config-connector-integration-test-1.yaml");
 
         server = construct(arguments.toArray(new String[0]));
         FKLib.sendFiles(producerProps(), TOPIC, List.of("src/test/files/yaml/data-no-labels.trig"));
@@ -295,31 +266,23 @@ class TestYamlConfigParser {
         RowSetRewindable actualResponseRSR;
         load(server);
         actualResponseRSR = query(server, "u1");
-
-        // then
+        expectedRSR.reset();
         boolean equals = ResultSetCompare.isomorphic(expectedRSR, actualResponseRSR);
         assertTrue(equals);
     }
 
     @Test
     void fail_yaml_config_bad_file() {
-        // given
         List<String> arguments = List.of("--conf",DIR + "/yaml/config-no-server-field.yaml");
-        String[] args = arguments.toArray(new String[0]);
-        // when
         RuntimeException ex = assertThrows(RuntimeException.class,() -> {
             server = construct(arguments.toArray(new String[0])).start();
         });
         assertEquals("Failure parsing the YAML config file: java.lang.IllegalArgumentException: 'server' field is missing", ex.getMessage());
-
     }
 
     @Test
     void fail_yaml_config_missing_file() {
-        // given
         List<String> arguments = List.of("--conf",DIR + "/yaml/no-config.yaml");
-        String[] args = arguments.toArray(new String[0]);
-        // when
         RuntimeException ex = assertThrows(RuntimeException.class,() -> {
             server = construct(arguments.toArray(new String[0])).start();
         });

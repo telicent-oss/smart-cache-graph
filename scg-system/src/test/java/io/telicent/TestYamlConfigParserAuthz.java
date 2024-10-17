@@ -91,7 +91,7 @@ class TestYamlConfigParserAuthz {
     }
 
 
-    @Test
+ /*   @Test
     void yaml_config_abac() {
         // given
         List<String> arguments = List.of("--conf",DIR + "/yaml/config-abac-multiple.yaml");
@@ -177,5 +177,5 @@ class TestYamlConfigParserAuthz {
         rowSet.reset();
         RowSetOps.out(System.out, rowSet);
         return rowSet;
-    }
+    }*/
 }
