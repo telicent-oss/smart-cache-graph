@@ -16,7 +16,10 @@
 
 package io.telicent;
 
+import io.telicent.jena.abac.core.Attributes;
+import io.telicent.jena.abac.core.AttributesStore;
 import io.telicent.jena.abac.fuseki.SysFusekiABAC;
+import io.telicent.jena.abac.services.SimpleAttributesStore;
 import io.telicent.smart.cache.configuration.Configurator;
 import org.apache.jena.atlas.io.IO;
 import org.apache.jena.atlas.lib.FileOps;
@@ -24,9 +27,13 @@ import org.apache.jena.datatypes.xsd.XSDDatatype;
 import org.apache.jena.fuseki.kafka.lib.FKLib;
 import org.apache.jena.fuseki.main.FusekiServer;
 import org.apache.jena.fuseki.system.FusekiLogging;
+import org.apache.jena.graph.Graph;
 import org.apache.jena.http.HttpOp;
 import org.apache.jena.query.*;
 import org.apache.jena.rdf.model.*;
+import org.apache.jena.riot.Lang;
+import org.apache.jena.riot.RDFDataMgr;
+import org.apache.jena.riot.RDFParser;
 import org.apache.jena.riot.WebContent;
 import org.apache.jena.sparql.core.DatasetGraphFactory;
 import org.apache.jena.sparql.exec.QueryExec;
@@ -37,6 +44,7 @@ import org.apache.jena.sparql.exec.http.DSP;
 import org.apache.jena.sparql.exec.http.QueryExecHTTP;
 import org.apache.jena.sparql.exec.http.QueryExecHTTPBuilder;
 import org.apache.jena.sparql.resultset.ResultSetCompare;
+import org.apache.jena.tdb2.TDB2Factory;
 import org.junit.jupiter.api.*;
 import org.testcontainers.shaded.org.apache.commons.lang3.StringUtils;
 
@@ -48,9 +56,10 @@ import java.util.Properties;
 
 import static io.telicent.core.SmartCacheGraph.construct;
 import static org.junit.jupiter.api.Assertions.*;
+import static records.ConfigConstants.log;
 
 /*
-* Test SCG usage of varying configuration parameters.
+* Test SCG usage of YAML config files.
 */
 class TestYamlConfigParser {
 
@@ -103,6 +112,7 @@ class TestYamlConfigParser {
                         :known_for_catchphrase "What's up, doc?" .
                    }""";
     public static RowSetRewindable expectedRSR;
+    public static RowSetRewindable expectedRSRtdl;
     public final String sparqlUpdateConnector = """
                     PREFIX : <http://example/>
                     INSERT DATA {
@@ -133,6 +143,12 @@ class TestYamlConfigParser {
         Query query = QueryFactory.create(queryString);
         QueryExec qExec = QueryExec.dataset(DatasetGraphFactory.create(comparisonModel.getGraph())).query(query).build();
         expectedRSR = qExec.select().rewindable();
+        Resource s3 = comparisonModel.createResource(baseURI + "s");
+        Property p3 = comparisonModel.createProperty(baseURI + "q");
+        Literal l3 = comparisonModel.createLiteral("No label");
+        comparisonModel.add(s3, p3, l3);
+        QueryExec qExec2 = QueryExec.dataset(DatasetGraphFactory.create(comparisonModel.getGraph())).query(query).build();
+        expectedRSRtdl = qExec2.select().rewindable();
 
         // for the kafka connector tests
         mock = new MockKafka();
@@ -142,9 +158,6 @@ class TestYamlConfigParser {
         producerProps.put("bootstrap.servers", mock.getServer());
 
         mock.createTopic("RDF0");
-        //mock.createTopic("RDF1");
-        //mock.createTopic("RDF2");
-        //mock.createTopic("RDF_Patch");
     }
 
 
@@ -184,18 +197,6 @@ class TestYamlConfigParser {
     }
 
     @Test
-    void yaml_config_tim_ttl() {
-        List<String> arguments = List.of("--conf",DIR + "/yaml/config-tim.ttl");
-        server = construct(arguments.toArray(new String[0])).start();
-        int port = server.getPort();
-        String url = "http://localhost:" + port + "/ds/";
-        HttpOp.httpPost(url + update, WebContent.contentTypeSPARQLUpdate, sparqlUpdate);
-        String encodedQuery = java.net.URLEncoder.encode(sparqlQuery, java.nio.charset.StandardCharsets.UTF_8);
-        String actualResponse = HttpOp.httpGetString(url + query + encodedQuery);
-        assertEquals(expectedResponse, actualResponse);
-    }
-
-    @Test
     void yaml_config_tdb2() {
         List<String> arguments = List.of("--conf",DIR + "/yaml/config-tdb2.yaml");
         server = construct(arguments.toArray(new String[0])).start();
@@ -220,7 +221,7 @@ class TestYamlConfigParser {
     }
 
     @Test
-    void yaml_config_abac_2() {
+    void yaml_config_abac_tim() {
         List<String> arguments = List.of("--conf",DIR + "/yaml/config-abac-tim.yaml");
         server = construct(arguments.toArray(new String[0])).start();
         RowSetRewindable actualResponseRSR;
@@ -228,6 +229,66 @@ class TestYamlConfigParser {
         actualResponseRSR = query(server, "u1");
         expectedRSR.reset();
         boolean equals = ResultSetCompare.isomorphic(expectedRSR, actualResponseRSR);
+        assertTrue(equals);
+    }
+
+    // TODO
+    @Test
+    void yaml_config_abac_labels_store() {
+        List<String> arguments = List.of("--conf",DIR + "/yaml/config-abac-labelsstore-path.yaml");
+        server = construct(arguments.toArray(new String[0])).start();
+
+        Dataset dataset = TDB2Factory.connectDataset("target/labels-store");
+        dataset.begin(org.apache.jena.query.ReadWrite.WRITE);
+        try {
+            Model labelsStoreModel = dataset.getDefaultModel();
+            RDFDataMgr.read(labelsStoreModel, "src/test/files/yaml/labels.ttl", Lang.TURTLE);
+            dataset.commit();
+        } catch (Exception e) {
+            log.error(e.getMessage());
+            dataset.abort();
+        } finally {
+            dataset.end();
+        }
+
+        RowSetRewindable actualResponseRSR;
+        String URL = "http://localhost:" + server.getPort() + serviceName;
+        String uploadURL = URL + "/upload";
+        load(uploadURL, DIR + "/yaml/data-no-labels.trig");
+
+        actualResponseRSR = query(server, "u1");
+        expectedRSR.reset();
+        boolean equals = ResultSetCompare.isomorphic(expectedRSR, actualResponseRSR);
+        assertTrue(equals);
+    }
+
+    @Test
+    void yaml_config_abac_attributes_store() {
+        Graph g = RDFParser.source(DIR+"/yaml/attribute-store.ttl").toGraph();
+        AttributesStore attrStore = Attributes.buildStore(g);
+        String mockServerURL = SimpleAttributesStore.run(3132, attrStore);
+
+        List<String> arguments = List.of("--conf",DIR + "/yaml/config-abac-remote-attributes.yaml");
+        server = construct(arguments.toArray(new String[0])).start();
+        RowSetRewindable actualResponseRSR;
+        load(server);
+        actualResponseRSR = query(server, "u1");
+        expectedRSR.reset();
+        boolean equals = ResultSetCompare.isomorphic(expectedRSR, actualResponseRSR);
+        assertTrue(equals);
+    }
+
+    @Test
+    void yaml_config_abac_triple_default_labels() {
+        List<String> arguments = List.of("--conf",DIR + "/yaml/config-abac-tdl.yaml");
+        server = construct(arguments.toArray(new String[0])).start();
+        RowSetRewindable actualResponseRSR;
+        String URL = "http://localhost:" + server.getPort() + serviceName;
+        String uploadURL = URL + "/upload";
+        load(uploadURL, DIR + "/yaml/data-no-labels.trig");
+        actualResponseRSR = query(server, "u1");
+        expectedRSR.reset();
+        boolean equals = ResultSetCompare.isomorphic(expectedRSRtdl, actualResponseRSR);
         assertTrue(equals);
     }
 
@@ -287,6 +348,18 @@ class TestYamlConfigParser {
             server = construct(arguments.toArray(new String[0])).start();
         });
         assertEquals("Failure parsing the YAML config file: java.io.UncheckedIOException: java.io.FileNotFoundException: src/test/files/yaml/no-config.yaml (No such file or directory)", ex.getMessage());
+    }
+
+    @Test
+    void yaml_config_other_args() {
+        List<String> arguments = List.of("--port=0", "--metrics", "--conf",DIR + "/yaml/config-tim.yaml");
+        server = construct(arguments.toArray(new String[0])).start();
+        int port = server.getPort();
+        String url = "http://localhost:" + port + "/ds/";
+        HttpOp.httpPost(url + update, WebContent.contentTypeSPARQLUpdate, sparqlUpdate);
+        String encodedQuery = java.net.URLEncoder.encode(sparqlQuery, java.nio.charset.StandardCharsets.UTF_8);
+        String actualResponse = HttpOp.httpGetString(url + query + encodedQuery);
+        assertEquals(expectedResponse, actualResponse);
     }
 
 

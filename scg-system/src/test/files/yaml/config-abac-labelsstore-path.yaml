@@ -1,0 +1,25 @@
+version: "1.0"
+prefixes:
+  - prefix: "authz"
+    namespace: "http://telicent.io/security#"
+server:
+  name: "Fuseki server simple"
+services:
+  - name: "ds"
+    endpoints:
+      - operation: authz:query
+        settings:
+      - name: "upload"
+        operation: authz:upload
+    database:  "abac-db"
+
+databases:
+  - name: "abac-db"
+    dbtype: ABAC
+    dataset: "dataset-under"
+    attributes: "attribute-store.ttl"
+    labels-store: "target/labels-store"
+
+  - name: "dataset-under"
+    dbtype: TDB2
+    location: "target/test-abac-DB"
