@@ -82,12 +82,12 @@
     <!-- Dependency versions -->
     <!-- Internal dependencies -->
     <dependency.rdf-abac>0.71.9</dependency.rdf-abac>
-    <dependency.fuseki-kafka>1.4.0</dependency.fuseki-kafka>
-    <dependency.jena>5.1.0</dependency.jena>
+    <dependency.fuseki-kafka>1.5.0</dependency.fuseki-kafka>
+    <dependency.jena>5.2.0</dependency.jena>
     <dependency.fuseki-server>${dependency.jena}</dependency.fuseki-server>
     <dependency.graphql>0.9.0</dependency.graphql>
-    <dependency.jwt-servlet-auth>0.17.3</dependency.jwt-servlet-auth>
-    <dependency.smart-caches-core>0.23.2</dependency.smart-caches-core>
+    <dependency.jwt-servlet-auth>0.17.4</dependency.jwt-servlet-auth>
+    <dependency.smart-caches-core>0.24.0</dependency.smart-caches-core>
 
     <!-- External dependencies -->
     <dependency.kotlin>2.0.21</dependency.kotlin>
@@ -100,9 +100,9 @@
     <dependency.slf4j>2.0.13</dependency.slf4j>
 
     <!-- Test dependencies -->
-    <dependency.junit5>5.11.2</dependency.junit5>
+    <dependency.junit5>5.11.3</dependency.junit5>
     <dependency.junit5-platform>1.11.2</dependency.junit5-platform>
-    <dependency.mockito>5.14.1</dependency.mockito>
+    <dependency.mockito>5.14.2</dependency.mockito>
     <dependency.testcontainers>1.20.2</dependency.testcontainers>
 
     <!-- Temporary / Vulnerability fixes (to be periodically reviewed) -->
