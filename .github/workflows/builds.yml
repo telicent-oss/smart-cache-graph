@@ -46,6 +46,7 @@ jobs:
       TARGET: ${{ matrix.image }}
       JAVA_VERSION: 21
       USES_MAVEN: true
+      DOWNLOAD_SBOM: false
       BUILD_ARGS: |
         PROJECT_VERSION=${{ needs.maven-build.outputs.version }}
     secrets: inherit

@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Consolidated script for building and running Docker containers for Smart Cache Graph
+# Pass in "alpine" as a parameter to create the Alpine image
+
 # Acquire the current directory in case we are running from project root or the local directory
 CURRENT_DIR=$(dirname $0)
 
@@ -9,21 +12,24 @@ function get_version() {
   echo "$version"
 }
 
+# Fetch the project and Fuseki versions
 PROJECT_VERSION=$(get_version project.version)
-# Check if the PROJECT_VERSION was successfully extracted
-if [[ -z "$PROJECT_VERSION" ]]; then
-    echo "Error: Could not extract PROJECT_VERSION from POM file"
+FUSEKI_SERVER_VERSION=$(get_version ver.fuseki-server)
+
+# Check if versions were successfully extracted
+if [[ -z "$PROJECT_VERSION" || -z "$FUSEKI_SERVER_VERSION" ]]; then
+    echo "Error: Could not extract version information from POM file"
     exit 1
 fi
 
-FUSEKI_SERVER_VERSION=$(get_version ver.fuseki-server)
 # Find the relevant Fuseki JAR file from the ./target/dependency directory
 FUSEKI_JAR=$(find ${CURRENT_DIR}/target/dependency -name "jena-fuseki-main-${FUSEKI_SERVER_VERSION}.jar" | head -n 1)
-# Check if the specific version was found
+
+# Check if the specific version was found, otherwise find any available jena-fuseki-main JAR
 if [[ -z "$FUSEKI_JAR" ]]; then
-    # If not, find any available jena-fuseki-main JAR
     FUSEKI_JAR=$(find ${CURRENT_DIR}/target/dependency -name "jena-fuseki-main-*.jar" | head -n 1)
 fi
+
 # Check if a JAR file was found
 if [[ -z "$FUSEKI_JAR" ]]; then
     echo "Error: Could not find jena-fuseki-main JAR file in ./target/dependency"
@@ -32,12 +38,21 @@ fi
 # Extract the JAR file name
 FUSEKI_JAR_NAME=$(basename "$FUSEKI_JAR")
 
-# Build the Docker image, passing the FUSEKI_JAR file name and PROJECT_VERSION as build arguments
+# Select the Dockerfile to use (default or alpine)
+DOCKERFILE="Dockerfile"
+IMAGE_TAG="smart-cache-graph:${PROJECT_VERSION}"
+if [[ "$1" == "alpine" ]]; then
+    DOCKERFILE="Dockerfile.alpine"
+    IMAGE_TAG="smart-cache-graph:${PROJECT_VERSION}-alpine"
+    shift # Remove the 'alpine' argument from the $@
+fi
+
+# Build the Docker image
 docker build --build-arg FUSEKI_JAR="${FUSEKI_JAR_NAME}" \
              --build-arg PROJECT_VERSION="${PROJECT_VERSION}" \
-             -t smart-cache-graph:"${PROJECT_VERSION}" -f ${CURRENT_DIR}/Dockerfile ${CURRENT_DIR}/..
+             -t $IMAGE_TAG -f ${CURRENT_DIR}/${DOCKERFILE} ${CURRENT_DIR}/..
 
-# Remove previous entry if exists
+# Remove any existing container with the same name
 EXISTING_CONTAINER=$(docker ps -a -q -f name=smart-cache-graph-container)
 if [ -n "$EXISTING_CONTAINER" ]; then
     docker stop smart-cache-graph-container 2>/dev/null
@@ -50,6 +65,7 @@ if [[ -z "$ARGS" ]]; then
     ARGS="--mem /ds"
 fi
 
+# Prepare the mount directory for logs, databases, and config
 MNT_DIR=$(pwd)/${CURRENT_DIR}/mnt
 
 # Run the Docker container, mapping port 3030, setting the necessary environment variables
@@ -61,4 +77,4 @@ docker run -d \
     -v "$MNT_DIR/databases:/fuseki/databases" \
     -v "$MNT_DIR/config:/fuseki/config"  \
     --name smart-cache-graph-container \
-    smart-cache-graph:"${PROJECT_VERSION}" $ARGS
+    $IMAGE_TAG $ARGS

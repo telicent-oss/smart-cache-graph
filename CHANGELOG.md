@@ -1,6 +1,23 @@
 # Smart Cache Graph
 
+## 0.82.5
+
+- Fuseki Kafka Connector upgraded to 1.5.0 which adds improved support for specifying additional Kafka configuration
+  necessary to connect to Kafka clusters that use security.
+- Apache Jena upgraded to 5.2.0
+- Smart Caches Core upgraded to 0.24.0
+- Various other dependencies upgraded to latest available
+
+
+## 0.82.4
+
+- Update Dockerfile to Rocks DB spawning issue by explicitly specifying C lib to use. 
+- Build improvements:
+  - Patching minor dependencies (as per dependabot).
+  - Tidying up POM file, consolidating version approach with other repos.
+
 ## 0.82.2
+
 - Add "compactall" endpoint
 
 ## 0.82.1
@@ -26,6 +43,7 @@
     - Various build and test dependencies upgraded to latest available
 
 ## 0.81.8
+
 - Build improvements:
   - Upgrading RDF ABAC to 0.71.9
   - Fixed typos in specification documentation
