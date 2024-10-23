@@ -38,7 +38,6 @@ import java.util.List;
 
 import static io.telicent.core.SmartCacheGraph.construct;
 import static org.junit.jupiter.api.Assertions.*;
-import static records.ConfigConstants.log;
 
 /*
 * Test SCG usage of varying configuration parameters.

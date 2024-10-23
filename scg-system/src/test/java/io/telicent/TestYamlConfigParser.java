@@ -56,7 +56,7 @@ import java.util.Properties;
 
 import static io.telicent.core.SmartCacheGraph.construct;
 import static org.junit.jupiter.api.Assertions.*;
-import static records.ConfigConstants.log;
+import static yamlconfig.ConfigConstants.log;
 
 /*
 * Test SCG usage of YAML config files.
