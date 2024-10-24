@@ -1,0 +1,35 @@
+PREFIX :        <#>
+PREFIX authz:   <http://telicent.io/security#>
+PREFIX cqrs:    <http://telicent.io/cqrs#>
+PREFIX fk:      <http://jena.apache.org/fuseki/kafka#>
+PREFIX fuseki:  <http://jena.apache.org/fuseki#>
+PREFIX graphql: <https://telicent.io/fuseki/modules/graphql#>
+PREFIX ja:      <http://jena.hpl.hp.com/2005/11/Assembler#>
+PREFIX rdf:     <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX tdb2:    <http://jena.apache.org/2016/tdb#>
+
+[ rdf:type         fuseki:Server;
+  fuseki:name      "Fuseki server simple";
+  fuseki:services  ( :service1 )
+] .
+
+:abac-tdb2-db  rdf:type    authz:DatasetAuthz;
+        authz:attributes   <file:abac/attribute-store.ttl>;
+        authz:cache        false;
+        authz:dataset      :dataset-under;
+        authz:labelsStore  [ authz:labelsStorePath
+                          "target/labels" ] .
+
+:dataset-under  rdf:type  tdb2:DatasetTDB2;
+        tdb2:location  "target/test-abac-DB" .
+
+:service1  rdf:type      fuseki:Service;
+        fuseki:dataset   :abac-tdb2-db;
+        fuseki:endpoint  [ fuseki:name       "data-update";
+                           fuseki:operation  fuseki:update
+                         ];
+        fuseki:endpoint  [ fuseki:operation  authz:query ];
+        fuseki:endpoint  [ fuseki:name       "upload";
+                           fuseki:operation  authz:upload
+                         ];
+        fuseki:name      "ds" .

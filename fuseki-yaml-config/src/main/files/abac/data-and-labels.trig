@@ -1,0 +1,24 @@
+PREFIX : <http://example/>
+
+:s :p1 123 .
+:s :p2 456 .
+:s :p2 789 .
+
+:s :q "No label" .
+
+:s1 :p1 1234 .
+:s1 :p2 2345 .
+
+PREFIX authz: <http://telicent.io/security#>
+
+GRAPH authz:labels {
+
+    [ authz:pattern ':s :p1 123'  ; authz:label "level-1" ] .
+
+    ## Multiple labels.
+    [ authz:pattern ':s :p2 456'  ; authz:label "manager", "level-1" ] .
+    [ authz:pattern ':s :p2 789'  ; authz:label "manager"  ] .
+
+    [ authz:pattern ':s1 :p1 1234' ; authz:label "manager"  ] .
+    [ authz:pattern ':s1 :p2 2345' ; authz:label "engineer"  ] .
+}

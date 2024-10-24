@@ -1,0 +1,26 @@
+version: "1.0"
+prefixes:
+  - prefix: "fk"
+    namespace: "http://jena.apache.org/fuseki/kafka#"
+  - prefix: "cqrs"
+    namespace: "http://telicent.io/cqrs#"
+  - prefix: "graphql"
+    namespace: "https://telicent.io/fuseki/modules/graphql#"
+  - prefix: "authz"
+    namespace: "http://telicent.io/security#"
+server:
+  name: "Fuseki server simple"
+services:
+  - name: "ds"
+    endpoints:
+     - name: "upload"
+       operation: authz:upload
+     - operation: authz:query
+     - name: "data-update"
+       operation: update
+    database:  "tdb2-db"
+
+databases:
+  - name: "tdb2-db"
+    dbtype: TDB2
+    location: "target/test-DB"

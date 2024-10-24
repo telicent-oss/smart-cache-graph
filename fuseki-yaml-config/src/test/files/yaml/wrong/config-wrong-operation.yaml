@@ -1,0 +1,27 @@
+version: "1.0"
+server:
+  name: "Fuseki server 1"
+services:
+  - name: "/ds"
+    endpoints:
+      - operation: query
+      - name: "sparql"
+        operation: wrong
+        settings:
+          'arq:queryTimeout': "1000,10000"
+      - name: "data-update"
+        operation: update
+    database:  "mem-db"
+  - name: "/db2"
+    endpoints:
+      - name: "sparql"
+        operation: query
+    database : "tdb2-db"
+databases:
+  - name: "mem-db"
+    dbtype: TIM
+  - name: "tdb2-db"
+    dbtype: TDB2
+    location: "DB2"
+    settings:
+      'tdb2:unionDefaultGraph': true

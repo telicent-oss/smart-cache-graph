@@ -1,0 +1,18 @@
+version: "1.0"
+server:
+  name: "Fuseki server simple"
+services:
+  - name: "ds"
+    endpoints:
+      - name: "sparql"
+        operation: query
+      - name: "data-update"
+        operation: update
+    database:  "tdb2-db"
+
+databases:
+  - name: "tdb2-db"
+    dbtype: TDB2
+    location: "target/test-DB"
+    settings:
+      'arq:queryTimeout': "1,1"

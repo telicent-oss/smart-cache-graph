@@ -1,0 +1,22 @@
+version: "1.0"
+server:
+  name: "Fuseki server simple"
+services:
+  - name: "ds"
+    endpoints:
+      - operation: query
+        settings:
+      - name: "upload"
+        operation: upload
+    database:  "abac-db"
+
+databases:
+  - name: "abac-db"
+    dbtype: ABAC
+    dataset: "dataset-under"
+    attributes: "abac/attribute-store.ttl"
+    labels: "abac/labels.ttl"
+
+  - name: "dataset-under"
+    dbtype: TIM
+    data: "src/main/files/abac/data-no-labels.trig"

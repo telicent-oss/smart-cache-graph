@@ -1,0 +1,28 @@
+# duplicate database
+
+version: "1.0"
+server:
+  name: "Fuseki server 1"
+services:
+  - name: "/ds"
+    endpoints:
+      - operation: query
+      - name: "sparql"
+        operation: query
+        settings:
+          'arq:queryTimeout': "1000,10000"
+      - name: "data-update"
+        operation: update
+    database:  "mem-db"
+  - name: "/db2"
+    endpoints:
+      - name: "sparql"
+        operation: query
+    database : "mem-db2"
+databases:
+  - name: "mem-db"
+    dbtype: TIM
+  - name: "mem-db2"
+    dbtype: TIM
+  - name: "mem-db2"
+    dbtype: TIM

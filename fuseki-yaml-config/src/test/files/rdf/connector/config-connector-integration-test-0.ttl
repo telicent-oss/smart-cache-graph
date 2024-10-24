@@ -1,0 +1,30 @@
+PREFIX :       <#>
+PREFIX authz:  <http://telicent.io/security#>
+PREFIX fk:     <http://jena.apache.org/fuseki/kafka#>
+PREFIX fuseki: <http://jena.apache.org/fuseki#>
+PREFIX ja:     <http://jena.hpl.hp.com/2005/11/Assembler#>
+PREFIX rdf:    <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX tdb2:   <http://jena.apache.org/2016/tdb#>
+
+:connector1  rdf:type         fk:Connector;
+        fk:bootstrapServers   "localhost:9092";
+        fk:fusekiServiceName  "/ds";
+        fk:groupId            "";
+        fk:replayTopic        false;
+        fk:stateFile          "Replay-RDF0.state";
+        fk:topic              "RDF0" .
+
+[ rdf:type         fuseki:Server;
+  fuseki:name      "Fuseki server simple";
+  fuseki:services  ( :service1 )
+] .
+
+:dataset  rdf:type  ja:MemoryDataset .
+
+:service1  rdf:type      fuseki:Service;
+        fuseki:dataset   :dataset;
+        fuseki:endpoint  [ fuseki:operation  fuseki:patch ];
+        fuseki:endpoint  [ fuseki:operation  fuseki:gsp-rw ];
+        fuseki:endpoint  [ fuseki:operation  fuseki:update ];
+        fuseki:endpoint  [ fuseki:operation  fuseki:query ];
+        fuseki:name      "ds" .

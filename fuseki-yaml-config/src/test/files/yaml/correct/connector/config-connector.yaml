@@ -1,0 +1,51 @@
+version: "1.0"
+server:
+  name: "Fuseki server simple"
+services:
+  - name: "ds"
+    endpoints:
+      - name: "sparql"
+        operation: query
+        settings:
+          'arq:queryTimeout': "1000,10000"
+      - name: "data-update"
+        operation: update
+    database:  "tdb2-db"
+
+databases:
+  - name: "tdb2-db"
+    dbtype: TDB2
+    location: "target/test-DB"
+
+connectors:
+  # Destination Fuseki service. This is a URI path (no scheme, host or port).
+    # This can be the dataset, a specific endpoint ("/ds/kafkaIncoming")
+  # with the necessary fuseki:operation.
+  # mandatory
+  - fuseki-service: "ds"
+    # Kafka topic
+    # mandatory
+    topic: "env:{ENV_KAFKA_TOPIC:RDF}"
+    # Using Kafka-RAFT
+    # mandatory
+    bootstrap-servers: "localhost:9092"
+    # File used to track the state (the last offset processes)
+    # Used across Fuseki restarts.
+    # mandatory
+    state-file: "dDatabases/RDF.state"
+    # Kafka GroupId - default "JenaFusekiKafka"
+    # optional?
+    group-id: "JenaFusekiKafka"
+      # What to do on start up.
+    # Normally this is "sync" which is the default value.
+    # If replay is true, then on start-up the whole topic is replayed.
+    # optional?
+    replay-topic: true
+    # optional?
+    sync-topic: true
+    ## Additional Kafka client properties.
+    # optional?
+    config:
+      key: "value"
+
+

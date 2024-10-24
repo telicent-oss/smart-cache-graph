@@ -1,0 +1,52 @@
+Objective: Configue an Apache Jena Fuseki server
+
+Cover the cases for Smart Cache Graph.
+* Datasets TIM (in-memory), TDB2, RDF-ABAC
+
+
+Process
+
+1 :: Parse the YAML to produce a java datastructure (see Sketch.java)
+
+This data structure is designed to have the elements needed for configuring Fuseki.
+
+YAML can parse to files and directly produce the required classes.
+
+See https://www.baeldung.com/java-snake-yaml
+Try section 4.2 using the "!!" declaration in the YAML file but the goal is section 4.4
+(no inline class declartions)
+
+Using yamlconfig may not work - too new to Java.
+It might need to be normal Java classes ("POJO" = "Plain Old Java Class") which
+are classes with getters for each field. The class constructor is settings. Add
+"hashCode" and "equals" functions - get the IDE to generate these for you.
+
+If SnakeYAML does not work for this, there is an alternative to SnakeYAML
+"jackson" system which does data binding.
+https://www.baeldung.com/jackson-yaml
+
+2 :: Do further checking on the data structure.
+
+Add a phase of logical checking - for example are values strings where expected
+to be strings? Do all the services have a database (may already be done by YAML
+data binding)? Does the database exist in the dadabases object?
+
+Test cases.
+
+Aside (( YAML schema?
+  TAke a look at YAML schema.
+  https://asdf-standard.readthedocs.io/en/1.0.3/schemas/yaml_schema.html
+  an extensions of JSON schema
+  Does it add anyting? Is enough to make it worth it?
+))
+
+3 :: Generate RDF. Use the java datastructure to create triples corresponding 
+to the TTL configuration. Send these triple to a StreamRDF.
+
+Two kinds of Stream RDF: 
+A:: an RDF graph, then write the graph
+B:: Use WriterStreamRDFBlocks
+
+See example.ttl for RDF output from eaxmple.yaml.
+NB Not checked.
+NB example.ttl has some extra details noted in the file.

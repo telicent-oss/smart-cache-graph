@@ -1,0 +1,9 @@
+PREFIX :        <#>
+PREFIX authz:   <http://telicent.io/security#>
+PREFIX cqrs:    <http://telicent.io/cqrs#>
+PREFIX fk:      <http://jena.apache.org/fuseki/kafka#>
+PREFIX fuseki:  <http://jena.apache.org/fuseki#>
+PREFIX graphql: <https://telicent.io/fuseki/modules/graphql#>
+PREFIX ja:      <http://jena.hpl.hp.com/2005/11/Assembler#>
+PREFIX rdf:     <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX tdb2:    <http://jena.apache.org/2016/tdb#>

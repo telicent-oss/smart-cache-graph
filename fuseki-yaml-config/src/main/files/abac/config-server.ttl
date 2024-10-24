@@ -1,0 +1,39 @@
+## General server configuration for testing.
+
+PREFIX :        <#>
+PREFIX fuseki:  <http://jena.apache.org/fuseki#>
+PREFIX rdf:     <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs:    <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX ja:      <http://jena.hpl.hp.com/2005/11/Assembler#>
+PREFIX tdb2:    <http://jena.apache.org/2016/tdb#>
+
+PREFIX authz:   <http://telicent.io/security#>
+
+:service1 rdf:type fuseki:Service ;
+    fuseki:name "ds" ;
+    # Preferred operations.
+    fuseki:endpoint [ fuseki:operation fuseki:gsp-r ] ;
+    fuseki:endpoint [ fuseki:operation fuseki:query ] ;
+    
+    fuseki:endpoint [ fuseki:operation authz:upload ; fuseki:name "upload" ] ;
+    fuseki:dataset :dataset ;
+    .
+
+## ABAC Dataset: Initially: no labels, no rules
+:dataset rdf:type authz:DatasetAuthz ;
+    authz:dataset :datasetBase;
+    authz:attributes <file:attribute-store.ttl> ;
+    authz:tripleDefaultAttributes  "*";
+    .
+
+# Transactional in-memory dataset.
+:datasetBase rdf:type ja:MemoryDataset .
+
+## ----
+## No authorization. Should not interfere.
+:service2 rdf:type fuseki:Service ;
+    fuseki:name "base" ;
+    fuseki:endpoint [ fuseki:operation fuseki:query ; ] ;
+    fuseki:endpoint [ fuseki:operation fuseki:update ; ] ;
+    fuseki:dataset [ rdf:type ja:MemoryDataset ];
+    .

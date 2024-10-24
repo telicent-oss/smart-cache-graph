@@ -1,0 +1,32 @@
+version: "1.0"
+prefixes:
+  - prefix: "fk"
+    namespace: "..invalidUri..:("
+  - prefix: "cqrs"
+    namespace: "http://telicent.io/cqrs#"
+  - prefix: "graphql"
+    namespace: "https://telicent.io/fuseki/modules/graphql#"
+  - prefix: "authz"
+    namespace: "http://telicent.io/security#"
+server:
+  name: "Fuseki server simple"
+services:
+  - name: "ds"
+    endpoints:
+      - name: "upload"
+        operation: authz:upload
+      - operation: authz:query
+      - name: "data-update"
+        operation: update
+    database:  "abac-tdb2-db"
+
+databases:
+  - name: "abac-tdb2-db"
+    dbtype: ABAC
+    dataset: "dataset-under"
+    attributes: "abac/attribute-store.ttl"
+    labels-store: "target/labels"
+
+  - name: "dataset-under"
+    dbtype: TDB2
+    location: "target/test-abac-DB"

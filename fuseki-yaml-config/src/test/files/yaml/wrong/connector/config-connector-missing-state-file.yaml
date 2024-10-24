@@ -1,0 +1,46 @@
+version: "1.0"
+server:
+  name: "Fuseki server simple"
+services:
+  - name: "ds"
+    endpoints:
+      - name: "sparql"
+        operation: query
+        settings:
+          'arq:queryTimeout': "1000,10000"
+      - name: "data-update"
+        operation: update
+    database:  "tdb2-db"
+  - name: "ds2"
+    endpoints:
+      - name: "sparql"
+        operation: query
+        settings:
+          'arq:queryTimeout': "1000,10000"
+      - name: "data-update"
+        operation: update
+    database: "tdb2-db"
+
+databases:
+  - name: "tdb2-db"
+    dbtype: TDB2
+    location: "target/test-DB"
+
+connectors:
+  - fuseki-service: "/ds"
+    topic: "env:{ENV_KAFKA_TOPIC:RDF}"
+    bootstrap-servers: "localhost:9092"
+    group-id: "JenaFusekiKafka"
+    replay-topic: true
+    sync-topic: true
+    config:
+      key: "value"
+  - fuseki-service: "/ds2"
+    topic: "env:{ENV_KAFKA_TOPIC:RDF}"
+    bootstrap-servers: "localhost:9093"
+    state-file: "dDatabases/RDF.state"
+    group-id: "JenaFusekiKafka2"
+    replay-topic: true
+    sync-topic: true
+
+

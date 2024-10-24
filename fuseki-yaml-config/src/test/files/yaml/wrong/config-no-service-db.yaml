@@ -1,0 +1,17 @@
+version: "1.0"
+server:
+  name: "Fuseki server simple"
+services:
+  - name: "ds"
+    endpoints:
+      - name: "sparql"
+        operation: query
+        settings:
+          'arq:queryTimeout': "1000,10000"
+      - name: "data-update"
+        operation: update
+
+databases:
+  - name: "mem-db"
+    dbtype: TIM
+    data: "src/test/files/daffyduck7.trig"
