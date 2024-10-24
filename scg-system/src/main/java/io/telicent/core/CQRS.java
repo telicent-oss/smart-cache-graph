@@ -77,7 +77,7 @@ public class CQRS {
     public static ActionService updateAction(String topic, Properties producerProperties) {
         Producer<String, byte[]> producer = (producerProperties == null)
                 ? null
-                : new KafkaProducer<String,byte[]>(producerProperties, new StringSerializer(), new ByteArraySerializer());
+                : new KafkaProducer<>(producerProperties, new StringSerializer(), new ByteArraySerializer());
         return new SPARQL_Update_CQRS(topic, producer, onBegin, onCommit, onAbort);
     }
 
