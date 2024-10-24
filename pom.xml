@@ -71,7 +71,7 @@
     <plugin.jar>3.4.2</plugin.jar>
     <plugin.javadoc>3.10.1</plugin.javadoc>
     <plugin.nexus>1.7.0</plugin.nexus>
-    <plugin.owasp-dependency-check>10.0.4</plugin.owasp-dependency-check>
+    <plugin.owasp-dependency-check>11.0.0</plugin.owasp-dependency-check>
     <plugin.resources>3.3.1</plugin.resources>
     <plugin.shade>3.4.1</plugin.shade>
     <plugin.site>3.9.1</plugin.site>
