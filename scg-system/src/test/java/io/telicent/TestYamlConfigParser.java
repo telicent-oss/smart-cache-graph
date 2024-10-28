@@ -233,13 +233,15 @@ class TestYamlConfigParser {
         assertTrue(equals);
     }
 
-    // TODO
-    /*@Test
+    @Test
     void yaml_config_abac_labels_store() {
-        List<String> arguments = List.of("--conf",DIR + "/yaml/config-abac-labelsstore-path.yaml");
+        List<String> arguments = List.of("--conf",DIR + "/yaml/config-abac-labels-store.yaml");
         server = construct(arguments.toArray(new String[0])).start();
 
-        Dataset dataset = TDB2Factory.connectDataset("target/labels-store");
+        // it only works if it's target/labels, so it's probably working thanks to some other test
+        // that's why it fails after clean
+        // but the data does get uploaded both to the labels and the database
+        Dataset dataset = TDB2Factory.connectDataset("target/labels-test");
         dataset.begin(org.apache.jena.query.ReadWrite.WRITE);
         try {
             Model labelsStoreModel = dataset.getDefaultModel();
@@ -252,29 +254,15 @@ class TestYamlConfigParser {
             dataset.end();
         }
 
-        dataset.begin(org.apache.jena.query.ReadWrite.READ);
-        try {
-            System.out.println("======= Default Graph =======");
-            Model defaultModel = dataset.getDefaultModel();
-            defaultModel.write(System.out, "TTL");  // Print the default graph in Turtle format
-        } catch (Exception e) {
-            log.error(e.getMessage());
-        } finally {
-            dataset.end();
-        }
-
         RowSetRewindable actualResponseRSR;
         String URL = "http://localhost:" + server.getPort() + serviceName;
         String uploadURL = URL + "/upload";
         load(uploadURL, DIR + "/yaml/data-no-labels.trig");
         actualResponseRSR = query(server, "u1");
-        actualResponseRSR = query(server, "u2");
-        actualResponseRSR = query(server, "u3");
-        actualResponseRSR = query(server, "u1");
         expectedRSR.reset();
         boolean equals = ResultSetCompare.isomorphic(expectedRSR, actualResponseRSR);
         assertTrue(equals);
-    }*/
+    }
 
     @Test
     void yaml_config_abac_attributes_store() {

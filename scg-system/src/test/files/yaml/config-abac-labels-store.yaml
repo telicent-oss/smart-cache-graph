@@ -11,15 +11,15 @@ services:
         settings:
       - name: "upload"
         operation: authz:upload
-    database:  "abac-db"
+    database:  "abac-tdb2-db-test"
 
 databases:
-  - name: "abac-db"
+  - name: "abac-tdb2-db-test"
     dbtype: ABAC
-    dataset: "dataset-under"
+    dataset: "dataset-under-test"
     attributes: "attribute-store.ttl"
-    labels-store: "target/labels-store"
+    labels-store: "target/labels-test"
 
-  - name: "dataset-under"
+  - name: "dataset-under-test"
     dbtype: TDB2
     location: "target/test-abac-DB"
