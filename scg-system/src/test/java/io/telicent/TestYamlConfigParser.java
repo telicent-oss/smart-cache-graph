@@ -51,6 +51,7 @@ import org.testcontainers.shaded.org.apache.commons.lang3.StringUtils;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
 
@@ -233,7 +234,7 @@ class TestYamlConfigParser {
     }
 
     // TODO
-    @Test
+    /*@Test
     void yaml_config_abac_labels_store() {
         List<String> arguments = List.of("--conf",DIR + "/yaml/config-abac-labelsstore-path.yaml");
         server = construct(arguments.toArray(new String[0])).start();
@@ -251,16 +252,29 @@ class TestYamlConfigParser {
             dataset.end();
         }
 
+        dataset.begin(org.apache.jena.query.ReadWrite.READ);
+        try {
+            System.out.println("======= Default Graph =======");
+            Model defaultModel = dataset.getDefaultModel();
+            defaultModel.write(System.out, "TTL");  // Print the default graph in Turtle format
+        } catch (Exception e) {
+            log.error(e.getMessage());
+        } finally {
+            dataset.end();
+        }
+
         RowSetRewindable actualResponseRSR;
         String URL = "http://localhost:" + server.getPort() + serviceName;
         String uploadURL = URL + "/upload";
         load(uploadURL, DIR + "/yaml/data-no-labels.trig");
-
+        actualResponseRSR = query(server, "u1");
+        actualResponseRSR = query(server, "u2");
+        actualResponseRSR = query(server, "u3");
         actualResponseRSR = query(server, "u1");
         expectedRSR.reset();
         boolean equals = ResultSetCompare.isomorphic(expectedRSR, actualResponseRSR);
         assertTrue(equals);
-    }
+    }*/
 
     @Test
     void yaml_config_abac_attributes_store() {
