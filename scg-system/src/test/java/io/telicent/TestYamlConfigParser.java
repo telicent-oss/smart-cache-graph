@@ -65,7 +65,6 @@ import static yamlconfig.ConfigConstants.log;
 class TestYamlConfigParser {
 
     private static final String DIR = "src/test/files";
-    private static String STATE_DIR = "target/state";
     private FusekiServer server;
     private static MockKafka mock;
 
@@ -161,14 +160,13 @@ class TestYamlConfigParser {
         mock.createTopic("RDF0");
     }
 
-
-
     @BeforeEach
     void setUp() throws Exception {
         FusekiLogging.setLogging();
         SysFusekiABAC.init();
         LibTestsSCG.teardownAuthentication();
         LibTestsSCG.disableInitialCompaction();
+        expectedRSR.reset();
     }
 
     @AfterEach
@@ -216,7 +214,6 @@ class TestYamlConfigParser {
         RowSetRewindable actualResponseRSR;
         load(server);
         actualResponseRSR = query(server, "u1");
-        expectedRSR.reset();
         boolean equals = ResultSetCompare.isomorphic(expectedRSR, actualResponseRSR);
         assertTrue(equals);
     }
@@ -228,7 +225,6 @@ class TestYamlConfigParser {
         RowSetRewindable actualResponseRSR;
         load(server);
         actualResponseRSR = query(server, "u1");
-        expectedRSR.reset();
         boolean equals = ResultSetCompare.isomorphic(expectedRSR, actualResponseRSR);
         assertTrue(equals);
     }
@@ -238,9 +234,10 @@ class TestYamlConfigParser {
         List<String> arguments = List.of("--conf",DIR + "/yaml/config-abac-labels-store.yaml");
         server = construct(arguments.toArray(new String[0])).start();
 
-        // it only works if it's target/labels, so it's probably working thanks to some other test
-        // that's why it fails after clean
-        // but the data does get uploaded both to the labels and the database
+        // it only works if the labels store is at target/labels, same location as in yaml_config_custom_prefix
+        // that's why it would fail after clean, but pass otherwise
+        // the data does get uploaded both to the labels store and the database
+        // all existing users return empty, non-existing 403 Forbidden as expected
         Dataset dataset = TDB2Factory.connectDataset("target/labels-test");
         dataset.begin(org.apache.jena.query.ReadWrite.WRITE);
         try {
@@ -259,7 +256,6 @@ class TestYamlConfigParser {
         String uploadURL = URL + "/upload";
         load(uploadURL, DIR + "/yaml/data-no-labels.trig");
         actualResponseRSR = query(server, "u1");
-        expectedRSR.reset();
         boolean equals = ResultSetCompare.isomorphic(expectedRSR, actualResponseRSR);
         assertTrue(equals);
     }
@@ -275,7 +271,6 @@ class TestYamlConfigParser {
         RowSetRewindable actualResponseRSR;
         load(server);
         actualResponseRSR = query(server, "u1");
-        expectedRSR.reset();
         boolean equals = ResultSetCompare.isomorphic(expectedRSR, actualResponseRSR);
         assertTrue(equals);
     }
@@ -289,8 +284,20 @@ class TestYamlConfigParser {
         String uploadURL = URL + "/upload";
         load(uploadURL, DIR + "/yaml/data-no-labels.trig");
         actualResponseRSR = query(server, "u1");
-        expectedRSR.reset();
         boolean equals = ResultSetCompare.isomorphic(expectedRSRtdl, actualResponseRSR);
+        assertTrue(equals);
+    }
+
+    @Test
+    void yaml_config_abac_labels() {
+        List<String> arguments = List.of("--conf",DIR + "/yaml/config-abac-labels.yaml");
+        server = construct(arguments.toArray(new String[0])).start();
+        RowSetRewindable actualResponseRSR;
+        String URL = "http://localhost:" + server.getPort() + serviceName;
+        String uploadURL = URL + "/upload";
+        load(uploadURL, DIR + "/yaml/data-no-labels.trig");
+        actualResponseRSR = query(server, "u1");
+        boolean equals = ResultSetCompare.isomorphic(expectedRSR, actualResponseRSR);
         assertTrue(equals);
     }
 
@@ -298,6 +305,7 @@ class TestYamlConfigParser {
     @Test
     void yaml_config_kafka_connector() {
         String TOPIC = "RDF0";
+        String STATE_DIR = "target/state";
         FileOps.ensureDir(STATE_DIR);
         FileOps.clearDirectory(STATE_DIR);
 
@@ -329,7 +337,6 @@ class TestYamlConfigParser {
         RowSetRewindable actualResponseRSR;
         load(server);
         actualResponseRSR = query(server, "u1");
-        expectedRSR.reset();
         boolean equals = ResultSetCompare.isomorphic(expectedRSR, actualResponseRSR);
         assertTrue(equals);
     }
