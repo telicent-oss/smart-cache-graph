@@ -33,9 +33,7 @@ import yamlconfig.ConfigStruct;
 import yamlconfig.RDFConfigGenerator;
 import yamlconfig.YAMLConfigParser;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -86,12 +84,33 @@ public class SmartCacheGraph {
                         while (iter.hasNext()) {
                             Statement stmt = iter.nextStatement();
                             RDFNode object = stmt.getObject();
-                            if (stmt.getSubject().isURIResource() && stmt.getSubject().getURI().contains("data") && object.isURIResource() && object.asResource().getURI().startsWith("file:")) {
-                                String oldFilePathURI = object.asResource().getURI();
-                                String updatedFilePathURI = convertToAbsolutePathURI(oldFilePathURI);
-                                Resource newFilePathResource = configModel.createResource(updatedFilePathURI);
+                            if(stmt.getPredicate().getURI().equals("http://jena.hpl.hp.com/2005/11/Assembler#data")) {
+                            //if (stmt.getSubject().isURIResource() && stmt.getSubject().getURI().contains("data") && object.isURIResource() && object.asResource().getURI().startsWith("file:")) {
+                                //String oldFilePathURI = object.asResource().getURI();
+                                String oldFileURI = new File(object.asLiteral().toString()).toURI().toString();
+                                //String updatedFilePathURI = convertToAbsolutePathURI(oldFileURI);
+                                //Resource newFilePathResource = configModel.createResource(updatedFilePathURI);
+                                Resource newFilePathResource = configModel.createResource(oldFileURI);
                                 configModel.remove(stmt);
-                                configModel.add(stmt.getSubject(), stmt.getPredicate(), newFilePathResource); // Add updated one
+                                configModel.add(stmt.getSubject(), stmt.getPredicate(), newFilePathResource);
+                                break;
+                            }
+                        }
+
+                        StmtIterator iter2 = configModel.listStatements();
+                        while (iter2.hasNext()) {
+                            Statement stmt = iter2.nextStatement();
+                            RDFNode object = stmt.getObject();
+                            if(stmt.getPredicate().getURI().equals("http://telicent.io/security#attributes")) {
+                                String oldFilePathURI = object.asResource().getURI();//new File(object.asLiteral().toString()).toURI().toString();//"file:src/test/files/yaml/" + object.asResource().getURI().substring(5);
+                                //String oldFileURI = new File(object.asLiteral().toString()).toURI().toString();
+                                //String updatedFilePathURI = convertToAbsolutePathURI(oldFilePathURI);
+                                //Resource newFilePathResource = configModel.createResource(updatedFilePathURI);
+                                log.info("attr path: " + oldFilePathURI);
+                                Resource newFilePathResource = configModel.createResource(oldFilePathURI);
+                                configModel.remove(stmt);
+                                configModel.add(stmt.getSubject(), stmt.getPredicate(), newFilePathResource);
+                                break;
                             }
                         }
 
@@ -101,11 +120,21 @@ public class SmartCacheGraph {
                         try (FileOutputStream out = new FileOutputStream(rdfConfigPath)) {
                             configModel.write(out, "TTL", new File(configPath).getAbsoluteFile().getParentFile().toURI().toString());
                             log.info(new File(configPath).getAbsoluteFile().getParentFile().toURI().toString());
+                            configModel.write(System.out, "TTL", new File(configPath).getAbsoluteFile().getParentFile().toURI().toString());
                             args[i + 1] = rdfConfigPath.getPath();
                         } catch (IOException e) {
                             log.error(e.getMessage());
                             throw new RuntimeException(e.getMessage());
                         }
+                        //===========
+                        /*Model configModelChanged = ModelFactory.createDefaultModel();
+                        try (InputStream in = new FileInputStream(rdfConfigPath)) {
+                            configModelChanged.read(in, null);
+                        } catch (Exception e) {
+                            log.error("Error reading the RDF file: {}", e.getMessage(), e);
+                        }
+                        configModelChanged.write(System.out, "TURTLE");*/
+                        //===========
                     } catch (RuntimeException ex) {
                         log.error(ex.getMessage());
                         //throw ex;
@@ -194,6 +223,6 @@ public class SmartCacheGraph {
         String absolutePath = file.getAbsolutePath();
 
         // Return the absolute path as a file URI
-        return "file:" + absolutePath;
+        return "file:/" + absolutePath;
     }
 }

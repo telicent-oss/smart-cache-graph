@@ -33,10 +33,7 @@ import org.apache.jena.query.Dataset;
 import org.apache.jena.query.Query;
 import org.apache.jena.query.QueryFactory;
 import org.apache.jena.rdf.model.*;
-import org.apache.jena.riot.Lang;
-import org.apache.jena.riot.RDFDataMgr;
-import org.apache.jena.riot.RDFParser;
-import org.apache.jena.riot.WebContent;
+import org.apache.jena.riot.*;
 import org.apache.jena.sparql.core.DatasetGraphFactory;
 import org.apache.jena.sparql.exec.QueryExec;
 import org.apache.jena.sparql.exec.RowSet;
@@ -147,7 +144,8 @@ class TestYamlConfigParserAuthz {
         RowSetRewindable actualResponseRSR;
         String validToken = tokenForUser("u1");
         //doesn't pass unless I upload! Even though there's a data field in the file
-        LibTestsSCG.uploadFile(server.serverURL() + serviceName + "/upload", DIR + "/yaml/data-and-labels.trig");//load(server);
+        // changing the path to absolute manually in the yaml file doesn't help
+        //LibTestsSCG.uploadFile(server.serverURL() + serviceName + "/upload", DIR + "/yaml/data-and-labels.trig");//load(server);
         actualResponseRSR = QueryExecHTTPBuilder.service(server.serverURL() + serviceName)
                 .query("SELECT * { ?s ?p ?o }")
                 .httpHeader(LibTestsSCG.tokenHeader(),
