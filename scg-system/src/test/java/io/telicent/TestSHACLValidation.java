@@ -22,11 +22,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class TestSHACLValidation {
 
-    private static final String DIR = "src/test/files";
+    private static final Path DIR = Path.of("src/test/files");
     private FusekiServer server;
-    private static final String serviceName = "/ds";
+    private static final String SERVICE_NAME = "/ds";
+    private HttpClient httpClient;
 
-    private static final String expectedPass = """
+    private static final String EXPECTED_PASS = """
             PREFIX rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
             PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
             PREFIX sh:   <http://www.w3.org/ns/shacl#>
@@ -37,7 +38,7 @@ public class TestSHACLValidation {
             ] .
             """;
 
-    private static final String expectedFail = """
+    private static final String EXPECTED_FAIL = """
             PREFIX ex:   <http://example.org/>
             PREFIX ies:  <http://ies.data.gov.uk/ontology/ies4#>
             PREFIX rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
@@ -65,54 +66,77 @@ public class TestSHACLValidation {
         SysFusekiABAC.init();
         LibTestsSCG.teardownAuthentication();
         LibTestsSCG.disableInitialCompaction();
+        httpClient = HttpClient.newHttpClient();
     }
 
     @AfterEach
-    void clearDown() throws Exception {
+    void clearDown() {
         if (null != server) {
             server.stop();
         }
         Configurator.reset();
     }
 
+    /**
+     * In this test the data conforms with the SHACL shape and therefore the validation should pass
+     */
     @Test
     void shacl_validation_pass() throws Exception {
-        List<String> arguments = List.of("--conf",DIR + "/config-shacl.ttl");
-        server = construct(arguments.toArray(new String[0])).start();
-        String URL = "http://localhost:" + server.getPort() + serviceName;
-        String uploadURL = URL + "/upload";
-        String validationURL = URL + "/shacl?graph=default";
-        load(uploadURL, DIR + "/Data/PersonDataValid.ttl");
-        String response = validate(validationURL, Paths.get(DIR + "/Data/PersonShape.ttl"));
-        assertEquals(expectedPass, response, "Unexpected SHACL validation result");
+        startServer();
+        Path validDataPath = DIR.resolve("Data/PersonDataValid.ttl");
+        loadData(validDataPath);
+        String response = validateData(Paths.get(DIR + "/Data/PersonShape.ttl"));
+        assertEquals(EXPECTED_PASS, response, "Unexpected SHACL validation result");
     }
 
+    /**
+     * In this test the data does not conform to the SHACL shape due to the ies:hasName property pointing to a literal
+     * string instead of another resource
+     */
     @Test
     void shacl_validation_fail() throws Exception {
-        List<String> arguments = List.of("--conf",DIR + "/config-shacl.ttl");
+        startServer();
+        Path invalidDataPath = DIR.resolve("Data/PersonDataInvalid.ttl");
+        loadData(invalidDataPath);
+        String response = validateData(Paths.get(DIR + "/Data/PersonShape.ttl"));
+        assertEquals(EXPECTED_FAIL, response, "Unexpected SHACL validation result");
+    }
+
+    /**
+     * Returns the base URL of the running SCG
+     */
+    private String getBaseURL() {
+        return "http://localhost:" + server.getPort() + SERVICE_NAME;
+    }
+
+    /**
+     * Calls the upload endpoint passing in the data file for loading
+     */
+    private void loadData(Path dataFilePath) {
+        String uploadURL = getBaseURL() + "/upload";
+        DSP.service(uploadURL).POST(dataFilePath.toString());
+    }
+
+    /**
+     * Calls the SHACL endpoint passing the provided shape file and returning the validation result
+     */
+    private String validateData(Path shaclShapePath) throws Exception {
+        String validationURL = getBaseURL() + "/shacl?graph=default";
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(validationURL))
+                .header("Content-type", "text/turtle")
+                .POST(HttpRequest.BodyPublishers.ofFile(shaclShapePath))
+                .build();
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        return response.body();
+    }
+
+    /**
+     * Starts SCG with SHACL endpoint configuration
+     */
+    private void startServer() {
+        List<String> arguments = List.of("--conf", DIR + "/config-shacl.ttl");
         server = construct(arguments.toArray(new String[0])).start();
-        String URL = "http://localhost:" + server.getPort() + serviceName;
-        String uploadURL = URL + "/upload";
-        String validationURL = URL + "/shacl?graph=default";
-        load(uploadURL, DIR + "/Data/PersonDataInvalid.ttl");
-        String response = validate(validationURL, Paths.get(DIR + "/Data/PersonShape.ttl"));
-        assertEquals(expectedFail, response, "Unexpected SHACL validation result");
-    }
-
-    private static void load(String uploadURL, String filename) {
-        DSP.service(uploadURL).POST(filename);
-    }
-
-    private static String validate(String validationURL, Path shaclPath) throws Exception {
-        try (HttpClient client = HttpClient.newHttpClient()) {
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(validationURL))
-                    .header("Content-type","text/turtle")
-                    .POST(HttpRequest.BodyPublishers.ofFile(shaclPath))
-                    .build();
-            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-            return response.body();
-        }
     }
 
 }
