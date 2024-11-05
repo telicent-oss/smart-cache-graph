@@ -76,7 +76,7 @@
     <plugin.shade>3.4.1</plugin.shade>
     <plugin.site>3.9.1</plugin.site>
     <plugin.source>3.3.1</plugin.source>
-    <plugin.surefire>3.5.1</plugin.surefire>
+    <plugin.surefire>3.5.2</plugin.surefire>
     <plugin.versions>2.17.1</plugin.versions>
 
     <!-- Dependency versions -->
