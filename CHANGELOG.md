@@ -1,5 +1,15 @@
 # Smart Cache Graph
 
+## 0.82.6
+
+- Fix a bug where extra Kafka configuration wasn't passed onto the Kafka Producer for CQRS endpoints preventing
+  connection to Kafka servers that use security.
+- Fuseki Kafka Connector upgraded to 1.5.1 which has some minor fixes around the additional Kafka configuration support.
+- Build improvements:
+    - RDF ABAC upgraded to 0.72.0
+    - Removed explicit Protobuf dependency as transitive dependency via Jena is now an up to date version
+    - Various test and build dependencies upgraded to latest available 
+
 ## 0.82.5
 
 - Fuseki Kafka Connector upgraded to 1.5.0 which adds improved support for specifying additional Kafka configuration

@@ -115,7 +115,11 @@ public class FMod_CQRS implements FusekiModule {
                     throw new FusekiConfigException("Empty string for topic name for "+symKafkaTopic+" on CQRS update operation");
 
                 KConnectorDesc conn = FKRegistry.get().getConnectorDescriptor(topicName);
-                ActionService cqrsUpdate = CQRS.updateAction(topicName, producerProperties(conn.getBootstrapServers()));
+                // NB - It's safe to just pass the same set of Consumer Properties to the Producer, it will simply
+                //      ignore the properties that are consumer specific
+                //      If we don't pass these in as-in any extra configuration a user has provided, e.g. for Kafka
+                //      AuthN, won't be propagated and the producer will be stuck in a failure loop
+                ActionService cqrsUpdate = CQRS.updateAction(topicName, conn.getKafkaConsumerProps());
                 endpoint.setProcessor(cqrsUpdate);
             }
         });
@@ -131,21 +135,5 @@ public class FMod_CQRS implements FusekiModule {
         if ( context == null )
             return null;
         return context.get(symKafkaTopic);
-    }
-
-//    @Override
-//    public void serverBeforeStarting(FusekiServer server) {
-//        // -- Update configuration
-//        server.getDataAccessPointRegistry().accessPoints().forEach(dap->{
-//            dap.getDataService().forEachEndpoint(endpoint->{
-//                ...
-//            });
-//        });
-//    }
-
-    private static Properties producerProperties(String server) {
-        Properties props = new Properties();
-        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, server);
-        return props;
     }
 }
