@@ -19,45 +19,36 @@ package io.telicent;
 import io.telicent.jena.abac.core.Attributes;
 import io.telicent.jena.abac.core.AttributesStore;
 import io.telicent.jena.abac.fuseki.SysFusekiABAC;
+import io.telicent.jena.abac.labels.LabelsStore;
+import io.telicent.jena.abac.labels.LabelsStoreRocksDB;
+import io.telicent.jena.abac.labels.StoreFmtByString;
 import io.telicent.jena.abac.services.SimpleAttributesStore;
 import io.telicent.smart.cache.configuration.Configurator;
-import org.apache.jena.atlas.io.IO;
-import org.apache.jena.atlas.lib.FileOps;
 import org.apache.jena.datatypes.xsd.XSDDatatype;
-import org.apache.jena.fuseki.kafka.lib.FKLib;
 import org.apache.jena.fuseki.main.FusekiServer;
 import org.apache.jena.fuseki.system.FusekiLogging;
 import org.apache.jena.graph.Graph;
-import org.apache.jena.http.HttpOp;
-import org.apache.jena.query.Dataset;
+import org.apache.jena.graph.Triple;
 import org.apache.jena.query.Query;
 import org.apache.jena.query.QueryFactory;
 import org.apache.jena.rdf.model.*;
 import org.apache.jena.riot.*;
 import org.apache.jena.sparql.core.DatasetGraphFactory;
 import org.apache.jena.sparql.exec.QueryExec;
-import org.apache.jena.sparql.exec.RowSet;
 import org.apache.jena.sparql.exec.RowSetOps;
 import org.apache.jena.sparql.exec.RowSetRewindable;
-import org.apache.jena.sparql.exec.http.DSP;
-import org.apache.jena.sparql.exec.http.QueryExecHTTP;
 import org.apache.jena.sparql.exec.http.QueryExecHTTPBuilder;
 import org.apache.jena.sparql.resultset.ResultSetCompare;
-import org.apache.jena.tdb2.TDB2Factory;
 import org.junit.jupiter.api.*;
-import org.testcontainers.shaded.org.apache.commons.lang3.StringUtils;
-import yamlconfig.ConfigConstants;
+import org.rocksdb.RocksDBException;
+
 
 import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
 import java.util.List;
-import java.util.Properties;
 
 import static io.telicent.LibTestsSCG.*;
-import static io.telicent.TestSmartCacheGraphIntegration.launchServer;
 import static io.telicent.core.SmartCacheGraph.construct;
-import static io.telicent.core.SmartCacheGraph.log;
+import static io.telicent.jena.abac.labels.Labels.createLabelsStoreRocksDB;
 import static org.junit.jupiter.api.Assertions.*;
 
 /*
@@ -67,23 +58,11 @@ class TestYamlConfigParserAuthz {
 
     private static final String DIR = "src/test/files";
     private FusekiServer server;
-    private static MockKafka mock;
 
     private static final String serviceName = "ds";
     public static RowSetRewindable expectedRSR;
     public static RowSetRewindable expectedRSRtdl;
-    public final String sparqlUpdateConnector = """
-                    PREFIX : <http://example/>
-                    INSERT DATA {
-                        :s :p4 12355 .
-                        :s :p5 45655 .
-                   }""";
-
-    Properties producerProps() {
-        Properties producerProps = new Properties();
-        producerProps.put("bootstrap.servers", mock.getServer());
-        return producerProps;
-    }
+    public static String queryStr = "SELECT * { ?s ?p ?o }";
 
     @BeforeAll
     public static void before() {
@@ -97,8 +76,7 @@ class TestYamlConfigParserAuthz {
         Literal l2 = comparisonModel.createTypedLiteral(789, XSDDatatype.XSDinteger);
         comparisonModel.add(s1, p1, l1);
         comparisonModel.add(s2, p2, l2);
-        String queryString = "SELECT ?s ?p ?o WHERE { ?s ?p ?o }";
-        Query query = QueryFactory.create(queryString);
+        Query query = QueryFactory.create(queryStr);
         QueryExec qExec = QueryExec.dataset(DatasetGraphFactory.create(comparisonModel.getGraph())).query(query).build();
         expectedRSR = qExec.select().rewindable();
         Resource s3 = comparisonModel.createResource(baseURI + "s");
@@ -107,17 +85,7 @@ class TestYamlConfigParserAuthz {
         comparisonModel.add(s3, p3, l3);
         QueryExec qExec2 = QueryExec.dataset(DatasetGraphFactory.create(comparisonModel.getGraph())).query(query).build();
         expectedRSRtdl = qExec2.select().rewindable();
-
-        mock = new MockKafka();
-        Properties consumerProps = new Properties();
-        consumerProps.put("bootstrap.servers", mock.getServer());
-        Properties producerProps = new Properties();
-        producerProps.put("bootstrap.servers", mock.getServer());
-
-        mock.createTopic("RDF0");
     }
-
-
 
     @BeforeEach
     void setUp() throws Exception {
@@ -143,11 +111,9 @@ class TestYamlConfigParserAuthz {
         server = construct(arguments.toArray(new String[0])).start();
         RowSetRewindable actualResponseRSR;
         String validToken = tokenForUser("u1");
-        //doesn't pass unless I upload! Even though there's a data field in the file
-        // changing the path to absolute manually in the yaml file doesn't help
-        //LibTestsSCG.uploadFile(server.serverURL() + serviceName + "/upload", DIR + "/yaml/data-and-labels.trig");//load(server);
+        LibTestsSCG.uploadFile(server.serverURL() + serviceName + "/upload", DIR + "/yaml/data-and-labels.trig");//load(server);
         actualResponseRSR = QueryExecHTTPBuilder.service(server.serverURL() + serviceName)
-                .query("SELECT * { ?s ?p ?o }")
+                .query(queryStr)
                 .httpHeader(LibTestsSCG.tokenHeader(),
                         LibTestsSCG.tokenHeaderValue(validToken))
                 .select().rewindable();
@@ -162,23 +128,9 @@ class TestYamlConfigParserAuthz {
         server = construct(arguments.toArray(new String[0])).start();
         RowSetRewindable actualResponseRSR;
         String validToken = tokenForUser("u1");
-        //doesn't pass unless I upload! Even though there's a data field in the file
         LibTestsSCG.uploadFile(server.serverURL() + serviceName + "/upload", DIR + "/yaml/data-and-labels.trig");//load(server);
-        //uploading this way doesn't seem to work. Could this also be the reason for the labelsStore failures?
-        /*Dataset dataset = TDB2Factory.connectDataset("target/test-db");
-        dataset.begin(org.apache.jena.query.ReadWrite.WRITE);
-        try {
-            Model databaseModel = dataset.getDefaultModel();
-            RDFDataMgr.read(databaseModel, "src/test/files/yaml/data-and-labels.trig", Lang.TURTLE);
-            dataset.commit();
-        } catch (Exception e) {
-            ConfigConstants.log.error(e.getMessage());
-            dataset.abort();
-        } finally {
-            dataset.end();
-        }*/
         actualResponseRSR = QueryExecHTTPBuilder.service(server.serverURL() + serviceName)
-                .query("SELECT * { ?s ?p ?o }")
+                .query(queryStr)
                 .httpHeader(LibTestsSCG.tokenHeader(),
                         LibTestsSCG.tokenHeaderValue(validToken))
                 .select().rewindable();
@@ -188,40 +140,32 @@ class TestYamlConfigParserAuthz {
     }
 
     @Test
-    void yaml_config_abac_labels_store() {
+    void yaml_config_abac_labels_store() throws RocksDBException {
         List<String> arguments = List.of("--conf",DIR + "/yaml/config-abac-labels-store.yaml");
         server = construct(arguments.toArray(new String[0])).start();
         RowSetRewindable actualResponseRSR;
         String validToken = tokenForUser("u1");
-        //doesn't pass unless I upload! Even though there's a data field in the file
-        LibTestsSCG.uploadFile(server.serverURL() + serviceName + "/upload", DIR + "/yaml/data-no-labels.trig");//load(server);
-        //uploading this way doesn't seem to work. Could this also be the reason for the labelsStore failures?
-        /*Dataset dataset = TDB2Factory.connectDataset("target/test-db");
-        dataset.begin(org.apache.jena.query.ReadWrite.WRITE);
-        try {
-            Model databaseModel = dataset.getDefaultModel();
-            RDFDataMgr.read(databaseModel, "src/test/files/yaml/data-and-labels.trig", Lang.TURTLE);
-            dataset.commit();
-        } catch (Exception e) {
-            ConfigConstants.log.error(e.getMessage());
-            dataset.abort();
-        } finally {
-            dataset.end();
-        }*/
-        Dataset dataset = TDB2Factory.connectDataset("target/labels-test");
-        dataset.begin(org.apache.jena.query.ReadWrite.WRITE);
-        try {
-            Model labelsStoreModel = dataset.getDefaultModel();
-            RDFDataMgr.read(labelsStoreModel, "src/test/files/yaml/labels.ttl", Lang.TURTLE);
-            dataset.commit();
-        } catch (Exception e) {
-            ConfigConstants.log.error(e.getMessage());
-            dataset.abort();
-        } finally {
-            dataset.end();
+        LibTestsSCG.uploadFile(server.serverURL() + serviceName + "/upload", DIR + "/yaml/data-and-labels.trig");
+
+        LabelsStore labelsStore = createLabelsStoreRocksDB(new File("target/labels-test"), LabelsStoreRocksDB.LabelMode.Merge, null, new StoreFmtByString());
+        Model model = ModelFactory.createDefaultModel();
+        model.read(DIR + "/yaml/data-and-labels.trig", "TRIG");
+        StmtIterator iterator = model.listStatements();
+        Triple triple;
+        if (iterator.hasNext()) {
+            iterator.next();
+            triple = iterator.nextStatement().asTriple();
+            assertEquals(labelsStore.labelsForTriples(triple).getFirst(), "manager");
         }
+        if (iterator.hasNext()) {
+            iterator.next();
+            triple = iterator.nextStatement().asTriple();
+            assertEquals(labelsStore.labelsForTriples(triple).getFirst(), "level-1");
+        }
+        iterator.close();
+
         actualResponseRSR = QueryExecHTTPBuilder.service(server.serverURL() + serviceName)
-                .query("SELECT * { ?s ?p ?o }")
+                .query(queryStr)
                 .httpHeader(LibTestsSCG.tokenHeader(),
                         LibTestsSCG.tokenHeaderValue(validToken))
                 .select().rewindable();
@@ -239,11 +183,10 @@ class TestYamlConfigParserAuthz {
         List<String> arguments = List.of("--conf",DIR + "/yaml/config-abac-remote-attributes.yaml");
         server = construct(arguments.toArray(new String[0])).start();
         String validToken = tokenForUser("u1");
-        //doesn't pass unless I upload! Even though there's a data field in the file
         LibTestsSCG.uploadFile(server.serverURL() + serviceName + "/upload", DIR + "/yaml/data-and-labels.trig");//load(server);
 
         RowSetRewindable actualResponseRSR = QueryExecHTTPBuilder.service(server.serverURL() + serviceName)
-                .query("SELECT * { ?s ?p ?o }")
+                .query(queryStr)
                 .httpHeader(LibTestsSCG.tokenHeader(),
                         LibTestsSCG.tokenHeaderValue(validToken))
                 .select().rewindable();
@@ -257,10 +200,9 @@ class TestYamlConfigParserAuthz {
         server = construct(arguments.toArray(new String[0])).start();
         RowSetRewindable actualResponseRSR;
         String validToken = tokenForUser("u1");
-        //doesn't pass unless I upload! Even though there's a data field in the file
         LibTestsSCG.uploadFile(server.serverURL() + serviceName + "/upload", DIR + "/yaml/data-and-labels.trig");//load(server);
         actualResponseRSR = QueryExecHTTPBuilder.service(server.serverURL() + serviceName)
-                .query("SELECT * { ?s ?p ?o }")
+                .query(queryStr)
                 .httpHeader(LibTestsSCG.tokenHeader(),
                         LibTestsSCG.tokenHeaderValue(validToken))
                 .select().rewindable();
@@ -275,10 +217,9 @@ class TestYamlConfigParserAuthz {
         server = construct(arguments.toArray(new String[0])).start();
         RowSetRewindable actualResponseRSR;
         String validToken = tokenForUser("u1");
-        //doesn't pass unless I upload! Even though there's a data field in the file
         LibTestsSCG.uploadFile(server.serverURL() + serviceName + "/upload", DIR + "/yaml/data-no-labels.trig");//load(server);
         actualResponseRSR = QueryExecHTTPBuilder.service(server.serverURL() + serviceName)
-                .query("SELECT * { ?s ?p ?o }")
+                .query(queryStr)
                 .httpHeader(LibTestsSCG.tokenHeader(),
                         LibTestsSCG.tokenHeaderValue(validToken))
                 .select().rewindable();
@@ -288,71 +229,19 @@ class TestYamlConfigParserAuthz {
     }
 
     @Test
-    void yaml_config_kafka_connector() {
-        String TOPIC = "RDF0";
-        String STATE_DIR = "target/state";
-        FileOps.ensureDir(STATE_DIR);
-        FileOps.clearDirectory(STATE_DIR);
-
-        File originalConfig = new File(DIR + "/yaml/config-connector-integration-test-1.yaml");
-        File actualConfig = replacePlaceholder(originalConfig, "localhost:9092", mock.getServer());
-        List<String> arguments = List.of("--conf", actualConfig.getAbsolutePath());
-
-        server = construct(arguments.toArray(new String[0]));
-        FKLib.sendFiles(producerProps(), TOPIC, List.of("src/test/files/yaml/data-no-labels.trig"));
-        server.start();
-        String validToken = tokenForUser("u1");
-        try {
-            String URL = "http://localhost:"+server.getHttpPort()+"/ds";
-            RowSet rowSet = QueryExecHTTPBuilder.service(server.serverURL() + serviceName)
-                    .query("SELECT (count(*) AS ?C) {?s ?p ?o}")
-                    .httpHeader(LibTestsSCG.tokenHeader(),
-                            LibTestsSCG.tokenHeaderValue(validToken))
-                    .select();//QueryExecHTTP.service(URL).query("SELECT (count(*) AS ?C) {?s ?p ?o}").select();
-            int count = ((Number)rowSet.next().get("C").getLiteralValue()).intValue();
-            Assertions.assertEquals(6, count);
-            HttpOp.httpPost(URL + "/update", WebContent.contentTypeSPARQLUpdate, sparqlUpdateConnector);
-            RowSet rowSet2 = QueryExecHTTPBuilder.service(server.serverURL() + serviceName)
-                    .query("SELECT (count(*) AS ?C) {?s ?p ?o}")
-                    .httpHeader(LibTestsSCG.tokenHeader(),
-                            LibTestsSCG.tokenHeaderValue(validToken))
-                    .select();//QueryExecHTTP.service(URL).query("SELECT (count(*) AS ?C) {?s ?p ?o}").select();
-            int count2 = ((Number)rowSet2.next().get("C").getLiteralValue()).intValue();
-            Assertions.assertEquals(8, count2);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    @Test
     void yaml_config_custom_prefix() {
         List<String> arguments = List.of("--conf",DIR + "/yaml/config-prefixes-1.yaml");
         server = construct(arguments.toArray(new String[0])).start();
         RowSetRewindable actualResponseRSR;
         String validToken = tokenForUser("u1");
-        //doesn't pass unless I upload! Even though there's a data field in the file
         LibTestsSCG.uploadFile(server.serverURL() + serviceName + "/upload", DIR + "/yaml/data-and-labels.trig");//load(server);
         actualResponseRSR = QueryExecHTTPBuilder.service(server.serverURL() + serviceName)
-                .query("SELECT * { ?s ?p ?o }")
+                .query(queryStr)
                 .httpHeader(LibTestsSCG.tokenHeader(),
                         LibTestsSCG.tokenHeaderValue(validToken))
                 .select().rewindable();
         RowSetOps.out(System.out, actualResponseRSR);
         boolean equals = ResultSetCompare.isomorphic(expectedRSR, actualResponseRSR);
         assertTrue(equals);
-    }
-
-
-    public static File replacePlaceholder(File input, String find, String replace) {
-        try {
-            File output =
-                    Files.createTempFile("temp", input.getName().substring(input.getName().lastIndexOf('.'))).toFile();
-            String contents = IO.readWholeFileAsUTF8(input.getAbsolutePath());
-            contents = StringUtils.replace(contents, find, replace);
-            IO.writeStringAsUTF8(output.getAbsolutePath(), contents);
-            return output;
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
     }
 }

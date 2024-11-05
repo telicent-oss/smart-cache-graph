@@ -66,8 +66,7 @@ public class SmartCacheGraph {
     public static FusekiServer construct(String... args) {
         YAMLConfigParser ycp = new YAMLConfigParser();
         RDFConfigGenerator rcg = new RDFConfigGenerator();
-        String configPath = "";
-        //String rdfConfigPath = "target/config.ttl";
+        String configPath;
         String pattern = ".*\\.(yaml|yml)$";
         Pattern regex = Pattern.compile(pattern);
         for (int i = 0; i < args.length; i++) {
@@ -75,44 +74,9 @@ public class SmartCacheGraph {
                 configPath = args[i + 1];
                 Matcher matcher = regex.matcher(configPath);
                 if (matcher.matches()) {
-                    //rdfConfigPath = configPath.replaceAll("(?i)\\.(yaml|yml)$", ".ttl");
                     try {
                         ConfigStruct configStruct = ycp.runYAMLParser(configPath);
                         Model configModel = rcg.createRDFModel(configStruct);
-
-                        StmtIterator iter = configModel.listStatements();
-                        while (iter.hasNext()) {
-                            Statement stmt = iter.nextStatement();
-                            RDFNode object = stmt.getObject();
-                            if(stmt.getPredicate().getURI().equals("http://jena.hpl.hp.com/2005/11/Assembler#data")) {
-                            //if (stmt.getSubject().isURIResource() && stmt.getSubject().getURI().contains("data") && object.isURIResource() && object.asResource().getURI().startsWith("file:")) {
-                                //String oldFilePathURI = object.asResource().getURI();
-                                String oldFileURI = new File(object.asLiteral().toString()).toURI().toString();
-                                //String updatedFilePathURI = convertToAbsolutePathURI(oldFileURI);
-                                //Resource newFilePathResource = configModel.createResource(updatedFilePathURI);
-                                Resource newFilePathResource = configModel.createResource(oldFileURI);
-                                configModel.remove(stmt);
-                                configModel.add(stmt.getSubject(), stmt.getPredicate(), newFilePathResource);
-                                break;
-                            }
-                        }
-
-                        StmtIterator iter2 = configModel.listStatements();
-                        while (iter2.hasNext()) {
-                            Statement stmt = iter2.nextStatement();
-                            RDFNode object = stmt.getObject();
-                            if(stmt.getPredicate().getURI().equals("http://telicent.io/security#attributes")) {
-                                String oldFilePathURI = object.asResource().getURI();//new File(object.asLiteral().toString()).toURI().toString();//"file:src/test/files/yaml/" + object.asResource().getURI().substring(5);
-                                //String oldFileURI = new File(object.asLiteral().toString()).toURI().toString();
-                                //String updatedFilePathURI = convertToAbsolutePathURI(oldFilePathURI);
-                                //Resource newFilePathResource = configModel.createResource(updatedFilePathURI);
-                                log.info("attr path: " + oldFilePathURI);
-                                Resource newFilePathResource = configModel.createResource(oldFilePathURI);
-                                configModel.remove(stmt);
-                                configModel.add(stmt.getSubject(), stmt.getPredicate(), newFilePathResource);
-                                break;
-                            }
-                        }
 
                         File rdfConfigPath = File.createTempFile("RDF.state", ".ttl");
                         rdfConfigPath.deleteOnExit();
@@ -126,23 +90,11 @@ public class SmartCacheGraph {
                             log.error(e.getMessage());
                             throw new RuntimeException(e.getMessage());
                         }
-                        //===========
-                        /*Model configModelChanged = ModelFactory.createDefaultModel();
-                        try (InputStream in = new FileInputStream(rdfConfigPath)) {
-                            configModelChanged.read(in, null);
-                        } catch (Exception e) {
-                            log.error("Error reading the RDF file: {}", e.getMessage(), e);
-                        }
-                        configModelChanged.write(System.out, "TURTLE");*/
-                        //===========
                     } catch (RuntimeException ex) {
-                        log.error(ex.getMessage());
-                        //throw ex;
                         throw new RuntimeException("Failure parsing the YAML config file: " + ex.getMessage());
                     } catch (IOException e) {
                         throw new RuntimeException(e);
                     }
-                    //args[i + 1] = rdfConfigPath;
                 }
             }
         }

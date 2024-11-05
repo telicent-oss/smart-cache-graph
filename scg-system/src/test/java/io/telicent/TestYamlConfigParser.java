@@ -16,10 +16,7 @@
 
 package io.telicent;
 
-import io.telicent.jena.abac.core.Attributes;
-import io.telicent.jena.abac.core.AttributesStore;
 import io.telicent.jena.abac.fuseki.SysFusekiABAC;
-import io.telicent.jena.abac.services.SimpleAttributesStore;
 import io.telicent.smart.cache.configuration.Configurator;
 import org.apache.jena.atlas.io.IO;
 import org.apache.jena.atlas.lib.FileOps;
@@ -27,13 +24,9 @@ import org.apache.jena.datatypes.xsd.XSDDatatype;
 import org.apache.jena.fuseki.kafka.lib.FKLib;
 import org.apache.jena.fuseki.main.FusekiServer;
 import org.apache.jena.fuseki.system.FusekiLogging;
-import org.apache.jena.graph.Graph;
 import org.apache.jena.http.HttpOp;
 import org.apache.jena.query.*;
 import org.apache.jena.rdf.model.*;
-import org.apache.jena.riot.Lang;
-import org.apache.jena.riot.RDFDataMgr;
-import org.apache.jena.riot.RDFParser;
 import org.apache.jena.riot.WebContent;
 import org.apache.jena.sparql.core.DatasetGraphFactory;
 import org.apache.jena.sparql.exec.QueryExec;
@@ -44,20 +37,17 @@ import org.apache.jena.sparql.exec.http.DSP;
 import org.apache.jena.sparql.exec.http.QueryExecHTTP;
 import org.apache.jena.sparql.exec.http.QueryExecHTTPBuilder;
 import org.apache.jena.sparql.resultset.ResultSetCompare;
-import org.apache.jena.tdb2.TDB2Factory;
 import org.junit.jupiter.api.*;
 import org.testcontainers.shaded.org.apache.commons.lang3.StringUtils;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
 
 import static io.telicent.core.SmartCacheGraph.construct;
 import static org.junit.jupiter.api.Assertions.*;
-import static yamlconfig.ConfigConstants.log;
 
 /*
 * Test SCG usage of YAML config files.
@@ -71,6 +61,7 @@ class TestYamlConfigParser {
     private static final String serviceName = "/ds";
     public final String update = "data-update";
     public final String query = "sparql?query=";
+    public static String queryStr = "SELECT * { ?s ?p ?o }";
     public final String expectedResponse = """
                                 <?xml version="1.0"?>
                                 <sparql xmlns="http://www.w3.org/2005/sparql-results#">
@@ -139,8 +130,7 @@ class TestYamlConfigParser {
         Literal l2 = comparisonModel.createTypedLiteral(789, XSDDatatype.XSDinteger);
         comparisonModel.add(s1, p1, l1);
         comparisonModel.add(s2, p2, l2);
-        String queryString = "SELECT ?s ?p ?o WHERE { ?s ?p ?o }";
-        Query query = QueryFactory.create(queryString);
+        Query query = QueryFactory.create(queryStr);
         QueryExec qExec = QueryExec.dataset(DatasetGraphFactory.create(comparisonModel.getGraph())).query(query).build();
         expectedRSR = qExec.select().rewindable();
         Resource s3 = comparisonModel.createResource(baseURI + "s");
@@ -206,101 +196,6 @@ class TestYamlConfigParser {
         String actualResponse = HttpOp.httpGetString(url + query + encodedQuery);
         assertEquals(expectedResponse, actualResponse);
     }
-
-    @Test
-    void yaml_config_abac() {
-        List<String> arguments = List.of("--conf",DIR + "/yaml/config-abac-multiple.yaml");
-        server = construct(arguments.toArray(new String[0])).start();
-        RowSetRewindable actualResponseRSR;
-        load(server);
-        actualResponseRSR = query(server, "u1");
-        boolean equals = ResultSetCompare.isomorphic(expectedRSR, actualResponseRSR);
-        assertTrue(equals);
-    }
-
-    @Test
-    void yaml_config_abac_tim() {
-        List<String> arguments = List.of("--conf",DIR + "/yaml/config-abac-tim.yaml");
-        server = construct(arguments.toArray(new String[0])).start();
-        RowSetRewindable actualResponseRSR;
-        load(server);
-        actualResponseRSR = query(server, "u1");
-        boolean equals = ResultSetCompare.isomorphic(expectedRSR, actualResponseRSR);
-        assertTrue(equals);
-    }
-
-    @Test
-    void yaml_config_abac_labels_store() {
-        List<String> arguments = List.of("--conf",DIR + "/yaml/config-abac-labels-store.yaml");
-        server = construct(arguments.toArray(new String[0])).start();
-
-        // it only works if the labels store is at target/labels, same location as in yaml_config_custom_prefix
-        // that's why it would fail after clean, but pass otherwise
-        // the data does get uploaded both to the labels store and the database
-        // all existing users return empty, non-existing 403 Forbidden as expected
-        Dataset dataset = TDB2Factory.connectDataset("target/labels-test");
-        dataset.begin(org.apache.jena.query.ReadWrite.WRITE);
-        try {
-            Model labelsStoreModel = dataset.getDefaultModel();
-            RDFDataMgr.read(labelsStoreModel, "src/test/files/yaml/labels.ttl", Lang.TURTLE);
-            dataset.commit();
-        } catch (Exception e) {
-            log.error(e.getMessage());
-            dataset.abort();
-        } finally {
-            dataset.end();
-        }
-
-        RowSetRewindable actualResponseRSR;
-        String URL = "http://localhost:" + server.getPort() + serviceName;
-        String uploadURL = URL + "/upload";
-        load(uploadURL, DIR + "/yaml/data-no-labels.trig");
-        actualResponseRSR = query(server, "u1");
-        boolean equals = ResultSetCompare.isomorphic(expectedRSR, actualResponseRSR);
-        assertTrue(equals);
-    }
-
-    @Test
-    void yaml_config_abac_attributes_store() {
-        Graph g = RDFParser.source(DIR+"/yaml/attribute-store.ttl").toGraph();
-        AttributesStore attrStore = Attributes.buildStore(g);
-        String mockServerURL = SimpleAttributesStore.run(3132, attrStore);
-
-        List<String> arguments = List.of("--conf",DIR + "/yaml/config-abac-remote-attributes.yaml");
-        server = construct(arguments.toArray(new String[0])).start();
-        RowSetRewindable actualResponseRSR;
-        load(server);
-        actualResponseRSR = query(server, "u1");
-        boolean equals = ResultSetCompare.isomorphic(expectedRSR, actualResponseRSR);
-        assertTrue(equals);
-    }
-
-    @Test
-    void yaml_config_abac_triple_default_labels() {
-        List<String> arguments = List.of("--conf",DIR + "/yaml/config-abac-tdl.yaml");
-        server = construct(arguments.toArray(new String[0])).start();
-        RowSetRewindable actualResponseRSR;
-        String URL = "http://localhost:" + server.getPort() + serviceName;
-        String uploadURL = URL + "/upload";
-        load(uploadURL, DIR + "/yaml/data-no-labels.trig");
-        actualResponseRSR = query(server, "u1");
-        boolean equals = ResultSetCompare.isomorphic(expectedRSRtdl, actualResponseRSR);
-        assertTrue(equals);
-    }
-
-    @Test
-    void yaml_config_abac_labels() {
-        List<String> arguments = List.of("--conf",DIR + "/yaml/config-abac-labels.yaml");
-        server = construct(arguments.toArray(new String[0])).start();
-        RowSetRewindable actualResponseRSR;
-        String URL = "http://localhost:" + server.getPort() + serviceName;
-        String uploadURL = URL + "/upload";
-        load(uploadURL, DIR + "/yaml/data-no-labels.trig");
-        actualResponseRSR = query(server, "u1");
-        boolean equals = ResultSetCompare.isomorphic(expectedRSR, actualResponseRSR);
-        assertTrue(equals);
-    }
-
 
     @Test
     void yaml_config_kafka_connector() {
@@ -389,8 +284,7 @@ class TestYamlConfigParser {
     }
 
     private static RowSetRewindable query(String url, String user) {
-        String queryString = "SELECT * { ?s ?p ?o }";
-        return query(url, user, queryString);
+        return query(url, user, queryStr);
     }
 
     private static RowSetRewindable query(String url, String user, String queryString) {

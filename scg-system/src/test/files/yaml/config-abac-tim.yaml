@@ -21,6 +21,5 @@ databases:
 
   - name: "dataset-under"
     dbtype: TIM
-    data: "src/test/files/yaml/data-and-labels.trig"
     settings:
       'arq:queryTimeout': "100,100"

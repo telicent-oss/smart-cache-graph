@@ -1,7 +1,0 @@
-PREFIX :       <#>
-PREFIX fuseki: <http://jena.apache.org/fuseki#>
-PREFIX ja:     <http://jena.hpl.hp.com/2005/11/Assembler#>
-PREFIX rdf:    <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-
-:mem-db rdf:type  ja:MemoryDataset;
-        ja:data      "src/test/files/daffyduck7.trig" .
