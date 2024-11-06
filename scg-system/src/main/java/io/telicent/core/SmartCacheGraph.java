@@ -21,6 +21,7 @@ import io.telicent.jena.abac.fuseki.FMod_ABAC;
 import io.telicent.otel.FMod_OpenTelemetry;
 import io.telicent.smart.cache.configuration.Configurator;
 import io.telicent.smart.caches.configuration.auth.AuthConstants;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.jena.atlas.lib.Version;
 import org.apache.jena.fuseki.main.FusekiServer;
 import org.apache.jena.fuseki.main.cmds.FusekiMain;
@@ -133,18 +134,6 @@ public class SmartCacheGraph {
         return !Configurator.get(FMod_InitialCompaction.DISABLE_INITIAL_COMPACTION, Boolean::parseBoolean, false);
     }
 
-    private static String convertToAbsolutePathURI(String fileUri) {
-        // Remove the "file:" prefix to get the relative path
-        String relativePath = fileUri.substring(5);
-
-        // Convert the relative path to an absolute path
-        File file = new File(relativePath);
-        String absolutePath = file.getAbsolutePath();
-
-        // Return the absolute path as a file URI
-        return "file:/" + absolutePath;
-    }
-
     private static void convertYamlConfigToRDF(String... args) {
         YAMLConfigParser ycp = new YAMLConfigParser();
         RDFConfigGenerator rcg = new RDFConfigGenerator();
@@ -152,7 +141,7 @@ public class SmartCacheGraph {
         String pattern = ".*\\.(yaml|yml)$";
         Pattern regex = Pattern.compile(pattern);
         for (int i = 0; i < args.length; i++) {
-            if (args[i].equalsIgnoreCase("--conf") && i + 1 < args.length ) {
+            if (StringUtils.equalsAnyIgnoreCase(args[i], "--config", "--conf") && i + 1 < args.length ) {
                 configPath = args[i + 1];
                 Matcher matcher = regex.matcher(configPath);
                 if (matcher.matches()) {
@@ -160,7 +149,7 @@ public class SmartCacheGraph {
                         ConfigStruct configStruct = ycp.runYAMLParser(configPath);
                         Model configModel = rcg.createRDFModel(configStruct);
 
-                        File rdfConfigPath = File.createTempFile("RDF.state", ".ttl");
+                        File rdfConfigPath = File.createTempFile("generated-config-", ".ttl");
                         rdfConfigPath.deleteOnExit();
 
                         try (FileOutputStream out = new FileOutputStream(rdfConfigPath)) {
