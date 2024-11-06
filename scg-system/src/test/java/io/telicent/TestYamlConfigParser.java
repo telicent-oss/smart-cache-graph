@@ -53,7 +53,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /*
 * Test SCG usage of YAML config files.
 */
-class TestYamlConfigParser {
+class DockerTestYamlConfigParser {
 
     private static final String DIR = "src/test/files";
     private FusekiServer server;
