@@ -269,9 +269,4 @@
       </plugin>
     </plugins>
   </build>
-  <profiles>
-    <profile>
-      <id>docker</id>
-    </profile>
-  </profiles>
 </project>
