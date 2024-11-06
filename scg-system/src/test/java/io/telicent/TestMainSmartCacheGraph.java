@@ -18,21 +18,15 @@ package io.telicent;
 
 import io.telicent.jena.abac.fuseki.SysFusekiABAC;
 import io.telicent.smart.cache.configuration.Configurator;
-import org.apache.jena.atlas.logging.FmtLog;
 import org.apache.jena.cmd.CmdException;
-import org.apache.jena.fuseki.Fuseki;
 import org.apache.jena.fuseki.main.FusekiServer;
 import org.apache.jena.fuseki.system.FusekiLogging;
 import org.apache.jena.http.HttpOp;
 import org.apache.jena.riot.SysRIOT;
 import org.apache.jena.sparql.ARQException;
-import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.LogManager;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.List;
 

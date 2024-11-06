@@ -64,7 +64,7 @@ public class SmartCacheGraph {
      * Builder for a Fuseki server configured for SmartCacheGraph
      */
     public static FusekiServer construct(String... args) {
-        YAMLConfigParser ycp = new YAMLConfigParser();
+        /*YAMLConfigParser ycp = new YAMLConfigParser();
         RDFConfigGenerator rcg = new RDFConfigGenerator();
         String configPath;
         String pattern = ".*\\.(yaml|yml)$";
@@ -97,7 +97,8 @@ public class SmartCacheGraph {
                     }
                 }
             }
-        }
+        }*/
+        convertYamlConfigToRDF(args);
         FusekiModules fmods = modules();
         FusekiServer server = FusekiMain
                 .builder(args)
@@ -176,5 +177,42 @@ public class SmartCacheGraph {
 
         // Return the absolute path as a file URI
         return "file:/" + absolutePath;
+    }
+
+    private static void convertYamlConfigToRDF(String... args) {
+        YAMLConfigParser ycp = new YAMLConfigParser();
+        RDFConfigGenerator rcg = new RDFConfigGenerator();
+        String configPath;
+        String pattern = ".*\\.(yaml|yml)$";
+        Pattern regex = Pattern.compile(pattern);
+        for (int i = 0; i < args.length; i++) {
+            if (args[i].equalsIgnoreCase("--conf") && i + 1 < args.length ) {
+                configPath = args[i + 1];
+                Matcher matcher = regex.matcher(configPath);
+                if (matcher.matches()) {
+                    try {
+                        ConfigStruct configStruct = ycp.runYAMLParser(configPath);
+                        Model configModel = rcg.createRDFModel(configStruct);
+
+                        File rdfConfigPath = File.createTempFile("RDF.state", ".ttl");
+                        rdfConfigPath.deleteOnExit();
+
+                        try (FileOutputStream out = new FileOutputStream(rdfConfigPath)) {
+                            configModel.write(out, "TTL", new File(configPath).getAbsoluteFile().getParentFile().toURI().toString());
+                            log.info(new File(configPath).getAbsoluteFile().getParentFile().toURI().toString());
+                            configModel.write(System.out, "TTL", new File(configPath).getAbsoluteFile().getParentFile().toURI().toString());
+                            args[i + 1] = rdfConfigPath.getPath();
+                        } catch (IOException e) {
+                            log.error(e.getMessage());
+                            throw new RuntimeException(e.getMessage());
+                        }
+                    } catch (RuntimeException ex) {
+                        throw new RuntimeException("Failure parsing the YAML config file: " + ex.getMessage());
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            }
+        }
     }
 }

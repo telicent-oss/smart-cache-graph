@@ -43,6 +43,7 @@ import org.testcontainers.shaded.org.apache.commons.lang3.StringUtils;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 
@@ -265,8 +266,6 @@ class TestYamlConfigParser {
         String actualResponse = HttpOp.httpGetString(url + query + encodedQuery);
         assertEquals(expectedResponse, actualResponse);
     }
-
-
 
     private static void load(FusekiServer server) {
         String URL = "http://localhost:" + server.getPort() + serviceName;

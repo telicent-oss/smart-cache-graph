@@ -104,6 +104,9 @@
     <dependency.junit5-platform>1.11.3</dependency.junit5-platform>
     <dependency.mockito>5.14.2</dependency.mockito>
     <dependency.testcontainers>1.20.3</dependency.testcontainers>
+
+    <dependency.yaml-config>1.0.0</dependency.yaml-config>
+
   </properties>
 
   <modules>
@@ -341,7 +344,7 @@
       <dependency>
         <groupId>io.telicent.public</groupId>
         <artifactId>fuseki-yaml-config</artifactId>
-        <version>1.0.0</version>
+        <version>${dependency.yaml-config}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>

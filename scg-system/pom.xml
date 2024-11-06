@@ -32,6 +32,12 @@
   <name>Telicent Smart Cache Graph - System</name>
   <description>System code - plugins, extensions, entrypoints etc. - for Smart Cache Graph</description>
 
+  <properties>
+    <dependency.yaml-config>1.0.0</dependency.yaml-config>
+    <dependency.testcontainers>1.20.3</dependency.testcontainers>
+    <dependency.junit5>5.11.3</dependency.junit5>
+  </properties>
+
   <dependencies>
 
     <!-- Internal dependencies -->
@@ -172,7 +178,7 @@
     <dependency>
       <groupId>org.testcontainers</groupId>
       <artifactId>junit-jupiter</artifactId>
-      <version>1.20.2</version>
+      <version>${dependency.testcontainers}</version>
       <scope>test</scope>
     </dependency>
 
@@ -185,7 +191,7 @@
     <dependency>
       <groupId>org.junit.vintage</groupId>
       <artifactId>junit-vintage-engine</artifactId>
-      <version>5.10.3</version>
+      <version>${dependency.junit5}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -207,7 +213,7 @@
     <dependency>
       <groupId>io.telicent.public</groupId>
       <artifactId>fuseki-yaml-config</artifactId>
-      <version>1.0.0</version>
+      <version>${dependency.yaml-config}</version>
       <exclusions>
         <exclusion>
           <groupId>org.apache.logging.log4j</groupId>
