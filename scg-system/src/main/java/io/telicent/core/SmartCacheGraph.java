@@ -102,6 +102,7 @@ public class SmartCacheGraph {
                 , new FMod_OpenTelemetry()
                 , new FMod_TelicentGraphQL()
                 , new FMod_RequestIDFilter()
+                , new FMod_DatasetBackups()
         ));
 
         // Initial compaction gets added again per the earlier comments
