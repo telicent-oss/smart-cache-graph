@@ -21,21 +21,34 @@ import io.telicent.jena.abac.fuseki.FMod_ABAC;
 import io.telicent.otel.FMod_OpenTelemetry;
 import io.telicent.smart.cache.configuration.Configurator;
 import io.telicent.smart.caches.configuration.auth.AuthConstants;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.jena.atlas.lib.Version;
 import org.apache.jena.fuseki.main.FusekiServer;
 import org.apache.jena.fuseki.main.cmds.FusekiMain;
 import org.apache.jena.fuseki.main.sys.FusekiModule;
 import org.apache.jena.fuseki.main.sys.FusekiModules;
+import org.apache.jena.rdf.model.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import yamlconfig.ConfigStruct;
+import yamlconfig.RDFConfigGenerator;
+import yamlconfig.YAMLConfigParser;
 
+import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 
 public class SmartCacheGraph {
     /**
      * Software version taken from the jar file.
      */
     public static final String VERSION = version();
+
+    public final static Logger log = LoggerFactory.getLogger("fuseki-yaml-config");
 
     private static String version() {
         return Version.versionForClass(SmartCacheGraph.class).orElse("<development>");
@@ -52,6 +65,7 @@ public class SmartCacheGraph {
      * Builder for a Fuseki server configured for SmartCacheGraph
      */
     public static FusekiServer construct(String... args) {
+        convertYamlConfigToRDF(args);
         FusekiModules fmods = modules();
         FusekiServer server = FusekiMain
                 .builder(args)
@@ -118,5 +132,40 @@ public class SmartCacheGraph {
 
     private static boolean isInitialCompactionEnabled() {
         return !Configurator.get(FMod_InitialCompaction.DISABLE_INITIAL_COMPACTION, Boolean::parseBoolean, false);
+    }
+
+    private static void convertYamlConfigToRDF(String... args) {
+        YAMLConfigParser ycp = new YAMLConfigParser();
+        RDFConfigGenerator rcg = new RDFConfigGenerator();
+        String configPath;
+        String pattern = ".*\\.(yaml|yml)$";
+        Pattern regex = Pattern.compile(pattern);
+        for (int i = 0; i < args.length; i++) {
+            if (StringUtils.equalsAnyIgnoreCase(args[i], "--config", "--conf") && i + 1 < args.length ) {
+                configPath = args[i + 1];
+                Matcher matcher = regex.matcher(configPath);
+                if (matcher.matches()) {
+                    try {
+                        ConfigStruct configStruct = ycp.runYAMLParser(configPath);
+                        Model configModel = rcg.createRDFModel(configStruct);
+
+                        File rdfConfigPath = File.createTempFile("generated-config-", ".ttl");
+                        rdfConfigPath.deleteOnExit();
+
+                        try (FileOutputStream out = new FileOutputStream(rdfConfigPath)) {
+                            configModel.write(out, "TTL", new File(configPath).getAbsoluteFile().getParentFile().toURI().toString());
+                            args[i + 1] = rdfConfigPath.getPath();
+                        } catch (IOException e) {
+                            log.error(e.getMessage());
+                            throw new RuntimeException(e.getMessage());
+                        }
+                    } catch (RuntimeException ex) {
+                        throw new RuntimeException("Failure parsing the YAML config file: " + ex.getMessage());
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            }
+        }
     }
 }

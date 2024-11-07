@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <!--
     Copyright (c) Telicent Ltd.
     
@@ -31,6 +31,12 @@
 
   <name>Telicent Smart Cache Graph - System</name>
   <description>System code - plugins, extensions, entrypoints etc. - for Smart Cache Graph</description>
+
+  <properties>
+    <dependency.yaml-config>1.0.0</dependency.yaml-config>
+    <dependency.testcontainers>1.20.3</dependency.testcontainers>
+    <dependency.junit5>5.11.3</dependency.junit5>
+  </properties>
 
   <dependencies>
 
@@ -169,11 +175,23 @@
         </exclusion>
       </exclusions>
     </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <version>${dependency.testcontainers}</version>
+      <scope>test</scope>
+    </dependency>
 
     <!-- JUnit 5 -->
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-engine</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.vintage</groupId>
+      <artifactId>junit-vintage-engine</artifactId>
+      <version>${dependency.junit5}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -190,6 +208,22 @@
       <groupId>org.mockito</groupId>
       <artifactId>mockito-junit-jupiter</artifactId>
       <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.telicent.public</groupId>
+      <artifactId>fuseki-yaml-config</artifactId>
+      <version>${dependency.yaml-config}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.apache.logging.log4j</groupId>
+          <artifactId>log4j-core</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.apache.logging.log4j</groupId>
+          <artifactId>log4j-api</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
   </dependencies>
@@ -235,5 +269,4 @@
       </plugin>
     </plugins>
   </build>
-
 </project>
