@@ -186,6 +186,23 @@ public class TestInitialCompaction {
     }
 
     @Test
+    public void test_compactWithExistingLock()  {
+        // given
+        DatasetGraphSwitchable dsgPersists = new DatasetGraphSwitchable(Path.of("./"), null, DatasetGraphFactory.createTxnMem());
+        DatasetGraphSwitchable mockedDsg = Mockito.spy(dsgPersists);
+
+        when(mockedDsg.tryExclusiveMode(false)).thenReturn(false);
+        doNothing().when(mockedDsg).finishExclusiveMode();
+        server = SmartCacheGraph.smartCacheGraphBuilder().add("test", mockedDsg).build().start();
+
+        // when
+        HttpResponse<InputStream> compactResponse = makePOSTCallWithPath(server, "$/compactall");
+        // then
+        assertEquals(200, compactResponse.statusCode());
+        mockDatabaseMgr.verify(() -> DatabaseMgr.compact(any(), anyBoolean()), times(0));
+    }
+
+    @Test
     public void test_compactAll_happyPath() {
         // given
         mockDatabaseMgr.when(() -> DatabaseMgr.compact(any(), anyBoolean())).thenAnswer(invocationOnMock -> null);

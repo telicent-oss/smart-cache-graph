@@ -19,7 +19,6 @@ import org.apache.jena.sparql.core.DatasetGraph;
 import org.apache.jena.sparql.core.DatasetGraphWrapper;
 import org.apache.jena.tdb2.DatabaseMgr;
 import org.apache.jena.tdb2.store.DatasetGraphSwitchable;
-import org.apache.jena.tdb2.sys.TDBInternal;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,13 +28,12 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Predicate;
 
 public class FMod_InitialCompaction implements FusekiAutoModule {
 
     public static final Logger LOG = LoggerFactory.getLogger("io.telicent.core.FMod_InitialCompaction");
     final Set<String> datasets = new HashSet<>();
-    static final boolean DELETE_OLD = true;
+    static final boolean DELETE_OLD = false;
     public static final String DISABLE_INITIAL_COMPACTION = "DISABLE_INITIAL_COMPACTION";
     private static final String VERSION = Version.versionForClass(FMod_InitialCompaction.class).orElse("<development>");
     static final Map<String, Long> sizes = new ConcurrentHashMap<>();
@@ -100,7 +98,7 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
      * @param name Name of dataset
      */
     private static void compactDatasetGraphDatabase(DatasetGraph datasetGraph, String name) {
-        DatasetGraph dsg = getTDB2(datasetGraph);
+        DatasetGraphSwitchable dsg = getTDB2(datasetGraph);
         if (dsg != null) {
             // See how big the database is, and whether it's size has changed
             // NB - Due to how the module is registered twice (see SmartCacheGraph) we'll get called twice, once
@@ -116,15 +114,27 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
                 }
             }
 
-            FmtLog.info(LOG, "[Compaction] >>>> Start compact %s, current size is %s (%d)", name,
-                    humanReadableSize(sizeBefore), sizeBefore);
-            Timer timer = new Timer();
-            timer.startTimer();
-            DatabaseMgr.compact(dsg, DELETE_OLD);
-            long sizeAfter = findDatabaseSize(dsg);
-            FmtLog.info(LOG, "[Compaction] <<<< Finish compact %s. Took %s seconds.  Compacted size is %s (%d)",
-                    name, Timer.timeStr(timer.endTimer()), humanReadableSize(sizeAfter), sizeAfter);
-            sizes.put(name, sizeAfter);
+            try {
+                // Due to known issue - obtain a write lock prior to compaction.
+                // If it fails, stop processing to avoid deadlock.
+
+                if (!dsg.tryExclusiveMode(false)) {
+                    FmtLog.info(LOG,
+                            "[Compaction] Ignoring for %s due to potential deadlock operation", name);
+                    return;
+                }
+                FmtLog.info(LOG, "[Compaction] >>>> Start compact %s, current size is %s (%d)", name,
+                        humanReadableSize(sizeBefore), sizeBefore);
+                Timer timer = new Timer();
+                timer.startTimer();
+                DatabaseMgr.compact(dsg, DELETE_OLD);
+                long sizeAfter = findDatabaseSize(dsg);
+                FmtLog.info(LOG, "[Compaction] <<<< Finish compact %s. Took %s seconds.  Compacted size is %s (%d)",
+                        name, Timer.timeStr(timer.endTimer()), humanReadableSize(sizeAfter), sizeAfter);
+                sizes.put(name, sizeAfter);
+            } finally {
+                dsg.finishExclusiveMode();
+            }
         } else {
             FmtLog.debug(LOG, "Compaction not required for %s as not TDB2", name);
         }
@@ -166,10 +176,11 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
      * @param dsg Graph
      * @return TDB2 compatible DSG or null
      */
-    public static DatasetGraph getTDB2(DatasetGraph dsg) {
-        for (; ; ) {
-            if (IS_TDB_2.test(dsg)) {
-                return dsg;
+    public static DatasetGraphSwitchable getTDB2(DatasetGraph dsg) {
+        for (; ;) {
+            if (dsg instanceof DatasetGraphSwitchable datasetGraphSwitchable)
+            {
+                return datasetGraphSwitchable;
             }
             if (!(dsg instanceof DatasetGraphWrapper dsgw)) {
                 return null;
@@ -177,6 +188,4 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
             dsg = dsgw.getWrapped();
         }
     }
-
-    private static final Predicate<DatasetGraph> IS_TDB_2 = TDBInternal::isTDB2;
 }
