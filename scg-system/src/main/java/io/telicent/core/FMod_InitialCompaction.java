@@ -33,7 +33,7 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
 
     public static final Logger LOG = LoggerFactory.getLogger("io.telicent.core.FMod_InitialCompaction");
     final Set<String> datasets = new HashSet<>();
-    static final boolean DELETE_OLD = false;
+    static final boolean DELETE_OLD = true;
     public static final String DISABLE_INITIAL_COMPACTION = "DISABLE_INITIAL_COMPACTION";
     private static final String VERSION = Version.versionForClass(FMod_InitialCompaction.class).orElse("<development>");
     static final Map<String, Long> sizes = new ConcurrentHashMap<>();
