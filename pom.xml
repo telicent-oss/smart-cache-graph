@@ -69,7 +69,7 @@
     <plugin.gpg>3.2.7</plugin.gpg>
     <plugin.install>3.1.1</plugin.install>
     <plugin.jar>3.4.2</plugin.jar>
-    <plugin.javadoc>3.10.1</plugin.javadoc>
+    <plugin.javadoc>3.11.1</plugin.javadoc>
     <plugin.nexus>1.7.0</plugin.nexus>
     <plugin.owasp-dependency-check>11.1.0</plugin.owasp-dependency-check>
     <plugin.resources>3.3.1</plugin.resources>
