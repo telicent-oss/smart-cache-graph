@@ -34,7 +34,7 @@ public class TestDatasetBackupsContainer extends GenericContainer<TestDatasetBac
 
     @Override
     public void stop() {
-        // do nothing, jvm handles shutdown
+        super.stop();
     }
 
 }
