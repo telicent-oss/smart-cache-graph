@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <!--
     Copyright (c) Telicent Ltd.
     
@@ -22,7 +22,7 @@
   <parent>
     <groupId>io.telicent.smart-caches.graph</groupId>
     <artifactId>scg-base</artifactId>
-    <version>0.82.7-SNAPSHOT</version>
+    <version>0.82.7</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
 
