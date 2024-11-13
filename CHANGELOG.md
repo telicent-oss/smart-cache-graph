@@ -1,4 +1,6 @@
 # Smart Cache Graph
+## 0.82.7
+- Added safeguard against potential deadlocking during compaction.
 
 ## 0.82.6
 
