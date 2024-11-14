@@ -1,8 +1,3 @@
-## Dockerfile for Smart Cache Graph
-
-# syntax=docker/dockerfile:1.7
-
-
 ARG JAVA_VERSION=21
 
 FROM eclipse-temurin:${JAVA_VERSION} AS smart-cache-graph
@@ -12,6 +7,7 @@ ARG FUSEKI_DIR=/fuseki
 RUN apt-get update && \
     apt-get install -y --no-install-recommends dumb-init && \
     apt-get clean && \
+    apt-get install maven -y && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR $FUSEKI_DIR
@@ -24,28 +20,36 @@ ARG CONFIGS=${FUSEKI_DIR}/config
 ARG LIB=${FUSEKI_DIR}/lib
 ARG AGENTS=${FUSEKI_DIR}/agents
 ARG SBOMS=/opt/telicent/sbom
+ARG SCG_DOCKER=${FUSEKI_DIR}/scg-docker
 
-COPY entrypoint.sh .
-COPY logback.xml .
+COPY scg-docker/entrypoint.sh .
+COPY scg-docker/logback.xml .
 
 RUN \
-    mkdir -p $LOGS $DATA $CONFIGS $LIB $AGENTS $SBOMS && \
+    mkdir -p $LOGS $DATA $CONFIGS $LIB $AGENTS $SBOMS $SCG_DOCKER && \
     chown -R fuseki ${FUSEKI_DIR} && \
     chmod a+x entrypoint.sh
 
+ADD pom.xml ${FUSEKI_DIR}/pom.xml
+ADD scg-docker/pom.xml ${SCG_DOCKER}/pom.xml
+RUN mvn -pl scg-docker verify --fail-never
+
 # Build location of the jars we need.
-ARG PROJECT_VERSION=0.82.7-SNAPSHOT
+RUN sed '/<version>/!d;s? ??g;s?</.*??g;s?.*>??g' pom.xml  | head -1 > VERSION
+RUN PROJECT_VERSION_=`cat VERSION`
+#ARG PROJECT_VERSION="`cat\ VERSION`"
+ENV PROJECT_VERSION=0.82.7-SNAPSHOT
 ARG FUSEKI_JAR
 
 ## Collected jars
-ARG JARS=target/dependency
+ARG JARS=scg-docker/target/dependency
 COPY ${JARS} lib
-ARG AGENTS=target/agents
+ARG AGENTS=scg-docker/target/agents
 COPY ${AGENTS} agents
-ARG SBOM=target/docker-${PROJECT_VERSION}-bom.json
+ARG SBOM=scg-docker/target/docker-${PROJECT_VERSION}-bom.json
 COPY ${SBOM} /opt/telicent/sbom/smart-cache-graph-${PROJECT_VERSION}-bom.json
 
-ARG CONFIG=mnt/config
+ARG CONFIG=scg-docker/mnt/config
 COPY ${CONFIG} config
 
 ## Default environment variables.

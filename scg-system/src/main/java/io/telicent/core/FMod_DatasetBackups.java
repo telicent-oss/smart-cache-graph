@@ -131,7 +131,6 @@ public class FMod_DatasetBackups implements FusekiAutoModule {
         } catch (IOException ex) {
             res.setStatus(HttpServletResponse.SC_UNPROCESSABLE_CONTENT);
         }
-
     }
 
     private Path getDirBackups() {
@@ -175,9 +174,9 @@ public class FMod_DatasetBackups implements FusekiAutoModule {
         }
 
         String timestamp = DateTimeUtils.nowAsString("yyyy-MM-dd_HH-mm-ss");
-        String filename = ds + "_" + timestamp;
-        //filename = dirBackups.resolve(filename).toString();
-        return filename;
+
+        return ds + "_" + timestamp; // return baseName
+
     }
 
     /**

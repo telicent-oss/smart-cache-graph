@@ -18,7 +18,7 @@ public class TestDatasetBackupsContainer extends GenericContainer<TestDatasetBac
     public static TestDatasetBackupsContainer getInstance() {
         if (container == null) {
             dockerImage = new ImageFromDockerfile()
-                    .withDockerfile(Paths.get("../scg-docker/Dockerfile-backup-tests"));
+                    .withDockerfile(Paths.get("../Dockerfile-backup-tests"));
 
             container = new TestDatasetBackupsContainer();
             container.withExposedPorts(3030);

@@ -1,16 +1,16 @@
 package io.telicent;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.*;
 import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.shaded.com.fasterxml.jackson.core.type.TypeReference;
 
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.util.HashSet;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -96,17 +96,28 @@ public class TestDatasetBackups {
     public void createBackupFile() throws IOException, InterruptedException {
 
         // if... system is running
+        container.stop();
+        container.withEnv("ENV_BACKUPS_DIR", "dataBackups").start();
+
 
         // when...  dataset backup request is POSTed
-        HttpResponse httpResponse = postDatasetBackupRequest("/$/backups", "ds");
+        HttpResponse<String> httpResponse = postDatasetBackupRequest("/$/backups", "ds");
+
+
+        ObjectMapper om = new ObjectMapper();
+        TypeReference<List<String>> jacksonTypeRef = new TypeReference<List<String>>() {};
+        List<String> backedUpDatasets = om.readValue( httpResponse.body(), jacksonTypeRef );
 
 
         // then... a zipped/backup file is created in the default folder [/backup].
-        int result = container.execInContainer("find", "backups", "-name", "*.nq.gz" ).getExitCode();
-        assertEquals(0,result);
+        for (String backupFile : backedUpDatasets) {
+            String res = container.execInContainer("pwd").getStdout();
+
+            assertEquals(0,
+                container.execInContainer("test", "-f", res.substring(0,res.length()-1) + "/dataBackups/" + backupFile + ".nq.gz").getExitCode());
+        }
 
     }
-
 
 
     @BeforeAll
