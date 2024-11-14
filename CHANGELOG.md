@@ -1,4 +1,8 @@
 # Smart Cache Graph
+
+## 0.82.8
+- Updating GraphQL Jena and YAL Fuseki dependencies.
+
 ## 0.82.7
 - Added safeguard against potential deadlocking during compaction.
 
