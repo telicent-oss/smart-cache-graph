@@ -85,7 +85,7 @@
     <dependency.fuseki-kafka>1.5.1</dependency.fuseki-kafka>
     <dependency.jena>5.2.0</dependency.jena>
     <dependency.fuseki-server>${dependency.jena}</dependency.fuseki-server>
-    <dependency.graphql>0.9.0</dependency.graphql>
+    <dependency.graphql>0.9.1</dependency.graphql>
     <dependency.jwt-servlet-auth>0.17.4</dependency.jwt-servlet-auth>
     <dependency.smart-caches-core>0.24.0</dependency.smart-caches-core>
 
@@ -105,7 +105,7 @@
     <dependency.mockito>5.14.2</dependency.mockito>
     <dependency.testcontainers>1.20.3</dependency.testcontainers>
 
-    <dependency.yaml-config>1.0.0</dependency.yaml-config>
+    <dependency.yaml-config>1.0.1</dependency.yaml-config>
 
   </properties>
 
