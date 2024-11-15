@@ -5,22 +5,22 @@ import org.testcontainers.images.builder.ImageFromDockerfile;
 
 import java.nio.file.Paths;
 
-public class TestDatasetBackupsContainer extends GenericContainer<TestDatasetBackupsContainer> {
+public class DockerTestDatasetBackupsContainer extends GenericContainer<DockerTestDatasetBackupsContainer> {
 
     private static ImageFromDockerfile dockerImage;
 
-    private static TestDatasetBackupsContainer container;
+    private static DockerTestDatasetBackupsContainer container;
 
-    private TestDatasetBackupsContainer() {
+    private DockerTestDatasetBackupsContainer() {
         super(dockerImage);
     }
 
-    public static TestDatasetBackupsContainer getInstance() {
+    public static DockerTestDatasetBackupsContainer getInstance() {
         if (container == null) {
             dockerImage = new ImageFromDockerfile()
                     .withDockerfile(Paths.get("../Dockerfile-backup-tests"));
 
-            container = new TestDatasetBackupsContainer();
+            container = new DockerTestDatasetBackupsContainer();
             container.withExposedPorts(3030);
 
         }

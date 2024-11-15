@@ -15,14 +15,12 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class TestDatasetBackups {
+public class DockerTestDatasetBackups {
 
     @Container
-    public static TestDatasetBackupsContainer container = TestDatasetBackupsContainer.getInstance();
+    public static DockerTestDatasetBackupsContainer container = DockerTestDatasetBackupsContainer.getInstance();
 
     @Test
-    @Disabled
-    @Order(1)
     public void isContainerRunning(){
 
         // service starts...
@@ -30,7 +28,6 @@ public class TestDatasetBackups {
     }
 
     @Test
-    @Order(2)
     public void createBackupFolderUsingEnvironmentVariable() throws IOException, InterruptedException {
 
         // if... environment variable ENV_BACKUPS_DIR is defined
@@ -46,7 +43,6 @@ public class TestDatasetBackups {
     }
 
     @Test
-    @Order(2)
     public void createDefaultBackupFolderOnStartup_1() throws IOException, InterruptedException {
 
         // if... ENV_BACKUPS_DIR is not defined
@@ -62,7 +58,6 @@ public class TestDatasetBackups {
     }
 
     @Test
-    @Order(2)
     public void createDefaultBackupFolderOnStartup_2() throws IOException, InterruptedException {
 
         // if... ENV_BACKUPS_DIR is not defined
@@ -77,7 +72,6 @@ public class TestDatasetBackups {
     }
 
     @Test
-    @Order(2)
     public void createDefaultBackupFolderOnStartup_3() throws IOException, InterruptedException {
 
         // if... ENV_BACKUPS_DIR is not defined
@@ -92,8 +86,7 @@ public class TestDatasetBackups {
     }
 
     @Test
-    @Order(2)
-    public void createBackupFile() throws IOException, InterruptedException {
+    public void createBackupFileGivenDatasetName() throws IOException, InterruptedException {
 
         // if... system is running
         container.stop();
