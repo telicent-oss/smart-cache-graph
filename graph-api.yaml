@@ -1,0 +1,459 @@
+#
+# Copyright (C) 2024 Telicent Limited
+#
+openapi: 3.0.3
+info:
+  title: Graph Smart-Cache API
+  description: |
+    OpenAPI Specification for interacting with the Telicent Smart-Cache Graph Server.
+    
+    **Note:** This description is obviously configuration dependent with the endpoints below being enabled/disabled as the relevant deployment requires.
+  version: 0.82.8
+servers:
+  - url: http://localhost:3030
+    description: Local Fuseki server instance
+paths:
+  /{dataset}/query:
+    get:
+      summary: Execute a SPARQL Query
+      description: |
+        Submit a SPARQL query against a dataset. 
+        
+        **Note:** Depending on configuration there can be equivalent /get /read or /sparql endpoints with identical functionality.
+      parameters:
+        - $ref: '#/components/parameters/dataset'
+        - $ref: '#/components/parameters/sparqlQuery'
+      responses:
+        200:
+          description: Query executed successfully.
+        400:
+          description: Invalid query or bad request.
+        401:
+          description: Unauthorised query.
+        404:
+          description: Endpoint not found i.e. incorrect dataset.
+        500:
+          description: Internal Server Error i.e. the server failed to process the request.
+        503:
+          description: Service Unavailable, i.e. the server is still in the process of starting.
+  /{dataset}/update:
+    post:
+      summary: Execute a SPARQL Update
+      description: | 
+        Submit a SPARQL update against a dataset and, by means of the RDF Patches generated, also update the other Smart Caches.
+      parameters:
+        - $ref: '#/components/parameters/dataset'
+      requestBody:
+        required: true
+        content:
+          application/sparql-update:
+            schema:
+              type: string
+              description: SPARQL Update query string.
+      responses:
+        200:
+          description: Update executed successfully.
+        400:
+          description: Invalid query or bad request.
+        401:
+          description: Unauthorised query.
+        404:
+          description: Endpoint not found i.e. incorrect dataset.
+        500:
+          description: Internal Server Error i.e. the server failed to process the request.
+        503:
+          description: Service Unavailable, i.e. the server is still in the process of starting.
+  /{dataset}/shacl:
+    get:
+      summary: Retrieve SHACL shapes for a dataset
+      description: |
+        Retrieve the SHACL validation shapes associated with a specific dataset.
+        The shapes are returned in RDF format and can be used to validate data against the dataset's SHACL rules.
+      parameters:
+        - $ref: '#/components/parameters/dataset'
+      responses:
+        200:
+          description: SHACL shapes retrieved successfully.
+          content:
+            application/turtle:
+              schema:
+                type: string
+                description: SHACL shapes in Turtle format.
+            application/ld+json:
+              schema:
+                type: string
+                description: SHACL shapes in JSON-LD format.
+            application/n-triples:
+              schema:
+                type: string
+                description: SHACL shapes in N-Triples format.
+        404:
+          description: SHACL shapes not found for the specified dataset.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        500:
+          description: Internal Server Error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      summary: Validate RDF data against SHACL shapes
+      description: |
+        Submit RDF data and SHACL shapes to validate the data. 
+        The server processes the request and returns a SHACL validation report.
+      parameters:
+        - $ref: '#/components/parameters/dataset'
+      requestBody:
+        description: RDF data and SHACL shapes to validate.
+        required: true
+        content:
+          application/ld+json:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: string
+                  description: RDF data to validate.
+                  format: string
+                shapes:
+                  type: string
+                  description: SHACL shapes to validate the RDF data against.
+                  format: string
+              required:
+                - data
+                - shapes
+          application/turtle:
+            schema:
+              type: string
+              description: RDF data and SHACL shapes in Turtle format.
+          application/n-triples:
+            schema:
+              type: string
+              description: RDF data and SHACL shapes in N-Triples format.
+      responses:
+        200:
+          description: Validation report generated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationReport'
+            application/ld+json:
+              schema:
+                $ref: '#/components/schemas/ValidationReport'
+        400:
+          description: Invalid input data or SHACL shapes.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        500:
+          description: Internal Server Error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /{dataset}/graphql:
+    get:
+      summary: Execute a GraphQL query against the Dataset schema
+      parameters:
+        - $ref: '#/components/parameters/dataset'
+        - $ref: '#/components/parameters/graphQLQuery'
+        - $ref: '#/components/parameters/operationName'
+        - $ref: '#/components/parameters/variables'
+        - $ref: '#/components/parameters/extensions'
+      responses:
+        '200':
+          $ref: '#/components/responses/GraphQLSuccess'
+        '400':
+          $ref: '#/components/responses/GraphQLError'
+    post:
+      summary: Execute a GraphQL query against the Dataset schema (POST)
+      parameters:
+        - $ref: '#/components/parameters/dataset'
+      requestBody:
+        $ref: '#/components/requestBodies/GraphQLRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/GraphQLSuccess'
+        '400':
+          $ref: '#/components/responses/GraphQLError'
+
+  /{dataset}/traversal/graphql:
+      get:
+        summary: Execute a GraphQL query against the Traversal schema
+        parameters:
+          - $ref: '#/components/parameters/dataset'
+          - $ref: '#/components/parameters/graphQLQuery'
+          - $ref: '#/components/parameters/operationName'
+          - $ref: '#/components/parameters/variables'
+          - $ref: '#/components/parameters/extensions'
+        responses:
+          '200':
+            $ref: '#/components/responses/GraphQLSuccess'
+          '400':
+            $ref: '#/components/responses/GraphQLError'
+      post:
+        summary: Execute a GraphQL query against the Traversal schema (POST)
+        parameters:
+          - $ref: '#/components/parameters/dataset'
+        requestBody:
+          $ref: '#/components/requestBodies/GraphQLRequest'
+        responses:
+          '200':
+            $ref: '#/components/responses/GraphQLSuccess'
+          '400':
+            $ref: '#/components/responses/GraphQLError'
+
+  /{dataset}/validate:
+      get:
+        summary: Validate a GraphQL query against the Dataset schema
+        parameters:
+          - $ref: '#/components/parameters/dataset'
+          - $ref: '#/components/parameters/graphQLQuery'
+          - $ref: '#/components/parameters/operationName'
+          - $ref: '#/components/parameters/variables'
+          - $ref: '#/components/parameters/extensions'
+        responses:
+          '200':
+            $ref: '#/components/responses/GraphQLSuccess'
+          '400':
+            $ref: '#/components/responses/GraphQLError'
+      post:
+        summary: Validate a GraphQL query against the Dataset schema (POST)
+        parameters:
+          - $ref: '#/components/parameters/dataset'
+        requestBody:
+          $ref: '#/components/requestBodies/GraphQLRequest'
+        responses:
+          '200':
+            $ref: '#/components/responses/GraphQLSuccess'
+          '400':
+            $ref: '#/components/responses/GraphQLError'
+
+  /{dataset}/traversal/validate:
+      get:
+        summary: Validate a GraphQL query against the Traversal schema
+        parameters:
+          - $ref: '#/components/parameters/dataset'
+          - $ref: '#/components/parameters/graphQLQuery'
+          - $ref: '#/components/parameters/operationName'
+          - $ref: '#/components/parameters/variables'
+          - $ref: '#/components/parameters/extensions'
+        responses:
+          '200':
+            $ref: '#/components/responses/GraphQLSuccess'
+          '400':
+            $ref: '#/components/responses/GraphQLError'
+      post:
+        summary: Validate a GraphQL query against the Traversal schema (POST)
+        parameters:
+          - $ref: '#/components/parameters/dataset'
+        requestBody:
+          $ref: '#/components/requestBodies/GraphQLRequest'
+        responses:
+          '200':
+            $ref: '#/components/responses/GraphQLSuccess'
+          '400':
+            $ref: '#/components/responses/GraphQLError'
+
+  /{dataset}/telicent/graphql:
+      get:
+        summary: Execute a GraphQL query against the Telicent schema
+        parameters:
+          - $ref: '#/components/parameters/dataset'
+          - $ref: '#/components/parameters/graphQLQuery'
+          - $ref: '#/components/parameters/operationName'
+          - $ref: '#/components/parameters/variables'
+          - $ref: '#/components/parameters/extensions'
+        responses:
+          '200':
+            $ref: '#/components/responses/GraphQLSuccess'
+          '400':
+            $ref: '#/components/responses/GraphQLError'
+      post:
+        summary: Execute a GraphQL query against the Telicent schema (POST)
+        parameters:
+          - $ref: '#/components/parameters/dataset'
+        requestBody:
+          $ref: '#/components/requestBodies/GraphQLRequest'
+        responses:
+          '200':
+            $ref: '#/components/responses/GraphQLSuccess'
+          '400':
+            $ref: '#/components/responses/GraphQLError'
+
+  /{dataset}/telicent/validate:
+      get:
+        summary: Validate a GraphQL query against the Telicent schema
+        parameters:
+          - $ref: '#/components/parameters/dataset'
+          - $ref: '#/components/parameters/graphQLQuery'
+          - $ref: '#/components/parameters/operationName'
+          - $ref: '#/components/parameters/variables'
+          - $ref: '#/components/parameters/extensions'
+        responses:
+          '200':
+            $ref: '#/components/responses/GraphQLSuccess'
+          '400':
+            $ref: '#/components/responses/GraphQLError'
+      post:
+        summary: Validate a GraphQL query against the Telicent schema (POST)
+        parameters:
+          - $ref: '#/components/parameters/dataset'
+        requestBody:
+          $ref: '#/components/requestBodies/GraphQLRequest'
+        responses:
+          '200':
+            $ref: '#/components/responses/GraphQLSuccess'
+          '400':
+            $ref: '#/components/responses/GraphQLError'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      description: Generic Bearer Authentication is supported using JWTs
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    AwsBearerAuth:
+      description: |
+        For AWS usage we support JWTs that are injected into requests by the ELB.  
+        Since these come in a non-standard HTTP header we have to declare this as
+        an API Key scheme in OpenAPI spec as it doesn't have a notion of using a
+        HTTP scheme in a non-standard way (yay AWS weirdness!)
+      type: apiKey
+      in: header
+      name: X-Amzn-Oidc-Data
+  parameters:
+      dataset:
+        name: dataset
+        in: query
+        required: true
+        schema:
+          type: string
+        description: The underlying dataset (i.e. Graph) to apply requests against.
+      graphQLQuery:
+          name: query
+          in: query
+          required: true
+          schema:
+            type: string
+          description: The GraphQL query string.
+      sparqlQuery:
+          name: query
+          in: query
+          required: true
+          schema:
+            type: string
+          description: The SPARQL query string.
+      operationName:
+        name: operationName
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Name of the operation to execute (optional).
+      variables:
+        name: variables
+        in: query
+        required: false
+        schema:
+          type: string
+          description: JSON-encoded variables for the query (optional).
+      extensions:
+        name: extensions
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Extensions for the GraphQL request (optional).
+
+  requestBodies:
+      GraphQLRequest:
+        description: GraphQL request payload.
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                query:
+                  type: string
+                operationName:
+                  type: string
+                variables:
+                  type: object
+                extensions:
+                  type: object
+              required:
+                - query
+
+  responses:
+      GraphQLSuccess:
+        description: Successful response containing query results.
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+      GraphQLError:
+        description: Error response for invalid GraphQL requests.
+        content:
+          application/problem+json:
+            schema:
+              type: object
+              properties:
+                type:
+                  type: string
+                title:
+                  type: string
+                status:
+                  type: integer
+                detail:
+                  type: string
+  schemas:
+    ValidationReport:
+      type: object
+      properties:
+        conforms:
+          type: boolean
+          description: Indicates whether the RDF data conforms to the SHACL shapes.
+        results:
+          type: array
+          description: Detailed validation results.
+          items:
+            type: object
+            properties:
+              focusNode:
+                type: string
+                description: The node in the RDF data that caused the validation result.
+              resultPath:
+                type: string
+                description: The property path in the SHACL shapes that was violated.
+              message:
+                type: string
+                description: Explanation of the validation issue.
+    ErrorResponse:
+      type: object
+      properties:
+        type:
+          type: string
+          description: Type of the error.
+        title:
+          type: string
+          description: Title describing the error.
+        status:
+          type: integer
+          description: HTTP status code of the error.
+        detail:
+          type: string
+          description: Detailed error message.
+security:
+  - BearerAuth: []
+  - AwsBearerAuth: []
