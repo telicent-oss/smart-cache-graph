@@ -64,41 +64,6 @@ paths:
         503:
           description: Service Unavailable, i.e. the server is still in the process of starting.
   /{dataset}/shacl:
-    get:
-      summary: Retrieve SHACL shapes for a dataset
-      description: |
-        Retrieve the SHACL validation shapes associated with a specific dataset.
-        The shapes are returned in RDF format and can be used to validate data against the dataset's SHACL rules.
-      parameters:
-        - $ref: '#/components/parameters/dataset'
-      responses:
-        200:
-          description: SHACL shapes retrieved successfully.
-          content:
-            application/turtle:
-              schema:
-                type: string
-                description: SHACL shapes in Turtle format.
-            application/ld+json:
-              schema:
-                type: string
-                description: SHACL shapes in JSON-LD format.
-            application/n-triples:
-              schema:
-                type: string
-                description: SHACL shapes in N-Triples format.
-        404:
-          description: SHACL shapes not found for the specified dataset.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        500:
-          description: Internal Server Error.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
     post:
       summary: Validate RDF data against SHACL shapes
       description: |
@@ -106,6 +71,8 @@ paths:
         The server processes the request and returns a SHACL validation report.
       parameters:
         - $ref: '#/components/parameters/dataset'
+        - $ref: '#/components/parameters/graph'
+        - $ref: '#/components/parameters/target'
       requestBody:
         description: RDF data and SHACL shapes to validate.
         required: true
@@ -158,7 +125,12 @@ paths:
 
   /{dataset}/graphql:
     get:
-      summary: Execute a GraphQL query against the Dataset schema
+      summary: Execute a GraphQL query
+      description: | 
+        Execute a GraphQL query against the schema associated with the specified dataset.
+        The supported GraphQL schema is configuration-dependent and may vary between datasets.
+        Users can use GraphQL introspection queries to explore and examine the available schema for the dataset,
+        enabling them to understand the structure and capabilities of the API.
       parameters:
         - $ref: '#/components/parameters/dataset'
         - $ref: '#/components/parameters/graphQLQuery'
@@ -331,11 +303,23 @@ components:
   parameters:
       dataset:
         name: dataset
-        in: query
+        in: path
         required: true
         schema:
           type: string
         description: The underlying dataset (i.e. Graph) to apply requests against.
+      graph:
+        name: graph
+        in: query
+        required: false
+        schema:
+          type: string
+      target:
+        name: target
+        in: query
+        required: false
+        schema:
+          type: string
       graphQLQuery:
           name: query
           in: query
@@ -403,42 +387,62 @@ components:
                 data:
                   type: object
       GraphQLError:
-        description: Error response for invalid GraphQL requests.
+        description: Error response for invalid GraphQL requests, adhering to the GraphQL error specification.
         content:
-          application/problem+json:
+          application/json:
             schema:
               type: object
               properties:
-                type:
-                  type: string
-                title:
-                  type: string
-                status:
-                  type: integer
-                detail:
-                  type: string
+                errors:
+                  type: array
+                  description: A list of errors encountered during query execution.
+                  items:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        description: A human-readable description of the error.
+                      locations:
+                        type: array
+                        description: A list of locations in the request document associated with the error.
+                        items:
+                          type: object
+                          properties:
+                            line:
+                              type: integer
+                              description: Line number in the request document where the error occurred.
+                            column:
+                              type: integer
+                              description: Column number in the request document where the error occurred.
+                      path:
+                        type: array
+                        description: A path to the field that caused the error.
+                        items:
+                          type: string
+                      extensions:
+                        type: object
+                        description: Additional metadata about the error, as provided by the server.
+              required:
+                - errors
+
   schemas:
     ValidationReport:
-      type: object
-      properties:
-        conforms:
-          type: boolean
-          description: Indicates whether the RDF data conforms to the SHACL shapes.
-        results:
-          type: array
-          description: Detailed validation results.
-          items:
-            type: object
-            properties:
-              focusNode:
-                type: string
-                description: The node in the RDF data that caused the validation result.
-              resultPath:
-                type: string
-                description: The property path in the SHACL shapes that was violated.
-              message:
-                type: string
-                description: Explanation of the validation issue.
+      description: Validation report returned in RDF form, representing the results of SHACL validation.
+      content:
+        text/turtle:
+          schema:
+            type: string
+            description: The validation report serialized in Turtle format.
+      examples:
+        text/turtle:
+          summary: Example Turtle validation report.
+          value: |
+            PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> 
+            PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> 
+            PREFIX sh: <http://www.w3.org/ns/shacl#> 
+            [ 
+              rdf:type sh:ValidationReport; sh:conforms true 
+            ] .
     ErrorResponse:
       type: object
       properties:
