@@ -105,7 +105,7 @@
     <dependency.mockito>5.14.2</dependency.mockito>
     <dependency.testcontainers>1.20.3</dependency.testcontainers>
 
-    <dependency.yaml-config>1.0.3</dependency.yaml-config>
+    <dependency.yaml-config>1.0.4</dependency.yaml-config>
 
   </properties>
 
