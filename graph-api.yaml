@@ -77,34 +77,15 @@ paths:
         description: RDF data and SHACL shapes to validate.
         required: true
         content:
-          application/ld+json:
-            schema:
-              type: object
-              properties:
-                data:
-                  type: string
-                  description: RDF data to validate.
-                  format: string
-                shapes:
-                  type: string
-                  description: SHACL shapes to validate the RDF data against.
-                  format: string
-              required:
-                - data
-                - shapes
-          application/turtle:
+          text/turtle:
             schema:
               type: string
               description: RDF data and SHACL shapes in Turtle format.
-          application/n-triples:
-            schema:
-              type: string
-              description: RDF data and SHACL shapes in N-Triples format.
       responses:
         200:
           description: Validation report generated successfully.
           content:
-            application/json:
+            text/turtle:
               schema:
                 $ref: '#/components/schemas/ValidationReport'
             application/ld+json:
@@ -113,13 +94,13 @@ paths:
         400:
           description: Invalid input data or SHACL shapes.
           content:
-            application/json:
+            text/html:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         500:
           description: Internal Server Error.
           content:
-            application/json:
+            text/html:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
