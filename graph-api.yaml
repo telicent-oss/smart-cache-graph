@@ -427,22 +427,16 @@ components:
 
   schemas:
     ValidationReport:
-      description: Validation report returned in RDF form, representing the results of SHACL validation.
-      content:
-        text/turtle:
-          schema:
-            type: string
-            description: The validation report serialized in Turtle format.
-      examples:
-        text/turtle:
-          summary: Example Turtle validation report.
-          value: |
-            PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> 
-            PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> 
-            PREFIX sh: <http://www.w3.org/ns/shacl#> 
-            [ 
-              rdf:type sh:ValidationReport; sh:conforms true 
-            ] .
+      type: string
+      description: Validation report returned in RDF form, serialized as a string in Turtle format.
+      example: |
+        PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+        PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+        PREFIX sh: <http://www.w3.org/ns/shacl#>
+        [
+          rdf:type sh:ValidationReport ;
+          sh:conforms true
+        ] .
     ErrorResponse:
       type: object
       properties:
