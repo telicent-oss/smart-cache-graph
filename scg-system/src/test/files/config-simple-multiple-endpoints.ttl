@@ -1,0 +1,24 @@
+PREFIX :        <#>
+PREFIX fuseki:  <http://jena.apache.org/fuseki#>
+PREFIX rdf:     <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX tdb:    <http://jena.apache.org/2016/tdb#>
+PREFIX ja:      <http://jena.hpl.hp.com/2005/11/Assembler#>
+
+[] rdf:type fuseki:Server ;
+   fuseki:services (
+     :serviceSimple
+     :serviceSimpleAlt
+   ) .
+
+
+:serviceSimple rdf:type fuseki:Service ;
+    fuseki:name "ds1" ;
+    fuseki:dataset <#dataset> ;
+    .
+
+:serviceSimpleAlt rdf:type fuseki:Service ;
+    fuseki:name "ds2" ;
+    fuseki:dataset <#dataset> ;
+    .
+
+:dataset rdf:type ja:MemoryDataset ;

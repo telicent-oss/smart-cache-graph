@@ -53,6 +53,11 @@
       <artifactId>jena-fuseki-main</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>org.apache.jena</groupId>
+      <artifactId>jena-fuseki-webapp</artifactId>
+    </dependency>
+
     <!-- ABAC engine -->
     <dependency>
       <groupId>io.telicent.jena</groupId>

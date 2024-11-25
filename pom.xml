@@ -138,6 +138,11 @@
         <version>${dependency.jena}</version>
       </dependency>
 
+      <dependency>
+        <groupId>org.apache.jena</groupId>
+        <artifactId>jena-fuseki-webapp</artifactId>
+        <version>${dependency.jena}</version>
+      </dependency>
       <!-- Fuseki-Kafka connector -->
       <dependency>
         <groupId>io.telicent.jena</groupId>

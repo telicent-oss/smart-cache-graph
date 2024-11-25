@@ -14,6 +14,7 @@ import org.apache.jena.fuseki.main.sys.FusekiAutoModule;
 import org.apache.jena.fuseki.server.DataAccessPoint;
 import org.apache.jena.fuseki.server.DataAccessPointRegistry;
 import org.apache.jena.fuseki.server.DataService;
+import org.apache.jena.fuseki.servlets.ServletOps;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.sparql.core.DatasetGraph;
 import org.apache.jena.sparql.core.DatasetGraphWrapper;
@@ -65,6 +66,7 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
                     }
                 } catch (Exception e) {
                     FmtLog.error(Fuseki.configLog, "Error while compacting data points", e);
+                    ServletOps.errorOccurred(e.getMessage());
                 }
             }
 
