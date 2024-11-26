@@ -27,6 +27,7 @@ jobs:
       MAIN_BRANCH: main
       # If running in debug mode, use appropriate logging
       MAVEN_DEBUG_ARGS: -Dlogback.configurationFile=logback-debug.xml
+      RUN_WINDOWS_BUILD: false
       JAVA_VERSION: 21
     secrets: inherit
 
@@ -47,7 +48,6 @@ jobs:
       JAVA_VERSION: 21
       USES_MAVEN: true
       DOWNLOAD_SBOM: false
-      RUN_WINDOWS_BUILD: false
       BUILD_ARGS: |
         PROJECT_VERSION=${{ needs.maven-build.outputs.version }}
     secrets: inherit
