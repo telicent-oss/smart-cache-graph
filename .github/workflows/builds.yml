@@ -47,6 +47,7 @@ jobs:
       JAVA_VERSION: 21
       USES_MAVEN: true
       DOWNLOAD_SBOM: false
+      RUN_WINDOWS_BUILD: false
       BUILD_ARGS: |
         PROJECT_VERSION=${{ needs.maven-build.outputs.version }}
     secrets: inherit
