@@ -80,6 +80,14 @@ will perform a database compaction. This can execute on a live server allowing
 read-operation to continue to be processed in parallel.  *Note:* write
 operations are held up during this action.
 
+## Backup / Restore
+
+In order to improve the resiliency of the Smart Cache Graph the facility to back up the data is currently being worked upon. 
+At present only the underlying Fuseki-TDB will be saved. This will be extended to include backing up the security label, and Kafka offsets too.
+An obvious follow-up will be the ability to restore from backup.
+
+This facility can be turned on by setting the environment variable `DISABLE_BACKUP` to false. 
+
 ## Exclusions
 
 There is an additional Fuseki module `JWT Servlet Auth` that applies authentication to all the endpoints offered by the server.
