@@ -71,6 +71,7 @@ public class TestDatasetBackups {
     public void createAndSetupServerDetails() throws Exception {
         LibTestsSCG.setupAuthentication();
         LibTestsSCG.disableInitialCompaction();
+        LibTestsSCG.enableBackups();
         FusekiLogging.setLogging();
         Attributes.buildStore(emptyGraph);
     }
