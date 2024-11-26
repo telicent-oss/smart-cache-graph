@@ -168,7 +168,7 @@ public class FMod_DatasetBackups implements FusekiAutoModule {
      * A backup is a dump of the dataset in compressed N-Quads, done inside a transaction.
      */
     public void backup(DatasetGraph dsg, String backupFile) {
-        Backup.backup(null, dsg, backupFile);
+        Backup.backup(dsg, dsg, backupFile);
     }
 
     /**
