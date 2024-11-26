@@ -45,6 +45,7 @@ public class FMod_DatasetBackups implements FusekiAutoModule {
     static Path dirBackups;
 
     public static final String ENV_BACKUPS_DIR = "ENV_BACKUPS_DIR";
+    public static final String DISABLE_BACKUP = "DISABLE_BACKUP";
 
     static ObjectMapper MAPPER = new ObjectMapper();
 

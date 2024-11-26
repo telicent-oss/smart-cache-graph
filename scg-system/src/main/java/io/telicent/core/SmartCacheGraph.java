@@ -116,8 +116,11 @@ public class SmartCacheGraph {
                 , new FMod_OpenTelemetry()
                 , new FMod_TelicentGraphQL()
                 , new FMod_RequestIDFilter()
-                , new FMod_DatasetBackups()
         ));
+
+        if(isBackupEnabled()) {
+            mods.add(new FMod_DatasetBackups());
+        }
 
         // Initial compaction gets added again per the earlier comments
         if (isInitialCompactionEnabled()) {
@@ -133,6 +136,10 @@ public class SmartCacheGraph {
 
     private static boolean isInitialCompactionEnabled() {
         return !Configurator.get(FMod_InitialCompaction.DISABLE_INITIAL_COMPACTION, Boolean::parseBoolean, false);
+    }
+
+    private static boolean isBackupEnabled() {
+        return !Configurator.get(FMod_DatasetBackups.DISABLE_BACKUP, Boolean::parseBoolean, true);
     }
 
     private static void convertYamlConfigToRDF(String... args) {
