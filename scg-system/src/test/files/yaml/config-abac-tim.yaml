@@ -1,0 +1,25 @@
+version: "1.0"
+prefixes:
+  - prefix: "authz"
+    namespace: "http://telicent.io/security#"
+server:
+  name: "Fuseki server simple"
+services:
+  - name: "ds"
+    endpoints:
+      - operation: authz:query
+        settings:
+      - name: "upload"
+        operation: authz:upload
+    database:  "abac-mem-db"
+
+databases:
+  - name: "abac-mem-db"
+    dbtype: ABAC
+    dataset: "dataset-under"
+    attributes: "attribute-store.ttl"
+
+  - name: "dataset-under"
+    dbtype: TIM
+    settings:
+      'arq:queryTimeout': "100,100"

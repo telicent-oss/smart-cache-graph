@@ -1,0 +1,8 @@
+@prefix ies: <http://ies.data.gov.uk/ontology/ies4#> .
+@prefix ex: <http://example.org/> .
+
+ex:123 a ies:Person ;
+    ies:hasName "Bob" .
+
+ex:Bob a ies:PersonName ;
+    ies:representationValue "Bob" .

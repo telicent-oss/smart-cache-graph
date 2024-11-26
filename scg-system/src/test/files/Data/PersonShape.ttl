@@ -1,0 +1,20 @@
+@prefix ies: <http://ies.data.gov.uk/ontology/ies4#> .
+@prefix sh:  <http://www.w3.org/ns/shacl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+ies:PersonShape
+    a              sh:NodeShape ;
+    sh:severity    sh:Warning ;
+    sh:targetClass ies:Person ;
+    sh:property    [ sh:path     ies:hasName ;
+                     sh:nodeKind sh:IRI ;
+                     sh:minCount 1 ] .
+
+ies:PersonNameShape
+    a              sh:NodeShape ;
+    sh:severity    sh:Warning ;
+    sh:targetClass ies:PersonName ;
+    sh:property [
+                sh:path ies:representationValue ;
+                sh:datatype xsd:string ;
+                sh:minCount 1 ] .

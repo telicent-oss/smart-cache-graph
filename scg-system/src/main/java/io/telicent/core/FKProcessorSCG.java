@@ -346,6 +346,9 @@ public class FKProcessorSCG extends FKProcessorBaseAction /*implements FKProcess
                 String msg = format("[%s] This dataset does not support ABAC security labelling.", id);
                 throw new AuthzException(msg);
             }
+            else {
+                other.quad(quad);
+            }
         }
     }
 

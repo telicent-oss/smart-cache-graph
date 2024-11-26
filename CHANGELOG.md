@@ -1,5 +1,11 @@
 # Smart Cache Graph
 
+## 0.82.8
+- Updating GraphQL Jena and YAML Fuseki dependencies.
+
+## 0.82.7
+- Added safeguard against potential deadlocking during compaction.
+
 ## 0.82.6
 
 - Fix a bug where extra Kafka configuration wasn't passed onto the Kafka Producer for CQRS endpoints preventing

@@ -58,5 +58,6 @@ scg-test/**
 DB*
 .#*
 \#*
+scg-system/*.state
 ## Docker container ID file.
 *.cid

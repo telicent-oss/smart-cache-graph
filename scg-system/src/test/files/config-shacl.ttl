@@ -1,0 +1,20 @@
+PREFIX :       <#>
+PREFIX fuseki: <http://jena.apache.org/fuseki#>
+PREFIX rdf:    <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX tdb:    <http://jena.apache.org/2016/tdb#>
+PREFIX ja:     <http://jena.hpl.hp.com/2005/11/Assembler#>
+
+
+:serviceSimple
+    rdf:type        fuseki:Service ;
+    fuseki:name     "ds" ;
+    fuseki:dataset  <#dataset> ;
+    fuseki:endpoint [ fuseki:operation fuseki:shacl ;
+                      fuseki:name      "shacl" ] ;
+    fuseki:endpoint [ fuseki:operation fuseki:upload ;
+                      fuseki:name      "upload" ] ;
+.
+
+<#dataset>
+    rdf:type ja:MemoryDataset ;
+.

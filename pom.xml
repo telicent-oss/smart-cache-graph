@@ -22,7 +22,7 @@
   <groupId>io.telicent.smart-caches.graph</groupId>
   <artifactId>scg-base</artifactId>
   <packaging>pom</packaging>
-  <version>0.82.7-SNAPSHOT</version>
+  <version>0.82.10-SNAPSHOT</version>
 
   <name>Telicent Smart Cache Graph - Parent</name>
   <description>Telicent Smart Cache Graph</description>
@@ -56,7 +56,7 @@
   <properties>
     <!-- Build properties -->
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <project.build.outputTimestamp>2024-10-24T12:03:05Z</project.build.outputTimestamp>
+    <project.build.outputTimestamp>2024-11-21T09:34:38Z</project.build.outputTimestamp>
     <java.version>21</java.version>
 
     <!-- Maven Plugin versions -->
@@ -69,15 +69,15 @@
     <plugin.gpg>3.2.7</plugin.gpg>
     <plugin.install>3.1.1</plugin.install>
     <plugin.jar>3.4.2</plugin.jar>
-    <plugin.javadoc>3.10.1</plugin.javadoc>
+    <plugin.javadoc>3.11.1</plugin.javadoc>
     <plugin.nexus>1.7.0</plugin.nexus>
-    <plugin.owasp-dependency-check>11.0.0</plugin.owasp-dependency-check>
+    <plugin.owasp-dependency-check>11.1.0</plugin.owasp-dependency-check>
     <plugin.resources>3.3.1</plugin.resources>
     <plugin.shade>3.4.1</plugin.shade>
     <plugin.site>3.9.1</plugin.site>
     <plugin.source>3.3.1</plugin.source>
-    <plugin.surefire>3.5.1</plugin.surefire>
-    <plugin.versions>2.17.1</plugin.versions>
+    <plugin.surefire>3.5.2</plugin.surefire>
+    <plugin.versions>2.18.0</plugin.versions>
 
     <!-- Dependency versions -->
     <!-- Internal dependencies -->
@@ -85,9 +85,9 @@
     <dependency.fuseki-kafka>1.5.1</dependency.fuseki-kafka>
     <dependency.jena>5.2.0</dependency.jena>
     <dependency.fuseki-server>${dependency.jena}</dependency.fuseki-server>
-    <dependency.graphql>0.9.0</dependency.graphql>
+    <dependency.graphql>0.9.1</dependency.graphql>
     <dependency.jwt-servlet-auth>0.17.4</dependency.jwt-servlet-auth>
-    <dependency.smart-caches-core>0.24.0</dependency.smart-caches-core>
+    <dependency.smart-caches-core>0.24.1</dependency.smart-caches-core>
 
     <!-- External dependencies -->
     <dependency.kotlin>2.0.21</dependency.kotlin>
@@ -104,6 +104,9 @@
     <dependency.junit5-platform>1.11.3</dependency.junit5-platform>
     <dependency.mockito>5.14.2</dependency.mockito>
     <dependency.testcontainers>1.20.3</dependency.testcontainers>
+
+    <dependency.yaml-config>1.0.4</dependency.yaml-config>
+
   </properties>
 
   <modules>
@@ -342,6 +345,11 @@
             <artifactId>jackson-annotations</artifactId>
           </exclusion>
         </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>io.telicent.public</groupId>
+        <artifactId>fuseki-yaml-config</artifactId>
+        <version>${dependency.yaml-config}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
