@@ -38,7 +38,7 @@ import org.junit.jupiter.api.Test;
 /** Integration tests including mocks the SCG as deployed on AWS (or etc). */
 public class TestSmartCacheGraphIntegration {
 
-    private static final String DIR = "src/test/files";
+    public static final String DIR = "src/test/files";
 
     @BeforeAll
     static void beforeClass() throws Exception {

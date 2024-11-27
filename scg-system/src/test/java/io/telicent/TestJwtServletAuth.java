@@ -8,6 +8,7 @@ import io.telicent.core.SmartCacheGraph;
 import io.telicent.jena.abac.core.Attributes;
 import io.telicent.servlet.auth.jwt.PathExclusion;
 import io.telicent.servlet.auth.jwt.verification.JwtVerifier;
+import io.telicent.servlet.auth.jwt.verifier.aws.AwsConstants;
 import io.telicent.smart.cache.configuration.Configurator;
 import io.telicent.smart.cache.configuration.sources.PropertiesSource;
 import io.telicent.smart.caches.configuration.auth.AuthConstants;
@@ -177,6 +178,14 @@ public class TestJwtServletAuth {
         HttpRequest.Builder builder =
                 HttpLib.requestBuilderFor(server.serverURL())
                         .uri(toRequestURI(server.serverURL()+ path))
+                        .method(METHOD_POST, HttpRequest.BodyPublishers.noBody());
+        return execute(HttpEnv.getDftHttpClient(), builder.build());
+    }
+    public static HttpResponse<InputStream> makeAuthPOSTCallWithPath(FusekiServer server, String path, String user) {
+        HttpRequest.Builder builder =
+                HttpLib.requestBuilderFor(server.serverURL())
+                        .uri(toRequestURI(server.serverURL()+ path))
+                        .headers(AwsConstants.HEADER_DATA, LibTestsSCG.tokenForUser(user))
                         .method(METHOD_POST, HttpRequest.BodyPublishers.noBody());
         return execute(HttpEnv.getDftHttpClient(), builder.build());
     }

@@ -33,6 +33,8 @@ import org.apache.jena.sparql.exec.http.DSP;
 import org.apache.jena.sparql.exec.http.QueryExecHTTPBuilder;
 import org.slf4j.Logger;
 
+import static io.telicent.core.FMod_DatasetBackups.DISABLE_BACKUP;
+
 public class LibTestsSCG {
 
     private static final Properties AUTH_DISABLED_PROPERTIES = new Properties();
@@ -180,6 +182,12 @@ public class LibTestsSCG {
     public static void disableInitialCompaction() {
         Properties properties = new Properties();
         properties.put(FMod_InitialCompaction.DISABLE_INITIAL_COMPACTION, "true");
+        Configurator.addSource(new PropertiesSource(properties));
+    }
+
+    public static void enableBackups() {
+        Properties properties = new Properties();
+        properties.put(DISABLE_BACKUP, "false");
         Configurator.addSource(new PropertiesSource(properties));
     }
 }
