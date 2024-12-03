@@ -16,6 +16,7 @@
 
 package io.telicent.core;
 
+import io.telicent.backup.FMod_BackupData;
 import io.telicent.graphql.FMod_TelicentGraphQL;
 import io.telicent.jena.abac.fuseki.FMod_ABAC;
 import io.telicent.otel.FMod_OpenTelemetry;
@@ -27,14 +28,16 @@ import org.apache.jena.fuseki.main.FusekiServer;
 import org.apache.jena.fuseki.main.cmds.FusekiMain;
 import org.apache.jena.fuseki.main.sys.FusekiModule;
 import org.apache.jena.fuseki.main.sys.FusekiModules;
-import org.apache.jena.rdf.model.*;
+import org.apache.jena.rdf.model.Model;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import yamlconfig.ConfigStruct;
 import yamlconfig.RDFConfigGenerator;
 import yamlconfig.YAMLConfigParser;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -116,11 +119,8 @@ public class SmartCacheGraph {
                 , new FMod_OpenTelemetry()
                 , new FMod_TelicentGraphQL()
                 , new FMod_RequestIDFilter()
+                , new FMod_BackupData()
         ));
-
-        if(isBackupEnabled()) {
-            mods.add(new FMod_DatasetBackups());
-        }
 
         // Initial compaction gets added again per the earlier comments
         if (isInitialCompactionEnabled()) {
@@ -136,10 +136,6 @@ public class SmartCacheGraph {
 
     private static boolean isInitialCompactionEnabled() {
         return !Configurator.get(FMod_InitialCompaction.DISABLE_INITIAL_COMPACTION, Boolean::parseBoolean, false);
-    }
-
-    private static boolean isBackupEnabled() {
-        return !Configurator.get(FMod_DatasetBackups.DISABLE_BACKUP, Boolean::parseBoolean, true);
     }
 
     private static void convertYamlConfigToRDF(String... args) {

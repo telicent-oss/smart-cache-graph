@@ -33,7 +33,7 @@ import org.apache.jena.sparql.exec.http.DSP;
 import org.apache.jena.sparql.exec.http.QueryExecHTTPBuilder;
 import org.slf4j.Logger;
 
-import static io.telicent.core.FMod_DatasetBackups.DISABLE_BACKUP;
+import static io.telicent.backup.FMod_BackupData.ENABLE_BACKUPS;
 
 public class LibTestsSCG {
 
@@ -187,7 +187,13 @@ public class LibTestsSCG {
 
     public static void enableBackups() {
         Properties properties = new Properties();
-        properties.put(DISABLE_BACKUP, "false");
+        properties.put(ENABLE_BACKUPS, "true");
+        Configurator.addSource(new PropertiesSource(properties));
+    }
+
+    public static void disableBackups() {
+        Properties properties = new Properties();
+        properties.put(ENABLE_BACKUPS, "false");
         Configurator.addSource(new PropertiesSource(properties));
     }
 }

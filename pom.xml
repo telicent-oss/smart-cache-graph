@@ -69,6 +69,7 @@
     <plugin.gpg>3.2.7</plugin.gpg>
     <plugin.install>3.1.1</plugin.install>
     <plugin.jar>3.4.2</plugin.jar>
+    <plugin.jacoco>0.8.12</plugin.jacoco>
     <plugin.javadoc>3.11.1</plugin.javadoc>
     <plugin.nexus>1.7.0</plugin.nexus>
     <plugin.owasp-dependency-check>11.1.0</plugin.owasp-dependency-check>
@@ -464,7 +465,7 @@
           <artifactId>maven-surefire-plugin</artifactId>
           <version>${plugin.surefire}</version>
           <configuration>
-            <argLine>-XX:+EnableDynamicAgentLoading</argLine>
+            <argLine>@{jacocoArgLine} -XX:+EnableDynamicAgentLoading</argLine>
           </configuration>
         </plugin>
 
@@ -535,6 +536,29 @@
           <keepStagingRepositoryOnCloseRuleFailure>true</keepStagingRepositoryOnCloseRuleFailure>
           <stagingProgressTimeoutMinutes>15</stagingProgressTimeoutMinutes>
         </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.jacoco</groupId>
+        <artifactId>jacoco-maven-plugin</artifactId>
+        <version>${plugin.jacoco}</version>
+        <configuration>
+          <propertyName>jacocoArgLine</propertyName>
+        </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>prepare-agent</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>report</id>
+            <phase>verify</phase>
+            <goals>
+              <goal>report</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>
