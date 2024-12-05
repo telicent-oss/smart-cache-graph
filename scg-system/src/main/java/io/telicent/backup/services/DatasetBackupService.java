@@ -141,7 +141,7 @@ public class DatasetBackupService {
     @ExcludeFromJacocoGeneratedReport
     void executeBackupLabelStore(LabelsStoreRocksDB rocksDB, String labelBackupPath) {
         // Disabling for the time-being
-//        rocksDB.backup(labelBackupPath);
+        rocksDB.backup(labelBackupPath);
     }
 
     public ObjectNode listBackups() {
@@ -250,7 +250,7 @@ public class DatasetBackupService {
     @ExcludeFromJacocoGeneratedReport
     void executeRestoreLabelStore(LabelsStoreRocksDB rocksDB, String labelRestorePath) {
         // Disabling for the time-being
-//        rocksDB.restore(labelRestorePath);
+        rocksDB.restore(labelRestorePath);
     }
 
     public ObjectNode deleteBackup(String deleteID) {

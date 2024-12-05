@@ -29,6 +29,7 @@ import io.telicent.core.FKProcessorSCG;
 import io.telicent.core.MainSmartCacheGraph;
 import io.telicent.jena.abac.AttributeValueSet;
 import io.telicent.jena.abac.SysABAC;
+import io.telicent.jena.abac.attributes.Attribute;
 import io.telicent.jena.abac.attributes.ValueTerm;
 import io.telicent.jena.abac.core.Attributes;
 import io.telicent.jena.abac.core.AttributesStore;
@@ -85,7 +86,7 @@ public class TestPersistentSetup {
         final String TOPIC = "knowledge";
 
         // Load the attributes: this copy is only used for printing information
-        AttributesStore attributeStore = Attributes.readAttributesStore(concatPaths(DIR, "attribute-store.ttl"));
+        AttributesStore attributeStore = Attributes.readAttributesStore(concatPaths(DIR, "attribute-store.ttl"), null);
 
         FusekiServer server = MainSmartCacheGraph.build("--port=0", "--config", CONFIG);
 
@@ -196,7 +197,9 @@ public class TestPersistentSetup {
             return;
         }
 
-        attributeStore.attributes(user).attributeValuesPairs((a, vt) -> {
+        attributeStore.attributes(user).attributeValues((attributeValue) -> {
+            Attribute a = attributeValue.attribute();
+            ValueTerm vt = attributeValue.value();
             System.out.printf("    %s %s", a, vt);
             if ( attributeStore.hasHierarchy(a) ) {
                 System.out.printf(" --");
