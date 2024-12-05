@@ -1,0 +1,213 @@
+openapi: 3.0.3
+info:
+  title: Dataset Backup API
+  description: API for managing dataset backups, including creation, listing, restoration, and deletion.
+  version: 0.82.8
+servers:
+  - url: http://localhost:3030/
+    description: Base path for dataset backup operations.
+
+paths:
+  /backups/create/{datasetName}:
+    post:
+      summary: Create a backup for a dataset
+      description: Initiates a backup operation for the specified dataset.
+      parameters:
+        - name: datasetName
+          in: path
+          required: true
+          description: The name of the dataset to back up.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Backup created successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  dataset:
+                    type: string
+                    description: Name of the dataset backed up.
+                  date:
+                    type: string
+                    format: date-time
+                    description: Timestamp of the backup operation.
+                  backup:
+                    type: object
+                    description: Details of the backup operation.
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Error message.
+  /backups/create/:
+    post:
+      summary: Create a backup for all available datasets
+      description: Initiates a backup operation for all of datasets .
+      responses:
+        '200':
+          description: Backup created successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  dataset:
+                    type: string
+                    description: Name of the dataset backed up.
+                  date:
+                    type: string
+                    format: date-time
+                    description: Timestamp of the backup operation.
+                  backup:
+                    type: object
+                    description: Details of the backup operation.
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Error message.
+
+  /backups/list:
+    get:
+      summary: List all backups
+      description: Retrieves a list of all backups stored on the server.
+      responses:
+        '200':
+          description: List of backups retrieved successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  date:
+                    type: string
+                    format: date-time
+                    description: Timestamp of the listing operation.
+                  list:
+                    type: array
+                    items:
+                      type: object
+                      description: Details of each backup.
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Error message.
+
+  /backups/restore/{restoreId}:
+    post:
+      summary: Restore a backup
+      description: Restores a dataset from a specified backup.
+      parameters:
+        - name: restoreId
+          in: path
+          required: true
+          description: ID of the backup to restore.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Dataset restored successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  restore-id:
+                    type: string
+                    description: ID of the restored backup.
+                  date:
+                    type: string
+                    format: date-time
+                    description: Timestamp of the restore operation.
+                  restore:
+                    type: object
+                    description: Details of the restore operation.
+        '404':
+          description: Backup not found.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Error message.
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Error message.
+
+  /backups/delete/{deleteId}:
+    post:
+      summary: Delete a backup
+      description: Deletes a specified backup.
+      parameters:
+        - name: deleteId
+          in: path
+          required: true
+          description: ID of the backup to delete.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Backup deleted successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  delete-id:
+                    type: string
+                    description: ID of the deleted backup.
+                  date:
+                    type: string
+                    format: date-time
+                    description: Timestamp of the deletion operation.
+                  delete:
+                    type: object
+                    description: Details of the deletion operation.
+        '404':
+          description: Backup not found.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Error message.
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Error message.

@@ -33,6 +33,7 @@ import static io.telicent.servlet.auth.jwt.JwtServletConstants.ATTRIBUTE_JWT_VER
 import static io.telicent.servlet.auth.jwt.JwtServletConstants.ATTRIBUTE_PATH_EXCLUSIONS;
 import static org.apache.jena.graph.Graph.emptyGraph;
 import static org.apache.jena.http.HttpLib.*;
+import static org.apache.jena.riot.web.HttpNames.METHOD_GET;
 import static org.apache.jena.riot.web.HttpNames.METHOD_POST;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
@@ -182,11 +183,19 @@ public class TestJwtServletAuth {
         return execute(HttpEnv.getDftHttpClient(), builder.build());
     }
     public static HttpResponse<InputStream> makeAuthPOSTCallWithPath(FusekiServer server, String path, String user) {
+        return makeAuthCallWithPathForMethod(server, path, user, METHOD_POST);
+    }
+
+    public static HttpResponse<InputStream> makeAuthGETCallWithPath(FusekiServer server, String path, String user) {
+        return makeAuthCallWithPathForMethod(server, path, user, METHOD_GET);
+    }
+
+    public static HttpResponse<InputStream> makeAuthCallWithPathForMethod(FusekiServer server, String path, String user, String method) {
         HttpRequest.Builder builder =
                 HttpLib.requestBuilderFor(server.serverURL())
-                        .uri(toRequestURI(server.serverURL()+ path))
+                        .uri(toRequestURI(server.serverURL() + path))
                         .headers(AwsConstants.HEADER_DATA, LibTestsSCG.tokenForUser(user))
-                        .method(METHOD_POST, HttpRequest.BodyPublishers.noBody());
+                        .method(method, HttpRequest.BodyPublishers.noBody());
         return execute(HttpEnv.getDftHttpClient(), builder.build());
     }
 }
