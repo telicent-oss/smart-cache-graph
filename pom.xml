@@ -70,9 +70,9 @@
     <plugin.install>3.1.1</plugin.install>
     <plugin.jar>3.4.2</plugin.jar>
     <plugin.jacoco>0.8.12</plugin.jacoco>
-    <plugin.javadoc>3.11.1</plugin.javadoc>
+    <plugin.javadoc>3.11.2</plugin.javadoc>
     <plugin.nexus>1.7.0</plugin.nexus>
-    <plugin.owasp-dependency-check>11.1.0</plugin.owasp-dependency-check>
+    <plugin.owasp-dependency-check>11.1.1</plugin.owasp-dependency-check>
     <plugin.resources>3.3.1</plugin.resources>
     <plugin.shade>3.4.1</plugin.shade>
     <plugin.site>3.9.1</plugin.site>
