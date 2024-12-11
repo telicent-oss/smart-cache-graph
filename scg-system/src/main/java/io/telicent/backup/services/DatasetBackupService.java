@@ -32,10 +32,9 @@ import org.apache.jena.riot.RDFDataMgr;
 import org.apache.jena.sparql.core.DatasetGraph;
 import org.apache.jena.system.Txn;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -43,6 +42,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.zip.GZIPInputStream;
 
 import static io.telicent.backup.utils.BackupUtils.*;
+import static io.telicent.backup.utils.ValidationUtils.validate;
 import static org.apache.jena.riot.Lang.NQUADS;
 
 public class DatasetBackupService {
@@ -398,10 +398,31 @@ public class DatasetBackupService {
     }
 
     /**
+     *
+     * @param validateId
+     * @param shapeReader
+     * @return
+     */
+    public ObjectNode validateBackup(final String validateId, final BufferedReader shapeReader) {
+        final String validatePath = getBackUpDir() + validateId + "/ds/tdb";
+        final ObjectNode response = MAPPER.createObjectNode();
+        response.put("validate-id", validateId);
+        response.put("date", DateTimeUtils.nowAsString("yyyy-MM-dd_HH-mm-ss"));
+        response.put("validatePath", validatePath);
+        if (!checkPathExistsAndIsDir(validatePath)) {
+            response.put("reason", "Validation path unsuitable: " + validatePath);
+            response.put("success", false);
+        } else {
+            executeValidation(validatePath, shapeReader);
+            response.put("success", true);
+        }
+        return response;
+    }
+
+    /**
      * Delete everything within the give directory
      * @param deletePath path to delete
-     */
-    @ExcludeFromJacocoGeneratedReport
+     */    @ExcludeFromJacocoGeneratedReport
     void executeDeleteBackup(String deletePath) {
         deleteDirectoryRecursively(new File(deletePath));
     }
@@ -426,5 +447,25 @@ public class DatasetBackupService {
     private static void registerMethod(Map<String, TriConsumer<DataAccessPoint, String, ObjectNode>> map, String key, TriConsumer<DataAccessPoint, String, ObjectNode> consumer) {
         map.put(key, consumer);
     }
+
+    private void executeValidation(final String validatePath, final BufferedReader shapeReader) {
+        Path source = Paths.get(validatePath + "/ds_backup.nq.gz");
+        try {
+            // unpack file
+            Path nQuadPath = decompressGzip(source);
+            // convert to Turtle
+            Path turtlePath = convertToTurtle(nQuadPath);
+            // execute validation
+            // save validation report
+            // clean up
+
+        } catch (Exception ioex) {
+            ioex.printStackTrace();
+        }
+
+    }
+
+
+
 
 }

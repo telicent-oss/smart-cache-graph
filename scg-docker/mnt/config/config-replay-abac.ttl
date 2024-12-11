@@ -16,7 +16,7 @@ PREFIX authz:   <http://telicent.io/security#>
     fuseki:endpoint [ fuseki:operation fuseki:query ] ;
     fuseki:endpoint [ fuseki:operation fuseki:gsp-r ] ;
     fuseki:endpoint [ fuseki:operation fuseki:query ; fuseki:name "sparql" ] ;
-    fuseki:endpoint [ fuseki:operation authz:upload ; fuseki:name "upload" ] ;
+    fuseki:endpoint [ fuseki:operation fuseki:upload ; fuseki:name "upload" ] ;
 
     fuseki:dataset :dataset ;
     .
@@ -45,7 +45,7 @@ PREFIX fk:      <http://jena.apache.org/fuseki/kafka#>
     ##fk:syncTopic        false;
     fk:replayTopic      true;
     
-    fk:stateFile        "databases/Replay-ABAC.state";
+    fk:stateFile        "scg-docker/mnt/databases/Replay-ABAC.state";
 ##     fk:config ( "K1" "V1") ;
 ##     fk:config ( "K2" "V2") ;
     .

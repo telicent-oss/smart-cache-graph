@@ -33,8 +33,11 @@ import org.apache.jena.sparql.core.DatasetGraphFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -836,6 +839,22 @@ public class TestDatasetBackupService {
 
         assertEquals(0, DatasetBackupService_Test.getCallCount(RESTORE_TDB));
         assertEquals(0, DatasetBackupService_Test.getCallCount(RESTORE_LABELS));
+    }
+
+    @Test
+    public void test() throws Exception {
+        Path parent = baseDir.getParent();
+        BackupUtils.dirBackups = parent.toAbsolutePath().toString();
+        String existingID = baseDir.getFileName().toString();
+        try(BufferedReader reader = getBufferedReader()){
+            cut.validateBackup(existingID, reader);
+        }
+    }
+
+    private BufferedReader getBufferedReader() throws Exception {
+        URL shapeUrl = getClass().getClassLoader().getResource("CountryShape.ttl");
+        assert shapeUrl != null;
+        return new BufferedReader(new FileReader(shapeUrl.getPath()));
     }
 
 
