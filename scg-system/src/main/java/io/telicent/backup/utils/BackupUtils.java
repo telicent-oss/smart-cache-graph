@@ -23,14 +23,22 @@ import io.telicent.smart.cache.configuration.Configurator;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletResponse;
 import org.apache.jena.atlas.logging.FmtLog;
+import org.apache.jena.rdf.model.Model;
+import org.apache.jena.riot.RDFDataMgr;
+import org.apache.jena.riot.RDFFormat;
 import org.apache.jena.riot.WebContent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Stream;
+import java.util.zip.GZIPInputStream;
 
 /**
  * Utility class for carrying out common back-up operations and file I/O.
@@ -369,6 +377,19 @@ public class BackupUtils {
     }
 
     /**
+     *
+     * @param response
+     * @param jsonResponse
+     * @param status
+     * @param message
+     */
+    public static void handleError(HttpServletResponse response, ObjectNode jsonResponse, int status, String message) {
+        response.setStatus(status);
+        jsonResponse.put("error", message);
+        processResponse(response, jsonResponse);
+    }
+
+    /**
      * Checks to see if the requested parameter is empty or just a '/'
      * which we treat as equivalent
      *
@@ -382,4 +403,29 @@ public class BackupUtils {
             return true;
         } else return requestName.trim().equals("/");
     }
+
+    public static Path decompressGzip(final Path source) throws IOException {
+        final Path target = Paths.get(source.toString().substring(0,source.toString().lastIndexOf('.')));
+        try(final GZIPInputStream gis = new GZIPInputStream(new FileInputStream(source.toFile()));
+            final FileOutputStream fos = new FileOutputStream(target.toFile())) {
+            final byte[] buffer = new byte[1024];
+            int len;
+            while ((len = gis.read(buffer)) > 0) {
+                fos.write(buffer, 0, len);
+            }
+        }
+        return target;
+    }
+
+    public static Path convertToTurtle(final Path inputPath) throws IOException {
+        final String inputPathString = inputPath.toString();
+        final String turtlePathString = inputPathString.substring(0,inputPathString.lastIndexOf('.'));
+        final Path turtlePath = Paths.get(turtlePathString + ".ttl");
+        final Model model = RDFDataMgr.loadModel(inputPathString);
+        try(final FileOutputStream fos = new FileOutputStream(turtlePath.toString())) {
+            RDFDataMgr.write(fos, model, RDFFormat.TURTLE);
+        }
+        return turtlePath;
+    }
+
 }

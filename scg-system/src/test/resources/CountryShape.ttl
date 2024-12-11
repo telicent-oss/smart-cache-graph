@@ -1,0 +1,12 @@
+@prefix :       <http://telicent.io/shacl#> .
+@prefix ies:    <http://ies.data.gov.uk/ontology/ies4#> .
+@prefix sh:     <http://www.w3.org/ns/shacl#> .
+
+:CountryShape
+    a sh:NodeShape ;
+    sh:property [
+          sh:path [ sh:inversePath ies:inLocation ] ;
+          sh:or ( [ sh:class ies:RegionOfCountry ; ] [ sh:class ies:PersonState ; ] );
+          #sh:maxCount 1 ; # many regions can point to one country - see CountryExample.ttl
+      ] ;
+    sh:targetClass ies:Country .
