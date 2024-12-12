@@ -51,9 +51,11 @@ gradle-app.setting
 hs_err_pid*
 
 ## Development
+backups/**
 dependency-reduced-pom.xml
 scg-docker/mnt/databases/*
 scg-docker/mnt/logs/*
+scg-system/backups/**
 scg-test/**
 DB*
 .#*

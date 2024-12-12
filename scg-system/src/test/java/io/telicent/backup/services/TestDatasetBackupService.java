@@ -36,6 +36,7 @@ import java.nio.file.Path;
 import java.util.List;
 
 import static io.telicent.backup.services.DatasetBackupService_Test.*;
+import static io.telicent.backup.utils.BackupUtils.MAPPER;
 import static java.util.Collections.emptyList;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -834,4 +835,157 @@ public class TestDatasetBackupService {
     }
 
 
+    @Test
+    public void applyBackUpMethods_noMethodsNoOp() {
+        // given
+        backupConsumerMap.clear();
+        ObjectNode node = MAPPER.createObjectNode();
+        // when
+        cut.applyBackUpMethods(node, "doesn't matter", null, "ignored");
+        // then
+        assertTrue(node.isEmpty());
+    }
+
+
+    @Test
+    public void applyBackUpMethods_missingDir() {
+        // given
+        String missingPath = "/does_not_exist";
+        registerMethods("test", this::doNothing, this::doNothing);
+
+        // when
+        ObjectNode node = MAPPER.createObjectNode();
+        // when
+        cut.applyBackUpMethods(node, "doesn't matter", null, missingPath);
+        // then
+        assertFalse(node.isEmpty());
+        assertTrue(node.has("test"));
+        JsonNode testNode = node.get("test");
+        assertTrue(testNode.has("success"));
+        assertFalse(testNode.get("success").asBoolean());
+    }
+
+    @Test
+    public void applyBackupMethods_exception() {
+        // given
+        File newDir = new File(baseDir.toString() + "/test");
+        assertTrue(newDir.mkdir());
+        newDir.deleteOnExit();
+
+        registerMethods("test", this::throwException, this::doNothing);
+
+        // when
+        ObjectNode node = MAPPER.createObjectNode();
+        // when
+        cut.applyBackUpMethods(node, "doesn't matter", null, baseDir.toString());
+        // then
+        assertFalse(node.isEmpty());
+        assertTrue(node.has("test"));
+        JsonNode testNode = node.get("test");
+        assertTrue(testNode.has("success"));
+        assertFalse(testNode.get("success").asBoolean());
+    }
+
+    @Test
+    public void applyBackUpMethods_happyPath() {
+        // given
+        File newDir = new File(baseDir.toString() + "/test");
+        assertTrue(newDir.mkdir());
+        newDir.deleteOnExit();
+
+        registerMethods("test", this::doNothing, this::doNothing);
+
+        // when
+        ObjectNode node = MAPPER.createObjectNode();
+        // when
+        cut.applyBackUpMethods(node, "doesn't matter", null, baseDir.toString());
+        // then
+        assertFalse(node.isEmpty());
+        assertTrue(node.has("test"));
+        JsonNode testNode = node.get("test");
+        assertTrue(testNode.has("success"));
+        assertTrue(testNode.get("success").asBoolean());
+
+    }
+
+    @Test
+    public void applyRestoreMethods_noMethodsNoOp() {
+        // given
+        restoreConsumerMap.clear();
+        ObjectNode node = MAPPER.createObjectNode();
+        // when
+        cut.applyRestoreMethods(node, "doesn't matter", null, "ignored");
+        // then
+        assertTrue(node.isEmpty());
+    }
+
+    @Test
+    public void applyRestoreMethods_missingDir() {
+        // given
+        String missingPath = "/does_not_exist";
+        registerMethods("test", this::doNothing, this::doNothing);
+
+        // when
+        ObjectNode node = MAPPER.createObjectNode();
+        // when
+        cut.applyRestoreMethods(node, "doesn't matter", null, missingPath);
+        // then
+        assertFalse(node.isEmpty());
+        assertTrue(node.has("test"));
+        JsonNode testNode = node.get("test");
+        assertTrue(testNode.has("success"));
+        assertFalse(testNode.get("success").asBoolean());
+    }
+
+    @Test
+    public void applyRestoreMethods_exception() {
+        // given
+        File newDir = new File(baseDir.toString() + "/test");
+        assertTrue(newDir.mkdir());
+        newDir.deleteOnExit();
+
+        registerMethods("test", this::doNothing, this::throwException);
+
+        // when
+        ObjectNode node = MAPPER.createObjectNode();
+        // when
+        cut.applyRestoreMethods(node, "doesn't matter", null, baseDir.toString());
+        // then
+        assertFalse(node.isEmpty());
+        assertTrue(node.has("test"));
+        JsonNode testNode = node.get("test");
+        assertTrue(testNode.has("success"));
+        assertFalse(testNode.get("success").asBoolean());
+    }
+
+    @Test
+    public void applyRestoreMethods_happyPath() {
+        // given
+        File newDir = new File(baseDir.toString() + "/test");
+        assertTrue(newDir.mkdir());
+        newDir.deleteOnExit();
+
+        registerMethods("test", this::doNothing, this::doNothing);
+
+        // when
+        ObjectNode node = MAPPER.createObjectNode();
+        // when
+        cut.applyRestoreMethods(node, "doesn't matter", null, baseDir.toString());
+        // then
+        assertFalse(node.isEmpty());
+        assertTrue(node.has("test"));
+        JsonNode testNode = node.get("test");
+        assertTrue(testNode.has("success"));
+        assertTrue(testNode.get("success").asBoolean());
+
+    }
+
+
+    public void doNothing(String ignore, String ignoreToo, ObjectNode results) {
+        results.put("success", true);
+    }
+
+    public void throwException(String ignore, String ignoreToo, ObjectNode results) {
+        throw new RuntimeException("TEST");
+    }
 }

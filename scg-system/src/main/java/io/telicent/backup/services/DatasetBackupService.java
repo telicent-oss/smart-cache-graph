@@ -35,6 +35,8 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.zip.GZIPInputStream;
 
 import static io.telicent.backup.utils.BackupUtils.*;
@@ -43,6 +45,9 @@ import static org.apache.jena.riot.Lang.NQUADS;
 public class DatasetBackupService {
 
     private final DataAccessPointRegistry dapRegistry;
+
+    final static ConcurrentHashMap<String, TriConsumer<String, String, ObjectNode>> backupConsumerMap = new ConcurrentHashMap<>();
+    final static ConcurrentHashMap<String, TriConsumer<String, String, ObjectNode>> restoreConsumerMap = new ConcurrentHashMap<>();
 
     public DatasetBackupService(DataAccessPointRegistry dapRegistry) {
         this.dapRegistry = dapRegistry;
@@ -65,16 +70,44 @@ public class DatasetBackupService {
             if (requestIsEmpty(datasetName) || dataAccessPointName.equals(datasetName)) {
                 DatasetGraph datasetGraph = dataAccessPoint.getDataService().getDataset();
                 String datasetBackupPath = backupIDPath + dataAccessPointName;
-
                 ObjectNode datasetJSON = MAPPER.createObjectNode();
                 datasetJSON.put("dataset-id", dataAccessPointName);
                 datasetJSON.set("tdb", backupTDB(datasetGraph, datasetBackupPath, dataAccessPointName));
                 datasetJSON.set("labels", backupLabelStore(datasetGraph, datasetBackupPath));
+                applyBackUpMethods(datasetJSON, dataAccessPointName, datasetGraph, datasetBackupPath);
                 datasetNodes.add(datasetJSON);
             }
         }
         response.set("datasets", datasetNodes);
         return response;
+    }
+
+    /**
+     * For all registered backup Consumers, apply the backup operation
+     * @param moduleJSON JSON to update with details
+     * @param datasetName name of dataset to which to apply
+     * @param graph the graph object to apply actions too
+     * @param backupPath the path to backup to
+     */
+    public void applyBackUpMethods(ObjectNode moduleJSON, String datasetName, DatasetGraph graph, String backupPath) {
+        for (Map.Entry<String,TriConsumer<String, String, ObjectNode>> entry : backupConsumerMap.entrySet()){
+            ObjectNode node = MAPPER.createObjectNode();
+            String modBackupPath = backupPath + "/" + entry.getKey() + "/";
+            node.put("folder", modBackupPath);
+            if (!createPathIfNotExists(modBackupPath)) {
+                node.put("reason", "Cannot create backup directory: " + modBackupPath);
+                node.put("success", false);
+            } else {
+                try {
+                    entry.getValue().accept(datasetName, modBackupPath, node);
+                    node.set("files", populateNodeFromDir(modBackupPath));
+                } catch (RuntimeException e) {
+                    node.put("reason", e.getMessage());
+                    node.put("success", false);
+                }
+            }
+            moduleJSON.set(entry.getKey(), node);
+        }
     }
 
     ObjectNode backupTDB(DatasetGraph dsg, String backupPath, String datasetName) {
@@ -113,13 +146,13 @@ public class DatasetBackupService {
             LabelsStore labelsStore = abac.labelsStore();
             if (labelsStore instanceof LabelsStoreRocksDB rocksDB) {
                 String labelBackupPath = backupPath + "/labels/";
+                node.put("folder", labelBackupPath);
                 if (!createPathIfNotExists(labelBackupPath)) {
                     node.put("reason", "Cannot create label backup directory: " + labelBackupPath);
                     node.put("success", false);
                 } else {
                     try {
                         executeBackupLabelStore(rocksDB, labelBackupPath);
-                        node.put("folder", labelBackupPath);
                         node.set("files", populateNodeFromDir(labelBackupPath));
                         node.put("success", true);
                     } catch (RuntimeException e) {
@@ -182,14 +215,16 @@ public class DatasetBackupService {
             return response;
         }
         DatasetGraph dsg = dataAccessPoint.getDataService().getDataset();
-        response.set("tdb", restoreTDB(datasetName, dsg, restorePath));
-        response.set("labels", restoreLabelStore(datasetName, dsg, restorePath));
+        String datasetRestorePath = restorePath + "/" + datasetName;
+        response.set("tdb", restoreTDB(datasetName, dsg, datasetRestorePath));
+        response.set("labels", restoreLabelStore(datasetName, dsg, datasetRestorePath));
+        applyRestoreMethods(response, datasetName, dsg, datasetRestorePath);
         return response;
     }
 
     ObjectNode restoreTDB(String datasetName, DatasetGraph dsg, String restorePath) {
         ObjectNode node = MAPPER.createObjectNode();
-        String tdbRestoreFile = restorePath + "/" + datasetName + "/TDB/" + datasetName + "_backup.nq.gz";
+        String tdbRestoreFile = restorePath + "/TDB/" + datasetName + "_backup.nq.gz";
         node.put("restorePath", tdbRestoreFile);
         if (!checkPathExistsAndIsFile(tdbRestoreFile)) {
             node.put("reason", "Restore file not found: " + tdbRestoreFile);
@@ -206,6 +241,33 @@ public class DatasetBackupService {
         return node;
     }
 
+    /**
+     * For all registered restore Consumers, apply the restore operation
+     * @param moduleJSON JSON to update with details
+     * @param datasetName name of dataset to which to apply
+     * @param graph the graph object to apply actions too
+     * @param restorePath the path to restore from
+     */
+    public void applyRestoreMethods(ObjectNode moduleJSON, String datasetName, DatasetGraph graph, String restorePath) {
+        for (Map.Entry<String,TriConsumer<String, String, ObjectNode>> entry : restoreConsumerMap.entrySet()){
+            ObjectNode node = MAPPER.createObjectNode();
+            String modRestorePath = restorePath + "/" + entry.getKey() + "/";
+            node.put("folder", modRestorePath);
+            if (!checkPathExistsAndIsDir(modRestorePath)) {
+                node.put("reason", "Restore path not found: " + modRestorePath);
+                node.put("success", false);
+            } else {
+                try {
+                    entry.getValue().accept("/" + datasetName, modRestorePath, node);
+                } catch (RuntimeException e) {
+                    node.put("reason", e.getMessage());
+                    node.put("success", false);
+                }
+            }
+            moduleJSON.set(entry.getKey(), node);
+        }
+    }
+
     @ExcludeFromJacocoGeneratedReport
     void executeRestoreTDB(DatasetGraph dsg, String tdbRestoreFile) throws IOException {
         try (InputStream fis = new FileInputStream(tdbRestoreFile);
@@ -219,7 +281,7 @@ public class DatasetBackupService {
 
     ObjectNode restoreLabelStore(String datasetName, DatasetGraph dsg, String restorePath) {
         ObjectNode node = MAPPER.createObjectNode();
-        String labelRestorePath = restorePath + "/" + datasetName + "/labels/";
+        String labelRestorePath = restorePath + "/labels/";
         node.put("restorePath", labelRestorePath);
         if (dsg instanceof DatasetGraphABAC abac) {
             LabelsStore labelsStore = abac.labelsStore();
@@ -273,4 +335,14 @@ public class DatasetBackupService {
     void executeDeleteBackup(String deletePath) {
         deleteDirectoryRecursively(new File(deletePath));
     }
+
+
+    public static void registerMethods(String key, TriConsumer<String, String, ObjectNode> backupConsumer, TriConsumer<String, String, ObjectNode> restoreConsumer) {
+        registerMethod(backupConsumerMap, key, backupConsumer);
+        registerMethod(restoreConsumerMap, key, restoreConsumer);
+    }
+    private static void registerMethod(Map<String, TriConsumer<String, String, ObjectNode>> map, String key, TriConsumer<String, String, ObjectNode> consumer) {
+        map.put(key, consumer);
+    }
+
 }

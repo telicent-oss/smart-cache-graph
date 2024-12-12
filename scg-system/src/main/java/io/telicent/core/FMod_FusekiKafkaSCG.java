@@ -16,9 +16,16 @@
 
 package io.telicent.core;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.telicent.backup.services.DatasetBackupService;
+import org.apache.jena.atlas.io.IOX;
 import org.apache.jena.atlas.lib.Pair;
+import org.apache.jena.atlas.logging.FmtLog;
 import org.apache.jena.fuseki.kafka.FKBatchProcessor;
 import org.apache.jena.fuseki.kafka.FKProcessor;
 import org.apache.jena.fuseki.kafka.FKS;
@@ -27,7 +34,12 @@ import org.apache.jena.fuseki.main.FusekiServer;
 import org.apache.jena.fuseki.servlets.ActionProcessor;
 import org.apache.jena.kafka.KConnectorDesc;
 import org.apache.jena.kafka.SysJenaKafka;
+import org.apache.jena.kafka.common.DataState;
+import org.apache.jena.kafka.common.PersistentState;
+import org.apache.jena.rdf.model.Model;
 import org.apache.jena.sparql.core.DatasetGraph;
+
+import static org.apache.jena.kafka.FusekiKafka.LOG;
 
 /**
  * Extension of {@link FMod_FusekiKafka} that directly applies a Kafka message batch.
@@ -36,9 +48,17 @@ public class FMod_FusekiKafkaSCG extends FMod_FusekiKafka {
 
     public FMod_FusekiKafkaSCG() { super(); }
 
+    Map<String, KConnectorDesc> connectors = new HashMap<>();
+
     private static void init() {}
 
     @Override
+    public void prepare(FusekiServer.Builder builder, Set<String> names, Model configModel) {
+        super.prepare(builder, names, configModel);
+        DatasetBackupService.registerMethods("kafka", this::backupKafka, this::restoreKafka);
+    }
+
+        @Override
     protected String logMessage() {
         return String.format("Fuseki-Kafka Connector Module SCG (%s)", SysJenaKafka.VERSION);
     }
@@ -63,6 +83,7 @@ public class FMod_FusekiKafkaSCG extends FMod_FusekiKafka {
     @Override
     protected FKBatchProcessor makeFKBatchProcessor(KConnectorDesc conn, FusekiServer server) {
         String dispatchPath = conn.getLocalDispatchPath();
+        connectors.put(dispatchPath, conn);
         DatasetGraph dsg = determineDataset(server, dispatchPath);
         FKProcessor requestProcessor = new FKProcessorSCG(dsg, dispatchPath, server);
         // Pass dsg as the transactional. Each batch will executed by
@@ -89,5 +110,44 @@ public class FMod_FusekiKafkaSCG extends FMod_FusekiKafka {
         // do directly with FKProcessorSCG, with a batch of operations
         // wrapped in a single transaction by FKBatchProcessor.
         return deliveryPoint.cdr();
+    }
+
+    public void backupKafka(String dataset, String path, ObjectNode resultNode) {
+        KConnectorDesc conn = connectors.get(dataset);
+        if (conn != null) {
+            String filename = path + "/" + dataset + ".json";
+            IOX.copy(conn.getStateFile(), filename);
+            resultNode.put("source", conn.getStateFile());
+            resultNode.put("destination", filename);
+            resultNode.put("success", true);
+        } else {
+            String errorMessage = String.format("Unable to back up Kafka as dataset %s not recognised. ", dataset);
+            FmtLog.info(LOG, errorMessage);
+            resultNode.put("success", false);
+            resultNode.put("reason", errorMessage);
+        }
+    }
+
+    public void restoreKafka(String dataset, String path, ObjectNode resultNode) {
+        if (connectors.get(dataset) != null) {
+            String filename = path + "/" + dataset + ".json";
+            PersistentState persistentState = new PersistentState(filename);
+            if ( persistentState.getBytes().length == 0 ) {
+                String errorMessage = String.format("Unable to restore Kafka for dataset (%s) as restore file (%s) not suitable. ", dataset, filename);
+                FmtLog.info(LOG, errorMessage);
+                resultNode.put("success", false);
+                resultNode.put("reason", errorMessage);
+                return;
+            }
+            DataState dataState = DataState.create(persistentState);
+            FKS.restoreOffsetForDataset(dataset, dataState.getLastOffset());
+            resultNode.put("offset", dataState.getLastOffset());
+            resultNode.put("success", true);
+        } else {
+            String errorMessage = String.format("Unable to restore Kafka as dataset %s not recognised. ", dataset);
+            FmtLog.info(LOG, errorMessage);
+            resultNode.put("success", false);
+            resultNode.put("reason", errorMessage);
+        }
     }
 }
