@@ -1,5 +1,8 @@
 # Smart Cache Graph
 
+## 0.82.13
+- Adding backup / restore functionality.
+
 ## 0.82.8
 - Updating GraphQL Jena and YAML Fuseki dependencies.
 
