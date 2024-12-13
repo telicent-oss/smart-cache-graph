@@ -1,7 +1,6 @@
-package io.telicent;
+package io.telicent.core;
 
-import io.telicent.core.FMod_InitialCompaction;
-import io.telicent.core.SmartCacheGraph;
+import io.telicent.LibTestsSCG;
 import io.telicent.jena.abac.ABAC;
 import io.telicent.jena.abac.SysABAC;
 import io.telicent.jena.abac.core.Attributes;
@@ -30,6 +29,7 @@ import java.util.Set;
 
 import static io.telicent.TestJwtServletAuth.makePOSTCallWithPath;
 import static io.telicent.TestSmartCacheGraphIntegration.launchServer;
+import static io.telicent.core.FMod_InitialCompaction.compactLabels;
 import static org.apache.jena.graph.Graph.emptyGraph;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -92,6 +92,42 @@ public class TestInitialCompaction {
         assertNotNull(server.serverURL());
         mockDatabaseMgr.verify(() -> DatabaseMgr.compact(any(), anyBoolean()), times(1));
     }
+
+    @Test
+    public void test_persistentDataset_sizeSame_ignoredSecondCall() {
+        // given
+        mockDatabaseMgr.when(() -> DatabaseMgr.compact(any(), anyBoolean())).thenAnswer(invocationOnMock -> null);
+        String configFile = "config-persistent.ttl";
+        // when
+        server = launchServer(configFile);
+        // then
+        assertNotNull(server.serverURL());
+        mockDatabaseMgr.verify(() -> DatabaseMgr.compact(any(), anyBoolean()), times(1));
+        mockDatabaseMgr.clearInvocations();
+        // when
+        HttpResponse<InputStream> compactResponse = makePOSTCallWithPath(server, "$/compactall");
+        // then
+        assertEquals(200, compactResponse.statusCode());
+        mockDatabaseMgr.verify(() -> DatabaseMgr.compact(any(), anyBoolean()), times(0));
+    }
+
+    @Test
+    public void test_persistentDataset_sizeDifferent_makeSecondCall() {
+        // given
+        mockDatabaseMgr.when(() -> DatabaseMgr.compact(any(), anyBoolean())).thenAnswer(invocationOnMock -> null);
+        String configFile = "config-persistent.ttl";
+        // when
+        server = launchServer(configFile);
+        // then
+        assertNotNull(server.serverURL());
+        mockDatabaseMgr.verify(() -> DatabaseMgr.compact(any(), anyBoolean()), times(1));
+        // when
+        FMod_InitialCompaction.sizes.put("/knowledge", 500L);
+        HttpResponse<InputStream> compactResponse = makePOSTCallWithPath(server, "$/compactall");
+        // then
+        assertEquals(200, compactResponse.statusCode());
+    }
+
 
     @Test
     public void test_name() {
@@ -177,6 +213,18 @@ public class TestInitialCompaction {
     }
 
     @Test
+    public void test_databaseSize_invalidData() {
+        // given
+        DatasetGraphSwitchable mockDSG = mock(DatasetGraphSwitchable.class);
+        when(mockDSG.getContainerPath()).thenReturn(Path.of("/doesnotexist/tmp.txt"));
+        long expectedSize = -1;
+        // when
+        long actualSize = FMod_InitialCompaction.findDatabaseSize(mockDSG);
+        // then
+        assertEquals(expectedSize, actualSize);
+    }
+
+    @Test
     public void test_humanReadableSize_handlesInvalidInput() {
         // given
         String expectedSize = "Unknown";
@@ -213,5 +261,27 @@ public class TestInitialCompaction {
         HttpResponse<InputStream> compactResponse = makePOSTCallWithPath(server, "$/compactall");
         // then
         assertEquals(200, compactResponse.statusCode());
+    }
+
+    @Test
+    public void test_compactLabels_notABAC() {
+        // given
+        DatasetGraph dsgNotABAC = TDB1Factory.createDatasetGraph(Location.mem());
+        // when
+        // then
+        compactLabels(dsgNotABAC);
+    }
+
+    @Test
+    public void test_compactLabels_notRocksDB() {
+        // given
+        DatasetGraphABAC dsgABAC = ABAC.authzDataset(DatasetGraphFactory.createTxnMem(),
+                SysABAC.allowLabel,
+                Labels.createLabelsStoreMem(),
+                SysABAC.denyLabel,
+                new AttributesStoreLocal());
+        // when
+        // then
+        compactLabels(dsgABAC);
     }
 }
