@@ -1,5 +1,8 @@
 package io.telicent.core;
 
+import io.telicent.jena.abac.core.DatasetGraphABAC;
+import io.telicent.jena.abac.labels.LabelsStore;
+import io.telicent.jena.abac.labels.LabelsStoreRocksDB;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -134,6 +137,7 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
                 FmtLog.info(LOG, "[Compaction] <<<< Finish compact %s. Took %s seconds.  Compacted size is %s (%d)",
                         name, Timer.timeStr(timer.endTimer()), humanReadableSize(sizeAfter), sizeAfter);
                 sizes.put(name, sizeAfter);
+                compactLabels(datasetGraph);
             } finally {
                 dsg.finishExclusiveMode();
             }
@@ -189,5 +193,21 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
             }
             dsg = dsgw.getWrapped();
         }
+    }
+
+    public static void compactLabels(DatasetGraph dsg) {
+        if (dsg instanceof DatasetGraphABAC abac) {
+            LabelsStore labelsStore = abac.labelsStore();
+            if (labelsStore instanceof LabelsStoreRocksDB rocksDB) {
+                Timer timer = new Timer();
+                timer.startTimer();
+                FmtLog.info(LOG, "[Compaction] <<<< Start label store compaction.");
+                rocksDB.compact();
+                FmtLog.info(LOG, "[Compaction] <<<< Finish label store compaction. Took %s seconds.",
+                        Timer.timeStr(timer.endTimer()));
+                return;
+            }
+        }
+        FmtLog.info(LOG, "[Compaction] <<<< Label store compaction not needed.");
     }
 }
