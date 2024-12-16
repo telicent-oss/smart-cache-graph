@@ -259,16 +259,8 @@ public class BackupUtils {
         if (null == files) {
             return;
         }
-        for (File file : files) {
-            if (file.isDirectory()) {
-                ObjectNode childNode = MAPPER.createObjectNode();
-                node.set(file.getName(), childNode);
-                populateNodeFromDir(file, childNode);
-            } else {
-                ArrayNode filesNode = node.withArray("files");
-                filesNode.add(file.getName());
-            }
-        }
+
+        processFiles(files, node);
     }
 
     /**
@@ -276,7 +268,7 @@ public class BackupUtils {
      * but in numerical order
      *
      * @param path  the directory to scan
-     * @returns a populated JSON node of the contents
+     * @return an object node of the contents
      */
     public static ObjectNode populateNodeFromDirNumerically(String path) {
         ObjectNode rootNode = MAPPER.createObjectNode();
@@ -303,15 +295,24 @@ public class BackupUtils {
                 }
             }));
 
-            for (File file : files) {
-                if (file.isDirectory()) {
-                    ObjectNode childNode = MAPPER.createObjectNode();
-                    node.set(file.getName(), childNode);
-                    populateNodeFromDir(file, childNode);
-                } else {
-                    ArrayNode filesNode = node.withArray("files");
-                    filesNode.add(file.getName());
-                }
+            processFiles(files, node);
+        }
+    }
+
+    /**
+     * Iterate recursively over given files adding details ot node
+     * @param files list of files
+     * @param node node to add details too
+     */
+    static void processFiles(File[] files,ObjectNode node) {
+        for (File file : files) {
+            if (file.isDirectory()) {
+                ObjectNode childNode = MAPPER.createObjectNode();
+                node.set(file.getName(), childNode);
+                populateNodeFromDir(file, childNode);
+            } else {
+                ArrayNode filesNode = node.withArray("files");
+                filesNode.add(file.getName());
             }
         }
     }

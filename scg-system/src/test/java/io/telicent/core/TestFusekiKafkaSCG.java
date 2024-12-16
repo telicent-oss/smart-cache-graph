@@ -16,6 +16,7 @@
 package io.telicent.core;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.apache.jena.fuseki.server.DataAccessPoint;
 import org.apache.jena.kafka.KConnectorDesc;
 import org.junit.jupiter.api.Test;
 
@@ -41,8 +42,12 @@ public class TestFusekiKafkaSCG {
         // given
         ObjectNode node = MAPPER.createObjectNode();
 
+        DataAccessPoint mockDataAccessPoint = mock(DataAccessPoint.class);
+        when(mockDataAccessPoint.getName()).thenReturn("missing dataset");
+
+
         // when
-        cut.backupKafka("missing dataset", "path doesn't matter", node);
+        cut.backupKafka(mockDataAccessPoint, "path doesn't matter", node);
 
         // then
         assertFalse(node.isEmpty());
@@ -80,8 +85,11 @@ public class TestFusekiKafkaSCG {
 
         cut.connectors.put("matchingdataset", mockDesc);
 
+        DataAccessPoint mockDataAccessPoint = mock(DataAccessPoint.class);
+        when(mockDataAccessPoint.getName()).thenReturn("matchingdataset");
+
         // when
-        cut.backupKafka("matchingdataset", tempDir.toString(), node);
+        cut.backupKafka(mockDataAccessPoint, tempDir.toString(), node);
 
         // then
         assertFalse(node.isEmpty());
@@ -98,8 +106,11 @@ public class TestFusekiKafkaSCG {
         // given
         ObjectNode node = MAPPER.createObjectNode();
 
+        DataAccessPoint mockDataAccessPoint = mock(DataAccessPoint.class);
+        when(mockDataAccessPoint.getName()).thenReturn("missing dataset");
+
         // when
-        cut.restoreKafka("missing dataset", "path doesn't matter", node);
+        cut.restoreKafka(mockDataAccessPoint, "path doesn't matter", node);
 
         // then
         assertFalse(node.isEmpty());
@@ -119,8 +130,11 @@ public class TestFusekiKafkaSCG {
 
         cut.connectors.put("matching dataset", mockDesc);
 
+        DataAccessPoint mockDataAccessPoint = mock(DataAccessPoint.class);
+        when(mockDataAccessPoint.getName()).thenReturn("matching dataset");
+
         // when
-        cut.restoreKafka("matching dataset", tempDir.toString(), node);
+        cut.restoreKafka(mockDataAccessPoint, tempDir.toString(), node);
 
         // then
         assertFalse(node.isEmpty());
@@ -157,8 +171,11 @@ public class TestFusekiKafkaSCG {
 
         cut.connectors.put("matchingdataset", mockDesc);
 
+        DataAccessPoint mockDataAccessPoint = mock(DataAccessPoint.class);
+        when(mockDataAccessPoint.getName()).thenReturn("matchingdataset");
+
         // when
-        cut.restoreKafka("matchingdataset", tempDir.toString(), node);
+        cut.restoreKafka(mockDataAccessPoint, tempDir.toString(), node);
 
         // then
         assertFalse(node.isEmpty());

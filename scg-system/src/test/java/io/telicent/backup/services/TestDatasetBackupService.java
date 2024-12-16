@@ -25,6 +25,7 @@ import io.telicent.jena.abac.labels.LabelsStoreRocksDB;
 import org.apache.jena.fuseki.server.DataAccessPoint;
 import org.apache.jena.fuseki.server.DataAccessPointRegistry;
 import org.apache.jena.fuseki.server.DataService;
+import org.apache.jena.sparql.core.DatasetGraph;
 import org.apache.jena.sparql.core.DatasetGraphFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -50,6 +51,7 @@ public class TestDatasetBackupService {
 
     private final DatasetBackupService cut = new DatasetBackupService_Test(mockRegistry);
 
+    private final ObjectNode RESULT_NODE = MAPPER.createObjectNode();
     private Path baseDir;
 
     @BeforeEach
@@ -60,6 +62,7 @@ public class TestDatasetBackupService {
         baseDir.toFile().deleteOnExit();
 
         BackupUtils.dirBackups = baseDir.toString();
+        RESULT_NODE.removeAll();
     }
 
     /*
@@ -433,49 +436,45 @@ public class TestDatasetBackupService {
     }
 
     @Test
-    public void test_backupLabelStore_wrongDir() {
+    public void test_restoreTDB_wrongDir(){
         // given
         String missingPath = "/does_not_exist";
-        DatasetGraphABAC dsgABAC = ABAC.authzDataset(DatasetGraphFactory.createTxnMem(),
-                null,
-                mock(LabelsStoreRocksDB.class),
-                null,
-                null);
-
+        DataAccessPoint mockDataAccessPoint = mock(DataAccessPoint.class);
+        when(mockDataAccessPoint.getName()).thenReturn("test");
 
         // when
-        ObjectNode result = cut.backupLabelStore(dsgABAC, missingPath);
+        cut.restoreTDB(mockDataAccessPoint, missingPath, RESULT_NODE);
 
         // then
-        assertTrue(result.has("success"));
-        assertFalse(result.get("success").asBoolean());
-        assertTrue(result.has("reason"));
-        assertTrue(result.get("reason").isTextual());
-        assertTrue(result.get("reason").asText().contains("Cannot create label backup directory"));
-        assertEquals(0, DatasetBackupService_Test.getCallCount(BACKUP_LABELS));
+        assertTrue(RESULT_NODE.has("success"));
+        assertFalse(RESULT_NODE.get("success").asBoolean());
+        assertTrue(RESULT_NODE.has("reason"));
+        assertTrue(RESULT_NODE.get("reason").isTextual());
+        assertTrue(RESULT_NODE.get("reason").asText().startsWith("Restore file not found:"));
     }
 
     @Test
-    public void test_backupTDB_wrongDir() {
+    public void test_executeBackupLabelStore_happyPath() {
         // given
-        String missingPath = "/does_not_exist";
-        DatasetGraphABAC dsgABAC = ABAC.authzDataset(DatasetGraphFactory.createTxnMem(),
-                null,
-                mock(LabelsStoreRocksDB.class),
-                null,
-                null);
-
-
+        LabelsStoreRocksDB mockRocksDB = mock(LabelsStoreRocksDB.class);
+        DatasetBackupService datasetBackupService = new DatasetBackupService(null);
         // when
-        ObjectNode result = cut.backupTDB(dsgABAC, missingPath, "does_not_matter");
-
+        datasetBackupService.executeBackupLabelStore(mockRocksDB, "doesn't matter", RESULT_NODE);
         // then
-        assertTrue(result.has("success"));
-        assertFalse(result.get("success").asBoolean());
-        assertTrue(result.has("reason"));
-        assertTrue(result.get("reason").isTextual());
-        assertTrue(result.get("reason").asText().contains("Cannot create backup directory"));
-        assertEquals(0, DatasetBackupService_Test.getCallCount(BACKUP_TDB));
+        assertTrue(RESULT_NODE.has("success"));
+        assertTrue(RESULT_NODE.get("success").asBoolean());
+    }
+
+    @Test
+    public void test_executeRestoreLabelStore_happyPath() {
+        // given
+        LabelsStoreRocksDB mockRocksDB = mock(LabelsStoreRocksDB.class);
+        DatasetBackupService datasetBackupService = new DatasetBackupService(null);
+        // when
+        datasetBackupService.executeRestoreLabelStore(mockRocksDB, "doesn't matter", RESULT_NODE);
+        // then
+        assertTrue(RESULT_NODE.has("success"));
+        assertTrue(RESULT_NODE.get("success").asBoolean());
     }
 
     /*
@@ -563,11 +562,11 @@ public class TestDatasetBackupService {
         assertTrue(newDataset.mkdir());
         newDataset.deleteOnExit();
 
-        File tdbDir = new File(newDataset + "/TDB/");
+        File tdbDir = new File(newDataset + "/tdb/");
         assertTrue(tdbDir.mkdir());
         tdbDir.deleteOnExit();
 
-        File tdbFile = new File(newDataset + "/TDB/" + datasetName + "_backup.nq.gz");
+        File tdbFile = new File(newDataset + "/tdb/" + datasetName + "_backup.nq.gz");
         assertTrue(tdbFile.createNewFile());
         tdbFile.deleteOnExit();
 
@@ -600,7 +599,6 @@ public class TestDatasetBackupService {
         assertTrue(tdb.has("success"));
         assertTrue(tdb.get("success").asBoolean());
 
-
         assertTrue(dataset.has("labels"));
         JsonNode labels = dataset.get("labels");
         assertTrue(labels.has("success"));
@@ -623,11 +621,11 @@ public class TestDatasetBackupService {
         assertTrue(newDataset.mkdir());
         newDataset.deleteOnExit();
 
-        File tdbDir = new File(newDataset + "/TDB/");
+        File tdbDir = new File(newDataset + "/tdb/");
         assertTrue(tdbDir.mkdir());
         tdbDir.deleteOnExit();
 
-        File tdbFile = new File(newDataset + "/TDB/" + datasetName + "_backup.nq.gz");
+        File tdbFile = new File(newDataset + "/tdb/" + datasetName + "_backup.nq.gz");
         assertTrue(tdbFile.createNewFile());
         tdbFile.deleteOnExit();
 
@@ -651,14 +649,13 @@ public class TestDatasetBackupService {
         assertTrue(tdb.has("success"));
         assertTrue(tdb.get("success").asBoolean());
 
-
         assertTrue(dataset.has("labels"));
         JsonNode labels = dataset.get("labels");
         assertTrue(labels.has("success"));
         assertFalse(labels.get("success").asBoolean());
         assertTrue(labels.has("reason"));
         assertTrue(labels.get("reason").isTextual());
-        assertEquals("No Label Store to restore (not ABAC)", labels.get("reason").asText());
+        assertTrue(labels.get("reason").asText().startsWith("Restore path not found:"));
 
         assertEquals(1, DatasetBackupService_Test.getCallCount(RESTORE_TDB));
         assertEquals(0, DatasetBackupService_Test.getCallCount(RESTORE_LABELS));
@@ -678,11 +675,11 @@ public class TestDatasetBackupService {
         assertTrue(newDataset.mkdir());
         newDataset.deleteOnExit();
 
-        File tdbDir = new File(newDataset + "/TDB/");
+        File tdbDir = new File(newDataset + "/tdb/");
         assertTrue(tdbDir.mkdir());
         tdbDir.deleteOnExit();
 
-        File tdbFile = new File(newDataset + "/TDB/" + datasetName + "_backup.nq.gz");
+        File tdbFile = new File(newDataset + "/tdb/" + datasetName + "_backup.nq.gz");
         assertTrue(tdbFile.createNewFile());
         tdbFile.deleteOnExit();
 
@@ -717,7 +714,7 @@ public class TestDatasetBackupService {
         assertFalse(labels.get("success").asBoolean());
         assertTrue(labels.has("reason"));
         assertTrue(labels.get("reason").isTextual());
-        assertEquals("No Label Store to restore (not RocksDB)", labels.get("reason").asText());
+        assertTrue(labels.get("reason").asText().startsWith("Restore path not found:"));
 
         assertEquals(1, DatasetBackupService_Test.getCallCount(RESTORE_TDB));
         assertEquals(0, DatasetBackupService_Test.getCallCount(RESTORE_LABELS));
@@ -736,11 +733,11 @@ public class TestDatasetBackupService {
         assertTrue(newDataset.mkdir());
         newDataset.deleteOnExit();
 
-        File tdbDir = new File(newDataset + "/TDB/");
+        File tdbDir = new File(newDataset + "/tdb/");
         assertTrue(tdbDir.mkdir());
         tdbDir.deleteOnExit();
 
-        File tdbFile = new File(newDataset + "/TDB/" + datasetName + "_backup.nq.gz");
+        File tdbFile = new File(newDataset + "/tdb/" + datasetName + "_backup.nq.gz");
         assertTrue(tdbFile.createNewFile());
         tdbFile.deleteOnExit();
 
@@ -822,13 +819,15 @@ public class TestDatasetBackupService {
         JsonNode tdb = dataset.get("tdb");
         assertTrue(tdb.has("success"));
         assertFalse(tdb.get("success").asBoolean());
-        assertTrue(tdb.get("reason").asText().contains("Restore file not found"));
+        assertTrue(tdb.has("reason"));
+        assertTrue(tdb.get("reason").asText().startsWith("Restore path not found:"));
 
         assertTrue(dataset.has("labels"));
         JsonNode labels = dataset.get("labels");
         assertTrue(labels.has("success"));
         assertFalse(labels.get("success").asBoolean());
-        assertTrue(labels.get("reason").asText().contains("Restore directory not found"));
+        assertTrue(labels.has("reason"));
+        assertTrue(labels.get("reason").asText().startsWith("Restore path not found:"));
 
         assertEquals(0, DatasetBackupService_Test.getCallCount(RESTORE_TDB));
         assertEquals(0, DatasetBackupService_Test.getCallCount(RESTORE_LABELS));
@@ -839,11 +838,10 @@ public class TestDatasetBackupService {
     public void applyBackUpMethods_noMethodsNoOp() {
         // given
         backupConsumerMap.clear();
-        ObjectNode node = MAPPER.createObjectNode();
         // when
-        cut.applyBackUpMethods(node, "doesn't matter", null, "ignored");
+        cut.applyBackUpMethods(RESULT_NODE, null, null);
         // then
-        assertTrue(node.isEmpty());
+        assertTrue(RESULT_NODE.isEmpty());
     }
 
 
@@ -852,15 +850,12 @@ public class TestDatasetBackupService {
         // given
         String missingPath = "/does_not_exist";
         registerMethods("test", this::doNothing, this::doNothing);
-
         // when
-        ObjectNode node = MAPPER.createObjectNode();
-        // when
-        cut.applyBackUpMethods(node, "doesn't matter", null, missingPath);
+        cut.applyBackUpMethods(RESULT_NODE, null, missingPath);
         // then
-        assertFalse(node.isEmpty());
-        assertTrue(node.has("test"));
-        JsonNode testNode = node.get("test");
+        assertFalse(RESULT_NODE.isEmpty());
+        assertTrue(RESULT_NODE.has("test"));
+        JsonNode testNode = RESULT_NODE.get("test");
         assertTrue(testNode.has("success"));
         assertFalse(testNode.get("success").asBoolean());
     }
@@ -871,17 +866,13 @@ public class TestDatasetBackupService {
         File newDir = new File(baseDir.toString() + "/test");
         assertTrue(newDir.mkdir());
         newDir.deleteOnExit();
-
         registerMethods("test", this::throwException, this::doNothing);
-
         // when
-        ObjectNode node = MAPPER.createObjectNode();
-        // when
-        cut.applyBackUpMethods(node, "doesn't matter", null, baseDir.toString());
+        cut.applyBackUpMethods(RESULT_NODE, null, baseDir.toString());
         // then
-        assertFalse(node.isEmpty());
-        assertTrue(node.has("test"));
-        JsonNode testNode = node.get("test");
+        assertFalse(RESULT_NODE.isEmpty());
+        assertTrue(RESULT_NODE.has("test"));
+        JsonNode testNode = RESULT_NODE.get("test");
         assertTrue(testNode.has("success"));
         assertFalse(testNode.get("success").asBoolean());
     }
@@ -892,17 +883,13 @@ public class TestDatasetBackupService {
         File newDir = new File(baseDir.toString() + "/test");
         assertTrue(newDir.mkdir());
         newDir.deleteOnExit();
-
         registerMethods("test", this::doNothing, this::doNothing);
-
         // when
-        ObjectNode node = MAPPER.createObjectNode();
-        // when
-        cut.applyBackUpMethods(node, "doesn't matter", null, baseDir.toString());
+        cut.applyBackUpMethods(RESULT_NODE, null, baseDir.toString());
         // then
-        assertFalse(node.isEmpty());
-        assertTrue(node.has("test"));
-        JsonNode testNode = node.get("test");
+        assertFalse(RESULT_NODE.isEmpty());
+        assertTrue(RESULT_NODE.has("test"));
+        JsonNode testNode = RESULT_NODE.get("test");
         assertTrue(testNode.has("success"));
         assertTrue(testNode.get("success").asBoolean());
 
@@ -914,7 +901,7 @@ public class TestDatasetBackupService {
         restoreConsumerMap.clear();
         ObjectNode node = MAPPER.createObjectNode();
         // when
-        cut.applyRestoreMethods(node, "doesn't matter", null, "ignored");
+        cut.applyRestoreMethods(node, null, "ignored");
         // then
         assertTrue(node.isEmpty());
     }
@@ -924,15 +911,12 @@ public class TestDatasetBackupService {
         // given
         String missingPath = "/does_not_exist";
         registerMethods("test", this::doNothing, this::doNothing);
-
         // when
-        ObjectNode node = MAPPER.createObjectNode();
-        // when
-        cut.applyRestoreMethods(node, "doesn't matter", null, missingPath);
+        cut.applyRestoreMethods(RESULT_NODE, null, missingPath);
         // then
-        assertFalse(node.isEmpty());
-        assertTrue(node.has("test"));
-        JsonNode testNode = node.get("test");
+        assertFalse(RESULT_NODE.isEmpty());
+        assertTrue(RESULT_NODE.has("test"));
+        JsonNode testNode = RESULT_NODE.get("test");
         assertTrue(testNode.has("success"));
         assertFalse(testNode.get("success").asBoolean());
     }
@@ -943,17 +927,13 @@ public class TestDatasetBackupService {
         File newDir = new File(baseDir.toString() + "/test");
         assertTrue(newDir.mkdir());
         newDir.deleteOnExit();
-
         registerMethods("test", this::doNothing, this::throwException);
-
         // when
-        ObjectNode node = MAPPER.createObjectNode();
-        // when
-        cut.applyRestoreMethods(node, "doesn't matter", null, baseDir.toString());
+        cut.applyRestoreMethods(RESULT_NODE, null, baseDir.toString());
         // then
-        assertFalse(node.isEmpty());
-        assertTrue(node.has("test"));
-        JsonNode testNode = node.get("test");
+        assertFalse(RESULT_NODE.isEmpty());
+        assertTrue(RESULT_NODE.has("test"));
+        JsonNode testNode = RESULT_NODE.get("test");
         assertTrue(testNode.has("success"));
         assertFalse(testNode.get("success").asBoolean());
     }
@@ -964,28 +944,87 @@ public class TestDatasetBackupService {
         File newDir = new File(baseDir.toString() + "/test");
         assertTrue(newDir.mkdir());
         newDir.deleteOnExit();
-
         registerMethods("test", this::doNothing, this::doNothing);
 
         // when
-        ObjectNode node = MAPPER.createObjectNode();
-        // when
-        cut.applyRestoreMethods(node, "doesn't matter", null, baseDir.toString());
+        cut.applyRestoreMethods(RESULT_NODE, null, baseDir.toString());
         // then
-        assertFalse(node.isEmpty());
-        assertTrue(node.has("test"));
-        JsonNode testNode = node.get("test");
+        assertFalse(RESULT_NODE.isEmpty());
+        assertTrue(RESULT_NODE.has("test"));
+        JsonNode testNode = RESULT_NODE.get("test");
         assertTrue(testNode.has("success"));
         assertTrue(testNode.get("success").asBoolean());
 
     }
 
+    @Test
+    public void test_restoreLabelStore_nonABAC() {
+        // given
+        DatasetGraph dsgNonABAC = DatasetGraphFactory.createTxnMem();
 
-    public void doNothing(String ignore, String ignoreToo, ObjectNode results) {
-        results.put("success", true);
+        DataAccessPoint dap = new DataAccessPoint("dataset-name", DataService.newBuilder().dataset(dsgNonABAC).build());
+        when(mockRegistry.accessPoints()).thenReturn(List.of(dap));
+
+        // when
+        cut.restoreLabelStore(dap, "ignorefornow", RESULT_NODE);
+
+        // then
+        assertTrue(RESULT_NODE.has("success"));
+        assertFalse(RESULT_NODE.get("success").asBoolean());
+        assertTrue(RESULT_NODE.has("reason"));
+        assertTrue(RESULT_NODE.get("reason").asText().equals("No Label Store to restore (not ABAC)"));
     }
 
-    public void throwException(String ignore, String ignoreToo, ObjectNode results) {
+
+    @Test
+    public void test_restoreLabelStore_nonRocksDB() {
+        // given
+        DatasetGraphABAC dsgABAC = ABAC.authzDataset(DatasetGraphFactory.createTxnMem(),
+                null,
+                null,
+                null,
+                null);
+        DataAccessPoint dap = new DataAccessPoint("dataset-name", DataService.newBuilder().dataset(dsgABAC).build());
+        when(mockRegistry.accessPoints()).thenReturn(List.of(dap));
+
+        // when
+        cut.restoreLabelStore(dap, "ignorefornow", RESULT_NODE);
+
+        // then
+        assertTrue(RESULT_NODE.has("success"));
+        assertFalse(RESULT_NODE.get("success").asBoolean());
+        assertTrue(RESULT_NODE.has("reason"));
+        assertTrue(RESULT_NODE.get("reason").asText().equals("No Label Store to restore (not RocksDB)"));
+    }
+
+    @Test
+    public void test_restoreLabelStore_wrongPath() {
+        // given
+        String datasetName = "/dataset-name";
+
+        DatasetGraphABAC dsgABAC = ABAC.authzDataset(DatasetGraphFactory.createTxnMem(),
+                null,
+                mock(LabelsStoreRocksDB.class),
+                null,
+                null);
+        DataAccessPoint dap = new DataAccessPoint("dataset-name", DataService.newBuilder().dataset(dsgABAC).build());
+        when(mockRegistry.accessPoints()).thenReturn(List.of(dap));
+
+        // when
+        cut.restoreLabelStore(dap, "/doesnotexist", RESULT_NODE);
+
+        // then
+        assertTrue(RESULT_NODE.has("success"));
+        assertFalse(RESULT_NODE.get("success").asBoolean());
+        assertTrue(RESULT_NODE.has("reason"));
+        assertTrue(RESULT_NODE.get("reason").asText().startsWith("Restore directory not found: "));
+    }
+
+    public void doNothing(DataAccessPoint dataAccessPoint, String path, ObjectNode resultNode) {
+        resultNode.put("success", true);
+    }
+
+    public void throwException(DataAccessPoint dataAccessPoint, String path, ObjectNode resultNode) {
         throw new RuntimeException("TEST");
     }
 }
