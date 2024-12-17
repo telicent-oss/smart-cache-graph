@@ -1,5 +1,6 @@
 package io.telicent.backup.services;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.telicent.jena.abac.labels.LabelsStoreRocksDB;
 import org.apache.jena.fuseki.server.DataAccessPointRegistry;
 import org.apache.jena.sparql.core.DatasetGraph;
@@ -49,17 +50,19 @@ public class DatasetBackupService_Test extends DatasetBackupService {
     }
 
     @Override
-    void executeBackupTDB(DatasetGraph dsg, String backupFile) {
+    void executeBackupTDB(DatasetGraph dsg, String backupFile, ObjectNode node) {
         // NO-OP
         incrementMethodCall(BACKUP_TDB);
         throwExceptionIfNeeded(BACKUP_TDB);
+        node.put("success", true);
     }
 
     @Override
-    void executeBackupLabelStore(LabelsStoreRocksDB rocksDB, String labelBackupPath) {
+    void executeBackupLabelStore(LabelsStoreRocksDB rocksDB, String labelBackupPath, ObjectNode node) {
         // NO-OP
         incrementMethodCall(BACKUP_LABELS);
         throwExceptionIfNeeded(BACKUP_LABELS);
+        node.put("success", true);
     }
 
     @Override
@@ -70,10 +73,11 @@ public class DatasetBackupService_Test extends DatasetBackupService {
     }
 
     @Override
-    void executeRestoreLabelStore(LabelsStoreRocksDB rocksDB, String labelRestorePath) {
+    void executeRestoreLabelStore(LabelsStoreRocksDB rocksDB, String labelRestorePath, ObjectNode node) {
         // NO-OP
         incrementMethodCall(RESTORE_LABELS);
         throwExceptionIfNeeded(RESTORE_LABELS);
+        node.put("success", true);
     }
 
     @Override

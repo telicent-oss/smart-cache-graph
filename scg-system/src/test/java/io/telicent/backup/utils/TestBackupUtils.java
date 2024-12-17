@@ -402,4 +402,26 @@ public class TestBackupUtils {
     }
 
 
+    @Test
+    public void test_getSubdirectoryNames_populatedDirectory() throws IOException {
+        // given
+        Path tempDir = Files.createTempDirectory("test_getsub_dir_2");
+        File directory = new File(tempDir.toString());
+        tempDir.toFile().deleteOnExit();
+
+        File file = tempDir.resolve("temp.txt").toFile();
+        assertTrue(file.createNewFile());
+        file.deleteOnExit();
+
+        File subDir = new File(directory, "sub");
+        assertTrue(subDir.mkdir());
+        subDir.deleteOnExit();
+
+        // when
+        List<String> results  = getSubdirectoryNames(directory.getAbsolutePath());
+        // then
+        assertFalse(results.isEmpty());
+    }
+
+
 }

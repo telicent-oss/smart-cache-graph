@@ -31,6 +31,7 @@ import org.apache.jena.fuseki.kafka.FKProcessor;
 import org.apache.jena.fuseki.kafka.FKS;
 import org.apache.jena.fuseki.kafka.FMod_FusekiKafka;
 import org.apache.jena.fuseki.main.FusekiServer;
+import org.apache.jena.fuseki.server.DataAccessPoint;
 import org.apache.jena.fuseki.servlets.ActionProcessor;
 import org.apache.jena.kafka.KConnectorDesc;
 import org.apache.jena.kafka.SysJenaKafka;
@@ -112,7 +113,8 @@ public class FMod_FusekiKafkaSCG extends FMod_FusekiKafka {
         return deliveryPoint.cdr();
     }
 
-    public void backupKafka(String dataset, String path, ObjectNode resultNode) {
+    public void backupKafka(DataAccessPoint dataAccessPoint, String path, ObjectNode resultNode) {
+        String dataset = dataAccessPoint.getName();
         KConnectorDesc conn = connectors.get(dataset);
         if (conn != null) {
             String filename = path + "/" + dataset + ".json";
@@ -128,7 +130,8 @@ public class FMod_FusekiKafkaSCG extends FMod_FusekiKafka {
         }
     }
 
-    public void restoreKafka(String dataset, String path, ObjectNode resultNode) {
+    public void restoreKafka(DataAccessPoint dataAccessPoint, String path, ObjectNode resultNode) {
+        String dataset = dataAccessPoint.getName();
         if (connectors.get(dataset) != null) {
             String filename = path + "/" + dataset + ".json";
             PersistentState persistentState = new PersistentState(filename);
