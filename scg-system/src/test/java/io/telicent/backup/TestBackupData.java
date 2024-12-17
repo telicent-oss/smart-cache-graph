@@ -38,18 +38,22 @@ import java.io.InputStreamReader;
 import java.net.http.HttpResponse;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.*;
 
 import static io.telicent.TestJwtServletAuth.makeAuthGETCallWithPath;
 import static io.telicent.TestJwtServletAuth.makeAuthPOSTCallWithPath;
 import static org.apache.jena.graph.Graph.emptyGraph;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.mockito.Mockito.*;
 
 public class TestBackupData {
 
     private static FusekiServer server;
 
     private FMod_BackupData testModule;
+
+    private static DatasetBackupService mockService = mock(DatasetBackupService.class);
 
     @BeforeEach
     public void createAndSetupServerDetails() throws Exception {
@@ -68,6 +72,7 @@ public class TestBackupData {
         }
         LibTestsSCG.teardownAuthentication();
         Configurator.reset();
+        reset(mockService);
     }
 
     private FusekiModules generateModulesAndReplaceWithTestModule() {
@@ -218,20 +223,77 @@ public class TestBackupData {
         assertEquals(500, createBackupResponse.statusCode());
     }
 
+    @Test
+    public void test_restoreBackup_rejectCallIfAlreadyUnderway() throws InterruptedException, ExecutionException {
+        // given
+        testModule = new FMod_BackupData_Mock();
+        server = buildServer("--port=0", "--empty");
+
+        doAnswer(invocation -> {
+            Thread.sleep(50); // Simulate  operation
+            return new ObjectMapper().createObjectNode().put("status", "success");
+        }).when(mockService).restoreDatasets(anyString());
+
+        List<Future<HttpResponse<InputStream>>> futures = new ArrayList<>();
+        // Use ExecutorService to run multiple threads
+        try (ExecutorService executorService = Executors.newFixedThreadPool(2)) {
+
+            // Submit 5 concurrent tasks simulating individual requests
+            for (int i = 0; i < 2; i++) {
+                futures.add(executorService.submit(() -> {
+                    try {
+                        HttpResponse<InputStream> response = makeAuthPOSTCallWithPath(server, "$/backups/restore", "test");
+                        debug(response);
+                        return response;
+                    } catch (Exception e) {
+                        return null;
+                    }
+                }));
+            }
+            // Wait for threads to complete
+            executorService.shutdown();
+            executorService.awaitTermination(1, TimeUnit.SECONDS);
+        }
+        // then
+        // Analyze results
+        int successCount = 0;
+        int tooManyRequestsCount = 0;
+        for (Future<HttpResponse<InputStream>> future : futures) {
+            HttpResponse<InputStream> result = future.get(); // Get the response
+            if (429 == result.statusCode()) {
+                tooManyRequestsCount++;
+            } else if (200 == result.statusCode()) {
+                successCount++;
+            }
+        }
+        // Verify that only one request succeeded
+        assertEquals(1, successCount, "Exactly one request should succeed");
+        assertEquals(1, tooManyRequestsCount, "Exactly two requests should be rejected with 'Too Many Requests'");
+    }
+
+
     /**
      * Debugging method for outputting response to std:out
      * @param response generated response
      */
     private void debug(HttpResponse<InputStream> response) {
+        System.out.println(convertToJSON(response));
+    }
+
+    /**
+     * Obtain the JSON String from the HTTP Response
+     * @param response the response returned
+     * @return a JSON string
+     */
+    private String convertToJSON(HttpResponse<InputStream> response) {
         try {
             InputStream inputStream = response.body();
             InputStreamReader reader = new InputStreamReader(inputStream);
             ObjectMapper mapper = new ObjectMapper();
             Object jsonObject = mapper.readValue(reader, Object.class);
-            String jsonString = mapper.writeValueAsString(jsonObject);
-            System.out.println(jsonString);
+            return mapper.writeValueAsString(jsonObject);
         }catch (IOException e) {
-            System.out.println(e.getMessage());
+            return e.getMessage();
         }
     }
 
@@ -256,6 +318,18 @@ public class TestBackupData {
         @Override
         DatasetBackupService getBackupService(DataAccessPointRegistry dapRegistry) {
             return null;
+        }
+    }
+
+    /**
+     * Extension of the Backup Module for testing purposes.
+     * Allows the underlying service to be mocked
+     */
+    public static class FMod_BackupData_Mock extends FMod_BackupData {
+
+        @Override
+        DatasetBackupService getBackupService(DataAccessPointRegistry dapRegistry) {
+            return mockService;
         }
     }
 }

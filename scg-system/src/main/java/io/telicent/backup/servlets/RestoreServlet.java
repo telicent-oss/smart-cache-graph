@@ -23,13 +23,16 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.apache.jena.atlas.lib.DateTimeUtils;
 
+import java.util.concurrent.locks.ReentrantLock;
+
 import static io.telicent.backup.utils.BackupUtils.*;
 
 /**
- * Servlet class responsible for the loading of given backup.
+ * Servlet class responsible for the loading of a given backup.
  */
 public class RestoreServlet extends HttpServlet {
     private final DatasetBackupService backupService;
+    private final ReentrantLock lock = new ReentrantLock();
 
     public RestoreServlet(DatasetBackupService backupService) {
         this.backupService = backupService;
@@ -38,6 +41,15 @@ public class RestoreServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) {
         ObjectNode resultNode = MAPPER.createObjectNode();
+
+        // Try to acquire the lock without blocking
+        if (!lock.tryLock()) {
+            response.setStatus(429); // HTTP 429: Too Many Requests (doesn't yet exist in HttpServletResponse).
+            resultNode.put("error", "Another restore operation is already in progress. Please try again later.");
+            processResponse(response, resultNode);
+            return;
+        }
+
         try {
             String restoreId = request.getPathInfo();
             resultNode.put("restore-id", restoreId);
@@ -46,6 +58,9 @@ public class RestoreServlet extends HttpServlet {
             processResponse(response, resultNode);
         } catch (Exception exception) {
             handleError(response, resultNode, exception);
+        } finally {
+            // Ensure the lock is released
+            lock.unlock();
         }
     }
 }
