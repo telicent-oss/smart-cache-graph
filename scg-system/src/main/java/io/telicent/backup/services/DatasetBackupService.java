@@ -62,7 +62,7 @@ public class DatasetBackupService {
     }
 
     /**
-     * Ensures that only oine operation is processed at a time
+     * Ensures that only one operation is processed at a time
      * @param request incoming request
      * @param response outgoing response
      * @param backup flag indicating backup or restore
