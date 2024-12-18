@@ -22,6 +22,8 @@ import io.telicent.jena.abac.core.DatasetGraphABAC;
 import io.telicent.jena.abac.labels.LabelsStore;
 import io.telicent.jena.abac.labels.LabelsStoreRocksDB;
 import io.telicent.jena.graphql.utils.ExcludeFromJacocoGeneratedReport;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.apache.jena.atlas.lib.DateTimeUtils;
 import org.apache.jena.fuseki.mgt.Backup;
 import org.apache.jena.fuseki.server.DataAccessPoint;
@@ -37,12 +39,15 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.zip.GZIPInputStream;
 
 import static io.telicent.backup.utils.BackupUtils.*;
 import static org.apache.jena.riot.Lang.NQUADS;
 
 public class DatasetBackupService {
+
+    private final ReentrantLock lock;
 
     private final DataAccessPointRegistry dapRegistry;
 
@@ -53,6 +58,39 @@ public class DatasetBackupService {
         this.dapRegistry = dapRegistry;
         registerMethods("tdb", this::backupTDB, this::restoreTDB);
         registerMethods("labels", this::backupLabelStore, this::restoreLabelStore);
+        lock = new ReentrantLock();
+    }
+
+    /**
+     * Ensures that only oine operation is processed at a time
+     * @param request incoming request
+     * @param response outgoing response
+     * @param backup flag indicating backup or restore
+     */
+    public void process(HttpServletRequest request, HttpServletResponse response, boolean backup) {
+        // Try to acquire the lock without blocking
+        ObjectNode resultNode = MAPPER.createObjectNode();
+        if (!lock.tryLock()) {
+            response.setStatus(HttpServletResponse.SC_CONFLICT);
+            resultNode.put("error", "Another conflicting operation is already in progress. Please try again later.");
+            processResponse(response, resultNode);
+        } else {
+            try {
+                String id = request.getPathInfo();
+                resultNode.put("id", id);
+                resultNode.put("date", DateTimeUtils.nowAsString("yyyy-MM-dd_HH-mm-ss"));
+                if (backup) {
+                    resultNode.set("backup", backupDataset(id));
+                } else {
+                    resultNode.set("restore", restoreDatasets(id));
+                }
+                processResponse(response, resultNode);
+            } catch (Exception exception) {
+                handleError(response, resultNode, exception);
+            } finally {
+                lock.unlock();
+            }
+        }
     }
 
     /**
