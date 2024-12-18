@@ -16,36 +16,22 @@
 
 package io.telicent.backup.servlets;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.telicent.backup.services.DatasetBackupService;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.apache.jena.atlas.lib.DateTimeUtils;
-
-import static io.telicent.backup.utils.BackupUtils.*;
 
 /**
- * Servlet class responsible for the loading of given backup.
+ * Servlet class responsible for the loading of a given backup.
  */
 public class RestoreServlet extends HttpServlet {
     private final DatasetBackupService backupService;
-
     public RestoreServlet(DatasetBackupService backupService) {
         this.backupService = backupService;
     }
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) {
-        ObjectNode resultNode = MAPPER.createObjectNode();
-        try {
-            String restoreId = request.getPathInfo();
-            resultNode.put("restore-id", restoreId);
-            resultNode.put("date", DateTimeUtils.nowAsString("yyyy-MM-dd_HH-mm-ss"));
-            resultNode.set("restore", backupService.restoreDatasets(restoreId));
-            processResponse(response, resultNode);
-        } catch (Exception exception) {
-            handleError(response, resultNode, exception);
-        }
+        backupService.process(request, response,false);
     }
 }

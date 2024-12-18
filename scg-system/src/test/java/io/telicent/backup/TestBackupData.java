@@ -44,12 +44,16 @@ import static io.telicent.TestJwtServletAuth.makeAuthPOSTCallWithPath;
 import static org.apache.jena.graph.Graph.emptyGraph;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
 
 public class TestBackupData {
 
     private static FusekiServer server;
 
     private FMod_BackupData testModule;
+
+    private static DatasetBackupService mockService = mock(DatasetBackupService.class);
 
     @BeforeEach
     public void createAndSetupServerDetails() throws Exception {
@@ -68,6 +72,7 @@ public class TestBackupData {
         }
         LibTestsSCG.teardownAuthentication();
         Configurator.reset();
+        reset(mockService);
     }
 
     private FusekiModules generateModulesAndReplaceWithTestModule() {
@@ -223,15 +228,23 @@ public class TestBackupData {
      * @param response generated response
      */
     private void debug(HttpResponse<InputStream> response) {
+        System.out.println(convertToJSON(response));
+    }
+
+    /**
+     * Obtain the JSON String from the HTTP Response
+     * @param response the response returned
+     * @return a JSON string
+     */
+    private String convertToJSON(HttpResponse<InputStream> response) {
         try {
             InputStream inputStream = response.body();
             InputStreamReader reader = new InputStreamReader(inputStream);
             ObjectMapper mapper = new ObjectMapper();
             Object jsonObject = mapper.readValue(reader, Object.class);
-            String jsonString = mapper.writeValueAsString(jsonObject);
-            System.out.println(jsonString);
+            return mapper.writeValueAsString(jsonObject);
         }catch (IOException e) {
-            System.out.println(e.getMessage());
+            return e.getMessage();
         }
     }
 
@@ -256,6 +269,18 @@ public class TestBackupData {
         @Override
         DatasetBackupService getBackupService(DataAccessPointRegistry dapRegistry) {
             return null;
+        }
+    }
+
+    /**
+     * Extension of the Backup Module for testing purposes.
+     * Allows the underlying service to be mocked
+     */
+    public static class FMod_BackupData_Mock extends FMod_BackupData {
+
+        @Override
+        DatasetBackupService getBackupService(DataAccessPointRegistry dapRegistry) {
+            return mockService;
         }
     }
 }

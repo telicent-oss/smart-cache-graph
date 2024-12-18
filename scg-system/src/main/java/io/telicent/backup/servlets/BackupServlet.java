@@ -16,14 +16,10 @@
 
 package io.telicent.backup.servlets;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.telicent.backup.services.DatasetBackupService;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.apache.jena.atlas.lib.DateTimeUtils;
-
-import static io.telicent.backup.utils.BackupUtils.*;
 
 /**
  * Servlet class responsible for the creation of backups.
@@ -37,15 +33,6 @@ public class BackupServlet extends HttpServlet {
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) {
-        ObjectNode resultNode = MAPPER.createObjectNode();
-        try {
-            String datasetName = request.getPathInfo();
-            resultNode.put("dataset", datasetName);
-            resultNode.put("date", DateTimeUtils.nowAsString("yyyy-MM-dd_HH-mm-ss"));
-            resultNode.set("backup", backupService.backupDataset(datasetName));
-            processResponse(response, resultNode);
-        } catch (Exception exception) {
-            handleError(response, resultNode, exception);
-        }
+        backupService.process(request, response, true);
     }
 }

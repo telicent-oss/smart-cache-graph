@@ -22,6 +22,9 @@ import io.telicent.backup.utils.BackupUtils;
 import io.telicent.jena.abac.ABAC;
 import io.telicent.jena.abac.core.DatasetGraphABAC;
 import io.telicent.jena.abac.labels.LabelsStoreRocksDB;
+import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.apache.jena.fuseki.server.DataAccessPoint;
 import org.apache.jena.fuseki.server.DataAccessPointRegistry;
 import org.apache.jena.fuseki.server.DataService;
@@ -35,14 +38,16 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import static io.telicent.backup.services.DatasetBackupService_Test.*;
 import static io.telicent.backup.utils.BackupUtils.MAPPER;
 import static java.util.Collections.emptyList;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 public class TestDatasetBackupService {
 
@@ -1018,6 +1023,34 @@ public class TestDatasetBackupService {
         assertFalse(RESULT_NODE.get("success").asBoolean());
         assertTrue(RESULT_NODE.has("reason"));
         assertTrue(RESULT_NODE.get("reason").asText().startsWith("Restore directory not found: "));
+    }
+
+    @Test
+    public void test_process_multipleCalls() throws InterruptedException, IOException {
+        HttpServletRequest request = mock(HttpServletRequest.class);
+        HttpServletResponse response = mock(HttpServletResponse.class);
+        ServletOutputStream outputStream = mock(ServletOutputStream.class);
+        when(response.getOutputStream()).thenReturn(outputStream);
+        doAnswer(invocation -> {
+            Thread.sleep(50); // Simulate  operation
+            return "dataset";
+        }).when(request).getPathInfo();
+
+        // Use ExecutorService to run multiple threads
+        try (ExecutorService executorService = Executors.newFixedThreadPool(2)) {
+
+            // Submit 5 concurrent tasks simulating individual requests
+            for (int i = 0; i < 2; i++) {
+                final boolean flag = (i == 0);
+                executorService.submit(() -> {
+                        cut.process(request, response, flag);
+                });
+            }
+            // Wait for threads to complete
+            executorService.shutdown();
+            executorService.awaitTermination(1, TimeUnit.SECONDS);
+        }
+        verify(response, times(1)).setStatus(409);
     }
 
     public void doNothing(DataAccessPoint dataAccessPoint, String path, ObjectNode resultNode) {
