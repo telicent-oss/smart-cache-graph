@@ -1,5 +1,10 @@
 # Smart Cache Graph
 
+## 0.82.14
+- Improving resiliency of restore functionality.
+- Build improvements
+  - RDF ABAC upgrade to 0.73.1
+
 ## 0.82.13
 - Adding backup / restore functionality.
 
