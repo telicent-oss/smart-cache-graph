@@ -26,6 +26,7 @@ import org.apache.jena.riot.web.HttpNames;
  */
 public class TelicentKafka {
 
+    private TelicentKafka(){}
     /**
      * Request-Id : Unique ID for the request (UUID).
      */

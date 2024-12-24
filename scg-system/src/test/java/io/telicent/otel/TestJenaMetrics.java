@@ -55,6 +55,7 @@ import org.apache.jena.fuseki.system.FusekiLogging;
 import org.apache.jena.http.HttpEnv;
 import org.apache.jena.sparql.core.DatasetGraphFactory;
 import org.apache.jena.sys.JenaSystem;
+import org.junit.Assert;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -335,5 +336,16 @@ class TestJenaMetrics {
             HttpResponse<Void> response = HttpEnv.getDftHttpClient().send(request, HttpResponse.BodyHandlers.discarding());
 //            server.join();
         } finally { server.stop(); }
+    }
+
+    @Test
+    void name_happyPath() {
+        // given
+        String expected = "FMod_OpenTelemetry";
+        FMod_OpenTelemetry fModOpenTelemetry = new FMod_OpenTelemetry();
+        // when
+        String actual = fModOpenTelemetry.name();
+        // then
+        Assert.assertEquals(expected, actual);
     }
 }
