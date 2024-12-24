@@ -97,7 +97,7 @@
 
     <!-- Logging dependencies -->
     <dependency.log4j2>2.24.3</dependency.log4j2>
-    <dependency.logback>1.5.12</dependency.logback>
+    <dependency.logback>1.5.15</dependency.logback>
     <dependency.slf4j>2.0.13</dependency.slf4j>
 
     <!-- Test dependencies -->
