@@ -79,6 +79,11 @@ public class DatasetBackupService {
                 String id = request.getPathInfo();
                 resultNode.put("id", id);
                 resultNode.put("date", DateTimeUtils.nowAsString("yyyy-MM-dd_HH-mm-ss"));
+                resultNode.put("user", request.getRemoteUser());
+                String name = request.getParameter("description");
+                if (name != null) {
+                    resultNode.put("description", name);
+                }
                 if (backup) {
                     resultNode.set("backup", backupDataset(id));
                 } else {

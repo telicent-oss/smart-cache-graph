@@ -1142,8 +1142,25 @@ public class TestDatasetBackupService {
     }
 
     @Test
+    public void test_process_failure() throws IOException {
+        // given
+        HttpServletRequest request = mock(HttpServletRequest.class);
+        HttpServletResponse response = mock(HttpServletResponse.class);
+        ServletOutputStream outputStream = mock(ServletOutputStream.class);
+        when(response.getOutputStream()).thenReturn(outputStream);
+        when(request.getPathInfo()).thenThrow(new RuntimeException("Some error"));
+
+        // when
+        cut.process(request, response, true);
+        // then
+        verify(response, times(1)).setStatus(500);
+    }
+
+    @Test
     public void test_process_multipleCalls() throws InterruptedException, IOException {
         HttpServletRequest request = mock(HttpServletRequest.class);
+        when(request.getRemoteUser()).thenReturn("testUser");
+        when(request.getParameter("description")).thenReturn("description of backup");
         HttpServletResponse response = mock(HttpServletResponse.class);
         ServletOutputStream outputStream = mock(ServletOutputStream.class);
         when(response.getOutputStream()).thenReturn(outputStream);
