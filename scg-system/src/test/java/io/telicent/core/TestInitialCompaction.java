@@ -7,7 +7,11 @@ import io.telicent.jena.abac.core.Attributes;
 import io.telicent.jena.abac.core.AttributesStoreLocal;
 import io.telicent.jena.abac.core.DatasetGraphABAC;
 import io.telicent.jena.abac.labels.Labels;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.apache.jena.fuseki.main.FusekiServer;
+import org.apache.jena.fuseki.servlets.ActionErrorException;
 import org.apache.jena.fuseki.system.FusekiLogging;
 import org.apache.jena.sparql.core.DatasetGraph;
 import org.apache.jena.sparql.core.DatasetGraphFactory;
@@ -19,6 +23,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
@@ -283,5 +288,29 @@ public class TestInitialCompaction {
         // when
         // then
         compactLabels(dsgABAC);
+    }
+
+    @Test
+    public void test_configured_exception() {
+        // given
+        FMod_InitialCompaction fModInitialCompaction = new FMod_InitialCompaction();
+        // when
+        // then
+        FusekiServer.Builder mockBuilder = mock(FusekiServer.Builder.class);
+
+        ArgumentCaptor<HttpServlet> servletCaptor = ArgumentCaptor.forClass(HttpServlet.class);
+        when(mockBuilder.addServlet(any(), servletCaptor.capture())).thenReturn(mockBuilder);
+
+        fModInitialCompaction.configured(mockBuilder, null, null);
+
+        verify(mockBuilder).addServlet(eq("/$/compactall"), any(HttpServlet.class));
+        HttpServlet capturedServlet = servletCaptor.getValue();
+
+
+        HttpServletRequest request = mock(HttpServletRequest.class);
+        when(request.getMethod()).thenReturn("POST");
+
+        HttpServletResponse response = mock(HttpServletResponse.class);
+        assertThrows(ActionErrorException.class, () ->capturedServlet.service(request, response));
     }
 }

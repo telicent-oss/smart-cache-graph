@@ -1,5 +1,6 @@
 package io.telicent;
 
+import io.telicent.core.FMod_RequestIDFilter;
 import io.telicent.core.SmartCacheGraph;
 import io.telicent.smart.cache.configuration.Configurator;
 import io.telicent.smart.cache.configuration.sources.PropertiesSource;
@@ -7,6 +8,7 @@ import io.telicent.smart.caches.configuration.auth.AuthConstants;
 import org.apache.jena.fuseki.main.FusekiServer;
 import org.apache.jena.http.HttpEnv;
 import org.apache.jena.sparql.core.DatasetGraphFactory;
+import org.junit.Assert;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -137,5 +139,24 @@ public class TestRequestIDFilter {
         String responseRequestId = optionalHeader.get();
         assertFalse(responseRequestId.contains(EXPECTED_REQUEST_ID));
         assertTrue(responseRequestId.startsWith(randomID));
+    }
+
+    @Test
+    void name_happyPath() {
+        // given
+        String expected = "Request ID Capture ";
+        FMod_RequestIDFilter fModRequestIDFilter = new FMod_RequestIDFilter();
+        // when
+        String actual = fModRequestIDFilter.name();
+        // then
+        Assert.assertEquals(expected, actual);
+    }
+
+    @Test
+    void test_isBlank() {
+        // given
+        // when
+        // then
+        assertFalse(FMod_RequestIDFilter.isNotBlank("  "));
     }
 }

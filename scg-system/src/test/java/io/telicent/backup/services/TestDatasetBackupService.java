@@ -21,6 +21,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.telicent.backup.utils.BackupUtils;
 import io.telicent.jena.abac.ABAC;
 import io.telicent.jena.abac.core.DatasetGraphABAC;
+import io.telicent.jena.abac.labels.LabelsStoreMem;
 import io.telicent.jena.abac.labels.LabelsStoreRocksDB;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletRequest;
@@ -579,9 +580,13 @@ public class TestDatasetBackupService {
         assertTrue(labelsDir.mkdir());
         labelsDir.deleteOnExit();
 
+        LabelsStoreRocksDB mockRocksDbLabelStore = mock(LabelsStoreRocksDB.class);
+        when(mockRocksDbLabelStore.getTransactional()).thenReturn(DatasetGraphFactory.createTxnMem());
+
+
         DatasetGraphABAC dsgABAC = ABAC.authzDataset(DatasetGraphFactory.createTxnMem(),
                 null,
-                mock(LabelsStoreRocksDB.class),
+                mockRocksDbLabelStore,
                 null,
                 null);
         DataAccessPoint dap = new DataAccessPoint("dataset-name", DataService.newBuilder().dataset(dsgABAC).build());
@@ -634,7 +639,7 @@ public class TestDatasetBackupService {
         assertTrue(tdbFile.createNewFile());
         tdbFile.deleteOnExit();
 
-        DataAccessPoint dap = new DataAccessPoint("dataset-name", DataService.newBuilder().build());
+        DataAccessPoint dap = new DataAccessPoint("dataset-name", DataService.newBuilder().dataset(DatasetGraphFactory.createTxnMem()).build());
 
         when(mockRegistry.get("/dataset-name")).thenReturn(dap);
 
@@ -668,6 +673,111 @@ public class TestDatasetBackupService {
 
 
     @Test
+    public void test_restoreDatasets_exception() throws IOException {
+        // given
+        String restoreID = "restore";
+        File newDir = new File(baseDir.toString() + "/" + restoreID);
+        assertTrue(newDir.mkdir());
+        newDir.deleteOnExit();
+
+        String datasetName = "dataset-name";
+        File newDataset = new File(newDir + "/" + datasetName);
+        assertTrue(newDataset.mkdir());
+        newDataset.deleteOnExit();
+
+        File tdbDir = new File(newDataset + "/tdb/");
+        assertTrue(tdbDir.mkdir());
+        tdbDir.deleteOnExit();
+
+        File tdbFile = new File(newDataset + "/tdb/" + datasetName + "_backup.nq.gz");
+        assertTrue(tdbFile.createNewFile());
+        tdbFile.deleteOnExit();
+
+        File labelsDir = new File(newDataset + "/labels/");
+        assertTrue(labelsDir.mkdir());
+        labelsDir.deleteOnExit();
+
+        LabelsStoreRocksDB mockRocksDbLabelStore = mock(LabelsStoreRocksDB.class);
+        when(mockRocksDbLabelStore.getTransactional()).thenReturn(DatasetGraphFactory.createTxnMem());
+
+        DatasetGraphABAC dsgABAC = ABAC.authzDataset(DatasetGraphFactory.createTxnMem(),
+                null,
+                mockRocksDbLabelStore,
+                null,
+                null);
+        DataAccessPoint dap = new DataAccessPoint("dataset-name", DataService.newBuilder().build());
+
+        when(mockRegistry.get("/dataset-name")).thenReturn(dap);
+
+        DatasetBackupService_Test.setupExceptionForMethod(RESTORE_TDB, "Failure");
+        DatasetBackupService_Test.setupExceptionForMethod(RESTORE_LABELS, "Failure");
+
+        // when
+        ObjectNode result = cut.restoreDatasets(restoreID);
+
+        // then
+        assertTrue(result.has("restorePath"));
+        assertFalse(result.has("success"));
+        assertTrue(result.has(datasetName));
+        JsonNode dataset = result.get(datasetName);
+        assertTrue(dataset.has("dataset-id"));
+        assertEquals(dataset.get("dataset-id").asText(), datasetName);
+
+        assertEquals(0, DatasetBackupService_Test.getCallCount(RESTORE_TDB));
+        assertEquals(0, DatasetBackupService_Test.getCallCount(RESTORE_LABELS));
+    }
+
+    @Test
+    public void test_restoreDatasets_invalidDataAccessPoint() throws IOException {
+        // given
+        String restoreID = "restore";
+        File newDir = new File(baseDir.toString() + "/" + restoreID);
+        assertTrue(newDir.mkdir());
+        newDir.deleteOnExit();
+
+        String datasetName = "dataset-name";
+        File newDataset = new File(newDir + "/" + datasetName);
+        assertTrue(newDataset.mkdir());
+        newDataset.deleteOnExit();
+
+        File tdbDir = new File(newDataset + "/tdb/");
+        assertTrue(tdbDir.mkdir());
+        tdbDir.deleteOnExit();
+
+        File tdbFile = new File(newDataset + "/tdb/" + datasetName + "_backup.nq.gz");
+        assertTrue(tdbFile.createNewFile());
+        tdbFile.deleteOnExit();
+
+        File labelsDir = new File(newDataset + "/labels/");
+        assertTrue(labelsDir.mkdir());
+        labelsDir.deleteOnExit();
+
+        LabelsStoreRocksDB mockRocksDbLabelStore = mock(LabelsStoreRocksDB.class);
+        when(mockRocksDbLabelStore.getTransactional()).thenReturn(DatasetGraphFactory.createTxnMem());
+
+        DataAccessPoint mockDAP = mock(DataAccessPoint.class);
+
+        when(mockRegistry.get("/dataset-name")).thenReturn(mockDAP);
+
+        DatasetBackupService_Test.setupExceptionForMethod(RESTORE_TDB, "Failure");
+        DatasetBackupService_Test.setupExceptionForMethod(RESTORE_LABELS, "Failure");
+
+        // when
+        ObjectNode result = cut.restoreDatasets(restoreID);
+
+        // then
+        assertTrue(result.has("restorePath"));
+        assertFalse(result.has("success"));
+        assertTrue(result.has(datasetName));
+        JsonNode dataset = result.get(datasetName);
+        assertTrue(dataset.has("dataset-id"));
+        assertEquals(dataset.get("dataset-id").asText(), datasetName);
+
+        assertEquals(0, DatasetBackupService_Test.getCallCount(RESTORE_TDB));
+        assertEquals(0, DatasetBackupService_Test.getCallCount(RESTORE_LABELS));
+    }
+
+    @Test
     public void test_restoreDatasets_abac_dsg_not_rocksdb() throws IOException {
         // given
         String restoreID = "restore";
@@ -690,7 +800,7 @@ public class TestDatasetBackupService {
 
         DatasetGraphABAC dsgABAC = ABAC.authzDataset(DatasetGraphFactory.createTxnMem(),
                 null,
-                null,
+                LabelsStoreMem.create(),
                 null,
                 null);
         DataAccessPoint dap = new DataAccessPoint("dataset-name", DataService.newBuilder().dataset(dsgABAC).build());
@@ -750,9 +860,12 @@ public class TestDatasetBackupService {
         assertTrue(labelsDir.mkdir());
         labelsDir.deleteOnExit();
 
+        LabelsStoreRocksDB mockRocksDbLabelStore = mock(LabelsStoreRocksDB.class);
+        when(mockRocksDbLabelStore.getTransactional()).thenReturn(DatasetGraphFactory.createTxnMem());
+
         DatasetGraphABAC dsgABAC = ABAC.authzDataset(DatasetGraphFactory.createTxnMem(),
                 null,
-                mock(LabelsStoreRocksDB.class),
+                mockRocksDbLabelStore,
                 null,
                 null);
         DataAccessPoint dap = new DataAccessPoint("dataset-name", DataService.newBuilder().dataset(dsgABAC).build());
@@ -800,9 +913,12 @@ public class TestDatasetBackupService {
         assertTrue(newDataset.mkdir());
         newDataset.deleteOnExit();
 
+        LabelsStoreRocksDB mockRocksDbLabelStore = mock(LabelsStoreRocksDB.class);
+        when(mockRocksDbLabelStore.getTransactional()).thenReturn(DatasetGraphFactory.createTxnMem());
+
         DatasetGraphABAC dsgABAC = ABAC.authzDataset(DatasetGraphFactory.createTxnMem(),
                 null,
-                mock(LabelsStoreRocksDB.class),
+                mockRocksDbLabelStore,
                 null,
                 null);
         DataAccessPoint dap = new DataAccessPoint("dataset-name", DataService.newBuilder().dataset(dsgABAC).build());
@@ -1068,6 +1184,22 @@ public class TestDatasetBackupService {
             executorService.awaitTermination(1, TimeUnit.SECONDS);
         }
         verify(response, times(1)).setStatus(409);
+    }
+
+    @Test
+    public void test_process_exception() throws IOException {
+        // given
+        HttpServletRequest request = mock(HttpServletRequest.class);
+        HttpServletResponse response = mock(HttpServletResponse.class);
+        ServletOutputStream outputStream = mock(ServletOutputStream.class);
+        when(response.getOutputStream()).thenReturn(outputStream);
+        doThrow(new RuntimeException("Test")).when(request).getPathInfo();
+
+        // when
+        cut.process(request, response, true);
+
+        // then
+        verify(response, times(1)).setStatus(500);
     }
 
     public void doNothing(DataAccessPoint dataAccessPoint, String path, ObjectNode resultNode) {

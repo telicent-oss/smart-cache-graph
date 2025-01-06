@@ -261,12 +261,20 @@ public class DatasetBackupService {
         ObjectNode response = MAPPER.createObjectNode();
         response.put("dataset-id", datasetName);
         DataAccessPoint dataAccessPoint = dapRegistry.get("/" + datasetName);
-        if (dataAccessPoint == null) {
+        if (dataAccessPoint == null || dataAccessPoint.getDataService() == null) {
             response.put("reason", datasetName + " does not exist");
             response.put("success", false);
             return response;
         }
-        applyRestoreMethods(response, dataAccessPoint, restorePath + "/" + datasetName);
+        DatasetGraph dsg = dataAccessPoint.getDataService().getDataset();
+        try {
+            Txn.executeWrite(dsg, () -> {
+                applyRestoreMethods(response, dataAccessPoint, restorePath + "/" + datasetName);
+            });
+        } catch (RuntimeException ex) {
+            response.put("reason", ex.getMessage());
+            response.put("success", false);
+        }
         return response;
     }
 
