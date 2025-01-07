@@ -103,7 +103,7 @@
     <!-- Test dependencies -->
     <dependency.junit5>5.11.4</dependency.junit5>
     <dependency.junit5-platform>1.11.4</dependency.junit5-platform>
-    <dependency.mockito>5.14.2</dependency.mockito>
+    <dependency.mockito>5.15.2</dependency.mockito>
     <dependency.testcontainers>1.20.4</dependency.testcontainers>
 
     <dependency.yaml-config>1.0.7</dependency.yaml-config>
