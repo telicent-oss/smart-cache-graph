@@ -88,7 +88,7 @@
     <dependency.fuseki-server>${dependency.jena}</dependency.fuseki-server>
     <dependency.graphql>0.9.1</dependency.graphql>
     <dependency.jwt-servlet-auth>0.17.5</dependency.jwt-servlet-auth>
-    <dependency.smart-caches-core>0.25.1</dependency.smart-caches-core>
+    <dependency.smart-caches-core>0.25.2</dependency.smart-caches-core>
 
     <!-- External dependencies -->
     <dependency.kotlin>2.1.0</dependency.kotlin>
@@ -97,7 +97,7 @@
 
     <!-- Logging dependencies -->
     <dependency.log4j2>2.24.3</dependency.log4j2>
-    <dependency.logback>1.5.15</dependency.logback>
+    <dependency.logback>1.5.16</dependency.logback>
     <dependency.slf4j>2.0.13</dependency.slf4j>
 
     <!-- Test dependencies -->
