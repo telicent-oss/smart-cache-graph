@@ -91,13 +91,14 @@
                 <exclude>META-INF/*.SF</exclude>
                 <exclude>META-INF/*.DSA</exclude>
                 <exclude>META-INF/*.RSA</exclude>
+                <exclude>META-INF/*.xml</exclude>
                 <exclude>META-INF/MANIFEST.MF</exclude>
-                <exclude>META-INF.versions.9.module-info</exclude>
-                <exclude>META-INF/versions/9/module-info</exclude>
+                <exclude>META-INF/versions/**</exclude>
                 <exclude>META-INF/DEPENDENCIES</exclude>
                 <exclude>META-INF/LICENSE-notice.md</exclude>
                 <exclude>META-INF/maven/com.google.guava/guava/pom.properties</exclude>
                 <exclude>META-INF/maven/com.google.guava/guava/pom.xml</exclude>
+                <exclude>META-INF/org/apache/logging/log4j/core/config/plugins/Log4j2Plugins.dat</exclude>
                 <exclude>META-INF/proguard/*.pro</exclude>
                 <exclude>logback.xml</exclude>
               </excludes>
