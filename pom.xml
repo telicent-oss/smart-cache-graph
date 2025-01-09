@@ -88,22 +88,24 @@
     <dependency.fuseki-server>${dependency.jena}</dependency.fuseki-server>
     <dependency.graphql>0.9.1</dependency.graphql>
     <dependency.jwt-servlet-auth>0.17.5</dependency.jwt-servlet-auth>
-    <dependency.smart-caches-core>0.25.1</dependency.smart-caches-core>
+    <dependency.smart-caches-core>0.25.2</dependency.smart-caches-core>
 
     <!-- External dependencies -->
+    <dependency.jackson>2.18.2</dependency.jackson>
+    <dependency.kafka>3.9.0</dependency.kafka>
     <dependency.kotlin>2.1.0</dependency.kotlin>
     <dependency.otel>1.33.0</dependency.otel> <!-- These two must be in-step. -->
     <dependency.otel-semconv>1.30.1-alpha</dependency.otel-semconv> <!-- These two must be in-step. -->
 
     <!-- Logging dependencies -->
     <dependency.log4j2>2.24.3</dependency.log4j2>
-    <dependency.logback>1.5.15</dependency.logback>
+    <dependency.logback>1.5.16</dependency.logback>
     <dependency.slf4j>2.0.13</dependency.slf4j>
 
     <!-- Test dependencies -->
     <dependency.junit5>5.11.4</dependency.junit5>
     <dependency.junit5-platform>1.11.4</dependency.junit5-platform>
-    <dependency.mockito>5.14.2</dependency.mockito>
+    <dependency.mockito>5.15.2</dependency.mockito>
     <dependency.testcontainers>1.20.4</dependency.testcontainers>
 
     <dependency.yaml-config>1.0.7</dependency.yaml-config>
@@ -129,13 +131,45 @@
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
           </exclusion>
-          <exclusion>
-            <groupId>org.junit.platform</groupId>
-            <artifactId>junit-platform-suite-engine</artifactId>
-          </exclusion>
         </exclusions>
       </dependency>
       <!-- Complete Fuseki Main server as a single jar -->
+      <dependency>
+        <groupId>org.apache.jena</groupId>
+        <artifactId>jena-arq</artifactId>
+        <version>${dependency.jena}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.jena</groupId>
+        <artifactId>jena-base</artifactId>
+        <version>${dependency.jena}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.jena</groupId>
+        <artifactId>jena-cmds</artifactId>
+        <version>${dependency.jena}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.jena</groupId>
+        <artifactId>jena-core</artifactId>
+        <version>${dependency.jena}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.jena</groupId>
+        <artifactId>jena-dboe-base</artifactId>
+        <version>${dependency.jena}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.jena</groupId>
+        <artifactId>jena-fuseki-core</artifactId>
+        <version>${dependency.jena}</version>
+      </dependency>
+
       <dependency>
         <groupId>org.apache.jena</groupId>
         <artifactId>jena-fuseki-server</artifactId>
@@ -147,6 +181,24 @@
         <artifactId>jena-fuseki-webapp</artifactId>
         <version>${dependency.jena}</version>
       </dependency>
+      <dependency>
+        <groupId>org.apache.jena</groupId>
+        <artifactId>jena-rdfpatch</artifactId>
+        <version>${dependency.jena}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.jena</groupId>
+        <artifactId>jena-tdb1</artifactId>
+        <version>${dependency.jena}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.jena</groupId>
+        <artifactId>jena-tdb2</artifactId>
+        <version>${dependency.jena}</version>
+      </dependency>
+
       <!-- Fuseki-Kafka connector -->
       <dependency>
         <groupId>io.telicent.jena</groupId>
@@ -159,7 +211,11 @@
           </exclusion>
         </exclusions>
       </dependency>
-
+      <dependency>
+        <groupId>io.telicent.jena</groupId>
+        <artifactId>jena-kafka-connector</artifactId>
+        <version>${dependency.fuseki-kafka}</version>
+      </dependency>
       <!-- ABAC engine -->
       <dependency>
         <!-- Used in scg-system -->
@@ -175,6 +231,11 @@
       </dependency>
       <dependency>
         <groupId>io.telicent.jena</groupId>
+        <artifactId>rdf-abac-core</artifactId>
+        <version>${dependency.rdf-abac}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.telicent.jena</groupId>
         <artifactId>rdf-abac-fmod</artifactId>
         <version>${dependency.rdf-abac}</version>
       </dependency>
@@ -184,12 +245,11 @@
         <groupId>io.telicent.public</groupId>
         <artifactId>jwt-servlet-auth-aws</artifactId>
         <version>${dependency.jwt-servlet-auth}</version>
-        <exclusions>
-          <exclusion>
-            <groupId>commons-codec</groupId>
-            <artifactId>commons-codec</artifactId>
-          </exclusion>
-        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>io.telicent.public</groupId>
+        <artifactId>jwt-servlet-auth-core</artifactId>
+        <version>${dependency.jwt-servlet-auth}</version>
       </dependency>
       <dependency>
         <groupId>io.telicent.public</groupId>
@@ -198,11 +258,21 @@
       </dependency>
       <dependency>
         <groupId>io.telicent.smart-caches</groupId>
+        <artifactId>configurator</artifactId>
+        <version>${dependency.smart-caches-core}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.telicent.smart-caches</groupId>
         <artifactId>jwt-auth-common</artifactId>
         <version>${dependency.smart-caches-core}</version>
       </dependency>
 
       <!-- GraphQL -->
+      <dependency>
+        <groupId>io.telicent.jena.graphql</groupId>
+        <artifactId>graphql-jena-core</artifactId>
+        <version>${dependency.graphql}</version>
+      </dependency>
       <dependency>
         <groupId>io.telicent.jena.graphql</groupId>
         <artifactId>graphql-fuseki-module</artifactId>
@@ -225,6 +295,17 @@
       </dependency>
 
       <!-- External Dependencies -->
+      <dependency>
+        <groupId>com.fasterxml.jackson.core</groupId>
+        <artifactId>jackson-databind</artifactId>
+        <version>${dependency.jackson}</version>
+      </dependency>
+      <!-- Kafka for Event Sourcing -->
+      <dependency>
+        <groupId>org.apache.kafka</groupId>
+        <artifactId>kafka-clients</artifactId>
+        <version>${dependency.kafka}</version>
+      </dependency>
 
       <!-- Logging dependencies -->
       <dependency>
@@ -236,12 +317,6 @@
         <groupId>org.apache.logging.log4j</groupId>
         <artifactId>log4j-api</artifactId>
         <version>${dependency.log4j2}</version>
-        <exclusions>
-          <exclusion>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-          </exclusion>
-        </exclusions>
       </dependency>
       <dependency>
         <groupId>org.apache.logging.log4j</groupId>
@@ -337,6 +412,12 @@
       </dependency>
       <dependency>
         <groupId>org.testcontainers</groupId>
+        <artifactId>junit-jupiter</artifactId>
+        <version>${dependency.testcontainers}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.testcontainers</groupId>
         <artifactId>kafka</artifactId>
         <version>${dependency.testcontainers}</version>
         <scope>test</scope>
@@ -346,6 +427,12 @@
             <artifactId>jackson-annotations</artifactId>
           </exclusion>
         </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>org.testcontainers</groupId>
+        <artifactId>testcontainers</artifactId>
+        <version>${dependency.testcontainers}</version>
+        <scope>test</scope>
       </dependency>
       <dependency>
         <groupId>io.telicent.public</groupId>
@@ -465,7 +552,7 @@
           <artifactId>maven-surefire-plugin</artifactId>
           <version>${plugin.surefire}</version>
           <configuration>
-            <argLine>@{jacocoArgLine} -XX:+EnableDynamicAgentLoading</argLine>
+            <argLine>@{jacocoArgLine} -javaagent:${org.mockito:mockito-core:jar} -XX:+EnableDynamicAgentLoading -Xshare:off</argLine>
           </configuration>
         </plugin>
 

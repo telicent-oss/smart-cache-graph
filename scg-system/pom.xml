@@ -35,6 +35,38 @@
   <dependencies>
 
     <!-- Internal dependencies -->
+
+    <dependency>
+      <groupId>org.apache.jena</groupId>
+      <artifactId>jena-arq</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.jena</groupId>
+      <artifactId>jena-base</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.jena</groupId>
+      <artifactId>jena-cmds</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.jena</groupId>
+      <artifactId>jena-core</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.jena</groupId>
+      <artifactId>jena-dboe-base</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.jena</groupId>
+      <artifactId>jena-fuseki-core</artifactId>
+    </dependency>
+
     <dependency>
       <groupId>org.apache.jena</groupId>
       <artifactId>jena-fuseki-main</artifactId>
@@ -45,7 +77,27 @@
       <artifactId>jena-fuseki-webapp</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>org.apache.jena</groupId>
+      <artifactId>jena-rdfpatch</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.jena</groupId>
+      <artifactId>jena-tdb1</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.jena</groupId>
+      <artifactId>jena-tdb2</artifactId>
+    </dependency>
+
     <!-- ABAC engine -->
+    <dependency>
+      <groupId>io.telicent.jena</groupId>
+      <artifactId>rdf-abac-core</artifactId>
+    </dependency>
     <dependency>
       <groupId>io.telicent.jena</groupId>
       <artifactId>rdf-abac-fuseki</artifactId>
@@ -56,38 +108,63 @@
       <groupId>io.telicent.jena</groupId>
       <artifactId>jena-fuseki-kafka-module</artifactId>
     </dependency>
+    <dependency>
+      <groupId>io.telicent.jena</groupId>
+      <artifactId>jena-kafka-connector</artifactId>
+    </dependency>
 
     <!-- Authentication -->
     <dependency>
-      <groupId>io.telicent.smart-caches</groupId>
-      <artifactId>jwt-auth-common</artifactId>
+      <groupId>io.telicent.public</groupId>
+      <artifactId>jwt-servlet-auth-aws</artifactId>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>io.telicent.public</groupId>
-      <artifactId>jwt-servlet-auth-aws</artifactId>
+      <artifactId>jwt-servlet-auth-core</artifactId>
     </dependency>
     <dependency>
       <groupId>io.telicent.public</groupId>
       <artifactId>jwt-servlet-auth-servlet5</artifactId>
     </dependency>
-
+    <dependency>
+      <groupId>io.telicent.smart-caches</groupId>
+      <artifactId>configurator</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.telicent.smart-caches</groupId>
+      <artifactId>jwt-auth-common</artifactId>
+    </dependency>
     <!-- GraphQL -->
+    <dependency>
+      <groupId>io.telicent.jena.graphql</groupId>
+      <artifactId>graphql-jena-core</artifactId>
+    </dependency>
     <dependency>
       <groupId>io.telicent.jena.graphql</groupId>
       <artifactId>graphql-fuseki-module</artifactId>
     </dependency>
-
     <dependency>
       <groupId>io.telicent.jena.graphql</groupId>
       <artifactId>telicent-graph-schema</artifactId>
     </dependency>
 
     <!-- External dependencies -->
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+    </dependency>
+    <!-- Kafka for Event Sourcing -->
+    <dependency>
+      <groupId>org.apache.kafka</groupId>
+      <artifactId>kafka-clients</artifactId>
+    </dependency>
 
     <!-- Logging Dependencies -->
     <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
+      <scope>test</scope>
     </dependency>
 
     <!-- OpenTelemetry dependencies -->
@@ -161,6 +238,11 @@
     <!-- Kafka - testing -->
     <dependency>
       <groupId>org.testcontainers</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
       <artifactId>kafka</artifactId>
       <scope>test</scope>
       <exclusions>
@@ -176,8 +258,7 @@
     </dependency>
     <dependency>
       <groupId>org.testcontainers</groupId>
-      <artifactId>junit-jupiter</artifactId>
-      <version>${dependency.testcontainers}</version>
+      <artifactId>testcontainers</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -238,6 +319,12 @@
               <stripVersion>true</stripVersion>
               <outputDirectory>${project.build.directory}/agents</outputDirectory>
             </configuration>
+          </execution>
+          <execution>
+            <id>properties</id>
+            <goals>
+              <goal>properties</goal>
+            </goals>
           </execution>
         </executions>
       </plugin>
