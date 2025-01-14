@@ -43,7 +43,6 @@ public class ValidateServlet extends HttpServlet {
             resultNode.put("error", "Validation already in progress");
             processResponse(response, resultNode);
         }
-
     }
 
     private void processRequest(
@@ -51,7 +50,7 @@ public class ValidateServlet extends HttpServlet {
             final HttpServletResponse response,
             final ObjectNode resultNode) throws IOException {
         final String pathInfo = request.getPathInfo();
-        final String[] validateParams = pathInfo.split("/");
+        final String[] validateParams = pathInfo.substring(1).split("/");
         try (final InputStream inputStream = request.getInputStream()) {
             resultNode.put("validate-id", validateParams[0]);
             resultNode.put("date", DateTimeUtils.nowAsString("yyyy-MM-dd_HH-mm-ss"));

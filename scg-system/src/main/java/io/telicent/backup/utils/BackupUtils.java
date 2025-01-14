@@ -23,22 +23,14 @@ import io.telicent.smart.cache.configuration.Configurator;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletResponse;
 import org.apache.jena.atlas.logging.FmtLog;
-import org.apache.jena.rdf.model.Model;
-import org.apache.jena.riot.RDFDataMgr;
-import org.apache.jena.riot.RDFFormat;
 import org.apache.jena.riot.WebContent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Stream;
-import java.util.zip.GZIPInputStream;
 
 /**
  * Utility class for carrying out common back-up operations and file I/O.
@@ -56,7 +48,8 @@ public class BackupUtils {
 
     public static ObjectMapper MAPPER = new ObjectMapper();
 
-    private BackupUtils() {}
+    private BackupUtils() {
+    }
 
     private static String getBackUpDirProperty() {
         return Configurator.get(ENV_BACKUPS_DIR);
@@ -65,6 +58,7 @@ public class BackupUtils {
     /**
      * Obtain back up directory path.
      * If not currently set, generate it from available configuration.
+     *
      * @return path of back-up directory
      */
     public static String getBackUpDir() {
@@ -77,6 +71,7 @@ public class BackupUtils {
     /**
      * Generate the back-up dir.
      * If not set in configuration use PWD/backups
+     *
      * @return the Path of the back-up directory location.
      */
     public static String generateBackUpDirPath() {
@@ -107,6 +102,7 @@ public class BackupUtils {
 
     /**
      * For the given directory find the highest numbered directory
+     *
      * @param directoryPath the directory to check
      * @return the highest number (or -1 if unavailable)
      */
@@ -129,6 +125,7 @@ public class BackupUtils {
     /**
      * For the given directory find the highest numbered directory
      * so far and return +1
+     *
      * @param directoryPath the directory to check
      * @return the next number (or -1 if unavailable)
      */
@@ -144,6 +141,7 @@ public class BackupUtils {
     /**
      * For the given directory find the highest numbered directory
      * so far and return +1 and create the relevant directory.
+     *
      * @param directoryPath the directory to check
      * @return the next number (or -1 if unavailable)
      */
@@ -275,7 +273,7 @@ public class BackupUtils {
      * Populate a JSON node with the contents of the file directory
      * but in numerical order
      *
-     * @param path  the directory to scan
+     * @param path the directory to scan
      * @return an object node of the contents
      */
     public static ObjectNode populateNodeFromDirNumerically(String path) {
@@ -289,7 +287,7 @@ public class BackupUtils {
      * Populate a JSON node with the contents of the file directory
      * but in numerical order
      *
-     * @param dir the directory to scan
+     * @param dir  the directory to scan
      * @param node the node to populate
      */
     public static void populateNodeFromDirNumerically(File dir, ObjectNode node) {
@@ -309,10 +307,11 @@ public class BackupUtils {
 
     /**
      * Iterate recursively over given files adding details ot node
+     *
      * @param files list of files
-     * @param node node to add details too
+     * @param node  node to add details too
      */
-    static void processFiles(File[] files,ObjectNode node) {
+    static void processFiles(File[] files, ObjectNode node) {
         for (File file : files) {
             if (file.isDirectory()) {
                 ObjectNode childNode = MAPPER.createObjectNode();
@@ -327,6 +326,7 @@ public class BackupUtils {
 
     /**
      * For the given directory, delete it and it's contents.
+     *
      * @param directory the directory to remove
      */
     public static void deleteDirectoryRecursively(File directory) {
@@ -377,11 +377,12 @@ public class BackupUtils {
     }
 
     /**
+     * Populate an HTTP Response with error data
      *
-     * @param response
-     * @param jsonResponse
-     * @param status
-     * @param message
+     * @param response     Response to populate
+     * @param jsonResponse Response data (in JSON form)
+     * @param status       HTTP status code for response
+     * @param message      Description of error encountered
      */
     public static void handleError(HttpServletResponse response, ObjectNode jsonResponse, int status, String message) {
         response.setStatus(status);
@@ -402,30 +403,6 @@ public class BackupUtils {
         } else if (requestName.trim().isEmpty()) {
             return true;
         } else return requestName.trim().equals("/");
-    }
-
-    public static Path decompressGzip(final Path source) throws IOException {
-        final Path target = Paths.get(source.toString().substring(0,source.toString().lastIndexOf('.')));
-        try(final GZIPInputStream gis = new GZIPInputStream(new FileInputStream(source.toFile()));
-            final FileOutputStream fos = new FileOutputStream(target.toFile())) {
-            final byte[] buffer = new byte[1024];
-            int len;
-            while ((len = gis.read(buffer)) > 0) {
-                fos.write(buffer, 0, len);
-            }
-        }
-        return target;
-    }
-
-    public static Path convertToTurtle(final Path inputPath) throws IOException {
-        final String inputPathString = inputPath.toString();
-        final String turtlePathString = inputPathString.substring(0,inputPathString.lastIndexOf('.'));
-        final Path turtlePath = Paths.get(turtlePathString + ".ttl");
-        final Model model = RDFDataMgr.loadModel(inputPathString);
-        try(final FileOutputStream fos = new FileOutputStream(turtlePath.toString())) {
-            RDFDataMgr.write(fos, model, RDFFormat.TURTLE);
-        }
-        return turtlePath;
     }
 
 }

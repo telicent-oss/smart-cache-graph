@@ -12,15 +12,15 @@ public class ReportServlet extends HttpServlet {
 
     private final DatasetBackupService backupService;
 
-    public ReportServlet(DatasetBackupService backupService) {
+    public ReportServlet(final DatasetBackupService backupService) {
         this.backupService = backupService;
     }
 
-    protected void doGet(HttpServletRequest request, HttpServletResponse response) {
-        ObjectNode resultNode = MAPPER.createObjectNode();
+    protected void doGet(final HttpServletRequest request, final HttpServletResponse response) {
+        final ObjectNode resultNode = MAPPER.createObjectNode();
         try {
-            String pathInfo = request.getPathInfo();
-            String[] pathElems = pathInfo.split("/");
+            final String pathInfo = request.getPathInfo();
+            final String[] pathElems = pathInfo.split("/");
             resultNode.set("validate-id", backupService.getReport(pathElems[1], pathElems[2]));
             processResponse(response,resultNode);
         } catch (Exception exception) {

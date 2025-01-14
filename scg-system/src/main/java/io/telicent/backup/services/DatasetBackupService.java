@@ -16,7 +16,6 @@
 
 package io.telicent.backup.services;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.telicent.jena.abac.core.DatasetGraphABAC;
@@ -452,6 +451,8 @@ public class DatasetBackupService {
      */
     public ObjectNode validateBackup(final String[] validateParams, final InputStream shapeInputStream) throws IOException {
         final String validatePath = getBackUpDir() + "/" + validateParams[0];
+        final Model shapesModel = getShapeModel(shapeInputStream);
+        final Graph shapesGraph = shapesModel.getGraph();
         final ObjectNode response = MAPPER.createObjectNode();
         response.put("validate-id", validateParams[0]);
         response.put("date", DateTimeUtils.nowAsString("yyyy-MM-dd_HH-mm-ss"));
@@ -461,8 +462,6 @@ public class DatasetBackupService {
             response.put("success", false);
         } else {
             final Set<String> datasetDirs = listDirectories(validatePath, validateParams);
-            final Model shapesModel = getShapeModel(shapeInputStream);
-            final Graph shapesGraph = shapesModel.getGraph();
             for (String datasetDir : datasetDirs) {
                 response.set(datasetDir, executeValidation(validatePath, datasetDir, shapesGraph));
             }
@@ -533,21 +532,15 @@ public class DatasetBackupService {
             final Path source = Path.of(validatePath, datasetDir, "tdb", datasetDir + BACKUP_SUFFIX + ".nq.gz");
             final List<Path> tempPaths = new ArrayList<>();
 
-            final Path nQuadPath = decompressGzip(source);
-            tempPaths.add(nQuadPath);
-
-            final Path turtlePath = convertToTurtle(nQuadPath);
-            tempPaths.add(turtlePath);
-
-            final Graph dataGraph = RDFDataMgr.loadGraph(turtlePath.toString());
+            final Graph dataGraph = RDFDataMgr.loadGraph(source.toString());
             final Shapes shapes = Shapes.parse(shapesGraph);
 
             final ValidationReport report = ShaclValidator.get().validate(shapes, dataGraph);
-            writeValidationReport(report, turtlePath);
+            writeValidationReport(report, source);
             cleanUp(tempPaths);
             response.put("success", true);
-        } catch (IOException ioex) {
-            response.put("reason", (ioex.getMessage() == null) ? ioex.getClass().getName() : ioex.getMessage());
+        } catch (Exception ex) {
+            response.put("reason", (ex.getMessage() == null) ? ex.getClass().getName() : ex.getMessage());
             response.put("success", false);
         }
         return response;
@@ -568,8 +561,8 @@ public class DatasetBackupService {
         return model.read(shapeInputStream, null, "TTL");
     }
 
-    private void writeValidationReport(final ValidationReport report, Path turtlePath) throws IOException {
-        String reportPathString = turtlePath.toString().replace(".ttl", REPORT_SUFFIX);
+    private void writeValidationReport(final ValidationReport report, Path sourcePath) throws IOException {
+        String reportPathString = sourcePath.toString().replace(".nq.gz", REPORT_SUFFIX);
         Path reportPath = Path.of(reportPathString);
         try (final FileOutputStream fos = new FileOutputStream(reportPath.toString())) {
             RDFDataMgr.write(fos, report.getModel(), Lang.TTL);

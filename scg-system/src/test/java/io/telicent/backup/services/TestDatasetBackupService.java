@@ -1062,7 +1062,7 @@ public class TestDatasetBackupService {
             assertFalse(dataset.get("success").asBoolean());
             assertTrue(dataset.has("reason"));
             JsonNode node = dataset.get("reason");
-            assertTrue(node.asText().contains("java.io.EOFException"));
+            assertTrue(node.asText().contains("Not found:"));
         }
     }
 
@@ -1102,7 +1102,7 @@ public class TestDatasetBackupService {
             assertFalse(dataset1.get("success").asBoolean());
             assertTrue(dataset1.has("reason"));
             JsonNode node1 = dataset1.get("reason");
-            assertTrue(node1.asText().contains("java.io.EOFException"));
+            assertTrue(node1.asText().contains("Not found:"));
             JsonNode dataset2 = result.get(dataset2Name);
             assertTrue(dataset2.has("success"));
             assertTrue(dataset2.get("success").asBoolean());
