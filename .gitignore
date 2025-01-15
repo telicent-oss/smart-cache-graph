@@ -63,3 +63,5 @@ DB*
 scg-system/*.state
 ## Docker container ID file.
 *.cid
+## MacOS only
+.DS_Store
