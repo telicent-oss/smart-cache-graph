@@ -447,27 +447,31 @@ public class DatasetBackupService {
      *
      * @param validateParams   a String array of the request path parameters
      * @param shapeInputStream an Input Stream to the SHACL shape file to be used
+     * @param response         the servlet response
      * @return an Object Node with the results
      */
-    public ObjectNode validateBackup(final String[] validateParams, final InputStream shapeInputStream) throws IOException {
+    public ObjectNode validateBackup(final String[] validateParams, final InputStream shapeInputStream, final HttpServletResponse response) throws IOException {
         final String validatePath = getBackUpDir() + "/" + validateParams[0];
         final Model shapesModel = getShapeModel(shapeInputStream);
         final Graph shapesGraph = shapesModel.getGraph();
-        final ObjectNode response = MAPPER.createObjectNode();
-        response.put("validate-id", validateParams[0]);
-        response.put("date", DateTimeUtils.nowAsString("yyyy-MM-dd_HH-mm-ss"));
-        response.put("validatePath", validatePath);
-        if (!checkPathExistsAndIsDir(validatePath)) {
-            response.put("reason", "Validation path unsuitable: " + validatePath);
-            response.put("success", false);
+        final ObjectNode resultNode = MAPPER.createObjectNode();
+        final String datasetName = (validateParams.length > 1) ? "/" + validateParams[1] : "";
+        if (!checkPathExistsAndIsDir(validatePath + datasetName)) {
+            response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+            resultNode.put("reason", "Validation path unsuitable: " + validatePath + datasetName);
+            resultNode.put("success", false);
         } else {
             final Set<String> datasetDirs = listDirectories(validatePath, validateParams);
+            resultNode.put("backup-id", validateParams[0]);
+            resultNode.put("date", DateTimeUtils.nowAsString("yyyy-MM-dd_HH-mm-ss"));
+            resultNode.put("validate-path", validatePath + datasetName);
+            final ObjectNode datasetResult = MAPPER.createObjectNode();
             for (String datasetDir : datasetDirs) {
-                response.set(datasetDir, executeValidation(validatePath, datasetDir, shapesGraph));
+                datasetResult.set(datasetDir, executeValidation(validatePath, datasetDir, shapesGraph));
             }
-            response.put("success", true);
+            resultNode.set("results", datasetResult);
         }
-        return response;
+        return resultNode;
     }
 
     /**
@@ -478,18 +482,21 @@ public class DatasetBackupService {
      * @return the SHACL validation report as a JSON String
      * @throws Exception
      */
-    public ObjectNode getReport(final String backupId, final String datasetName) throws Exception {
+    public ObjectNode getReport(final String backupId, final String datasetName, final HttpServletResponse response) throws Exception {
+        final ObjectNode resultNode = MAPPER.createObjectNode();
         final String reportPathString = getBackUpDir() + "/" + backupId + "/" + datasetName + "/tdb/" + datasetName + BACKUP_SUFFIX + REPORT_SUFFIX;
         if (checkPathExistsAndIsFile(reportPathString)) {
             final Model model = RDFDataMgr.loadModel(reportPathString);
             try (final ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
                 RDFDataMgr.write(baos, model, Lang.RDFJSON);
-                return MAPPER.readValue(baos.toString(StandardCharsets.UTF_8), ObjectNode.class);
+                resultNode.put("backup-id", backupId);
+                resultNode.put("dataset-name", datasetName);
+                return resultNode.set("result", MAPPER.readValue(baos.toString(StandardCharsets.UTF_8), ObjectNode.class));
             }
         } else {
-            final ObjectNode response = MAPPER.createObjectNode();
-            response.put("error", "Invalid path or file: " + reportPathString);
-            return response;
+            response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+            resultNode.put("error", "Invalid path or file: " + reportPathString);
+            return resultNode;
         }
     }
 
@@ -527,7 +534,7 @@ public class DatasetBackupService {
     }
 
     private ObjectNode executeValidation(String validatePath, String datasetDir, Graph shapesGraph) {
-        ObjectNode response = MAPPER.createObjectNode();
+        final ObjectNode response = MAPPER.createObjectNode();
         try {
             final Path source = Path.of(validatePath, datasetDir, "tdb", datasetDir + BACKUP_SUFFIX + ".nq.gz");
             final List<Path> tempPaths = new ArrayList<>();

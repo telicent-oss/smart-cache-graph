@@ -211,12 +211,12 @@ paths:
                   error:
                     type: string
                     description: Error message.
-  /backups/validate/{validateId}:
+  /backups/validate/{backupId}:
     post:
       summary: Validate a backup using SHACL
       description: Validates a given backup using a SHACL shape provided in the request body
       parameters:
-        - name: validateId
+        - name: backupId
           in: path
           required: true
           description: ID of the backup to validate.
@@ -230,16 +230,19 @@ paths:
               schema:
                 type: object
                 properties:
-                  validate-id:
+                  backup-id:
                     type: string
                     description: ID of the validated backup.
                   date:
                     type: string
                     format: date-time
                     description: Timestamp of the validation operation.
-                  validate:
+                  validate-path:
+                    type: string
+                    description: Backup path for validation.
+                  results:
                     type: object
-                    description: Details of the validation operation.
+                    description: Dataset validation results.
         '404':
           description: Backup not found.
           content:
@@ -260,12 +263,12 @@ paths:
                   error:
                     type: string
                     description: Error message.
-  /backups/validate/{validateId}/{datasetName}:
+  /backups/validate/{backupId}/{datasetName}:
     post:
       summary: Validate a dataset backup using SHACL
       description: Validates a given dataset within a given backup using a SHACL shape provided in the request body
       parameters:
-        - name: validateId
+        - name: backupId
           in: path
           required: true
           description: ID of the backup to validate.
@@ -285,16 +288,19 @@ paths:
               schema:
                 type: object
                 properties:
-                  validate-id:
+                  backup-id:
                     type: string
                     description: ID of the validated backup.
                   date:
                     type: string
                     format: date-time
                     description: Timestamp of the validation operation.
-                  validate:
+                  validate-path:
+                    type: string
+                    description: Backup path for validation.
+                  results:
                     type: object
-                    description: Details of the validation operation.
+                    description: Dataset validation results.
         '404':
           description: Backup not found.
           content:
@@ -318,7 +324,7 @@ paths:
   /backups/report/{backupId}/{datasetName}:
     get:
       summary: View a dataset validation report
-      description: Retrieves a validation report for a specific backup and dataset
+      description: Retrieves a backup validation report for a specific backup and dataset
       parameters:
         - name: backupId
           in: path
@@ -333,24 +339,24 @@ paths:
             type: string
       responses:
         '200':
-          description: Backup validation completed sucessfully.
+          description: Validation report successfully retrieved.
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  delete-id:
+                  backup-id:
                     type: string
-                    description: ID of the deleted backup.
-                  date:
+                    description: ID of the backup
+                  dataset-name:
                     type: string
-                    format: date-time
-                    description: Timestamp of the deletion operation.
-                  delete:
+                    description: Name of the dataset
+
+                  result:
                     type: object
-                    description: Details of the deletion operation.
+                    description: The validation report.
         '404':
-          description: Backup not found.
+          description: Backup report not found.
           content:
             application/json:
               schema:

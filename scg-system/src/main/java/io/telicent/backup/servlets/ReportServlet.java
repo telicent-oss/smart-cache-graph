@@ -17,13 +17,13 @@ public class ReportServlet extends HttpServlet {
     }
 
     protected void doGet(final HttpServletRequest request, final HttpServletResponse response) {
-        final ObjectNode resultNode = MAPPER.createObjectNode();
         try {
             final String pathInfo = request.getPathInfo();
-            final String[] pathElems = pathInfo.split("/");
-            resultNode.set("validate-id", backupService.getReport(pathElems[1], pathElems[2]));
-            processResponse(response,resultNode);
+            final String[] pathElems = pathInfo.substring(1).split("/");
+            final ObjectNode report = backupService.getReport(pathElems[0], pathElems[1], response);
+            processResponse(response, report);
         } catch (Exception exception) {
+            final ObjectNode resultNode = MAPPER.createObjectNode();
             handleError(response, resultNode, exception);
         }
     }

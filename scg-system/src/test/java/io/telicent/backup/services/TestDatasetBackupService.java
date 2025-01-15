@@ -972,12 +972,13 @@ public class TestDatasetBackupService {
         copyPath.toFile().deleteOnExit();
 
         try (final InputStream inputStream = getShapeInputStream()) {
-            final ObjectNode result = cut.validateBackup(validateParams, inputStream);
-            assertTrue(result.has("validatePath"));
-            assertTrue(result.has("success"));
-            assertTrue(result.get("success").asBoolean());
-            assertTrue(result.has(datasetName));
-            JsonNode dataset = result.get(datasetName);
+            final HttpServletResponse mockResponse = mock(HttpServletResponse.class);
+            final ObjectNode result = cut.validateBackup(validateParams, inputStream, mockResponse);
+            assertTrue(result.has("validate-path"));
+            assertTrue(result.has("results"));
+            final JsonNode results = result.get("results");
+            assertTrue(results.has(datasetName));
+            final JsonNode dataset = results.get(datasetName);
             assertTrue(dataset.has("success"));
             assertTrue(dataset.get("success").asBoolean());
         }
@@ -1009,16 +1010,17 @@ public class TestDatasetBackupService {
         copyPath2.toFile().deleteOnExit();
 
         try (final InputStream inputStream = getShapeInputStream()) {
-            final ObjectNode result = cut.validateBackup(validateParams, inputStream);
-            assertTrue(result.has("validatePath"));
-            assertTrue(result.has("success"));
-            assertTrue(result.get("success").asBoolean());
-            assertTrue(result.has(dataset1Name));
-            JsonNode dataset1 = result.get(dataset1Name);
+            final HttpServletResponse mockResponse = mock(HttpServletResponse.class);
+            final ObjectNode result = cut.validateBackup(validateParams, inputStream, mockResponse);
+            assertTrue(result.has("validate-path"));
+            assertTrue(result.has("results"));
+            final JsonNode results = result.get("results");
+            assertTrue(results.has(dataset1Name));
+            final JsonNode dataset1 = results.get(dataset1Name);
             assertTrue(dataset1.has("success"));
             assertTrue(dataset1.get("success").asBoolean());
-            assertTrue(result.has(dataset2Name));
-            JsonNode dataset2 = result.get(dataset2Name);
+            assertTrue(results.has(dataset2Name));
+            final JsonNode dataset2 = results.get(dataset2Name);
             assertTrue(dataset2.has("success"));
             assertTrue(dataset2.get("success").asBoolean());
         }
@@ -1027,13 +1029,14 @@ public class TestDatasetBackupService {
     @Test
     public void testValidateBackup_fail_invalid_id() throws Exception {
         try (final InputStream inputStream = getShapeInputStream()) {
-            final ObjectNode result = cut.validateBackup(new String[]{"invalidID"}, inputStream);
-            assertTrue(result.has("validatePath"));
+            final HttpServletResponse mockResponse = mock(HttpServletResponse.class);
+            final ObjectNode result = cut.validateBackup(new String[]{"invalidID"}, inputStream, mockResponse);
             assertTrue(result.has("success"));
             assertFalse(result.get("success").asBoolean());
             assertTrue(result.has("reason"));
-            JsonNode node = result.get("reason");
+            final JsonNode node = result.get("reason");
             assertTrue(node.asText().contains("Validation path unsuitable"));
+            verify(mockResponse).setStatus(404);
         }
     }
 
@@ -1052,16 +1055,17 @@ public class TestDatasetBackupService {
         backupFile.deleteOnExit();
 
         try (InputStream inputStream = getShapeInputStream()) {
-            final ObjectNode result = cut.validateBackup(validateParams, inputStream);
-            assertTrue(result.has("validatePath"));
-            assertTrue(result.has("success"));
-            assertTrue(result.get("success").asBoolean());
-            assertTrue(result.has(datasetName));
-            JsonNode dataset = result.get(datasetName);
+            final HttpServletResponse mockResponse = mock(HttpServletResponse.class);
+            final ObjectNode result = cut.validateBackup(validateParams, inputStream, mockResponse);
+            assertTrue(result.has("validate-path"));
+            assertTrue(result.has("results"));
+            final JsonNode results = result.get("results");
+            assertTrue(results.has(datasetName));
+            final JsonNode dataset = results.get(datasetName);
             assertTrue(dataset.has("success"));
             assertFalse(dataset.get("success").asBoolean());
             assertTrue(dataset.has("reason"));
-            JsonNode node = dataset.get("reason");
+            final JsonNode node = dataset.get("reason");
             assertTrue(node.asText().contains("Not found:"));
         }
     }
@@ -1092,18 +1096,19 @@ public class TestDatasetBackupService {
         copyPath.toFile().deleteOnExit();
 
         try (InputStream inputStream = getShapeInputStream()) {
-            final ObjectNode result = cut.validateBackup(validateParams, inputStream);
-            assertTrue(result.has("validatePath"));
-            assertTrue(result.has("success"));
-            assertTrue(result.get("success").asBoolean());
-            assertTrue(result.has(dataset1Name));
-            JsonNode dataset1 = result.get(dataset1Name);
+            final HttpServletResponse mockResponse = mock(HttpServletResponse.class);
+            final ObjectNode result = cut.validateBackup(validateParams, inputStream, mockResponse);
+            assertTrue(result.has("validate-path"));
+            assertTrue(result.has("results"));
+            final JsonNode results = result.get("results");
+            assertTrue(results.has(dataset1Name));
+            final JsonNode dataset1 = results.get(dataset1Name);
             assertTrue(dataset1.has("success"));
             assertFalse(dataset1.get("success").asBoolean());
             assertTrue(dataset1.has("reason"));
-            JsonNode node1 = dataset1.get("reason");
+            final JsonNode node1 = dataset1.get("reason");
             assertTrue(node1.asText().contains("Not found:"));
-            JsonNode dataset2 = result.get(dataset2Name);
+            final JsonNode dataset2 = results.get(dataset2Name);
             assertTrue(dataset2.has("success"));
             assertTrue(dataset2.get("success").asBoolean());
         }
