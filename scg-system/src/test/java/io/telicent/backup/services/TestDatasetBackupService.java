@@ -34,10 +34,11 @@ import org.apache.jena.sparql.core.DatasetGraphFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -442,7 +443,7 @@ public class TestDatasetBackupService {
     }
 
     @Test
-    public void test_restoreTDB_wrongDir(){
+    public void test_restoreTDB_wrongDir() {
         // given
         String missingPath = "/does_not_exist";
         DataAccessPoint mockDataAccessPoint = mock(DataAccessPoint.class);
@@ -954,6 +955,164 @@ public class TestDatasetBackupService {
         assertEquals(0, DatasetBackupService_Test.getCallCount(RESTORE_LABELS));
     }
 
+    @Test
+    public void testValidateBackup_success_one_dataset() throws Exception {
+        final String datasetName = "dataset-name";
+        final String[] validateParams = {"validate", datasetName};
+        final File newDir = createTestDirectory(validateParams[0]);
+
+        final File newDataset = createTestDirectory(newDir, datasetName);
+
+        final File tdbDir = createTestDirectory(newDataset, "tdb");
+
+        final URL backupUrl = getClass().getClassLoader().getResource("backup.nq.gz");
+        assert backupUrl != null;
+        final Path copyPath = Path.of(newDataset.getPath(), tdbDir.getName(), datasetName + "_backup.nq.gz");
+        Files.copy(Paths.get(backupUrl.toURI()), copyPath);
+        copyPath.toFile().deleteOnExit();
+
+        try (final InputStream inputStream = getShapeInputStream()) {
+            final HttpServletResponse mockResponse = mock(HttpServletResponse.class);
+            final ObjectNode result = cut.validateBackup(validateParams, inputStream, mockResponse);
+            assertTrue(result.has("validate-path"));
+            assertTrue(result.has("results"));
+            final JsonNode results = result.get("results");
+            assertTrue(results.has(datasetName));
+            final JsonNode dataset = results.get(datasetName);
+            assertTrue(dataset.has("success"));
+            assertTrue(dataset.get("success").asBoolean());
+        }
+    }
+
+    @Test
+    public void testValidateBackup_success_two_datasets() throws Exception {
+        final String[] validateParams = {"validate"};
+        final File newDir = createTestDirectory(validateParams[0]);
+
+        final String dataset1Name = "dataset-1-name";
+        final File newDataset1 = createTestDirectory(newDir, dataset1Name);
+
+        final String dataset2Name = "dataset-2-name";
+        final File newDataset2 = createTestDirectory(newDir, dataset2Name);
+
+        final File tdbDir1 = createTestDirectory(newDataset1, "tdb");
+        final File tdbDir2 = createTestDirectory(newDataset2, "tdb");
+
+        final URL backupUrl = getClass().getClassLoader().getResource("backup.nq.gz");
+        assert backupUrl != null;
+        final Path copyPath1 = Path.of(newDataset1.getPath(), tdbDir1.getName(), dataset1Name + "_backup.nq.gz");
+        final Path copyPath2 = Path.of(newDataset2.getPath(), tdbDir2.getName(), dataset2Name + "_backup.nq.gz");
+
+        Files.copy(Paths.get(backupUrl.toURI()), copyPath1);
+        copyPath1.toFile().deleteOnExit();
+
+        Files.copy(Paths.get(backupUrl.toURI()), copyPath2);
+        copyPath2.toFile().deleteOnExit();
+
+        try (final InputStream inputStream = getShapeInputStream()) {
+            final HttpServletResponse mockResponse = mock(HttpServletResponse.class);
+            final ObjectNode result = cut.validateBackup(validateParams, inputStream, mockResponse);
+            assertTrue(result.has("validate-path"));
+            assertTrue(result.has("results"));
+            final JsonNode results = result.get("results");
+            assertTrue(results.has(dataset1Name));
+            final JsonNode dataset1 = results.get(dataset1Name);
+            assertTrue(dataset1.has("success"));
+            assertTrue(dataset1.get("success").asBoolean());
+            assertTrue(results.has(dataset2Name));
+            final JsonNode dataset2 = results.get(dataset2Name);
+            assertTrue(dataset2.has("success"));
+            assertTrue(dataset2.get("success").asBoolean());
+        }
+    }
+
+    @Test
+    public void testValidateBackup_fail_invalid_id() throws Exception {
+        try (final InputStream inputStream = getShapeInputStream()) {
+            final HttpServletResponse mockResponse = mock(HttpServletResponse.class);
+            final ObjectNode result = cut.validateBackup(new String[]{"invalidID"}, inputStream, mockResponse);
+            assertTrue(result.has("success"));
+            assertFalse(result.get("success").asBoolean());
+            assertTrue(result.has("reason"));
+            final JsonNode node = result.get("reason");
+            assertTrue(node.asText().contains("Validation path unsuitable"));
+            verify(mockResponse).setStatus(404);
+        }
+    }
+
+    @Test
+    public void testValidateBackup_fail_unzip() throws Exception {
+        final String[] validateParams = {"validate"};
+        final File newDir = createTestDirectory(validateParams[0]);
+
+        final String datasetName = "dataset-name";
+        final File newDataset = createTestDirectory(newDir, datasetName);
+
+        final File tdbDir = createTestDirectory(newDataset, "tdb");
+
+        final File backupFile = new File(newDataset, tdbDir.getName() + "/" + datasetName + "_backup.nq.gz");
+        assertTrue(backupFile.createNewFile());
+        backupFile.deleteOnExit();
+
+        try (InputStream inputStream = getShapeInputStream()) {
+            final HttpServletResponse mockResponse = mock(HttpServletResponse.class);
+            final ObjectNode result = cut.validateBackup(validateParams, inputStream, mockResponse);
+            assertTrue(result.has("validate-path"));
+            assertTrue(result.has("results"));
+            final JsonNode results = result.get("results");
+            assertTrue(results.has(datasetName));
+            final JsonNode dataset = results.get(datasetName);
+            assertTrue(dataset.has("success"));
+            assertFalse(dataset.get("success").asBoolean());
+            assertTrue(dataset.has("reason"));
+            final JsonNode node = dataset.get("reason");
+            assertTrue(node.asText().contains("Not found:"));
+        }
+    }
+
+    @Test
+    public void testValidateBackup_partial_fail_unzip() throws Exception {
+        final String[] validateParams = {"validate"};
+        final File newDir = createTestDirectory(validateParams[0]);
+
+        final String dataset1Name = "dataset-1-name";
+        final File newDataset1 = createTestDirectory(newDir, dataset1Name);
+
+        final String dataset2Name = "dataset-2-name";
+        final File newDataset2 = createTestDirectory(newDir, dataset2Name);
+
+        final File tdbDir1 = createTestDirectory(newDataset1, "tdb");
+        final File tdbDir2 = createTestDirectory(newDataset2, "tdb");
+
+        final File backupFile = new File(newDataset1, tdbDir1.getName() + "/" + dataset1Name + "_backup.nq.gz");
+        assertTrue(backupFile.createNewFile());
+        backupFile.deleteOnExit();
+
+        final URL backupUrl = getClass().getClassLoader().getResource("backup.nq.gz");
+        assert backupUrl != null;
+        final Path copyPath = Path.of(newDataset2.getPath(), tdbDir2.getName(), dataset2Name + "_backup.nq.gz");
+
+        Files.copy(Paths.get(backupUrl.toURI()), copyPath);
+        copyPath.toFile().deleteOnExit();
+
+        try (InputStream inputStream = getShapeInputStream()) {
+            final HttpServletResponse mockResponse = mock(HttpServletResponse.class);
+            final ObjectNode result = cut.validateBackup(validateParams, inputStream, mockResponse);
+            assertTrue(result.has("validate-path"));
+            assertTrue(result.has("results"));
+            final JsonNode results = result.get("results");
+            assertTrue(results.has(dataset1Name));
+            final JsonNode dataset1 = results.get(dataset1Name);
+            assertTrue(dataset1.has("success"));
+            assertFalse(dataset1.get("success").asBoolean());
+            assertTrue(dataset1.has("reason"));
+            final JsonNode node1 = dataset1.get("reason");
+            assertTrue(node1.asText().contains("Not found:"));
+            final JsonNode dataset2 = results.get(dataset2Name);
+            assertTrue(dataset2.has("success"));
+            assertTrue(dataset2.get("success").asBoolean());
+        }
+    }
 
     @Test
     public void applyBackUpMethods_noMethodsNoOp() {
@@ -1176,7 +1335,7 @@ public class TestDatasetBackupService {
             for (int i = 0; i < 2; i++) {
                 final boolean flag = (i == 0);
                 executorService.submit(() -> {
-                        cut.process(request, response, flag);
+                    cut.process(request, response, flag);
                 });
             }
             // Wait for threads to complete
@@ -1208,5 +1367,26 @@ public class TestDatasetBackupService {
 
     public void throwException(DataAccessPoint dataAccessPoint, String path, ObjectNode resultNode) {
         throw new RuntimeException("TEST");
+    }
+
+
+    private InputStream getShapeInputStream() throws Exception {
+        final URL shapeUrl = getClass().getClassLoader().getResource("CountryShape.ttl");
+        assert shapeUrl != null;
+        return shapeUrl.openStream();
+    }
+
+    private File createTestDirectory(final String testDirName) {
+        final File testDir = new File(baseDir.toString() + "/" + testDirName);
+        assertTrue(testDir.mkdir());
+        testDir.deleteOnExit();
+        return testDir;
+    }
+
+    private File createTestDirectory(final File rootDir, final String testDirName) {
+        final File newDir = new File(rootDir + "/" + testDirName);
+        assertTrue(newDir.mkdir());
+        newDir.deleteOnExit();
+        return newDir;
     }
 }

@@ -211,3 +211,167 @@ paths:
                   error:
                     type: string
                     description: Error message.
+  /backups/validate/{backupId}:
+    post:
+      summary: Validate a backup using SHACL
+      description: Validates a given backup using a SHACL shape provided in the request body
+      parameters:
+        - name: backupId
+          in: path
+          required: true
+          description: ID of the backup to validate.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Backup validation completed sucessfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  backup-id:
+                    type: string
+                    description: ID of the validated backup.
+                  date:
+                    type: string
+                    format: date-time
+                    description: Timestamp of the validation operation.
+                  validate-path:
+                    type: string
+                    description: Backup path for validation.
+                  results:
+                    type: object
+                    description: Dataset validation results.
+        '404':
+          description: Backup not found.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Error message.
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Error message.
+  /backups/validate/{backupId}/{datasetName}:
+    post:
+      summary: Validate a dataset backup using SHACL
+      description: Validates a given dataset within a given backup using a SHACL shape provided in the request body
+      parameters:
+        - name: backupId
+          in: path
+          required: true
+          description: ID of the backup to validate.
+          schema:
+            type: string
+        - name: datasetName
+          in: path
+          required: true
+          description: Name of the dataset to validate.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Backup validation completed sucessfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  backup-id:
+                    type: string
+                    description: ID of the validated backup.
+                  date:
+                    type: string
+                    format: date-time
+                    description: Timestamp of the validation operation.
+                  validate-path:
+                    type: string
+                    description: Backup path for validation.
+                  results:
+                    type: object
+                    description: Dataset validation results.
+        '404':
+          description: Backup not found.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Error message.
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Error message.
+  /backups/report/{backupId}/{datasetName}:
+    get:
+      summary: View a dataset validation report
+      description: Retrieves a backup validation report for a specific backup and dataset
+      parameters:
+        - name: backupId
+          in: path
+          required: true
+          description: ID of the backup to validate.
+          schema:
+            type: string
+        - name: datasetName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Validation report successfully retrieved.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  backup-id:
+                    type: string
+                    description: ID of the backup
+                  dataset-name:
+                    type: string
+                    description: Name of the dataset
+
+                  result:
+                    type: object
+                    description: The validation report.
+        '404':
+          description: Backup report not found.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Error message.
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Error message.
