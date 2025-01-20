@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Consolidated script for building and running Docker containers for Smart Cache Graph
-# Pass in "alpine" as a parameter to create the Alpine image
+# Pass in "alpine" as a parameter to create the Alpine image, or "min" to run with the minimal base image.
 
 # Acquire the current directory in case we are running from project root or the local directory
 CURRENT_DIR=$(dirname $0)
@@ -45,6 +45,10 @@ if [[ "$1" == "alpine" ]]; then
     DOCKERFILE="Dockerfile.alpine"
     IMAGE_TAG="smart-cache-graph:${PROJECT_VERSION}-alpine"
     shift # Remove the 'alpine' argument from the $@
+elif [[ "$1" == "min" ]]; then
+         DOCKERFILE="Dockerfile.minimal"
+         IMAGE_TAG="smart-cache-graph:${PROJECT_VERSION}-minimal"
+         shift # Remove the 'min' argument from the $@
 fi
 
 # Build the Docker image
