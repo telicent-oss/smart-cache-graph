@@ -16,8 +16,6 @@ RUN apt-get update && \
 
 WORKDIR $FUSEKI_DIR
 
-RUN useradd fuseki
-
 ARG LOGS=${FUSEKI_DIR}/logs
 ARG DATA=${FUSEKI_DIR}/databases
 ARG BACKUPS=${FUSEKI_DIR}/backups
@@ -29,9 +27,11 @@ ARG SBOMS=/opt/telicent/sbom
 COPY scg-docker/entrypoint.sh .
 COPY scg-docker/logback.xml .
 
-RUN \
-    mkdir -p $LOGS $DATA $CONFIGS $LIB $AGENTS $SBOMS $BACKUPS && \
-    chown -R fuseki ${FUSEKI_DIR} && \
+
+RUN mkdir -p $LOGS $DATA $CONFIGS $LIB $AGENTS $SBOMS $BACKUPS && \
+    groupadd -r fuseki && \
+    useradd -r -g fuseki -d ${FUSEKI_DIR} fuseki && \
+    chown -R fuseki:fuseki $LOGS $DATA $CONFIGS $LIB $AGENTS $SBOMS $BACKUPS && \
     chmod a+x entrypoint.sh
 
 # Build location of the jars we need.
