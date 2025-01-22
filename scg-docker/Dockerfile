@@ -32,6 +32,7 @@ RUN mkdir -p $LOGS $DATA $CONFIGS $LIB $AGENTS $SBOMS $BACKUPS && \
     groupadd -r fuseki && \
     useradd -r -g fuseki -d ${FUSEKI_DIR} fuseki && \
     chown -R fuseki:fuseki $LOGS $DATA $CONFIGS $LIB $AGENTS $SBOMS $BACKUPS && \
+    chmod 777 $BACKUPS && \
     chmod a+x entrypoint.sh
 
 # Build location of the jars we need.
