@@ -1,5 +1,8 @@
 # Smart Cache Graph
 
+## 0.82.17
+- Build improvements
+
 ## 0.82.16
 - Build improvements
 
