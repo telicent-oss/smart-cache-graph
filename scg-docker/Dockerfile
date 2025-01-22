@@ -14,14 +14,6 @@ ENV \
     ROCKSDB_MUSL_LIBC="false" \
     LOG_CONFIG_FILE="${FUSEKI_DIR}/logback.xml"
 
-RUN microdnf update -y && \
-    microdnf install -y wget && \
-    wget -O /usr/bin/dumb-init https://github.com/Yelp/dumb-init/releases/download/v1.2.5/dumb-init_1.2.5_"$(uname -m)" && \
-    chmod 755 /usr/bin/dumb-init && \
-    microdnf remove -y wget && \
-    microdnf clean all
-
-
 RUN groupadd -r telicent-service && \
     useradd -r -g telicent-service -d /app/ telicent-service && \
     mkdir -p $FUSEKI_DIR/logs $FUSEKI_DIR/databases $FUSEKI_DIR/config $FUSEKI_DIR/lib $FUSEKI_DIR/agents /opt/telicent/sbom && \
