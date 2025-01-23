@@ -34,7 +34,4 @@ USER telicent-service
 
 EXPOSE 3030
 
-# Healthcheck (optional)
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 CMD curl --fail http://localhost:3030 || exit 1
-
 ENTRYPOINT [ "/usr/bin/dumb-init", "-v", "--single-child", "--", "./entrypoint.sh" ]
