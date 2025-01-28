@@ -48,7 +48,6 @@ import static io.telicent.backup.services.DatasetBackupService_Test.*;
 import static io.telicent.backup.utils.BackupUtils.MAPPER;
 import static java.util.Collections.emptyList;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 public class TestDatasetBackupService {
@@ -183,7 +182,7 @@ public class TestDatasetBackupService {
     @Test
     public void test_backup_happyPath_abac_rocksDB_labels() {
         // given
-        String datasetName = "/dataset-name";
+        String datasetName = "dataset-name";
         DatasetGraphABAC dsgABAC = ABAC.authzDataset(DatasetGraphFactory.createTxnMem(),
                 null,
                 mock(LabelsStoreRocksDB.class),
@@ -225,8 +224,8 @@ public class TestDatasetBackupService {
     @Test
     public void test_backup_happyPath_abac_rocksDB_labels_noID() {
         // given
-        String datasetName = "/dataset-name";
-        String datasetName2 = "/dataset-include";
+        String datasetName = "dataset-name";
+        String datasetName2 = "dataset-include";
         DatasetGraphABAC dsgABAC = ABAC.authzDataset(DatasetGraphFactory.createTxnMem(),
                 null,
                 mock(LabelsStoreRocksDB.class),
@@ -284,7 +283,7 @@ public class TestDatasetBackupService {
     @Test
     public void test_backup_happyPath_tdb_only() {
         // given
-        String datasetName = "/dataset-name";
+        String datasetName = "dataset-name";
         DataAccessPoint dap = new DataAccessPoint("dataset-name", DataService.newBuilder().build());
         when(mockRegistry.accessPoints()).thenReturn(List.of(dap));
 
@@ -320,7 +319,7 @@ public class TestDatasetBackupService {
     @Test
     public void test_backup_happyPath_abac_not_rocksDB() {
         // given
-        String datasetName = "/dataset-name";
+        String datasetName = "dataset-name";
         DatasetGraphABAC dsgABAC = ABAC.authzDataset(DatasetGraphFactory.createTxnMem(),
                 null,
                 null,
@@ -362,7 +361,7 @@ public class TestDatasetBackupService {
     @Test
     public void test_backup_happyPath_tdb_exception() {
         // given
-        String datasetName = "/dataset-name";
+        String datasetName = "dataset-name";
         DataAccessPoint dap = new DataAccessPoint("dataset-name", DataService.newBuilder().build());
         when(mockRegistry.accessPoints()).thenReturn(List.of(dap));
 
@@ -401,7 +400,7 @@ public class TestDatasetBackupService {
     @Test
     public void test_backup_abac_rocksDB_exceptions() {
         // given
-        String datasetName = "/dataset-name";
+        String datasetName = "dataset-name";
         DatasetGraphABAC dsgABAC = ABAC.authzDataset(DatasetGraphFactory.createTxnMem(),
                 null,
                 mock(LabelsStoreRocksDB.class),
@@ -592,7 +591,7 @@ public class TestDatasetBackupService {
                 null);
         DataAccessPoint dap = new DataAccessPoint("dataset-name", DataService.newBuilder().dataset(dsgABAC).build());
 
-        when(mockRegistry.get("/dataset-name")).thenReturn(dap);
+        when(mockRegistry.get("dataset-name")).thenReturn(dap);
 
         // when
         ObjectNode result = cut.restoreDatasets(restoreID);
@@ -642,7 +641,7 @@ public class TestDatasetBackupService {
 
         DataAccessPoint dap = new DataAccessPoint("dataset-name", DataService.newBuilder().dataset(DatasetGraphFactory.createTxnMem()).build());
 
-        when(mockRegistry.get("/dataset-name")).thenReturn(dap);
+        when(mockRegistry.get("dataset-name")).thenReturn(dap);
 
         // when
         ObjectNode result = cut.restoreDatasets(restoreID);
@@ -708,7 +707,7 @@ public class TestDatasetBackupService {
                 null);
         DataAccessPoint dap = new DataAccessPoint("dataset-name", DataService.newBuilder().build());
 
-        when(mockRegistry.get("/dataset-name")).thenReturn(dap);
+        when(mockRegistry.get("dataset-name")).thenReturn(dap);
 
         DatasetBackupService_Test.setupExceptionForMethod(RESTORE_TDB, "Failure");
         DatasetBackupService_Test.setupExceptionForMethod(RESTORE_LABELS, "Failure");
@@ -758,7 +757,7 @@ public class TestDatasetBackupService {
 
         DataAccessPoint mockDAP = mock(DataAccessPoint.class);
 
-        when(mockRegistry.get("/dataset-name")).thenReturn(mockDAP);
+        when(mockRegistry.get("dataset-name")).thenReturn(mockDAP);
 
         DatasetBackupService_Test.setupExceptionForMethod(RESTORE_TDB, "Failure");
         DatasetBackupService_Test.setupExceptionForMethod(RESTORE_LABELS, "Failure");
@@ -806,7 +805,7 @@ public class TestDatasetBackupService {
                 null);
         DataAccessPoint dap = new DataAccessPoint("dataset-name", DataService.newBuilder().dataset(dsgABAC).build());
 
-        when(mockRegistry.get("/dataset-name")).thenReturn(dap);
+        when(mockRegistry.get("dataset-name")).thenReturn(dap);
 
         // when
         ObjectNode result = cut.restoreDatasets(restoreID);
@@ -871,7 +870,7 @@ public class TestDatasetBackupService {
                 null);
         DataAccessPoint dap = new DataAccessPoint("dataset-name", DataService.newBuilder().dataset(dsgABAC).build());
 
-        when(mockRegistry.get("/dataset-name")).thenReturn(dap);
+        when(mockRegistry.get("dataset-name")).thenReturn(dap);
 
         DatasetBackupService_Test.setupExceptionForMethod(RESTORE_TDB, "Failure");
         DatasetBackupService_Test.setupExceptionForMethod(RESTORE_LABELS, "Failure");
@@ -924,7 +923,7 @@ public class TestDatasetBackupService {
                 null);
         DataAccessPoint dap = new DataAccessPoint("dataset-name", DataService.newBuilder().dataset(dsgABAC).build());
 
-        when(mockRegistry.get("/dataset-name")).thenReturn(dap);
+        when(mockRegistry.get("dataset-name")).thenReturn(dap);
 
         // when
         ObjectNode result = cut.restoreDatasets(restoreID);
@@ -1334,9 +1333,7 @@ public class TestDatasetBackupService {
             // Submit 5 concurrent tasks simulating individual requests
             for (int i = 0; i < 2; i++) {
                 final boolean flag = (i == 0);
-                executorService.submit(() -> {
-                    cut.process(request, response, flag);
-                });
+                executorService.submit(() -> cut.process(request, response, flag));
             }
             // Wait for threads to complete
             executorService.shutdown();
