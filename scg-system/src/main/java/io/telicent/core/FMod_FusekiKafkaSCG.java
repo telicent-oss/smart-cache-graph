@@ -40,6 +40,7 @@ import org.apache.jena.kafka.common.PersistentState;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.sparql.core.DatasetGraph;
 
+import static io.telicent.backup.services.DatasetBackupService.sanitiseName;
 import static org.apache.jena.kafka.FusekiKafka.LOG;
 
 /**
@@ -117,7 +118,8 @@ public class FMod_FusekiKafkaSCG extends FMod_FusekiKafka {
         String dataset = dataAccessPoint.getName();
         KConnectorDesc conn = connectors.get(dataset);
         if (conn != null) {
-            String filename = path + "/" + dataset + ".json";
+            String sanitizedDataset = sanitiseName(dataset);
+            String filename = path + "/" + sanitizedDataset + ".json";
             IOX.copy(conn.getStateFile(), filename);
             resultNode.put("source", conn.getStateFile());
             resultNode.put("destination", filename);
@@ -133,7 +135,8 @@ public class FMod_FusekiKafkaSCG extends FMod_FusekiKafka {
     public void restoreKafka(DataAccessPoint dataAccessPoint, String path, ObjectNode resultNode) {
         String dataset = dataAccessPoint.getName();
         if (connectors.get(dataset) != null) {
-            String filename = path + "/" + dataset + ".json";
+            String sanitizedDataset = sanitiseName(dataset);
+            String filename = path + "/" + sanitizedDataset + ".json";
             PersistentState persistentState = new PersistentState(filename);
             if ( persistentState.getBytes().length == 0 ) {
                 String errorMessage = String.format("Unable to restore Kafka for dataset (%s) as restore file (%s) not suitable. ", dataset, filename);

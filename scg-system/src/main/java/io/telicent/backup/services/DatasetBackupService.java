@@ -55,6 +55,7 @@ import java.util.stream.Stream;
 import java.util.zip.GZIPInputStream;
 
 import static io.telicent.backup.utils.BackupUtils.*;
+import static io.telicent.otel.FMod_OpenTelemetry.fixupName;
 import static org.apache.jena.riot.Lang.NQUADS;
 
 public class DatasetBackupService {
@@ -121,6 +122,7 @@ public class DatasetBackupService {
      * @param datasetName the name of the dataset to back up
      */
     public ObjectNode backupDataset(String datasetName) {
+        String sanitizedDatasetName = sanitiseName(datasetName);
         ObjectNode response = MAPPER.createObjectNode();
         String backupPath = getBackUpDir();
         int backupID = getNextDirectoryNumberAndCreate(backupPath);
@@ -131,10 +133,11 @@ public class DatasetBackupService {
         ArrayNode datasetNodes = MAPPER.createArrayNode();
         for (DataAccessPoint dataAccessPoint : dapRegistry.accessPoints()) {
             String dataAccessPointName = dataAccessPoint.getName();
-            if (requestIsEmpty(datasetName) || dataAccessPointName.equals(datasetName)) {
+            String sanitizedDataAccessPointName = sanitiseName(dataAccessPointName);
+            if (requestIsEmpty(sanitizedDatasetName) || sanitizedDataAccessPointName.equals(sanitizedDatasetName)) {
                 ObjectNode datasetJSON = MAPPER.createObjectNode();
-                datasetJSON.put("dataset-id", dataAccessPointName);
-                applyBackUpMethods(datasetJSON, dataAccessPoint, backupIDPath + dataAccessPointName);
+                datasetJSON.put("dataset-id", sanitizedDataAccessPointName);
+                applyBackUpMethods(datasetJSON, dataAccessPoint, backupIDPath + "/" + sanitizedDataAccessPointName);
                 datasetNodes.add(datasetJSON);
             }
         }
@@ -178,7 +181,7 @@ public class DatasetBackupService {
      * @param node            JSON Node to store results
      */
     void backupTDB(DataAccessPoint dataAccessPoint, String backupPath, ObjectNode node) {
-        String backupFile = backupPath + dataAccessPoint.getName() + BACKUP_SUFFIX;
+        String backupFile = backupPath + sanitiseName(dataAccessPoint.getName()) + BACKUP_SUFFIX;
         DatasetGraph dsg = dataAccessPoint.getDataService().getDataset();
         executeBackupTDB(dsg, backupFile, node);
     }
@@ -190,7 +193,6 @@ public class DatasetBackupService {
      * @param backupFile the file to back up to
      * @param node       JSON Node to store results
      */
-    //public void backupKafka(String dataset, String path, ObjectNode resultNode);
     @ExcludeFromJacocoGeneratedReport
     void executeBackupTDB(DatasetGraph dsg, String backupFile, ObjectNode node) {
         Backup.backup(dsg, dsg, backupFile);
@@ -286,7 +288,7 @@ public class DatasetBackupService {
     ObjectNode restoreDataset(String restorePath, String datasetName) {
         ObjectNode response = MAPPER.createObjectNode();
         response.put("dataset-id", datasetName);
-        DataAccessPoint dataAccessPoint = dapRegistry.get("/" + datasetName);
+        DataAccessPoint dataAccessPoint = getDataAccessPoint(datasetName);
         if (dataAccessPoint == null || dataAccessPoint.getDataService() == null) {
             response.put("reason", datasetName + " does not exist");
             response.put("success", false);
@@ -294,9 +296,7 @@ public class DatasetBackupService {
         }
         DatasetGraph dsg = dataAccessPoint.getDataService().getDataset();
         try {
-            Txn.executeWrite(dsg, () -> {
-                applyRestoreMethods(response, dataAccessPoint, restorePath + "/" + datasetName);
-            });
+            Txn.executeWrite(dsg, () -> applyRestoreMethods(response, dataAccessPoint, restorePath + "/" + datasetName));
         } catch (RuntimeException ex) {
             response.put("reason", ex.getMessage());
             response.put("success", false);
@@ -312,7 +312,7 @@ public class DatasetBackupService {
      * @param node            the results of the operation.
      */
     void restoreTDB(DataAccessPoint dataAccessPoint, String restorePath, ObjectNode node) {
-        String tdbRestoreFile = restorePath + "/" + dataAccessPoint.getName() + BACKUP_SUFFIX + ".nq.gz";
+        String tdbRestoreFile = restorePath + "/" + sanitiseName(dataAccessPoint.getName()) + BACKUP_SUFFIX + ".nq.gz";
         node.put("restorePath", tdbRestoreFile);
         if (!checkPathExistsAndIsFile(tdbRestoreFile)) {
             node.put("reason", "Restore file not found: " + tdbRestoreFile);
@@ -522,6 +522,22 @@ public class DatasetBackupService {
         registerMethod(restoreConsumerMap, key, restoreConsumer);
     }
 
+
+    /**
+     * Strip out any prefix forward slashes and any other dangerous characters.
+     * @param name the dataset name
+     * @return a cleaned up version or null if null.
+     */
+    public static String sanitiseName(String name) {
+        if (null == name) {
+            return null;
+        }
+        String cleanName = name;
+        if (name.startsWith("/"))
+            cleanName=name.substring(1);
+        return fixupName(cleanName);
+    }
+
     /**
      * Store a given method in the map by the given key
      *
@@ -580,6 +596,25 @@ public class DatasetBackupService {
         for (Path path : paths) {
             FileUtils.deleteQuietly(path.toFile());
         }
+    }
+
+    /** Obtain the access point from the registry.
+     * We do two passes - a straight check and one
+     * using the sanitised name
+     * @param datasetName name
+     * @return the access point
+     */
+    private DataAccessPoint getDataAccessPoint(String datasetName) {
+        DataAccessPoint accessPoint = dapRegistry.get(datasetName);
+        if (null != accessPoint) {
+            return accessPoint;
+        }
+        for (DataAccessPoint accessPointToCheck : dapRegistry.accessPoints()) {
+            if (sanitiseName(accessPointToCheck.getName()).equals(datasetName)) {
+                return accessPointToCheck;
+            }
+        }
+        return null;
     }
 
 }

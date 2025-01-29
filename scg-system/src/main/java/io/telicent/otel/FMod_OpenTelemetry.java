@@ -119,7 +119,12 @@ public class FMod_OpenTelemetry implements FusekiModule {
         }
     }
 
-    private static String fixupName(String name) {
+    /**
+     * Take a filename string and replace any troublesome characters
+     * @param name to be cleaned
+     * @return a cleaned filename
+     */
+    public static String fixupName(String name) {
         name = name.replace(' ', '_');
         name = name.replace('/', '_');
         name = name.replace('(', '-');
