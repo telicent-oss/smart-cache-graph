@@ -1,5 +1,8 @@
 # Smart Cache Graph
 
+## 0.82.18
+- Sanitise data set names for backup/restore functionality.
+
 ## 0.82.17
 - Build improvements
 
