@@ -19,6 +19,7 @@ WORKDIR $FUSEKI_DIR
 ARG LOGS=${FUSEKI_DIR}/logs
 ARG DATA=${FUSEKI_DIR}/databases
 ARG BACKUPS=${FUSEKI_DIR}/backups
+ARG LABELS=${FUSEKI_DIR}/labels
 ARG CONFIGS=${FUSEKI_DIR}/config
 ARG LIB=${FUSEKI_DIR}/lib
 ARG AGENTS=${FUSEKI_DIR}/agents
@@ -28,10 +29,10 @@ COPY scg-docker/entrypoint.sh .
 COPY scg-docker/logback.xml .
 
 
-RUN mkdir -p $LOGS $DATA $CONFIGS $LIB $AGENTS $SBOMS $BACKUPS && \
+RUN mkdir -p $LOGS $DATA $CONFIGS $LIB $AGENTS $SBOMS $BACKUPS $LABELS && \
     groupadd -r fuseki && \
     useradd -r -g fuseki -d ${FUSEKI_DIR} fuseki && \
-    chown -R fuseki:fuseki $LOGS $DATA $CONFIGS $LIB $AGENTS $SBOMS $BACKUPS && \
+    chown -R fuseki:fuseki $LOGS $DATA $CONFIGS $LIB $AGENTS $SBOMS $BACKUPS $LABELS && \
     chmod 777 $BACKUPS && \
     chmod a+x entrypoint.sh
 

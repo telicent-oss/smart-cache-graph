@@ -1,0 +1,28 @@
+PREFIX dbr: <http://dbpedia.org/resource/>
+PREFIX dbo: <http://dbpedia.org/ontology/>
+PREFIX security: <http://telicent.io/security#>
+
+## Basic data on 3 cities
+dbr:London dbo:populationTotal 8799800 .
+dbr:London dbo:country dbr:United_Kingdom .
+
+dbr:Paris dbo:populationTotal 2165423 .
+dbr:Paris dbo:country dbr:France .
+
+dbr:Berlin dbo:populationTotal 3677472 .
+dbr:Berlin dbo:country dbr:Germany  .
+
+## ABAC Security labels to apply
+GRAPH security:labels {
+
+    ## Something everyone can see
+    [ security:pattern 'dbr:London dbo:country dbr:United_Kingdom'  ; security:label "everyone" ] .
+    [ security:pattern 'dbr:Paris dbo:country dbr:France'  ; security:label "everyone" ] .
+    [ security:pattern 'dbr:Berlin dbo:country dbr:Germany'  ; security:label "everyone" ] .
+
+    ## Multiple labels.
+    [ security:pattern 'dbr:London dbo:populationTotal 8799800'  ; security:label "admin", "census" ] .
+    [ security:pattern 'dbr:Paris dbo:populationTotal 2165423'  ; security:label "admin", "census" ] .
+    [ security:pattern 'dbr:Berlin dbo:populationTotal 3677472'  ; security:label "admin", "census" ] .
+
+}
