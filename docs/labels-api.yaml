@@ -1,0 +1,62 @@
+openapi: 3.0.3
+info:
+  title: Security Labels Query API
+  description: API for querying security labels.
+  version: 0.82.8
+servers:
+  - url: http://localhost:3030/
+    description: Base path for query operations.
+paths:
+  /$/labels/query:
+    post:
+      summary: Find security labels for a given triple
+      description: Retrieves a list of the security labels for a given triple.
+      requestBody:
+        description: The subject, predicate and object of the triple to retrieve security labels for.
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                subject:
+                  type: string
+                predicate:
+                  type: string
+                object:
+                  type: string
+            examples:
+              London_Population:
+                value:
+                  subject: http://dbpedia.org/resource/London
+                  predicate: http://dbpedia.org/ontology/populationTotal
+                  object: 8799800
+              London_Country:
+                value:
+                  subject: http://dbpedia.org/resource/London
+                  predicate: http://dbpedia.org/ontology/country
+                  object: "http://dbpedia.org/resource/United_Kingdom"
+      responses:
+        '200':
+          description: Request processed successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  labels:
+                    type: array
+                    items:
+                      type: string
+                    description: List of the labels.
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Error message.
+

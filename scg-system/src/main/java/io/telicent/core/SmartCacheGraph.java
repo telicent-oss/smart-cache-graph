@@ -19,6 +19,7 @@ package io.telicent.core;
 import io.telicent.backup.FMod_BackupData;
 import io.telicent.graphql.FMod_TelicentGraphQL;
 import io.telicent.jena.abac.fuseki.FMod_ABAC;
+import io.telicent.labels.FMod_LabelsQuery;
 import io.telicent.otel.FMod_OpenTelemetry;
 import io.telicent.smart.cache.configuration.Configurator;
 import io.telicent.smart.caches.configuration.auth.AuthConstants;
@@ -120,6 +121,7 @@ public class SmartCacheGraph {
                 , new FMod_TelicentGraphQL()
                 , new FMod_RequestIDFilter()
                 , new FMod_BackupData()
+                , new FMod_LabelsQuery()
         ));
 
         // Initial compaction gets added again per the earlier comments

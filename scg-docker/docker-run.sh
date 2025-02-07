@@ -72,6 +72,7 @@ MNT_DIR=$(pwd)/${CURRENT_DIR}/mnt
 docker run -d \
     -e JAVA_OPTIONS="-Xmx2048m -Xms2048m" \
     -e JWKS_URL="disabled" \
+    -e ENABLE_LABELS_QUERY="true" \
     -p 3030:3030 \
     -v "$MNT_DIR/logs:/fuseki/logs"      \
     -v "$MNT_DIR/databases:/fuseki/databases" \

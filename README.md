@@ -39,6 +39,18 @@ The URL value is a template including `{user}`. Example: `http://some-host/users
 This specifies the JSON Web Key Set (JWKS) URL to use to obtain the public keys for verifying JSON Web Tokens (JWTs).
 The value "disabled" turns off token verification.
 
+### `ENABLE_LABELS_QUERY`
+
+Setting this to `true` will enable the security label query endpoint at `http://{hostname}/$/labels/query`. More information
+about this endpoint can be found in the [API docs](docs/labels-api.yaml). You can also run a Docker container with the
+endpoint enabled which can be accessed from the API docs by running:
+```commandline
+scg-docker/docker-run.sh --config config/config-labels-query-test.ttl
+```
+To populate this instance with sample security labelled data you can run:
+```commandline
+curl --location 'http://localhost:3030/securedDataset/upload' --header 'Security-Label: !' --header 'Content-Type: application/trig' --data-binary '@scg-system/src/test/files/sample-data-labelled.trig'
+```
 ## Build
 
 Building Smart Cache Graph is a two-step process.
