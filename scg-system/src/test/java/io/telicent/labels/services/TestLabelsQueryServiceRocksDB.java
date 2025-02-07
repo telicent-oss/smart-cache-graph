@@ -8,14 +8,16 @@ import io.telicent.labels.TripleLabels;
 import org.apache.commons.io.FileUtils;
 import org.apache.jena.graph.NodeFactory;
 import org.apache.jena.graph.Triple;
-import org.junit.jupiter.api.*;
-import org.rocksdb.RocksDBException;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 
-public class ITLabelsQueryService {
+public class TestLabelsQueryServiceRocksDB {
 
     private static File dbDir;
 
@@ -25,7 +27,7 @@ public class ITLabelsQueryService {
     }
 
     @Test
-    public void testLabelQuery() throws IOException, RocksDBException {
+    public void testLabelQuery() throws Exception {
         final Triple triple = Triple.create(
                 NodeFactory.createURI("http://example.org/subject"),
                 NodeFactory.createURI("http://example.org/predicate"),
@@ -40,7 +42,8 @@ public class ITLabelsQueryService {
     }
 
     @Test
-    public void testLabelQueryLiteral() throws IOException, RocksDBException {
+    public void testLabelQueryLiteral() throws Exception
+    {
         final Triple triple = Triple.create(
                 NodeFactory.createURI("http://example.org/subject"),
                 NodeFactory.createURI("http://example.org/predicate"),

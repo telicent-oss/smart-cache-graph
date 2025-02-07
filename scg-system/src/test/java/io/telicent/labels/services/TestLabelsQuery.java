@@ -24,7 +24,7 @@ import java.nio.file.Paths;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @ExtendWith(SystemStubsExtension.class)
-public class LabelsQueryIntegrationTest {
+public class TestLabelsQuery {
 
     @SystemStub
     private static EnvironmentVariables env;
@@ -36,7 +36,7 @@ public class LabelsQueryIntegrationTest {
     @BeforeAll
     public static void beforeAll() throws Exception {
         Configurator.reset();
-        final URL backupUrl = LabelsQueryIntegrationTest.class.getClassLoader().getResource("config-labels-query-test.ttl");
+        final URL backupUrl = TestLabelsQuery.class.getClassLoader().getResource("config-labels-query-test.ttl");
         assert backupUrl != null;
         env.set("JWKS_URL", "disabled");
         env.set("ENABLE_LABELS_QUERY", true);
@@ -111,7 +111,7 @@ public class LabelsQueryIntegrationTest {
     }
 
     private static void uploadData() throws Exception {
-        final URL dataUrl = LabelsQueryIntegrationTest.class.getClassLoader().getResource("test-data-labelled.trig");
+        final URL dataUrl = TestLabelsQuery.class.getClassLoader().getResource("test-data-labelled.trig");
         assert dataUrl != null;
         final HttpRequest request = HttpRequest.newBuilder(new URI(baseUri + "/securedDataset/upload"))
                 .headers("Security-Label", "!", "Content-Type", "application/trig")
