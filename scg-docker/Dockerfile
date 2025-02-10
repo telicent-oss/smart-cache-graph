@@ -22,7 +22,6 @@ RUN mkdir -p "$FUSEKI_DIR/logs" "$FUSEKI_DIR/databases" "$FUSEKI_DIR/config" "$F
 RUN chown -R telicent-service:telicent-service "$FUSEKI_DIR" /opt/telicent/sbom
 
 WORKDIR "$FUSEKI_DIR"
-
 # Copy application files with correct ownership and permissions
 COPY --chown=telicent-service:telicent-service scg-docker/entrypoint.sh scg-docker/logback.xml ./
 COPY --chown=telicent-service:telicent-service scg-docker/target/dependency lib/
