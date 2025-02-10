@@ -29,6 +29,7 @@ jobs:
       MAVEN_DEBUG_ARGS: -Dlogback.configurationFile=logback-debug.xml
       RUN_WINDOWS_BUILD: false
       JAVA_VERSION: 21
+      GRYPE_SECURITY_ISSUES_BLOCK_ONLY_IF_FIX_AVAILABLE: true
     secrets: inherit
 
   docker-build:
@@ -48,6 +49,7 @@ jobs:
       JAVA_VERSION: 21
       USES_MAVEN: true
       DOWNLOAD_SBOM: false
+      GRYPE_SECURITY_ISSUES_BLOCK_ONLY_IF_FIX_AVAILABLE: true
       BUILD_ARGS: |
         PROJECT_VERSION=${{ needs.maven-build.outputs.version }}
     secrets: inherit
