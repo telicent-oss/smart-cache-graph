@@ -16,10 +16,10 @@ ENV JAVA_OPTIONS="-Xmx2048m -Xms2048m" \
     LOG_CONFIG_FILE="${FUSEKI_DIR}/logback.xml"
 
 # Create necessary directories and set permissions in a single efficient step
-RUN groupadd -r telicent-service && \
-    useradd -r -g telicent-service -d /app telicent-service && \
-    mkdir -p "$FUSEKI_DIR/logs" "$FUSEKI_DIR/databases" "$FUSEKI_DIR/config" "$FUSEKI_DIR/lib" "$FUSEKI_DIR/agents" "$FUSEKI_DIR/backups" /opt/telicent/sbom && \
-    chown -R telicent-service:telicent-service "$FUSEKI_DIR" /opt/telicent/sbom
+RUN groupadd -r telicent-service
+RUN useradd -r -g telicent-service -d /app telicent-service
+RUN mkdir -p "$FUSEKI_DIR/logs" "$FUSEKI_DIR/databases" "$FUSEKI_DIR/config" "$FUSEKI_DIR/lib" "$FUSEKI_DIR/agents" "$FUSEKI_DIR/backups" /opt/telicent/sbom
+RUN chown -R telicent-service:telicent-service "$FUSEKI_DIR" /opt/telicent/sbom
 
 WORKDIR "$FUSEKI_DIR"
 
