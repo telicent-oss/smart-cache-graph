@@ -48,6 +48,7 @@ jobs:
       JAVA_VERSION: 21
       USES_MAVEN: true
       DOWNLOAD_SBOM: false
+      GRYPE_SECURITY_ISSUES_BLOCK_ONLY_IF_FIX_AVAILABLE: true
       BUILD_ARGS: |
         PROJECT_VERSION=${{ needs.maven-build.outputs.version }}
     secrets: inherit

@@ -1,64 +1,40 @@
-## Dockerfile for Smart Cache Graph
-
 # syntax=docker/dockerfile:1.7
 
+FROM telicent/telicent-java21:1.1.5 AS smart-cache-graph
 
-ARG JAVA_VERSION=21
+USER root
 
-FROM eclipse-temurin:${JAVA_VERSION} AS smart-cache-graph
-
-ARG FUSEKI_DIR=/fuseki
-
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends dumb-init && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
-
-WORKDIR $FUSEKI_DIR
-
-ARG LOGS=${FUSEKI_DIR}/logs
-ARG DATA=${FUSEKI_DIR}/databases
-ARG BACKUPS=${FUSEKI_DIR}/backups
-ARG LABELS=${FUSEKI_DIR}/labels
-ARG CONFIGS=${FUSEKI_DIR}/config
-ARG LIB=${FUSEKI_DIR}/lib
-ARG AGENTS=${FUSEKI_DIR}/agents
-ARG SBOMS=/opt/telicent/sbom
-
-COPY scg-docker/entrypoint.sh .
-COPY scg-docker/logback.xml .
-
-
-RUN mkdir -p $LOGS $DATA $CONFIGS $LIB $AGENTS $SBOMS $BACKUPS $LABELS && \
-    groupadd -r fuseki && \
-    useradd -r -g fuseki -d ${FUSEKI_DIR} fuseki && \
-    chown -R fuseki:fuseki $LOGS $DATA $CONFIGS $LIB $AGENTS $SBOMS $BACKUPS $LABELS && \
-    chmod 777 $BACKUPS && \
-    chmod a+x entrypoint.sh
-
-# Build location of the jars we need.
+# Define arguments with defaults to avoid potential build failures
 ARG PROJECT_VERSION
-ARG FUSKEI_JAR
+ARG FUSEKI_DIR="/fuseki"
 
-## Collected jars
-ARG JARS=scg-docker/target/dependency
-COPY ${JARS} lib
-ARG AGENTS=scg-docker/target/agents
-COPY ${AGENTS} agents
-ARG SBOM=scg-docker/target/docker-${PROJECT_VERSION}-bom.json
-COPY ${SBOM} /opt/telicent/sbom/smart-cache-graph-${PROJECT_VERSION}-bom.json
+# Define environment variables for Java, Fuseki, and logging
+ENV JAVA_OPTIONS="-Xmx2048m -Xms2048m" \
+    FUSEKI_JAR="default-fuseki.jar" \
+    FUSEKI_DIR="${FUSEKI_DIR}" \
+    ROCKSDB_MUSL_LIBC="false" \
+    LOG_CONFIG_FILE="${FUSEKI_DIR}/logback.xml"
 
-## Default environment variables.
-ENV \
-    JAVA_OPTIONS="-Xmx2048m -Xms2048m"  \
-    FUSEKI_JAR="${FUSEKI_JAR}"          \
-    FUSEKI_DIR="${FUSEKI_DIR}"          \
-    ROCKSDB_MUSL_LIBC="false"            \
-    LOG_CONFIG_FILE="/fuseki/logback.xml"
+# Create necessary directories and set permissions in a single efficient step
+RUN mkdir -p "$FUSEKI_DIR/logs" "$FUSEKI_DIR/databases" "$FUSEKI_DIR/config" "$FUSEKI_DIR/lib" "$FUSEKI_DIR/agents" "$FUSEKI_DIR/backups" /opt/telicent/sbom
+RUN chown -R user:user "$FUSEKI_DIR" /opt/telicent/sbom
 
-USER fuseki
+WORKDIR "$FUSEKI_DIR"
 
+# Copy application files with correct ownership and permissions
+COPY --chown=user:user scg-docker/entrypoint.sh scg-docker/logback.xml ./
+COPY --chown=user:user scg-docker/target/dependency lib/
+COPY --chown=user:user scg-docker/target/agents agents/
+COPY --chown=user:user scg-docker/target/docker-${PROJECT_VERSION}-bom.json /opt/telicent/sbom/smart-cache-graph-${PROJECT_VERSION}-bom.json
+
+# Ensure entrypoint script is executable (already done on copy, but added for safety)
+RUN chmod +x entrypoint.sh
+
+# Use a non-root user
+USER user
+
+# Expose the Fuseki service port
 EXPOSE 3030
 
+# Run using dumb-init for proper signal forwarding and process reaping
 ENTRYPOINT [ "/usr/bin/dumb-init", "-v", "--single-child", "--", "./entrypoint.sh" ]
-CMD []
