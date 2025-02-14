@@ -100,7 +100,7 @@ class TestFKProcessorSCG {
     }
 
     @Test
-    void processorSCG_load_good_1() {
+    void processorSCG_load_good_ttl_1() {
         TestAction action = (FKProcessor proc, FusekiServer server, DatasetGraph dsgBase) -> {
             String URL = server.datasetURL(dsName);
             checkDatasetSize(dsgBase, 0);
@@ -120,7 +120,7 @@ class TestFKProcessorSCG {
     }
 
     @Test
-    void processorSCG_load_good_2() {
+    void processorSCG_load_good_ttl_2() {
         TestAction action = (FKProcessor proc, FusekiServer server, DatasetGraph dsgBase) -> {
             String URL = server.datasetURL(dsName);
             checkDatasetSize(dsgBase, 0);
@@ -128,6 +128,83 @@ class TestFKProcessorSCG {
                     PREFIX : <http://example/>
                     :s :p "turtle" .
                     """, WebContent.contentTypeTurtle, attrPermit);
+
+            checkDatasetSize(dsgBase, 1);
+            long c1 = count(URL, queryAll, userPermit);
+            assertEquals(1L, c1, "Count (user:permit)");
+            long c2 = count(URL, queryAll, userOther);
+            assertEquals(0L, c2, "Count (user:other)");
+        };
+        runTestProcessorSCGWithAuth(action);
+    }
+
+    @Test
+    void processorSCG_load_good_ttl_3() {
+        TestAction action = (FKProcessor proc, FusekiServer server, DatasetGraph dsgBase) -> {
+            String URL = server.datasetURL(dsName);
+            checkDatasetSize(dsgBase, 0);
+            processorRequest(proc, """
+                    PREFIX : <http://example/>
+                    [] :p "turtle" .
+                    """, WebContent.contentTypeTurtle, attrPermit);
+            // Check base has changed.
+            checkDatasetSize(dsgBase, 1);
+            // Check visibility
+            long c1 = count(URL, queryAll, userPermit);
+            assertEquals(1L, c1, "Count (user:permit)");
+            long c2 = count(URL, queryAll, userOther);
+            assertEquals(0L, c2, "Count (user:other)");
+        };
+        runTestProcessorSCGWithAuth(action);
+    }
+
+    @Test
+    void processorSCG_load_good_ttl_4() {
+        TestAction action = (FKProcessor proc, FusekiServer server, DatasetGraph dsgBase) -> {
+            String URL = server.datasetURL(dsName);
+            checkDatasetSize(dsgBase, 0);
+            processorRequest(proc, """
+                    PREFIX : <http://example/>
+                    _:B4fdc6f181b76ac466cb362d495282137 :p "turtle" .
+                    """, WebContent.contentTypeTurtle, attrPermit);
+            // Check base has changed.
+            checkDatasetSize(dsgBase, 1);
+            // Check visibility
+            long c1 = count(URL, queryAll, userPermit);
+            assertEquals(1L, c1, "Count (user:permit)");
+            long c2 = count(URL, queryAll, userOther);
+            assertEquals(0L, c2, "Count (user:other)");
+        };
+        runTestProcessorSCGWithAuth(action);
+    }
+
+    @Test
+    void processorSCG_load_good_nq_1() {
+        TestAction action = (FKProcessor proc, FusekiServer server, DatasetGraph dsgBase) -> {
+            String URL = server.datasetURL(dsName);
+            checkDatasetSize(dsgBase, 0);
+            processorRequest(proc, """
+                    <http://example/s> <http://example/p> "turtle" .
+                    """, WebContent.contentTypeNQuads, attrPermit);
+            // Check base has changed.
+            checkDatasetSize(dsgBase, 1);
+            // Check visibility
+            long c1 = count(URL, queryAll, userPermit);
+            assertEquals(1L, c1, "Count (user:permit)");
+            long c2 = count(URL, queryAll, userOther);
+            assertEquals(0L, c2, "Count (user:other)");
+        };
+        runTestProcessorSCGWithAuth(action);
+    }
+
+    @Test
+    void processorSCG_load_good_nq_2() {
+        TestAction action = (FKProcessor proc, FusekiServer server, DatasetGraph dsgBase) -> {
+            String URL = server.datasetURL(dsName);
+            checkDatasetSize(dsgBase, 0);
+            processorRequest(proc, """
+                    _:B4fdc6f181b76ac466cb362d495282137 <http://example/p> "turtle" .
+                    """, WebContent.contentTypeNQuads, attrPermit);
 
             checkDatasetSize(dsgBase, 1);
             long c1 = count(URL, queryAll, userPermit);

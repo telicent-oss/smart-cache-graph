@@ -21,6 +21,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.telicent.jena.abac.core.DatasetGraphABAC;
 import io.telicent.jena.abac.labels.LabelsStore;
 import io.telicent.jena.abac.labels.LabelsStoreRocksDB;
+import io.telicent.jena.abac.labels.node.LabelToNodeGenerator;
 import io.telicent.jena.graphql.utils.ExcludeFromJacocoGeneratedReport;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -34,6 +35,8 @@ import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.riot.Lang;
 import org.apache.jena.riot.RDFDataMgr;
+import org.apache.jena.riot.RDFParser;
+import org.apache.jena.riot.system.StreamRDFLib;
 import org.apache.jena.shacl.ShaclValidator;
 import org.apache.jena.shacl.Shapes;
 import org.apache.jena.shacl.ValidationReport;
@@ -370,7 +373,11 @@ public class DatasetBackupService {
              InputStream gis = new GZIPInputStream(fis)) {
             Txn.executeWrite(dsg, () -> {
                 dsg.clear();
-                RDFDataMgr.read(dsg, gis, NQUADS);
+                RDFParser.create()
+                        .source(gis)
+                        .labelToNode(LabelToNodeGenerator.generate())
+                        .lang(NQUADS)
+                        .parse(StreamRDFLib.dataset(dsg));
             });
         }
     }
