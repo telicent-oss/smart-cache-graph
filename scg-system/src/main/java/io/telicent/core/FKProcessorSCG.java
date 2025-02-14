@@ -31,6 +31,7 @@ import io.telicent.jena.abac.core.DatasetGraphABAC;
 import io.telicent.jena.abac.core.StreamSplitter;
 import io.telicent.jena.abac.core.VocabAuthz;
 import io.telicent.jena.abac.labels.LabelsStore;
+import io.telicent.jena.abac.labels.node.LabelToNodeGenerator;
 import org.apache.jena.atlas.RuntimeIOException;
 import org.apache.jena.atlas.io.IO;
 import org.apache.jena.atlas.lib.Timer;
@@ -399,6 +400,7 @@ public class FKProcessorSCG extends FKProcessorBaseAction /*implements FKProcess
                 ServletOps.errorBadRequest("No parser for language '"+lang.getName()+"'");
             ErrorHandler errorHandler = ErrorHandlerFactory.errorHandlerStd(LOG);
             RDFParser.create()
+                .labelToNode(LabelToNodeGenerator.generate())
                 .errorHandler(errorHandler)
                 .source(input)
                 .lang(lang)
