@@ -196,7 +196,6 @@ public class DatasetBackupService {
      * @param backupFile the file to back up to
      * @param node       JSON Node to store results
      */
-    @ExcludeFromJacocoGeneratedReport
     void executeBackupTDB(DatasetGraph dsg, String backupFile, ObjectNode node) {
         Backup.backup(dsg, dsg, backupFile);
         node.put("success", true);
@@ -367,7 +366,6 @@ public class DatasetBackupService {
      * @param tdbRestoreFile the zipped file with te recovery data
      * @throws IOException if there's an issue.
      */
-    @ExcludeFromJacocoGeneratedReport
     void executeRestoreTDB(DatasetGraph dsg, String tdbRestoreFile) throws IOException {
         try (InputStream fis = new FileInputStream(tdbRestoreFile);
              InputStream gis = new GZIPInputStream(fis)) {
@@ -512,7 +510,6 @@ public class DatasetBackupService {
      *
      * @param deletePath path to delete
      */
-    @ExcludeFromJacocoGeneratedReport
     void executeDeleteBackup(String deletePath) {
         deleteDirectoryRecursively(new File(deletePath));
     }
