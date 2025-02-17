@@ -1,5 +1,8 @@
 # Smart Cache Graph
 
+## 0.82.19
+- Improve blank node processing for upload, back-up & restore of n-quad format.
+
 ## 0.82.18
 - Sanitise data set names for backup/restore functionality.
 
