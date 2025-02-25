@@ -25,7 +25,7 @@ public class FMod_LabelsQuery implements FusekiAutoModule {
             final DatasetGraph dsg = dap.getDataService().getDataset();
             if (dsg instanceof DatasetGraphABAC abac) {
                 final LabelsStore labelsStore = abac.labelsStore();
-                labelsQueryService = new LabelsQueryService(labelsStore);
+                labelsQueryService = new LabelsQueryService(labelsStore, abac);
             }
         }
         return labelsQueryService;
