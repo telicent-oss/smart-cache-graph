@@ -19,6 +19,12 @@ paths:
           description: The name of the dataset to back up.
           schema:
             type: string
+        - name: description
+          in: path
+          required: false
+          description: A description of the back-up (i.e. "Daily backup")
+          schema:
+            type: string
       responses:
         '200':
           description: Backup created successfully.
@@ -51,6 +57,13 @@ paths:
     post:
       summary: Create a backup for all available datasets
       description: Initiates a backup operation for all of datasets .
+      parameters:
+        - name: description
+          in: path
+          required: false
+          description: A description of the back-up (i.e. "Daily backup")
+          schema:
+            type: string
       responses:
         '200':
           description: Backup created successfully.
