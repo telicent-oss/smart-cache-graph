@@ -52,7 +52,7 @@ public class LabelsQueryServlet extends HttpServlet {
         ArrayNode resultNodeList = MAPPER.createArrayNode();
         tripleQueryList.forEach(triple -> {
             List<TripleLabels> results = processTriple(triple);
-            resultNodeList.add(populateNodeWithResults(results));
+            results.forEach(tripleLabel -> resultNodeList.add(tripleLabel.toJSONNode()));
         });
 
         return resultNodeList;
@@ -66,13 +66,6 @@ public class LabelsQueryServlet extends HttpServlet {
         }
     }
 
-    ArrayNode populateNodeWithResults(List<TripleLabels> tripleLabels) {
-        ArrayNode resultNode = MAPPER.createArrayNode();
-        tripleLabels.forEach(tripleLabel -> {
-            resultNode.add(tripleLabel.toJSONNode());
-        });
-        return resultNode;
-    }
 
     public static boolean isWildcardTriple(Triple triple) {
         if (Node.ANY.equals(triple.getSubject())) {

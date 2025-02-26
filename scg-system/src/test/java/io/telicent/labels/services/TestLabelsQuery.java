@@ -65,12 +65,12 @@ public class TestLabelsQuery {
                 }""";
         final String expectedJsonResponse = """
                 {
-                  "results" : [ [ {
+                  "results" : [ {
                     "subject" : "http://dbpedia.org/resource/London",
                     "predicate" : "http://dbpedia.org/ontology/country",
                     "object" : "http://dbpedia.org/resource/United_Kingdom",
                     "labels" : [ "everyone" ]
-                  } ] ]
+                  } ]
                 }""";
         callAndAssert(jsonRequestBody, expectedJsonResponse);
     }
@@ -89,12 +89,12 @@ public class TestLabelsQuery {
                 }""";
         final String expectedJsonResponse = """
                 {
-                  "results" : [ [ {
+                  "results" : [ {
                     "subject" : "http://dbpedia.org/resource/London",
                     "predicate" : "http://dbpedia.org/ontology/populationTotal",
                     "object" : "\\"8799800\\"",
                     "labels" : [ "census", "admin" ]
-                  } ] ]
+                  } ]
                 }""";
         callAndAssert(jsonRequestBody, expectedJsonResponse);
     }
@@ -113,12 +113,12 @@ public class TestLabelsQuery {
                 }""";
         final String expectedJsonResponse = """
                 {
-                  "results" : [ [ {
+                  "results" : [ {
                     "subject" : "http://dbpedia.org/resource/Rome",
                     "predicate" : "http://dbpedia.org/ontology/country",
                     "object" : "http://dbpedia.org/resource/Italy",
                     "labels" : [ ]
-                  } ] ]
+                  } ]
                 }""";
         callAndAssert(jsonRequestBody, expectedJsonResponse);
     }
@@ -142,17 +142,17 @@ public class TestLabelsQuery {
                 }""";
         final String expectedJsonResponse = """
                 {
-                  "results" : [ [ {
+                  "results" : [ {
                     "subject" : "http://dbpedia.org/resource/Rome",
                     "predicate" : "http://dbpedia.org/ontology/country",
                     "object" : "http://dbpedia.org/resource/Italy",
                     "labels" : [ ]
-                  } ], [ {
+                  }, {
                     "subject" : "http://dbpedia.org/resource/Paris",
                     "predicate" : "http://dbpedia.org/ontology/country",
                     "object" : "http://dbpedia.org/resource/France",
                     "labels" : [ "everyone" ]
-                  } ] ]
+                  } ]
                 }""";
         callAndAssert(jsonRequestBody, expectedJsonResponse);
     }
