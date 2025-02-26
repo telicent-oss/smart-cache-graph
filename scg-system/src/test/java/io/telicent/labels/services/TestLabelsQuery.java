@@ -112,6 +112,38 @@ public class TestLabelsQuery {
     }
 
     @Test
+    public void test_list_of_labels() throws Exception {
+        final String jsonRequestBody = """
+                [
+                    {
+                      "subject": "http://dbpedia.org/resource/Rome",
+                      "predicate": "http://dbpedia.org/ontology/country",
+                      "object": "http://dbpedia.org/resource/Italy"
+                    },
+                    {
+                      "subject": "http://dbpedia.org/resource/Paris",
+                      "predicate": "http://dbpedia.org/ontology/country",
+                      "object": "http://dbpedia.org/resource/France"
+                    }
+                ]""";
+        final String expectedJsonResponse = """
+                {
+                  "results" : [ [ {
+                    "subject" : "http://dbpedia.org/resource/Rome",
+                    "predicate" : "http://dbpedia.org/ontology/country",
+                    "object" : "http://dbpedia.org/resource/Italy",
+                    "labels" : [ ]
+                  } ], [ {
+                    "subject" : "http://dbpedia.org/resource/Paris",
+                    "predicate" : "http://dbpedia.org/ontology/country",
+                    "object" : "http://dbpedia.org/resource/France",
+                    "labels" : [ "everyone" ]
+                  } ] ]
+                }""";
+        callAndAssert(jsonRequestBody, expectedJsonResponse);
+    }
+
+    @Test
     public void test_notConfigured() throws Exception {
         SERVER.stop();
         ENV.set("ENABLE_LABELS_QUERY", false);
@@ -152,7 +184,7 @@ public class TestLabelsQuery {
                 .POST(HttpRequest.BodyPublishers.ofString(jsonRequestBody)).build();
         try (HttpClient client = HttpClient.newHttpClient()) {
             final HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-            assertEquals(expectedJsonResponse, response.body());
+            assertEquals(expectedJsonResponse, response.body(), "Response:\n" + response.body() + "\ndoes not match expected result:\n" + expectedJsonResponse);
         }
     }
 
