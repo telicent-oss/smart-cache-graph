@@ -55,9 +55,13 @@ public class TestLabelsQuery {
     public void test_one_label() throws Exception {
         final String jsonRequestBody = """
                 {
-                  "subject": "http://dbpedia.org/resource/London",
-                  "predicate": "http://dbpedia.org/ontology/country",
-                  "object": "http://dbpedia.org/resource/United_Kingdom"
+                    "triples": [
+                    {
+                        "subject": "http://dbpedia.org/resource/London",
+                        "predicate": "http://dbpedia.org/ontology/country",
+                        "object": "http://dbpedia.org/resource/United_Kingdom"
+                    }
+                  ]
                 }""";
         final String expectedJsonResponse = """
                 {
@@ -75,9 +79,13 @@ public class TestLabelsQuery {
     public void test_two_labels() throws Exception {
         final String jsonRequestBody = """
                 {
-                  "subject": "http://dbpedia.org/resource/London",
-                  "predicate": "http://dbpedia.org/ontology/populationTotal",
-                  "object": 8799800
+                    "triples": [
+                        {
+                            "subject": "http://dbpedia.org/resource/London",
+                            "predicate": "http://dbpedia.org/ontology/populationTotal",
+                            "object": 8799800
+                        }
+                    ]
                 }""";
         final String expectedJsonResponse = """
                 {
@@ -95,9 +103,13 @@ public class TestLabelsQuery {
     public void test_no_labels() throws Exception {
         final String jsonRequestBody = """
                 {
-                  "subject": "http://dbpedia.org/resource/Rome",
-                  "predicate": "http://dbpedia.org/ontology/country",
-                  "object": "http://dbpedia.org/resource/Italy"
+                    "triples": [
+                        {
+                            "subject": "http://dbpedia.org/resource/Rome",
+                            "predicate": "http://dbpedia.org/ontology/country",
+                            "object": "http://dbpedia.org/resource/Italy"
+                        }
+                    ]
                 }""";
         final String expectedJsonResponse = """
                 {
@@ -114,18 +126,20 @@ public class TestLabelsQuery {
     @Test
     public void test_list_of_labels() throws Exception {
         final String jsonRequestBody = """
-                [
-                    {
-                      "subject": "http://dbpedia.org/resource/Rome",
-                      "predicate": "http://dbpedia.org/ontology/country",
-                      "object": "http://dbpedia.org/resource/Italy"
-                    },
-                    {
-                      "subject": "http://dbpedia.org/resource/Paris",
-                      "predicate": "http://dbpedia.org/ontology/country",
-                      "object": "http://dbpedia.org/resource/France"
-                    }
-                ]""";
+                {
+                    "triples": [
+                        {
+                          "subject": "http://dbpedia.org/resource/Rome",
+                          "predicate": "http://dbpedia.org/ontology/country",
+                          "object": "http://dbpedia.org/resource/Italy"
+                        },
+                        {
+                          "subject": "http://dbpedia.org/resource/Paris",
+                          "predicate": "http://dbpedia.org/ontology/country",
+                          "object": "http://dbpedia.org/resource/France"
+                        }
+                    ]
+                }""";
         final String expectedJsonResponse = """
                 {
                   "results" : [ [ {
@@ -139,6 +153,33 @@ public class TestLabelsQuery {
                     "object" : "http://dbpedia.org/resource/France",
                     "labels" : [ "everyone" ]
                   } ] ]
+                }""";
+        callAndAssert(jsonRequestBody, expectedJsonResponse);
+    }
+
+    @Test
+    public void test_invalidInput() throws Exception {
+        final String jsonRequestBody = """
+                {
+                  "wrong" : {
+                    "subject": "http://dbpedia.org/resource/Rome",
+                  }
+                }""";
+        final String expectedJsonResponse = """
+                {
+                  "results" : [ ]
+                }""";
+        callAndAssert(jsonRequestBody, expectedJsonResponse);
+    }
+
+    @Test
+    public void test_invalidInputJSON() throws Exception {
+        final String jsonRequestBody = """
+                erroneous
+                }""";
+        final String expectedJsonResponse = """
+                {
+                  "results" : [ ]
                 }""";
         callAndAssert(jsonRequestBody, expectedJsonResponse);
     }

@@ -2,20 +2,22 @@ package io.telicent.labels.servlets;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.telicent.labels.LabelsQuery;
+import io.telicent.labels.LabelsQueryRequest;
 import io.telicent.labels.TripleLabels;
 import io.telicent.labels.services.LabelsQueryService;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.apache.jena.atlas.logging.FmtLog;
 import org.apache.jena.graph.Node;
 import org.apache.jena.graph.NodeFactory;
 import org.apache.jena.graph.Triple;
+import org.apache.jena.kafka.FusekiKafka;
+import org.slf4j.Logger;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
@@ -23,6 +25,8 @@ import java.util.List;
 import static io.telicent.backup.utils.BackupUtils.processResponse;
 
 public class LabelsQueryServlet extends HttpServlet {
+
+    private final static Logger LOG = FusekiKafka.LOG;
 
     private final static String HTTP = "http://";
     private final static String HTTPS = "https://";
@@ -78,59 +82,22 @@ public class LabelsQueryServlet extends HttpServlet {
         } else return Node.ANY.equals(triple.getObject());
     }
 
-    List<Triple> obtainTripleQueries(HttpServletRequest request) {
+    private List<Triple> obtainTripleQueries(HttpServletRequest request) {
         List<Triple> tripleList = new ArrayList<>();
         try (final InputStream inputStream = request.getInputStream()) {
-                JsonNode rootNode = MAPPER.readTree(inputStream); // Read into a JsonNode
-                if (rootNode.isArray()) {
-                    for (JsonNode node : rootNode) {
-                        LabelsQuery query = MAPPER.convertValue(node, LabelsQuery.class); // Convert each node
-                        tripleList.add(getTriple(query));
-                    }
-                } else if (rootNode.isObject()) {
-                    LabelsQuery query = MAPPER.convertValue(rootNode, LabelsQuery.class); // Convert the root node
-                    tripleList.add(getTriple(query));
-                } else {
-                    // IGNORE?
-                    System.err.println("Invalid JSON format: Must be an object or an array.");
-                }
-
-            } catch (IOException exception) {
-                // Handle I/O errors
-                exception.printStackTrace(); // Replace with proper logging
-                // ... appropriate error handling ...
-            }
-        return tripleList;
-    }
-
-    List<Triple> obtainTripleQueries2(HttpServletRequest request) {
-        List<Triple> tripleList = new ArrayList<>();
-        try (final InputStream inputStream = request.getInputStream()) {
-            try {
-                LabelsQuery json = MAPPER.readValue(inputStream, LabelsQuery.class);
-                tripleList.add(getTriple(json));
-            } catch (MismatchedInputException exception) {
-                LabelsQuery[] queryArray = MAPPER.readValue(inputStream, LabelsQuery[].class);
-                for (LabelsQuery query : queryArray) {
+            JsonNode rootNode = MAPPER.readTree(inputStream);
+            if (rootNode.has("triples") && rootNode.get("triples").isArray()) {
+                LabelsQueryRequest queryRequest = MAPPER.convertValue(rootNode, LabelsQueryRequest.class);
+                for (LabelsQuery query : queryRequest.triples) {
                     tripleList.add(getTriple(query));
                 }
+            } else {
+                FmtLog.error(LOG, "Invalid JSON format: Missing 'triples' array.");
             }
-        } catch (IOException exception) {
-            // do nothing
+        } catch (Exception exception) {
+            FmtLog.error(LOG, exception.getMessage());
         }
         return tripleList;
-    }
-
-    private static void processResponseTriple(HttpServletResponse response, Triple incomingTriple, TripleLabels labels) {
-        ObjectNode resultNode = MAPPER.createObjectNode();
-        resultNode.put("asString", incomingTriple.toString());
-        resultNode.put("querySubject", incomingTriple.getSubject().toString());
-        resultNode.put("queryPredicate", incomingTriple.getPredicate().toString());
-        resultNode.put("queryObject", incomingTriple.getObject().toString());
-        ArrayNode labelNode = MAPPER.createArrayNode();
-        labels.labels.forEach(labelNode::add);
-        resultNode.set("labels", labelNode);
-        processResponse(response, resultNode);
     }
 
     private Triple getTriple(LabelsQuery tripleQuery) {
