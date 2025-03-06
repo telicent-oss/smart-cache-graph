@@ -26,7 +26,7 @@
   <parent>
     <groupId>io.telicent.smart-caches.graph</groupId>
     <artifactId>scg-base</artifactId>
-    <version>0.82.20-SNAPSHOT</version>
+    <version>0.83.1-SNAPSHOT</version>
   </parent>
 
   <properties>

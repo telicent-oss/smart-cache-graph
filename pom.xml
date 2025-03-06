@@ -22,7 +22,7 @@
   <groupId>io.telicent.smart-caches.graph</groupId>
   <artifactId>scg-base</artifactId>
   <packaging>pom</packaging>
-  <version>0.82.20-SNAPSHOT</version>
+  <version>0.83.1-SNAPSHOT</version>
 
   <name>Telicent Smart Cache Graph - Parent</name>
   <description>Telicent Smart Cache Graph</description>
