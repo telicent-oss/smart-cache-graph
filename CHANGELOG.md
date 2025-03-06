@@ -1,7 +1,11 @@
 # Smart Cache Graph
 
+
 ## 0.83.1
 - Extend label querying functionality (for debug).
+
+## 0.83.0
+- Build improvements
 
 ## 0.82.19
 - Improve blank node processing for upload, back-up & restore of n-quad format.
