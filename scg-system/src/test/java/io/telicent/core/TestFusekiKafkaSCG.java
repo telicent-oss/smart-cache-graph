@@ -83,10 +83,10 @@ public class TestFusekiKafkaSCG {
         KConnectorDesc mockDesc = mock(KConnectorDesc.class);
         when(mockDesc.getStateFile()).thenReturn(stateFile.getAbsolutePath());
 
-        cut.connectors.put("matchingdataset", mockDesc);
+        cut.connectors.put("/matchingdataset", mockDesc);
 
         DataAccessPoint mockDataAccessPoint = mock(DataAccessPoint.class);
-        when(mockDataAccessPoint.getName()).thenReturn("matchingdataset");
+        when(mockDataAccessPoint.getName()).thenReturn("/matchingdataset/upload");
 
         // when
         cut.backupKafka(mockDataAccessPoint, tempDir.toString(), node);
@@ -96,7 +96,7 @@ public class TestFusekiKafkaSCG {
         assertTrue(node.has("success"));
         assertFalse(node.has("reason"));
         assertTrue(node.get("success").asBoolean());
-        File copiedFile = new File(tempDir.toString(), "matchingdataset.json");
+        File copiedFile = new File(tempDir.toString(), "matchingdataset_upload.json");
         assertTrue(copiedFile.exists());
 
     }
@@ -149,7 +149,7 @@ public class TestFusekiKafkaSCG {
         Path tempDir = Files.createTempDirectory("test_restore_dir2");
         tempDir.toFile().deleteOnExit();
 
-        File stateFile = new File(tempDir.toString(), "matchingdataset.json");
+        File stateFile = new File(tempDir.toString(), "matchingdataset_upload.json");
         assertTrue(stateFile.createNewFile());
         stateFile.deleteOnExit();
 
@@ -169,10 +169,10 @@ public class TestFusekiKafkaSCG {
         ObjectNode node = MAPPER.createObjectNode();
         KConnectorDesc mockDesc = mock(KConnectorDesc.class);
 
-        cut.connectors.put("matchingdataset", mockDesc);
+        cut.connectors.put("/matchingdataset", mockDesc);
 
         DataAccessPoint mockDataAccessPoint = mock(DataAccessPoint.class);
-        when(mockDataAccessPoint.getName()).thenReturn("matchingdataset");
+        when(mockDataAccessPoint.getName()).thenReturn("/matchingdataset/upload");
 
         // when
         cut.restoreKafka(mockDataAccessPoint, tempDir.toString(), node);
