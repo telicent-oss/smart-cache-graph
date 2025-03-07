@@ -1,5 +1,7 @@
 # Smart Cache Graph
 
+## 0.83.2
+- Improved process of kafka dataset names 
 
 ## 0.83.1
 - Extend label querying functionality (for debug).
