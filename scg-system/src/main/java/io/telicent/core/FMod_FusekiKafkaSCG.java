@@ -116,7 +116,8 @@ public class FMod_FusekiKafkaSCG extends FMod_FusekiKafka {
 
     public void backupKafka(DataAccessPoint dataAccessPoint, String path, ObjectNode resultNode) {
         String dataset = dataAccessPoint.getName();
-        KConnectorDesc conn = connectors.get(dataset);
+        String strippedDownName = stripStringPath(dataset);
+        KConnectorDesc conn = connectors.get(strippedDownName);
         if (conn != null) {
             String sanitizedDataset = sanitiseName(dataset);
             String filename = path + "/" + sanitizedDataset + ".json";
@@ -134,7 +135,8 @@ public class FMod_FusekiKafkaSCG extends FMod_FusekiKafka {
 
     public void restoreKafka(DataAccessPoint dataAccessPoint, String path, ObjectNode resultNode) {
         String dataset = dataAccessPoint.getName();
-        if (connectors.get(dataset) != null) {
+        String strippedDownName = stripStringPath(dataset);
+        if (connectors.get(strippedDownName) != null) {
             String sanitizedDataset = sanitiseName(dataset);
             String filename = path + "/" + sanitizedDataset + ".json";
             PersistentState persistentState = new PersistentState(filename);
@@ -154,6 +156,15 @@ public class FMod_FusekiKafkaSCG extends FMod_FusekiKafka {
             FmtLog.info(LOG, errorMessage);
             resultNode.put("success", false);
             resultNode.put("reason", errorMessage);
+        }
+    }
+
+    public static String stripStringPath(String input) {
+        int lastSlashIndex = input.lastIndexOf("/");
+        if (lastSlashIndex != -1) {
+            return input.substring(0, lastSlashIndex);
+        } else {
+            return input;
         }
     }
 }
