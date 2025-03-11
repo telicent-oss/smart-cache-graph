@@ -1,6 +1,6 @@
 # Smart Cache Graph
 
-## 0.83.3
+## 0.83.3 / 0.83.4
 - Improved kafka dataset backup/restore.
 
 ## 0.83.2
