@@ -16,11 +16,9 @@
 
 package io.telicent.core;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.telicent.backup.services.DatasetBackupService;
 import org.apache.jena.atlas.io.IOX;
@@ -32,6 +30,8 @@ import org.apache.jena.fuseki.kafka.FKS;
 import org.apache.jena.fuseki.kafka.FMod_FusekiKafka;
 import org.apache.jena.fuseki.main.FusekiServer;
 import org.apache.jena.fuseki.server.DataAccessPoint;
+import org.apache.jena.fuseki.server.DataService;
+import org.apache.jena.fuseki.server.Endpoint;
 import org.apache.jena.fuseki.servlets.ActionProcessor;
 import org.apache.jena.kafka.KConnectorDesc;
 import org.apache.jena.kafka.SysJenaKafka;
@@ -41,6 +41,7 @@ import org.apache.jena.rdf.model.Model;
 import org.apache.jena.sparql.core.DatasetGraph;
 
 import static io.telicent.backup.services.DatasetBackupService.sanitiseName;
+import static io.telicent.backup.utils.BackupUtils.MAPPER;
 import static org.apache.jena.kafka.FusekiKafka.LOG;
 
 /**
@@ -116,55 +117,69 @@ public class FMod_FusekiKafkaSCG extends FMod_FusekiKafka {
 
     public void backupKafka(DataAccessPoint dataAccessPoint, String path, ObjectNode resultNode) {
         String dataset = dataAccessPoint.getName();
-        String strippedDownName = stripStringPath(dataset);
-        KConnectorDesc conn = connectors.get(strippedDownName);
-        if (conn != null) {
-            String sanitizedDataset = sanitiseName(dataset);
-            String filename = path + "/" + sanitizedDataset + ".json";
-            IOX.copy(conn.getStateFile(), filename);
-            resultNode.put("source", conn.getStateFile());
-            resultNode.put("destination", filename);
-            resultNode.put("success", true);
-        } else {
-            String errorMessage = String.format("Unable to back up Kafka as dataset %s not recognised. ", dataset);
-            FmtLog.info(LOG, errorMessage);
-            resultNode.put("success", false);
-            resultNode.put("reason", errorMessage);
+        List<KConnectorDesc> kafkaConnectionList = obtainKafkaConnection(dataset, dataAccessPoint.getDataService());
+        ArrayNode nodeList = MAPPER.createArrayNode();
+        for (KConnectorDesc conn : kafkaConnectionList) {
+            nodeList.add(backupKafkaConnection(conn, path));
         }
+        resultNode.set(dataset, nodeList);
     }
 
     public void restoreKafka(DataAccessPoint dataAccessPoint, String path, ObjectNode resultNode) {
         String dataset = dataAccessPoint.getName();
-        String strippedDownName = stripStringPath(dataset);
-        if (connectors.get(strippedDownName) != null) {
-            String sanitizedDataset = sanitiseName(dataset);
-            String filename = path + "/" + sanitizedDataset + ".json";
-            PersistentState persistentState = new PersistentState(filename);
-            if ( persistentState.getBytes().length == 0 ) {
-                String errorMessage = String.format("Unable to restore Kafka for dataset (%s) as restore file (%s) not suitable. ", dataset, filename);
-                FmtLog.info(LOG, errorMessage);
-                resultNode.put("success", false);
-                resultNode.put("reason", errorMessage);
-                return;
+        List<KConnectorDesc> kafkaConnectionList = obtainKafkaConnection(dataset, dataAccessPoint.getDataService());
+        ArrayNode nodeList = MAPPER.createArrayNode();
+        for (KConnectorDesc conn : kafkaConnectionList) {
+            nodeList.add(restoreKafkaConnection(conn, dataset, path));
+        }
+        resultNode.set(dataset, nodeList);
+    }
+
+    public List<KConnectorDesc> obtainKafkaConnection(String dataset, DataService dataService) {
+        List<KConnectorDesc> kafkaConnections = new ArrayList<>();
+        KConnectorDesc conn = connectors.get(dataset);
+        if (conn != null) {
+            kafkaConnections.add(conn);
+        }
+        for (Endpoint endpoint : dataService.getEndpoints()) {
+            String path = dataset + "/" + endpoint.getName();
+            conn = connectors.get(path);
+            if (conn != null) {
+                kafkaConnections.add(conn);
             }
-            DataState dataState = DataState.create(persistentState);
-            FKS.restoreOffsetForDataset(dataset, dataState.getLastOffset());
-            resultNode.put("offset", dataState.getLastOffset());
-            resultNode.put("success", true);
-        } else {
-            String errorMessage = String.format("Unable to restore Kafka as dataset %s not recognised. ", dataset);
+        }
+        return kafkaConnections;
+    }
+
+    public ObjectNode backupKafkaConnection(KConnectorDesc conn, String path) {
+        ObjectNode resultNode = MAPPER.createObjectNode();
+        String sanitizedDataset = sanitiseName(conn.getLocalDispatchPath());
+        resultNode.put("name", sanitizedDataset);
+        String filename = path + "/" + sanitizedDataset + ".json";
+        IOX.copy(conn.getStateFile(), filename);
+        resultNode.put("source", conn.getStateFile());
+        resultNode.put("destination", filename);
+        resultNode.put("success", true);
+        return resultNode;
+    }
+
+    public ObjectNode restoreKafkaConnection(KConnectorDesc conn, String dataset, String path) {
+        ObjectNode resultNode = MAPPER.createObjectNode();
+        String sanitizedDataset = sanitiseName(conn.getLocalDispatchPath());
+        resultNode.put("name", sanitizedDataset);
+        String filename = path + "/" + sanitizedDataset + ".json";
+        PersistentState persistentState = new PersistentState(filename);
+        if (persistentState.getBytes().length == 0) {
+            String errorMessage = String.format("Unable to restore Kafka for dataset (%s) as restore file (%s) not suitable. ", dataset, filename);
             FmtLog.info(LOG, errorMessage);
             resultNode.put("success", false);
             resultNode.put("reason", errorMessage);
+            return resultNode;
         }
-    }
-
-    public static String stripStringPath(String input) {
-        int lastSlashIndex = input.lastIndexOf("/");
-        if (lastSlashIndex != -1) {
-            return input.substring(0, lastSlashIndex);
-        } else {
-            return input;
-        }
+        DataState dataState = DataState.create(persistentState);
+        FKS.restoreOffsetForDataset(dataset, dataState.getLastOffset());
+        resultNode.put("offset", dataState.getLastOffset());
+        resultNode.put("success", true);
+        return resultNode;
     }
 }
