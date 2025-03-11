@@ -1,5 +1,8 @@
 # Smart Cache Graph
 
+## 0.83.3
+- Improved kafka dataset backup/restore.
+
 ## 0.83.2
 - Improved process of kafka dataset names 
 
