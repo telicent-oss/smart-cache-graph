@@ -135,7 +135,7 @@ public class FMod_FusekiKafkaSCG extends FMod_FusekiKafka {
         resultNode.set(dataset, nodeList);
     }
 
-    public List<KConnectorDesc> obtainKafkaConnection(String dataset, DataService dataService) {
+    private List<KConnectorDesc> obtainKafkaConnection(String dataset, DataService dataService) {
         List<KConnectorDesc> kafkaConnections = new ArrayList<>();
         KConnectorDesc conn = connectors.get(dataset);
         if (conn != null) {
@@ -151,7 +151,7 @@ public class FMod_FusekiKafkaSCG extends FMod_FusekiKafka {
         return kafkaConnections;
     }
 
-    public ObjectNode backupKafkaConnection(KConnectorDesc conn, String path) {
+    private ObjectNode backupKafkaConnection(KConnectorDesc conn, String path) {
         ObjectNode resultNode = MAPPER.createObjectNode();
         String sanitizedDataset = sanitiseName(conn.getLocalDispatchPath());
         resultNode.put("name", sanitizedDataset);
@@ -163,7 +163,7 @@ public class FMod_FusekiKafkaSCG extends FMod_FusekiKafka {
         return resultNode;
     }
 
-    public ObjectNode restoreKafkaConnection(KConnectorDesc conn, String dataset, String path) {
+    private ObjectNode restoreKafkaConnection(KConnectorDesc conn, String dataset, String path) {
         ObjectNode resultNode = MAPPER.createObjectNode();
         String sanitizedDataset = sanitiseName(conn.getLocalDispatchPath());
         resultNode.put("name", sanitizedDataset);
