@@ -61,7 +61,7 @@
 
     <!-- Maven Plugin versions -->
     <plugin.clean>3.3.2</plugin.clean>
-    <plugin.compiler>3.13.0</plugin.compiler>
+    <plugin.compiler>3.14.0</plugin.compiler>
     <plugin.cyclonedx>2.9.1</plugin.cyclonedx>
     <plugin.dependency>3.8.1</plugin.dependency>
     <plugin.deploy>3.1.4</plugin.deploy>
