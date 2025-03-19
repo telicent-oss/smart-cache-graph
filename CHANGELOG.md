@@ -1,5 +1,8 @@
 # Smart Cache Graph
 
+## 0.83.5
+- Build improvements (Telicent Base Image v1.2.5)
+
 ## 0.83.3 / 0.83.4
 - Improved kafka dataset backup/restore.
 
