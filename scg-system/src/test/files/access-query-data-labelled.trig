@@ -1,0 +1,19 @@
+PREFIX dbr: <http://dbpedia.org/resource/>
+PREFIX dbo: <http://dbpedia.org/ontology/>
+PREFIX security: <http://telicent.io/security#>
+
+## Basic data on 3 cities
+dbr:London dbo:populationTotal 8799800 .
+dbr:London dbo:country dbr:United_Kingdom .
+dbr:London dbo:country dbr:England .
+
+## ABAC Security labels to apply
+GRAPH security:labels {
+
+    ## Something everyone can see
+    [ security:pattern 'dbr:London dbo:country dbr:United_Kingdom'  ; security:label "everyone" ] .
+
+    ## Something only admin users can see
+    [ security:pattern 'dbr:London dbo:populationTotal 8799800'  ; security:label "admin" ] .
+    [ security:pattern 'dbr:London dbo:country dbr:England' ; security:label "admin" ] .
+}
