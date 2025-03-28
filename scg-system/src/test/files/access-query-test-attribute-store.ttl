@@ -1,0 +1,10 @@
+PREFIX security: <http://telicent.io/security#>
+
+[] security:user "User1" ;
+    security:userAttribute "everyone";
+    .
+    
+[] security:user "User2" ;
+   security:userAttribute "admin";
+   security:userAttribute "everyone";
+    .
