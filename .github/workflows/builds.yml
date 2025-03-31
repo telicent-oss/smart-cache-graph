@@ -29,6 +29,7 @@ jobs:
       MAVEN_DEBUG_ARGS: -Dlogback.configurationFile=logback-debug.xml
       RUN_WINDOWS_BUILD: false
       JAVA_VERSION: 21
+      PUBLISH_JACOCO_REPORT: true
     secrets: inherit
 
   docker-build:
