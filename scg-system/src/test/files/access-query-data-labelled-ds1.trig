@@ -2,7 +2,7 @@ PREFIX dbr: <http://dbpedia.org/resource/>
 PREFIX dbo: <http://dbpedia.org/ontology/>
 PREFIX security: <http://telicent.io/security#>
 
-## Basic data on 3 cities
+## Some London data
 dbr:London dbo:populationTotal 8799800 .
 dbr:London dbo:country dbr:United_Kingdom .
 dbr:London dbo:country dbr:England .

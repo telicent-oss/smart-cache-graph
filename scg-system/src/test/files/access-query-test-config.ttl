@@ -4,19 +4,34 @@ PREFIX rdf:     <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX ja:      <http://jena.hpl.hp.com/2005/11/Assembler#>
 PREFIX authz:   <http://telicent.io/security#>
 
-:secureService rdf:type fuseki:Service ;
-    fuseki:name "ds" ;
+:secureService1 rdf:type fuseki:Service ;
+    fuseki:name "ds1" ;
     fuseki:endpoint [ fuseki:operation fuseki:query ; fuseki:name "query" ] ;
     fuseki:endpoint [ fuseki:operation fuseki:gsp-r ; fuseki:name "read" ] ;
     fuseki:endpoint [ fuseki:operation authz:upload ; fuseki:name "upload" ] ;
-    fuseki:dataset :dataset ;
+    fuseki:dataset :dataset1 ;
     .
 
-:dataset rdf:type authz:DatasetAuthz ;
+:secureService2 rdf:type fuseki:Service ;
+    fuseki:name "ds2" ;
+    fuseki:endpoint [ fuseki:operation fuseki:query ; fuseki:name "query" ] ;
+    fuseki:endpoint [ fuseki:operation fuseki:gsp-r ; fuseki:name "read" ] ;
+    fuseki:endpoint [ fuseki:operation authz:upload ; fuseki:name "upload" ] ;
+    fuseki:dataset :dataset2 ;
+    .
+
+:dataset1 rdf:type authz:DatasetAuthz ;
          authz:dataset :inMemoryDatabase;
          authz:labelsStore  [ authz:labelsStorePath "labels" ];
          authz:attributes <file:access-query-test-attribute-store.ttl> ;
          authz:tripleDefaultAttributes "!";
          .
+
+:dataset2 rdf:type authz:DatasetAuthz ;
+         authz:dataset :inMemoryDatabase;
+         authz:labelsStore  [ authz:labelsStorePath "labels" ];
+         authz:attributes <file:access-query-test-attribute-store.ttl> ;
+         authz:tripleDefaultAttributes "!";
+.
 
 :inMemoryDatabase rdf:type ja:MemoryDataset .

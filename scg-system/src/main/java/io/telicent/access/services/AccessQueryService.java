@@ -17,7 +17,7 @@ public class AccessQueryService implements ABAC_Processor {
         this.datasetGraph = datasetGraph;
     }
 
-    public List<Triple> getTriples(HttpAction action, Triple triple) {
+    public List<Triple> getTriples(final HttpAction action, final Triple triple) {
         final DatasetGraph datasetGraphForUser = ABAC_Request.decideDataset(action, datasetGraph, ServerABAC.userForRequest());
         return datasetGraphForUser.getDefaultGraph().find(triple).toList();
     }

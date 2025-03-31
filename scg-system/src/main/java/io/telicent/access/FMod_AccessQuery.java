@@ -18,22 +18,15 @@ public class FMod_AccessQuery implements FusekiAutoModule {
     }
 
     @Override
-    public void configured(FusekiServer.Builder serverBuilder, DataAccessPointRegistry dapRegistry, Model configModel) {
-        final AccessQueryService queryService = getAccessQueryService(dapRegistry);
-        if(queryService != null) {
-            serverBuilder.addServlet("/$/access/query", new AccessQueryServlet(queryService));
-        }
-    }
-
-    private AccessQueryService getAccessQueryService(DataAccessPointRegistry dapRegistry) {
-        AccessQueryService accessQueryService = null;
+    public void configured(final FusekiServer.Builder serverBuilder, final DataAccessPointRegistry dapRegistry, final Model configModel) {
         for (DataAccessPoint dap : dapRegistry.accessPoints()) {
             final DatasetGraph dsg = dap.getDataService().getDataset();
             if (dsg instanceof DatasetGraphABAC abac) {
-                accessQueryService = new AccessQueryService(abac);
+                final String datasetName = dap.getName();
+                final AccessQueryService queryService = new AccessQueryService(abac);
+                serverBuilder.addServlet(datasetName + "/access/query", new AccessQueryServlet(queryService));
             }
         }
-        return accessQueryService;
     }
 
 }

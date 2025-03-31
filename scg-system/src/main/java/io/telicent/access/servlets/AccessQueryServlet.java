@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.telicent.access.AccessQuery;
 import io.telicent.access.AccessQueryResults;
 import io.telicent.access.services.AccessQueryService;
-import jakarta.servlet.ServletOutputStream;
+import io.telicent.utils.SmartCacheGraphException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -14,13 +14,16 @@ import org.apache.jena.graph.Node;
 import org.apache.jena.graph.NodeFactory;
 import org.apache.jena.graph.Triple;
 import org.apache.jena.kafka.FusekiKafka;
-import org.apache.jena.riot.WebContent;
 import org.slf4j.Logger;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+
+import static io.telicent.utils.ServletUtils.handleError;
+import static io.telicent.utils.ServletUtils.processResponse;
 
 public class AccessQueryServlet extends HttpServlet {
 
@@ -46,28 +49,21 @@ public class AccessQueryServlet extends HttpServlet {
                 results.add(triple.getObject().toString());
             }
             final AccessQueryResults queryResults = new AccessQueryResults(query, (results.isEmpty() ? null : results));
-            processResponse(response, queryResults);
+            processResponse(response, MAPPER.valueToTree(queryResults));
+        } catch (SmartCacheGraphException ex){
+            handleError(response, MAPPER.createObjectNode(), HttpServletResponse.SC_BAD_REQUEST, ex.getMessage());
         }
     }
 
-    private static void processResponse(HttpServletResponse response, AccessQueryResults results) {
-        String jsonOutput;
-        try (ServletOutputStream out = response.getOutputStream()) {
-            jsonOutput = MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(results);
-            response.setContentLength(jsonOutput.length());
-            response.setContentType(WebContent.contentTypeJSON);
-            response.setCharacterEncoding(WebContent.charsetUTF8);
-            out.print(jsonOutput);
-        } catch (IOException ex) {
-            response.setStatus(HttpServletResponse.SC_UNPROCESSABLE_CONTENT);
+    private Triple getAccessQueryTriple(AccessQuery accessQuery) throws SmartCacheGraphException {
+        try {
+            final Node s = NodeFactory.createURI(Objects.requireNonNull(accessQuery.subject));
+            final Node p = NodeFactory.createURI(Objects.requireNonNull(accessQuery.predicate));
+            final Node o = Node.ANY;
+            return Triple.create(s, p, o);
+        } catch (NullPointerException npex){
+            throw new SmartCacheGraphException("Unable to process request as missing required values");
         }
-    }
-
-    private Triple getAccessQueryTriple(AccessQuery accessQuery) {
-        final Node s = NodeFactory.createURI(accessQuery.subject);
-        final Node p = NodeFactory.createURI(accessQuery.predicate);
-        final Node o = Node.ANY;
-        return Triple.create(s, p, o);
     }
 
 }
