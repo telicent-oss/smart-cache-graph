@@ -22,7 +22,7 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
-import static io.telicent.backup.utils.BackupUtils.processResponse;
+import static io.telicent.utils.ServletUtils.*;
 
 public class LabelsQueryServlet extends HttpServlet {
 

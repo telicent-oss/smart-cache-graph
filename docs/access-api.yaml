@@ -1,0 +1,88 @@
+openapi: 3.0.3
+info:
+  title: Triple Access Query API
+  description: API for querying access to RDF triples.
+  version: 0.83.6
+servers:
+  - url: http://localhost:3030/
+    description: Base path for query operations.
+paths:
+  /{datasetName}/access/query:
+    post:
+      summary: Return the objects for a given subject and predicate in an RDF triple
+      description: Returns zero or more objects for a given subject and predicate in an RDF triple provided 1) they exist and 2) the user has access - otherwise null is returned.
+      parameters:
+        - name: datasetName
+          in: path
+          required: true
+          description: The name of the dataset to query.
+          schema:
+            type: string
+      requestBody:
+        description: The subject and predicate to retrieve objects for.
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                subject:
+                  type: string
+                predicate:
+                  type: string
+            examples:
+              London Population:
+                value:
+                  subject: http://dbpedia.org/resource/London
+                  predicate: http://dbpedia.org/ontology/populationTotal
+              London Country:
+                value:
+                  subject: http://dbpedia.org/resource/London
+                  predicate: http://dbpedia.org/ontology/country
+              London Birth Date:
+                value:
+                  subject: http://dbpedia.org/resource/London
+                  predicate: http://dbpedia.org/ontology/birthDate
+      responses:
+        '200':
+          description: Request processed successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  subject:
+                    type: string
+                  predicate:
+                    type: string
+                  objects:
+                    type: array
+                    items:
+                      type: string
+                    description: List of the labels.
+              examples:
+                London Population:
+                  value:
+                    subject: http://dbpedia.org/resource/London
+                    predicate: http://dbpedia.org/ontology/populationTotal
+                    objects: [  "\"8799800\"^^xsd:integer" ]
+                London Country:
+                  value:
+                    subject: http://dbpedia.org/resource/London
+                    predicate: http://dbpedia.org/ontology/country
+                    objects: [ "http://dbpedia.org/resource/United_Kingdom", "http://dbpedia.org/resource/England" ]
+                London Birth Date:
+                  value:
+                    subject: http://dbpedia.org/resource/London
+                    predicate: http://dbpedia.org/ontology/birthDate
+                    objects: null
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Error message.

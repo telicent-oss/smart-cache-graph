@@ -16,26 +16,23 @@
 
 package io.telicent.backup.utils;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.telicent.smart.cache.configuration.Configurator;
-import jakarta.servlet.ServletOutputStream;
+import io.telicent.utils.ServletUtils;
 import jakarta.servlet.http.HttpServletResponse;
 import org.apache.jena.atlas.logging.FmtLog;
-import org.apache.jena.riot.WebContent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.*;
 import java.util.stream.Stream;
 
 /**
  * Utility class for carrying out common back-up operations and file I/O.
  */
-public class BackupUtils {
+public class BackupUtils extends ServletUtils {
 
     public static final Logger LOG = LoggerFactory.getLogger("BackupUtils");
 
@@ -45,8 +42,6 @@ public class BackupUtils {
     public static final String ENV_BACKUPS_DIR = "ENV_BACKUPS_DIR";
 
     public static String dirBackups;
-
-    public static ObjectMapper MAPPER = new ObjectMapper();
 
     private BackupUtils() {
     }
@@ -344,24 +339,6 @@ public class BackupUtils {
         directory.delete();
     }
 
-    /**
-     * Populate an HTTP Response from given JSON Node
-     *
-     * @param response     Response to populate
-     * @param jsonResponse Response data (in JSON form).
-     */
-    public static void processResponse(HttpServletResponse response, ObjectNode jsonResponse) {
-        String jsonOutput;
-        try (ServletOutputStream out = response.getOutputStream()) {
-            jsonOutput = MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(jsonResponse);
-            response.setContentLength(jsonOutput.length());
-            response.setContentType(WebContent.contentTypeJSON);
-            response.setCharacterEncoding(WebContent.charsetUTF8);
-            out.print(jsonOutput);
-        } catch (IOException ex) {
-            response.setStatus(HttpServletResponse.SC_UNPROCESSABLE_CONTENT);
-        }
-    }
 
     /**
      * Populate an HTTP Response with error data
@@ -376,19 +353,6 @@ public class BackupUtils {
         processResponse(response, jsonResponse);
     }
 
-    /**
-     * Populate an HTTP Response with error data
-     *
-     * @param response     Response to populate
-     * @param jsonResponse Response data (in JSON form)
-     * @param status       HTTP status code for response
-     * @param message      Description of error encountered
-     */
-    public static void handleError(HttpServletResponse response, ObjectNode jsonResponse, int status, String message) {
-        response.setStatus(status);
-        jsonResponse.put("error", message);
-        processResponse(response, jsonResponse);
-    }
 
     /**
      * Checks to see if the requested parameter is empty or just a '/'
