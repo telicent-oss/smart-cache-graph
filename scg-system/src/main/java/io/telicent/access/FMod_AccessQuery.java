@@ -2,6 +2,7 @@ package io.telicent.access;
 
 import io.telicent.access.services.AccessQueryService;
 import io.telicent.access.servlets.AccessQueryServlet;
+import io.telicent.access.servlets.AccessTriplesServlet;
 import io.telicent.jena.abac.core.DatasetGraphABAC;
 import org.apache.jena.fuseki.main.FusekiServer;
 import org.apache.jena.fuseki.main.sys.FusekiAutoModule;
@@ -25,6 +26,7 @@ public class FMod_AccessQuery implements FusekiAutoModule {
                 final String datasetName = dap.getName();
                 final AccessQueryService queryService = new AccessQueryService(abac);
                 serverBuilder.addServlet(datasetName + "/access/query", new AccessQueryServlet(queryService));
+                serverBuilder.addServlet( datasetName + "/access/triples", new AccessTriplesServlet(queryService));
             }
         }
     }

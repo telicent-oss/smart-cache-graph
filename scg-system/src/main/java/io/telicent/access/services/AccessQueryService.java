@@ -22,4 +22,15 @@ public class AccessQueryService implements ABAC_Processor {
         return datasetGraphForUser.getDefaultGraph().find(triple).toList();
     }
 
+    public int getVisibleTriplesCount(final HttpAction action, final List<Triple> triples){
+        final DatasetGraph datasetGraphForUser = ABAC_Request.decideDataset(action, datasetGraph, ServerABAC.userForRequest());
+        int visibleCount = 0;
+        for(Triple triple : triples) {
+            if(datasetGraphForUser.getDefaultGraph().contains(triple)){
+                visibleCount++;
+            }
+        }
+        return visibleCount;
+    }
+
 }

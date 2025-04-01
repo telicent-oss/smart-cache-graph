@@ -1,6 +1,6 @@
-package io.telicent.labels;
+package io.telicent.model;
 
-public class LabelsQuery {
+public class JsonTriple {
     public String subject;
     public String predicate;
     public String object;
