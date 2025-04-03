@@ -96,7 +96,7 @@ public class LabelsQueryServlet extends HttpServlet {
     private Triple getTriple(JsonTriple tripleQuery) {
         final Node s = getWildcardOrURI(tripleQuery.subject);
         final Node p = getWildcardOrURI(tripleQuery.predicate);
-        final Node o = getObjectNode(tripleQuery.object);
+        final Node o = getObjectNode(tripleQuery.object.value);
         return Triple.create(s, p, o);
     }
 

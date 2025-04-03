@@ -1,16 +1,21 @@
 PREFIX dbr: <http://dbpedia.org/resource/>
 PREFIX dbo: <http://dbpedia.org/ontology/>
+PREFIX dbp: <http://dbpedia.org/property/>
 PREFIX security: <http://telicent.io/security#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 
 ## Some Paris data
 dbr:Paris dbo:populationTotal 2165423 .
 dbr:Paris dbo:country dbr:France .
+dbr:Paris dbp:name "Paris" .
 
 ## ABAC Security labels to apply
 GRAPH security:labels {
 
     ## Something everyone can see
     [ security:pattern 'dbr:Paris dbo:country dbr:France'  ; security:label "everyone" ] .
+    [ security:pattern 'dbr:Paris dbp:name "Paris"'  ; security:label "everyone" ] .
+
 
     ## Something only admin users can see
     [ security:pattern 'dbr:Paris dbo:populationTotal 2165423'  ; security:label "admin" ] .
