@@ -86,3 +86,92 @@ paths:
                   error:
                     type: string
                     description: Error message.
+  /{datasetName}/access/triple:
+    post:
+      summary: Return a boolean value to indicate whether the requested triple(s) are visible to the user.
+      description: Returns the request triples together with a boolean indicating whether the request triples are visible to the user, depending on 1) whether they exist 2) whether the user has access to see them 3) whether the user has indicated they want to know if all are visible or any of them.
+      parameters:
+        - name: datasetName
+          in: path
+          required: true
+          description: The name of the dataset to query.
+          schema:
+            type: string
+        - name: all
+          in: query
+          required: false
+          description: All triples need to be visible, not just some.
+          schema:
+            type: boolean
+            default: true
+      requestBody:
+        description: An array or triples, each containing the subject, predicate and object to be checked.
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                triples:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      subject:
+                        type: string
+                      predicate:
+                        type: string
+                      object:
+                        type: string
+            examples:
+              London:
+                value:
+                  triples:
+                    - subject: http://dbpedia.org/resource/London
+                      predicate: http://dbpedia.org/ontology/populationTotal
+                      object: "8799800"
+                    - subject: http://dbpedia.org/resource/London
+                      predicate: http://dbpedia.org/ontology/country
+                      object: http://dbpedia.org/resource/United_Kingdom
+      responses:
+        '200':
+          description: Request processed successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  triples:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        subject:
+                          type: array
+                        predicate:
+                          type: string
+                        object:
+                          type: string
+                  visible:
+                    type: boolean
+              examples:
+                London:
+                  value:
+                    triples:
+                      - subject: http://dbpedia.org/resource/London
+                        predicate: http://dbpedia.org/ontology/populationTotal
+                        object: "8799800"
+                      - subject: http://dbpedia.org/resource/London
+                        predicate: http://dbpedia.org/ontology/country
+                        object: http://dbpedia.org/resource/United_Kingdom
+                    visible: true
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Error message.

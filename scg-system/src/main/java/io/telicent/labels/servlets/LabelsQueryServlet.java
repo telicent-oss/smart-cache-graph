@@ -4,10 +4,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.telicent.labels.LabelsQuery;
-import io.telicent.labels.LabelsQueryRequest;
 import io.telicent.labels.TripleLabels;
 import io.telicent.labels.services.LabelsQueryService;
+import io.telicent.model.JsonTriple;
+import io.telicent.model.JsonTriples;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -80,8 +80,8 @@ public class LabelsQueryServlet extends HttpServlet {
         try (final InputStream inputStream = request.getInputStream()) {
             JsonNode rootNode = MAPPER.readTree(inputStream);
             if (rootNode.has("triples") && rootNode.get("triples").isArray()) {
-                LabelsQueryRequest queryRequest = MAPPER.convertValue(rootNode, LabelsQueryRequest.class);
-                for (LabelsQuery query : queryRequest.triples) {
+                JsonTriples queryRequest = MAPPER.convertValue(rootNode, JsonTriples.class);
+                for (JsonTriple query : queryRequest.triples) {
                     tripleList.add(getTriple(query));
                 }
             } else {
@@ -93,7 +93,7 @@ public class LabelsQueryServlet extends HttpServlet {
         return tripleList;
     }
 
-    private Triple getTriple(LabelsQuery tripleQuery) {
+    private Triple getTriple(JsonTriple tripleQuery) {
         final Node s = getWildcardOrURI(tripleQuery.subject);
         final Node p = getWildcardOrURI(tripleQuery.predicate);
         final Node o = getObjectNode(tripleQuery.object);
