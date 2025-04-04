@@ -58,19 +58,29 @@ paths:
                   objects:
                     type: array
                     items:
-                      type: string
-                    description: List of the labels.
+                      type: object
+                      properties:
+                        dataType:
+                          type: string
+                        value:
+                          type: string
               examples:
                 London Population:
                   value:
                     subject: http://dbpedia.org/resource/London
                     predicate: http://dbpedia.org/ontology/populationTotal
-                    objects: [  "\"8799800\"^^xsd:integer" ]
+                    objects:
+                      - dataType: http://www.w3.org/2001/XMLSchema#integer
+                        value: "8799800"
                 London Country:
                   value:
                     subject: http://dbpedia.org/resource/London
                     predicate: http://dbpedia.org/ontology/country
-                    objects: [ "http://dbpedia.org/resource/United_Kingdom", "http://dbpedia.org/resource/England" ]
+                    objects:
+                      - dataType: http://www.w3.org/2001/XMLSchema#anyURI
+                        value: http://dbpedia.org/resource/United_Kingdom
+                      - dataType: http://www.w3.org/2001/XMLSchema#anyURI
+                        value: http://dbpedia.org/resource/England
                 London Birth Date:
                   value:
                     subject: http://dbpedia.org/resource/London
@@ -122,17 +132,27 @@ paths:
                       predicate:
                         type: string
                       object:
-                        type: string
+                        type: object
+                        properties:
+                          dataType:
+                            type: string
+                            description: Can be a full URI or prefixed value (eg. xsd:string)
+                          value:
+                            type: string
             examples:
               London:
                 value:
                   triples:
                     - subject: http://dbpedia.org/resource/London
                       predicate: http://dbpedia.org/ontology/populationTotal
-                      object: "8799800"
+                      object:
+                        - dataType: xsd:integer
+                          value: "8799800"
                     - subject: http://dbpedia.org/resource/London
                       predicate: http://dbpedia.org/ontology/country
-                      object: http://dbpedia.org/resource/United_Kingdom
+                      object:
+                        - dataType: xsd:anyURI
+                          value:  http://dbpedia.org/resource/United_Kingdom
       responses:
         '200':
           description: Request processed successfully.
@@ -151,7 +171,12 @@ paths:
                         predicate:
                           type: string
                         object:
-                          type: string
+                          type: object
+                          properties:
+                            dataType:
+                              type: string
+                            value:
+                              type: string
                   visible:
                     type: boolean
               examples:
@@ -160,10 +185,14 @@ paths:
                     triples:
                       - subject: http://dbpedia.org/resource/London
                         predicate: http://dbpedia.org/ontology/populationTotal
-                        object: "8799800"
+                        object:
+                          - dataType: xsd:integer
+                            value: "8799800"
                       - subject: http://dbpedia.org/resource/London
                         predicate: http://dbpedia.org/ontology/country
-                        object: http://dbpedia.org/resource/United_Kingdom
+                        object:
+                          - dataType: xsd:anyURI
+                            value: http://dbpedia.org/resource/United_Kingdom
                     visible: true
         '500':
           description: Internal server error.

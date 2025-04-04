@@ -1,6 +1,5 @@
 package io.telicent.access;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -16,8 +15,10 @@ public class TestAccessTriplesService extends TestAccessBase {
     private final String countryTripleLondonEngland = getRequestTripleUri("London", "country", "England");
     private final String countryTripleParis = getRequestTripleUri("Paris", "country", "France");
 
-    private final String populationTripleLondon = getRequestTripleLiteral("London", "populationTotal", "8799800");
-    private final String populationTripleParis = getRequestTripleLiteral("Paris", "populationTotal", "2165423");
+    private final String populationTripleLondon = getRequestTripleLiteral("London", "populationTotal", "8799800", "xsd:integer", "ontology");
+    private final String populationTripleParis = getRequestTripleLiteral("Paris", "populationTotal", "2165423", "xsd:integer", "ontology");
+    private final String populationIncorrectTripleParis = getRequestTripleLiteral("Paris", "populationTotal", "2000000", "xsd:integer", "ontology");
+    private final String nameTripleParis = getRequestTripleLiteral("Paris", "name", "Paris", "xsd:string", "property");
 
 
     private final String requestCountryLondonUK = """
@@ -48,7 +49,10 @@ public class TestAccessTriplesService extends TestAccessBase {
                   "triples" : [ {
                     "subject" : "http://dbpedia.org/resource/London",
                     "predicate" : "http://dbpedia.org/ontology/country",
-                    "object" : "http://dbpedia.org/resource/United_Kingdom"
+                    "object" : {
+                      "dataType" : "xsd:anyURI",
+                      "value" : "http://dbpedia.org/resource/United_Kingdom"
+                    }
                   } ],
                   "visible" : true
                 }""";
@@ -69,7 +73,10 @@ public class TestAccessTriplesService extends TestAccessBase {
                   "triples" : [ {
                     "subject" : "http://dbpedia.org/resource/London",
                     "predicate" : "http://dbpedia.org/ontology/country",
-                    "object" : "http://dbpedia.org/resource/England"
+                    "object" : {
+                      "dataType" : "xsd:anyURI",
+                      "value" : "http://dbpedia.org/resource/England"
+                    }
                   } ],
                   "visible" : false
                 }""";
@@ -90,7 +97,10 @@ public class TestAccessTriplesService extends TestAccessBase {
                   "triples" : [ {
                     "subject" : "http://dbpedia.org/resource/London",
                     "predicate" : "http://dbpedia.org/ontology/country",
-                    "object" : "http://dbpedia.org/resource/England"
+                    "object" : {
+                      "dataType" : "xsd:anyURI",
+                      "value" : "http://dbpedia.org/resource/England"
+                    }
                   } ],
                   "visible" : true
                 }""";
@@ -111,7 +121,10 @@ public class TestAccessTriplesService extends TestAccessBase {
                   "triples" : [ {
                     "subject" : "http://dbpedia.org/resource/London",
                     "predicate" : "http://dbpedia.org/ontology/country",
-                    "object" : "http://dbpedia.org/resource/United_Kingdom"
+                    "object" : {
+                      "dataType" : "xsd:anyURI",
+                      "value" : "http://dbpedia.org/resource/United_Kingdom"
+                    }
                   } ],
                   "visible" : false
                 }""";
@@ -128,15 +141,18 @@ public class TestAccessTriplesService extends TestAccessBase {
     @Test
     void test_Paris_country_France_ds2_visible_true() throws Exception {
         final String requestCountryParis = """
-            {
-              "triples": [%s]
-            }""".formatted(countryTripleParis);
+                {
+                  "triples": [%s]
+                }""".formatted(countryTripleParis);
         final String expectedResponseBody = """
                 {
                   "triples" : [ {
                     "subject" : "http://dbpedia.org/resource/Paris",
                     "predicate" : "http://dbpedia.org/ontology/country",
-                    "object" : "http://dbpedia.org/resource/France"
+                    "object" : {
+                      "dataType" : "xsd:anyURI",
+                      "value" : "http://dbpedia.org/resource/France"
+                    }
                   } ],
                   "visible" : true
                 }""";
@@ -153,15 +169,18 @@ public class TestAccessTriplesService extends TestAccessBase {
     @Test
     void test_Paris_population_ds2_visible_false() throws Exception {
         final String requestPopulationParis = """
-            {
-              "triples": [%s]
-            }""".formatted(populationTripleParis);
+                {
+                  "triples": [%s]
+                }""".formatted(populationTripleParis);
         final String expectedResponseBody = """
                 {
                   "triples" : [ {
                     "subject" : "http://dbpedia.org/resource/Paris",
                     "predicate" : "http://dbpedia.org/ontology/populationTotal",
-                    "object" : "2165423"
+                    "object" : {
+                      "dataType" : "xsd:integer",
+                      "value" : "2165423"
+                    }
                   } ],
                   "visible" : false
                 }""";
@@ -176,18 +195,20 @@ public class TestAccessTriplesService extends TestAccessBase {
      * Request Paris -> population -> 2165423 returns true for User2 with access in dataset 2
      */
     @Test
-    @Disabled("Disabled until CORE-772 completed")
     void test_Paris_population_ds2_visible_true() throws Exception {
         final String requestPopulationParis = """
-            {
-              "triples": [%s]
-            }""".formatted(populationTripleParis);
+                {
+                  "triples": [%s]
+                }""".formatted(populationTripleParis);
         final String expectedResponseBody = """
                 {
                   "triples" : [ {
                     "subject" : "http://dbpedia.org/resource/Paris",
                     "predicate" : "http://dbpedia.org/ontology/populationTotal",
-                    "object" : "2165423"
+                    "object" : {
+                      "dataType" : "xsd:integer",
+                      "value" : "2165423"
+                    }
                   } ],
                   "visible" : true
                 }""";
@@ -199,20 +220,76 @@ public class TestAccessTriplesService extends TestAccessBase {
     }
 
     /**
+     * Request Paris -> population -> 2000000 returns false for User2 with access in dataset 2 as incorrect value
+     */
+    @Test
+    void test_Paris_wrong_population_ds2_visible_false() throws Exception {
+        final String requestPopulationParis = """
+                {
+                  "triples": [%s]
+                }""".formatted(populationIncorrectTripleParis);
+        final String expectedResponseBody = """
+                {
+                  "triples" : [ {
+                    "subject" : "http://dbpedia.org/resource/Paris",
+                    "predicate" : "http://dbpedia.org/ontology/populationTotal",
+                    "object" : {
+                      "dataType" : "xsd:integer",
+                      "value" : "2000000"
+                    }
+                  } ],
+                  "visible" : false
+                }""";
+
+        startServer();
+        loadData();
+        final String response = callServiceEndpoint(requestPopulationParis, USER2, SERVICE_NAME_2, ENDPOINT_UNDER_TEST, "?all=true");
+        assertEquals(expectedResponseBody, response, "Unexpected access query response");
+    }
+
+    @Test
+    void test_Paris_name_ds2_visible_true() throws Exception {
+        final String requestNameParis = """
+                {
+                  "triples": [%s]
+                }""".formatted(nameTripleParis);
+        final String expectedResponseBody = """
+                {
+                  "triples" : [ {
+                    "subject" : "http://dbpedia.org/resource/Paris",
+                    "predicate" : "http://dbpedia.org/property/name",
+                    "object" : {
+                      "dataType" : "xsd:string",
+                      "value" : "Paris"
+                    }
+                  } ],
+                  "visible" : true
+                }""";
+
+        startServer();
+        loadData();
+        final String response = callServiceEndpoint(requestNameParis, USER1, SERVICE_NAME_2, ENDPOINT_UNDER_TEST, "?all=true");
+        assertEquals(expectedResponseBody, response, "Unexpected access query response");
+    }
+
+    /**
      * Request London -> population total -> 8799800 returns false for User1 as no access to triple in dataset 1
      */
     @Test
     void test_London_one_triple_visible_false() throws Exception {
         final String requestPopulationLondon = """
-            {
-              "triples": [%s]
-            }""".formatted(populationTripleLondon);
+                {
+                  "triples": [%s]
+                }""".formatted(populationTripleLondon);
         final String expectedResponseBody = """
                 {
                   "triples" : [ {
                     "subject" : "http://dbpedia.org/resource/London",
                     "predicate" : "http://dbpedia.org/ontology/populationTotal",
-                    "object" : "8799800"
+                    "object" : {
+                      "dataType" : "xsd:integer",
+                      "value" : "8799800"
+                    }
                   } ],
                   "visible" : false
                 }""";
@@ -232,11 +309,17 @@ public class TestAccessTriplesService extends TestAccessBase {
                   "triples" : [ {
                     "subject" : "http://dbpedia.org/resource/London",
                     "predicate" : "http://dbpedia.org/ontology/country",
-                    "object" : "http://dbpedia.org/resource/United_Kingdom"
+                    "object" : {
+                      "dataType" : "xsd:anyURI",
+                      "value" : "http://dbpedia.org/resource/United_Kingdom"
+                    }
                   }, {
                     "subject" : "http://dbpedia.org/resource/London",
                     "predicate" : "http://dbpedia.org/ontology/populationTotal",
-                    "object" : "8799800"
+                    "object" : {
+                      "dataType" : "xsd:integer",
+                      "value" : "8799800"
+                    }
                   } ],
                   "visible" : false
                 }""";
@@ -257,11 +340,17 @@ public class TestAccessTriplesService extends TestAccessBase {
                   "triples" : [ {
                     "subject" : "http://dbpedia.org/resource/London",
                     "predicate" : "http://dbpedia.org/ontology/country",
-                    "object" : "http://dbpedia.org/resource/United_Kingdom"
+                    "object" : {
+                      "dataType" : "xsd:anyURI",
+                      "value" : "http://dbpedia.org/resource/United_Kingdom"
+                    }
                   }, {
                     "subject" : "http://dbpedia.org/resource/London",
                     "predicate" : "http://dbpedia.org/ontology/populationTotal",
-                    "object" : "8799800"
+                    "object" : {
+                      "dataType" : "xsd:integer",
+                      "value" : "8799800"
+                    }
                   } ],
                   "visible" : false
                 }""";
@@ -282,11 +371,17 @@ public class TestAccessTriplesService extends TestAccessBase {
                   "triples" : [ {
                     "subject" : "http://dbpedia.org/resource/London",
                     "predicate" : "http://dbpedia.org/ontology/country",
-                    "object" : "http://dbpedia.org/resource/United_Kingdom"
+                    "object" : {
+                      "dataType" : "xsd:anyURI",
+                      "value" : "http://dbpedia.org/resource/United_Kingdom"
+                    }
                   }, {
                     "subject" : "http://dbpedia.org/resource/London",
                     "predicate" : "http://dbpedia.org/ontology/populationTotal",
-                    "object" : "8799800"
+                    "object" : {
+                      "dataType" : "xsd:integer",
+                      "value" : "8799800"
+                    }
                   } ],
                   "visible" : true
                 }""";
@@ -294,6 +389,68 @@ public class TestAccessTriplesService extends TestAccessBase {
         startServer();
         loadData();
         final String response = callServiceEndpoint(requestLondon, USER1, SERVICE_NAME_1, ENDPOINT_UNDER_TEST, "?all=false");
+        assertEquals(expectedResponseBody, response, "Unexpected access query response");
+    }
+
+    /**
+     * Request London data returns false for User1 with all=unknown as all=false applied
+     */
+    @Test
+    void test_two_triples_one_visible_with_all_required_unknown() throws Exception {
+        final String expectedResponseBody = """
+                {
+                  "triples" : [ {
+                    "subject" : "http://dbpedia.org/resource/London",
+                    "predicate" : "http://dbpedia.org/ontology/country",
+                    "object" : {
+                      "dataType" : "xsd:anyURI",
+                      "value" : "http://dbpedia.org/resource/United_Kingdom"
+                    }
+                  }, {
+                    "subject" : "http://dbpedia.org/resource/London",
+                    "predicate" : "http://dbpedia.org/ontology/populationTotal",
+                    "object" : {
+                      "dataType" : "xsd:integer",
+                      "value" : "8799800"
+                    }
+                  } ],
+                  "visible" : true
+                }""";
+
+        startServer();
+        loadData();
+        final String response = callServiceEndpoint(requestLondon, USER1, SERVICE_NAME_1, ENDPOINT_UNDER_TEST, "?all=unknown");
+        assertEquals(expectedResponseBody, response, "Unexpected access query response");
+    }
+
+    /**
+     * Request London data returns false for User1 with unknown query param as default all=true applied
+     */
+    @Test
+    void test_two_triples_one_visible_with_unknown_query_param() throws Exception {
+        final String expectedResponseBody = """
+                {
+                  "triples" : [ {
+                    "subject" : "http://dbpedia.org/resource/London",
+                    "predicate" : "http://dbpedia.org/ontology/country",
+                    "object" : {
+                      "dataType" : "xsd:anyURI",
+                      "value" : "http://dbpedia.org/resource/United_Kingdom"
+                    }
+                  }, {
+                    "subject" : "http://dbpedia.org/resource/London",
+                    "predicate" : "http://dbpedia.org/ontology/populationTotal",
+                    "object" : {
+                      "dataType" : "xsd:integer",
+                      "value" : "8799800"
+                    }
+                  } ],
+                  "visible" : false
+                }""";
+
+        startServer();
+        loadData();
+        final String response = callServiceEndpoint(requestLondon, USER1, SERVICE_NAME_1, ENDPOINT_UNDER_TEST, "?unknown=unknown");
         assertEquals(expectedResponseBody, response, "Unexpected access query response");
     }
 
@@ -305,11 +462,17 @@ public class TestAccessTriplesService extends TestAccessBase {
                   "triples" : [ {
                     "subject" : "http://dbpedia.org/resource/London",
                     "predicate" : "http://dbpedia.org/ontology/country",
-                    "object" : "http://dbpedia.org/resource/United_Kingdom"
+                    "object" : {
+                      "dataType" : "xsd:anyURI",
+                      "value" : "http://dbpedia.org/resource/United_Kingdom"
+                    }
                   }, {
                     "subject" : "http://dbpedia.org/resource/London",
                     "predicate" : "http://dbpedia.org/ontology/populationTotal",
-                    "object" : "8799800"
+                    "object" : {
+                      "dataType" : "xsd:integer",
+                      "value" : "8799800"
+                    }
                   } ],
                   "visible" : true
                 }""";
@@ -324,18 +487,23 @@ public class TestAccessTriplesService extends TestAccessBase {
      * Request London data returns true for User2 with all=true as has access to all triples in dataset 1
      */
     @Test
-    @Disabled("Disabled until CORE-772 completed")
     void test_two_triples_all_visible_with_all_required_true() throws Exception {
         final String expectedResponseBody = """
                 {
                   "triples" : [ {
                     "subject" : "http://dbpedia.org/resource/London",
                     "predicate" : "http://dbpedia.org/ontology/country",
-                    "object" : "http://dbpedia.org/resource/United_Kingdom"
+                    "object" : {
+                      "dataType" : "xsd:anyURI",
+                      "value" : "http://dbpedia.org/resource/United_Kingdom"
+                    }
                   }, {
                     "subject" : "http://dbpedia.org/resource/London",
                     "predicate" : "http://dbpedia.org/ontology/populationTotal",
-                    "object" : "8799800"
+                    "object" : {
+                      "dataType" : "xsd:integer",
+                      "value" : "8799800"
+                    }
                   } ],
                   "visible" : true
                 }""";
@@ -349,19 +517,25 @@ public class TestAccessTriplesService extends TestAccessBase {
     @Test
     void test_two_triples_none_visible_without_all_required_true() throws Exception {
         final String requestLondonEngland = """
-            {
-              "triples": [%s,%s]
-            }""".formatted(countryTripleLondonEngland, populationTripleLondon);
+                {
+                  "triples": [%s,%s]
+                }""".formatted(countryTripleLondonEngland, populationTripleLondon);
         final String expectedResponseBody = """
                 {
                   "triples" : [ {
                     "subject" : "http://dbpedia.org/resource/London",
                     "predicate" : "http://dbpedia.org/ontology/country",
-                    "object" : "http://dbpedia.org/resource/England"
+                    "object" : {
+                      "dataType" : "xsd:anyURI",
+                      "value" : "http://dbpedia.org/resource/England"
+                    }
                   }, {
                     "subject" : "http://dbpedia.org/resource/London",
                     "predicate" : "http://dbpedia.org/ontology/populationTotal",
-                    "object" : "8799800"
+                    "object" : {
+                      "dataType" : "xsd:integer",
+                      "value" : "8799800"
+                    }
                   } ],
                   "visible" : false
                 }""";
@@ -383,21 +557,50 @@ public class TestAccessTriplesService extends TestAccessBase {
         assertEquals(expectedResponseBody, response, "Unexpected access query response");
     }
 
+    @Test
+    void bad_request_with_null_values_returns_error() throws Exception {
+        final String requestWithNulls = """
+                {
+                  "triples" : [ {
+                    "subject" : null,
+                    "predicate" : null,
+                    "object" : {
+                      "dataType" : null,
+                      "value" : null
+                    }
+                  } ]
+                }""";
+        final String expectedResponseBody = """
+                {
+                  "error" : "Unable to process request as missing required values"
+                }""";
+        startServer();
+        loadData();
+        final String response = callServiceEndpoint(requestWithNulls, USER1, SERVICE_NAME_1, ENDPOINT_UNDER_TEST);
+        assertEquals(expectedResponseBody, response, "Unexpected access query response");
+    }
+
     private String getRequestTripleUri(final String s, final String p, final String o) {
         return """
                 {
                   "subject" : "http://dbpedia.org/resource/%s",
                   "predicate" : "http://dbpedia.org/ontology/%s",
-                  "object" : "http://dbpedia.org/resource/%s"
+                  "object" : {
+                    "dataType" : "xsd:anyURI",
+                    "value" : "http://dbpedia.org/resource/%s"
+                  }
                 }""".formatted(s, p, o);
     }
 
-    private String getRequestTripleLiteral(final String s, final String p, final String o) {
+    private String getRequestTripleLiteral(final String s, final String p, final String o, final String dt, final String pr) {
         return """
                 {
                   "subject" : "http://dbpedia.org/resource/%s",
-                  "predicate" : "http://dbpedia.org/ontology/%s",
-                  "object" : "%s"
-                }""".formatted(s, p, o);
+                  "predicate" : "http://dbpedia.org/%s/%s",
+                  "object" : {
+                    "dataType" : "%s",
+                    "value" : "%s"
+                  }
+                }""".formatted(s, pr, p, dt, o);
     }
 }

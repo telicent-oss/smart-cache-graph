@@ -59,7 +59,10 @@ public class TestLabelsQuery {
                     {
                         "subject": "http://dbpedia.org/resource/London",
                         "predicate": "http://dbpedia.org/ontology/country",
-                        "object": "http://dbpedia.org/resource/United_Kingdom"
+                        "object": {
+                          "dataType" : "xsd:anyURI",
+                          "value" : "http://dbpedia.org/resource/United_Kingdom"
+                        }
                     }
                   ]
                 }""";
@@ -83,7 +86,10 @@ public class TestLabelsQuery {
                         {
                             "subject": "http://dbpedia.org/resource/London",
                             "predicate": "http://dbpedia.org/ontology/populationTotal",
-                            "object": 8799800
+                            "object": {
+                              "dataType" : "xsd:nonNegativeInteger",
+                              "value" : 8799800
+                            }
                         }
                     ]
                 }""";
@@ -107,7 +113,10 @@ public class TestLabelsQuery {
                         {
                             "subject": "http://dbpedia.org/resource/Rome",
                             "predicate": "http://dbpedia.org/ontology/country",
-                            "object": "http://dbpedia.org/resource/Italy"
+                             "object" : {
+                               "dataType" : "xsd:anyURI",
+                               "value" : "http://dbpedia.org/resource/Italy"
+                             }
                         }
                     ]
                 }""";
@@ -131,12 +140,18 @@ public class TestLabelsQuery {
                         {
                           "subject": "http://dbpedia.org/resource/Rome",
                           "predicate": "http://dbpedia.org/ontology/country",
-                          "object": "http://dbpedia.org/resource/Italy"
+                          "object": {
+                            "dataType" : "xsd:anyURI",
+                            "value" : "http://dbpedia.org/resource/Italy"
+                          }
                         },
                         {
                           "subject": "http://dbpedia.org/resource/Paris",
                           "predicate": "http://dbpedia.org/ontology/country",
-                          "object": "http://dbpedia.org/resource/France"
+                          "object": {
+                            "dataType" : "xsd:anyURI",
+                            "value" : "http://dbpedia.org/resource/France"
+                          }
                         }
                     ]
                 }""";
