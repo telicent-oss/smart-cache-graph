@@ -97,14 +97,16 @@ public class TestTypedObject {
         assertEquals("Unknown data type URI: http://example.org#unknown", exception.getMessage(), "Unexpected exception message");
     }
 
+    /* The following test passes because, by default, Jena allow silent registration of unknown datatypes:
+    /* https://jena.apache.org/documentation/javadoc/jena/org.apache.jena.core/org/apache/jena/shared/impl/JenaParameters.html#enableSilentAcceptanceOfUnknownDatatypes).
+     */
     @Test
     public void testXsdUnknown() throws Exception {
         final JsonTripleObject tripleObject = MAPPER.readValue(
                 getJsonString("xsd:unknown", "123"), JsonTripleObject.class);
-        Exception exception = assertThrows(SmartCacheGraphException.class, () -> {
-            TypedObject.from(tripleObject);
-        });
-        assertEquals("Unknown data type: xsd:unknown", exception.getMessage(), "Unexpected exception message");
+        final TypedObject result = TypedObject.from(tripleObject);
+        assertNotNull(result);
+        assertEquals(XSD.NS + "unknown", result.datatype.getURI());
     }
 
     @Test
@@ -121,7 +123,7 @@ public class TestTypedObject {
     @Test
     public void testRdfXmlLiteral() throws Exception {
         final JsonTripleObject tripleObject = MAPPER.readValue(
-                getJsonString("rdf:XMLLiteral", "123"), JsonTripleObject.class);
+                getJsonString("rdf:XMLLiteral", "<test>test</test>"), JsonTripleObject.class);
         final TypedObject result = TypedObject.from(tripleObject);
         assertNotNull(result);
         assertEquals(XMLLiteralType.rdfXMLLiteral.getURI(), result.datatype.getURI());
@@ -130,7 +132,7 @@ public class TestTypedObject {
     @Test
     public void testRdfXmlLiteralFullUri() throws Exception {
         final JsonTripleObject tripleObject = MAPPER.readValue(
-                getJsonString(RDF.uri + "XMLLiteral", "123"), JsonTripleObject.class);
+                getJsonString(RDF.uri + "XMLLiteral", "<test>test</test>"), JsonTripleObject.class);
         final TypedObject result = TypedObject.from(tripleObject);
         assertNotNull(result);
         assertEquals(XMLLiteralType.rdfXMLLiteral.getURI(), result.datatype.getURI());

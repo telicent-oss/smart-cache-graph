@@ -2,11 +2,10 @@ package io.telicent.access.servlets;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.telicent.model.JsonTriple;
-import io.telicent.model.JsonTripleObject;
-import io.telicent.model.JsonTriples;
 import io.telicent.access.AccessTriplesResults;
 import io.telicent.access.services.AccessQueryService;
+import io.telicent.model.JsonTriple;
+import io.telicent.model.JsonTriples;
 import io.telicent.model.TypedObject;
 import io.telicent.utils.SmartCacheGraphException;
 import jakarta.servlet.http.HttpServlet;
@@ -93,7 +92,7 @@ public class AccessTriplesServlet extends HttpServlet {
                 if (accessTriple.object.value.startsWith(HTTP) || accessTriple.object.value.startsWith(HTTPS)) {
                     o = NodeFactory.createURI(Objects.requireNonNull(accessTriple.object.value));
                 } else {
-                    TypedObject typedObject = Objects.requireNonNull(TypedObject.from(accessTriple.object));
+                    final TypedObject typedObject = Objects.requireNonNull(TypedObject.from(accessTriple.object));
                     o = NodeFactory.createLiteralDT(typedObject.value, typedObject.datatype);
                 }
                 triples.add(Triple.create(s, p, o));
