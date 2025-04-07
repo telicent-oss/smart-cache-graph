@@ -2,10 +2,11 @@ package io.telicent.access.servlets;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.telicent.model.JsonTriple;
-import io.telicent.model.JsonTriples;
 import io.telicent.access.AccessTriplesResults;
 import io.telicent.access.services.AccessQueryService;
+import io.telicent.model.JsonTriple;
+import io.telicent.model.JsonTriples;
+import io.telicent.model.TypedObject;
 import io.telicent.utils.SmartCacheGraphException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -24,14 +25,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-import static io.telicent.utils.ServletUtils.handleError;
-import static io.telicent.utils.ServletUtils.processResponse;
+import static io.telicent.utils.ServletUtils.*;
 
 public class AccessTriplesServlet extends HttpServlet {
 
     private final static Logger LOG = FusekiKafka.LOG;
-    private final static String HTTP = "http://";
-    private final static String HTTPS = "https://";
 
     public static ObjectMapper MAPPER = new ObjectMapper();
 
@@ -77,7 +75,7 @@ public class AccessTriplesServlet extends HttpServlet {
             if (queryStringTokens[0].equals("all")) {
                 return Boolean.parseBoolean(queryStringTokens[1]);
             } else {
-                return false;
+                return true; // default value
             }
         } else {
             return true; // default value
@@ -91,10 +89,11 @@ public class AccessTriplesServlet extends HttpServlet {
                 final Node s = NodeFactory.createURI(Objects.requireNonNull(accessTriple.subject));
                 final Node p = NodeFactory.createURI(Objects.requireNonNull(accessTriple.predicate));
                 final Node o;
-                if (accessTriple.object.startsWith(HTTP) || accessTriple.object.startsWith(HTTPS)) {
-                    o = NodeFactory.createURI(Objects.requireNonNull(accessTriple.object));
+                if (accessTriple.object.value.startsWith(HTTP) || accessTriple.object.value.startsWith(HTTPS)) {
+                    o = NodeFactory.createURI(Objects.requireNonNull(accessTriple.object.value));
                 } else {
-                    o = NodeFactory.createLiteralByValue(Objects.requireNonNull(accessTriple.object));
+                    final TypedObject typedObject = Objects.requireNonNull(TypedObject.from(accessTriple.object));
+                    o = NodeFactory.createLiteralDT(typedObject.value, typedObject.datatype);
                 }
                 triples.add(Triple.create(s, p, o));
             }

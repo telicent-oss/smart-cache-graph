@@ -48,7 +48,10 @@ public class TestAccessQueryService extends TestAccessBase {
                 {
                   "subject" : "http://dbpedia.org/resource/London",
                   "predicate" : "http://dbpedia.org/ontology/country",
-                  "objects" : [ "http://dbpedia.org/resource/United_Kingdom" ]
+                  "objects" : [ {
+                    "dataType" : "http://www.w3.org/2001/XMLSchema#anyURI",
+                    "value" : "http://dbpedia.org/resource/United_Kingdom"
+                  } ]
                 }""";
 
         startServer();
@@ -66,7 +69,10 @@ public class TestAccessQueryService extends TestAccessBase {
                 {
                   "subject" : "http://dbpedia.org/resource/Paris",
                   "predicate" : "http://dbpedia.org/ontology/country",
-                  "objects" : [ "http://dbpedia.org/resource/France" ]
+                  "objects" : [ {
+                    "dataType" : "http://www.w3.org/2001/XMLSchema#anyURI",
+                    "value" : "http://dbpedia.org/resource/France"
+                  } ]
                 }""";
 
         startServer();
@@ -173,7 +179,13 @@ public class TestAccessQueryService extends TestAccessBase {
                 {
                   "subject" : "http://dbpedia.org/resource/London",
                   "predicate" : "http://dbpedia.org/ontology/country",
-                  "objects" : [ "http://dbpedia.org/resource/United_Kingdom", "http://dbpedia.org/resource/England" ]
+                  "objects" : [ {
+                    "dataType" : "http://www.w3.org/2001/XMLSchema#anyURI",
+                    "value" : "http://dbpedia.org/resource/United_Kingdom"
+                  }, {
+                    "dataType" : "http://www.w3.org/2001/XMLSchema#anyURI",
+                    "value" : "http://dbpedia.org/resource/England"
+                  } ]
                 }""";
 
         startServer();
@@ -191,7 +203,10 @@ public class TestAccessQueryService extends TestAccessBase {
                 {
                   "subject" : "http://dbpedia.org/resource/London",
                   "predicate" : "http://dbpedia.org/ontology/populationTotal",
-                  "objects" : [ "\\"8799800\\"^^xsd:integer" ]
+                  "objects" : [ {
+                    "dataType" : "http://www.w3.org/2001/XMLSchema#integer",
+                    "value" : "8799800"
+                  } ]
                 }""";
 
         startServer();
@@ -209,7 +224,10 @@ public class TestAccessQueryService extends TestAccessBase {
                 {
                   "subject" : "http://dbpedia.org/resource/Paris",
                   "predicate" : "http://dbpedia.org/ontology/populationTotal",
-                  "objects" : [ "\\"2165423\\"^^xsd:integer" ]
+                  "objects" : [ {
+                    "dataType" : "http://www.w3.org/2001/XMLSchema#integer",
+                    "value" : "2165423"
+                  } ]
                 }""";
 
         startServer();
@@ -296,7 +314,10 @@ public class TestAccessQueryService extends TestAccessBase {
                 {
                   "subject" : "http://dbpedia.org/resource/Paris",
                   "predicate" : "http://dbpedia.org/ontology/country",
-                  "objects" : [ "http://dbpedia.org/resource/France" ]
+                  "objects" : [ {
+                    "dataType" : "http://www.w3.org/2001/XMLSchema#anyURI",
+                    "value" : "http://dbpedia.org/resource/France"
+                  } ]
                 }""";
         startServer();
         loadData();

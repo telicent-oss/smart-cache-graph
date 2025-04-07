@@ -13,6 +13,9 @@ import java.io.IOException;
  */
 public class ServletUtils {
 
+    public final static String HTTP = "http://";
+    public final static String HTTPS = "https://";
+
     public static ObjectMapper MAPPER = new ObjectMapper();
 
     /**
