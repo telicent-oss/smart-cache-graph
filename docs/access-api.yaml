@@ -96,7 +96,7 @@ paths:
                   error:
                     type: string
                     description: Error message.
-  /{datasetName}/access/triple:
+  /{datasetName}/access/triples:
     post:
       summary: Return a boolean value to indicate whether the requested triple(s) are visible to the user.
       description: Returns the request triples together with a boolean indicating whether the request triples are visible to the user, depending on 1) whether they exist 2) whether the user has access to see them 3) whether the user has indicated they want to know if all are visible or any of them.
