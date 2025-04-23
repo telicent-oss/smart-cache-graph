@@ -8,6 +8,7 @@ updates:
     groups:
       maven-patch-group:
         update-types:
+        - "minor"
         - "patch"
     open-pull-requests-limit: 10
   - package-ecosystem: "github-actions"
