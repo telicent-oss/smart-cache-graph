@@ -84,14 +84,14 @@
     <!-- Internal dependencies -->
     <dependency.rdf-abac>0.73.4</dependency.rdf-abac>
     <dependency.fuseki-kafka>1.5.3</dependency.fuseki-kafka>
-    <dependency.jena>5.3.0</dependency.jena>
+    <dependency.jena>5.4.0</dependency.jena>
     <dependency.fuseki-server>${dependency.jena}</dependency.fuseki-server>
     <dependency.graphql>0.9.2</dependency.graphql>
     <dependency.jwt-servlet-auth>0.17.6</dependency.jwt-servlet-auth>
     <dependency.smart-caches-core>0.28.2</dependency.smart-caches-core>
 
     <!-- External dependencies -->
-    <dependency.jackson>2.18.3</dependency.jackson>
+    <dependency.jackson>2.19.0</dependency.jackson>
     <dependency.kafka>3.9.0</dependency.kafka>
     <dependency.kotlin>2.1.20</dependency.kotlin>
     <dependency.otel>1.33.0</dependency.otel> <!-- These two must be in-step. -->
@@ -107,7 +107,7 @@
     <dependency.junit5>5.12.2</dependency.junit5>
     <dependency.junit5-platform>1.12.2</dependency.junit5-platform>
     <dependency.mockito>5.17.0</dependency.mockito>
-    <dependency.testcontainers>1.20.6</dependency.testcontainers>
+    <dependency.testcontainers>1.21.0</dependency.testcontainers>
 
     <dependency.yaml-config>1.0.7</dependency.yaml-config>
 
