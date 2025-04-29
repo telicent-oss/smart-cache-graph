@@ -1,4 +1,8 @@
 # Smart Cache Graph
+## 0.83.6
+- New Triple Query endpoint
+- Build improvements (Telicent Base Image v1.2.10)
+- Build improvements (minimal dependency version updates)
 
 ## 0.83.5
 - Build improvements (Telicent Base Image v1.2.5)
