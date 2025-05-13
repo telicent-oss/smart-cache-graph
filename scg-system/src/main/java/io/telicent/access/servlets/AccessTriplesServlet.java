@@ -91,9 +91,14 @@ public class AccessTriplesServlet extends HttpServlet {
                 final Node o;
                 if (accessTriple.object.value.startsWith(HTTP) || accessTriple.object.value.startsWith(HTTPS)) {
                     o = NodeFactory.createURI(Objects.requireNonNull(accessTriple.object.value));
-                } else {
+                } else if (accessTriple.object.language == null || accessTriple.object.language.isEmpty()){
                     final TypedObject typedObject = Objects.requireNonNull(TypedObject.from(accessTriple.object));
                     o = NodeFactory.createLiteralDT(typedObject.value, typedObject.datatype);
+                } else if (accessTriple.object.dataType == null || accessTriple.object.dataType.isEmpty()){
+                    final TypedObject typedObject = Objects.requireNonNull(TypedObject.from(accessTriple.object));
+                    o = NodeFactory.createLiteralLang(typedObject.value, typedObject.language);
+                } else {
+                    throw new SmartCacheGraphException("Cannot have both language and dataType in request object");
                 }
                 triples.add(Triple.create(s, p, o));
             }

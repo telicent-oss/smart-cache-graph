@@ -139,6 +139,9 @@ paths:
                             description: Can be a full URI or prefixed value (eg. xsd:string)
                           value:
                             type: string
+                          language:
+                            type: string
+                            description: An IETF BCP 47 language tag (e.g. 'en' or 'fr')
             examples:
               London:
                 value:
@@ -153,6 +156,11 @@ paths:
                       object:
                         - dataType: xsd:anyURI
                           value:  http://dbpedia.org/resource/United_Kingdom
+                    - subject: http://dbpedia.org/resource/London
+                      predicate: http://dbpedia.org/ontology/name
+                      object:
+                        - value: "London"
+                          language: "en"
       responses:
         '200':
           description: Request processed successfully.
@@ -167,7 +175,7 @@ paths:
                       type: object
                       properties:
                         subject:
-                          type: array
+                          type: string
                         predicate:
                           type: string
                         object:
@@ -176,6 +184,8 @@ paths:
                             dataType:
                               type: string
                             value:
+                              type: string
+                            language:
                               type: string
                   visible:
                     type: boolean
@@ -193,9 +203,14 @@ paths:
                         object:
                           - dataType: xsd:anyURI
                             value: http://dbpedia.org/resource/United_Kingdom
+                      - subject: http://dbpedia.org/resource/London
+                        predicate: http://dbpedia.org/ontology/name
+                        object:
+                          - value: "London"
+                            language: "en"
                     visible: true
-        '500':
-          description: Internal server error.
+        '400':
+          description: Bad Request.
           content:
             application/json:
               schema:

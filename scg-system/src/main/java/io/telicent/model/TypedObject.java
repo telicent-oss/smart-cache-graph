@@ -9,16 +9,22 @@ import org.apache.jena.vocabulary.XSD;
 
 import java.util.Objects;
 
-import static io.telicent.utils.ServletUtils.HTTP;
-import static io.telicent.utils.ServletUtils.HTTPS;
+import static io.telicent.utils.ServletUtils.*;
 
 public class TypedObject {
     public RDFDatatype datatype;
     public String value;
+    public String language;
 
-    public TypedObject(RDFDatatype datatype, String value) {
+    public TypedObject(RDFDatatype datatype, String value){
         this.datatype = datatype;
         this.value = value;
+    }
+
+    public TypedObject(RDFDatatype datatype, String value, String language) {
+        this.datatype = datatype;
+        this.value = value;
+        this.language = language;
     }
 
     /**
@@ -30,7 +36,9 @@ public class TypedObject {
      * @throws SmartCacheGraphException if unable to resolve the RDFDataType
      */
     public static TypedObject from(final JsonTripleObject jsonTripleObject) throws SmartCacheGraphException {
-        if (jsonTripleObject.dataType.startsWith(HTTP) || jsonTripleObject.dataType.startsWith(HTTPS)) {
+        if(jsonTripleObject.language != null && !jsonTripleObject.language.isEmpty()) {
+            return new TypedObject(RDF.dtLangString, jsonTripleObject.value, jsonTripleObject.language);
+        } else if (jsonTripleObject.dataType.startsWith(HTTP) || jsonTripleObject.dataType.startsWith(HTTPS)) {
             return getTypedObjectFromUriValue(jsonTripleObject);
         } else {
             final String[] tokens = jsonTripleObject.dataType.split(":");

@@ -580,6 +580,61 @@ public class TestAccessTriplesService extends TestAccessBase {
         assertEquals(expectedResponseBody, response, "Unexpected access query response");
     }
 
+    @Test
+    void test_request_with_language_literal() throws Exception {
+        final String requestWithLanguage = """
+                {
+                  "triples" : [ {
+                    "subject" : "http://dbpedia.org/resource/London",
+                    "predicate" : "http://dbpedia.org/ontology/name",
+                    "object" : {
+                      "value" : "London",
+                      "language" : "en"
+                    }
+                  } ]
+                }""";
+        final String expectedResponseBody = """
+                {
+                  "triples" : [ {
+                    "subject" : "http://dbpedia.org/resource/London",
+                    "predicate" : "http://dbpedia.org/ontology/name",
+                    "object" : {
+                      "value" : "London",
+                      "language" : "en"
+                    }
+                  } ],
+                  "visible" : false
+                }""";
+        startServer();
+        loadData();
+        final String response = callServiceEndpoint(requestWithLanguage, USER1, SERVICE_NAME_1, ENDPOINT_UNDER_TEST);
+        assertEquals(expectedResponseBody, response, "Unexpected access query response");
+    }
+
+    @Test
+    void test_request_with_language_literal_and_datatype() throws Exception {
+        final String requestWithLanguage = """
+                {
+                  "triples" : [ {
+                    "subject" : "http://dbpedia.org/resource/London",
+                    "predicate" : "http://dbpedia.org/ontology/name",
+                    "object" : {
+                      "dataType" : "xsd:string",
+                      "value" : "London",
+                      "language" : "en"
+                    }
+                  } ]
+                }""";
+        final String expectedResponseBody = """
+                {
+                  "error" : "Cannot have both language and dataType in request object"
+                }""";
+        startServer();
+        loadData();
+        final String response = callServiceEndpoint(requestWithLanguage, USER1, SERVICE_NAME_1, ENDPOINT_UNDER_TEST);
+        assertEquals(expectedResponseBody, response, "Unexpected access query response");
+    }
+
     private String getRequestTripleUri(final String s, final String p, final String o) {
         return """
                 {
