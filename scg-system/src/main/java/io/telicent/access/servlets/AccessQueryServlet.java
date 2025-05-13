@@ -1,5 +1,6 @@
 package io.telicent.access.servlets;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.telicent.access.AccessQuery;
 import io.telicent.access.AccessQueryResults;
@@ -65,6 +66,8 @@ public class AccessQueryServlet extends HttpServlet {
             processResponse(response, MAPPER.valueToTree(queryResults));
         } catch (SmartCacheGraphException ex) {
             handleError(response, MAPPER.createObjectNode(), HttpServletResponse.SC_BAD_REQUEST, ex.getMessage());
+        } catch (JsonProcessingException ex) {
+            handleError(response, MAPPER.createObjectNode(), HttpServletResponse.SC_BAD_REQUEST, "Missing or invalid request body content");
         }
     }
 

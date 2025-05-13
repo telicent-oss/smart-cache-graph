@@ -35,10 +35,6 @@ public class TestAccessQueryService extends TestAccessBase {
     private static final String USER1 = "User1";
     private static final String USER2 = "User2";
 
-
-
-
-
     /**
      * In this test User1 successfully accesses only one country for London in dataset 1
      */
@@ -341,6 +337,41 @@ public class TestAccessQueryService extends TestAccessBase {
         startServer();
         loadData();
         final String response = callServiceEndpoint(noMatchRequest, USER2, SERVICE_NAME_1, ENDPOINT_UNDER_TEST);
+        assertEquals(expectedResponseBody, response, "Unexpected access query response");
+    }
+
+    /**
+     * In this test User2 has provided an invalid request body
+     */
+    @Test
+    void test_user2_invalid_request_body() throws Exception {
+        final String invalidRequestBody = """
+                {
+                    "foo":"bar"
+                }""";
+        final String expectedResponseBody = """
+                {
+                  "error" : "Missing or invalid request body content"
+                }""";
+        startServer();
+        loadData();
+        final String response = callServiceEndpoint(invalidRequestBody, USER2, SERVICE_NAME_1, ENDPOINT_UNDER_TEST);
+        assertEquals(expectedResponseBody, response, "Unexpected access query response");
+    }
+
+    /**
+     * In this test User2 has not provided a request body
+     */
+    @Test
+    void test_user2_missing_request_body() throws Exception {
+        final String emptyRequestBody = "";
+        final String expectedResponseBody = """
+                {
+                  "error" : "Missing or invalid request body content"
+                }""";
+        startServer();
+        loadData();
+        final String response = callServiceEndpoint(emptyRequestBody, USER2, SERVICE_NAME_1, ENDPOINT_UNDER_TEST);
         assertEquals(expectedResponseBody, response, "Unexpected access query response");
     }
 
