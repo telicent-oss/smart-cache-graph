@@ -1,4 +1,9 @@
 # Smart Cache Graph
+
+## 0.83.6
+- Build improvements:
+  - GraphQL Jena (0.9.3)
+  - Telicent Base Java Image (1.2.11)
 ## 0.83.6
 - New Triple Query endpoint
 - Build improvements (Telicent Base Image v1.2.10)
