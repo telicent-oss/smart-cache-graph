@@ -1,5 +1,8 @@
 # Smart Cache Graph
 
+## 0.83.8
+- Addressing build issue
+
 ## 0.83.7
 - Build improvements:
   - GraphQL Jena (0.9.3)
