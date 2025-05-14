@@ -50,7 +50,6 @@ public class TestAccessTriplesService extends TestAccessBase {
                     "subject" : "http://dbpedia.org/resource/London",
                     "predicate" : "http://dbpedia.org/ontology/country",
                     "object" : {
-                      "dataType" : "xsd:anyURI",
                       "value" : "http://dbpedia.org/resource/United_Kingdom"
                     }
                   } ],
@@ -74,7 +73,6 @@ public class TestAccessTriplesService extends TestAccessBase {
                     "subject" : "http://dbpedia.org/resource/London",
                     "predicate" : "http://dbpedia.org/ontology/country",
                     "object" : {
-                      "dataType" : "xsd:anyURI",
                       "value" : "http://dbpedia.org/resource/England"
                     }
                   } ],
@@ -98,7 +96,6 @@ public class TestAccessTriplesService extends TestAccessBase {
                     "subject" : "http://dbpedia.org/resource/London",
                     "predicate" : "http://dbpedia.org/ontology/country",
                     "object" : {
-                      "dataType" : "xsd:anyURI",
                       "value" : "http://dbpedia.org/resource/England"
                     }
                   } ],
@@ -122,7 +119,6 @@ public class TestAccessTriplesService extends TestAccessBase {
                     "subject" : "http://dbpedia.org/resource/London",
                     "predicate" : "http://dbpedia.org/ontology/country",
                     "object" : {
-                      "dataType" : "xsd:anyURI",
                       "value" : "http://dbpedia.org/resource/United_Kingdom"
                     }
                   } ],
@@ -150,7 +146,6 @@ public class TestAccessTriplesService extends TestAccessBase {
                     "subject" : "http://dbpedia.org/resource/Paris",
                     "predicate" : "http://dbpedia.org/ontology/country",
                     "object" : {
-                      "dataType" : "xsd:anyURI",
                       "value" : "http://dbpedia.org/resource/France"
                     }
                   } ],
@@ -310,7 +305,6 @@ public class TestAccessTriplesService extends TestAccessBase {
                     "subject" : "http://dbpedia.org/resource/London",
                     "predicate" : "http://dbpedia.org/ontology/country",
                     "object" : {
-                      "dataType" : "xsd:anyURI",
                       "value" : "http://dbpedia.org/resource/United_Kingdom"
                     }
                   }, {
@@ -341,7 +335,6 @@ public class TestAccessTriplesService extends TestAccessBase {
                     "subject" : "http://dbpedia.org/resource/London",
                     "predicate" : "http://dbpedia.org/ontology/country",
                     "object" : {
-                      "dataType" : "xsd:anyURI",
                       "value" : "http://dbpedia.org/resource/United_Kingdom"
                     }
                   }, {
@@ -372,7 +365,6 @@ public class TestAccessTriplesService extends TestAccessBase {
                     "subject" : "http://dbpedia.org/resource/London",
                     "predicate" : "http://dbpedia.org/ontology/country",
                     "object" : {
-                      "dataType" : "xsd:anyURI",
                       "value" : "http://dbpedia.org/resource/United_Kingdom"
                     }
                   }, {
@@ -403,7 +395,6 @@ public class TestAccessTriplesService extends TestAccessBase {
                     "subject" : "http://dbpedia.org/resource/London",
                     "predicate" : "http://dbpedia.org/ontology/country",
                     "object" : {
-                      "dataType" : "xsd:anyURI",
                       "value" : "http://dbpedia.org/resource/United_Kingdom"
                     }
                   }, {
@@ -434,7 +425,6 @@ public class TestAccessTriplesService extends TestAccessBase {
                     "subject" : "http://dbpedia.org/resource/London",
                     "predicate" : "http://dbpedia.org/ontology/country",
                     "object" : {
-                      "dataType" : "xsd:anyURI",
                       "value" : "http://dbpedia.org/resource/United_Kingdom"
                     }
                   }, {
@@ -463,7 +453,6 @@ public class TestAccessTriplesService extends TestAccessBase {
                     "subject" : "http://dbpedia.org/resource/London",
                     "predicate" : "http://dbpedia.org/ontology/country",
                     "object" : {
-                      "dataType" : "xsd:anyURI",
                       "value" : "http://dbpedia.org/resource/United_Kingdom"
                     }
                   }, {
@@ -494,7 +483,6 @@ public class TestAccessTriplesService extends TestAccessBase {
                     "subject" : "http://dbpedia.org/resource/London",
                     "predicate" : "http://dbpedia.org/ontology/country",
                     "object" : {
-                      "dataType" : "xsd:anyURI",
                       "value" : "http://dbpedia.org/resource/United_Kingdom"
                     }
                   }, {
@@ -526,7 +514,6 @@ public class TestAccessTriplesService extends TestAccessBase {
                     "subject" : "http://dbpedia.org/resource/London",
                     "predicate" : "http://dbpedia.org/ontology/country",
                     "object" : {
-                      "dataType" : "xsd:anyURI",
                       "value" : "http://dbpedia.org/resource/England"
                     }
                   }, {
@@ -538,6 +525,59 @@ public class TestAccessTriplesService extends TestAccessBase {
                     }
                   } ],
                   "visible" : false
+                }""";
+        startServer();
+        loadData();
+        final String response = callServiceEndpoint(requestLondonEngland, USER1, SERVICE_NAME_1, ENDPOINT_UNDER_TEST, "?all=false");
+        assertEquals(expectedResponseBody, response, "Unexpected access query response");
+    }
+
+    @Test
+    void test_literal_uri_value() throws Exception {
+        final String requestLondonEngland = """
+                {
+                  "triples" : [ {
+                    "subject" : "http://dbpedia.org/resource/London",
+                    "predicate" : "http://xmlns.com/foaf/0.1/homepage",
+                    "object" : {
+                      "dataType" : "xsd:anyURI",
+                      "value" : "https://www.london.gov.uk/"
+                    }
+                  } ]
+                }""";
+        final String expectedResponseBody = """
+                {
+                  "triples" : [ {
+                    "subject" : "http://dbpedia.org/resource/London",
+                    "predicate" : "http://xmlns.com/foaf/0.1/homepage",
+                    "object" : {
+                      "dataType" : "xsd:anyURI",
+                      "value" : "https://www.london.gov.uk/"
+                    }
+                  } ],
+                  "visible" : true
+                }""";
+        startServer();
+        loadData();
+        final String response = callServiceEndpoint(requestLondonEngland, USER1, SERVICE_NAME_1, ENDPOINT_UNDER_TEST, "?all=false");
+        assertEquals(expectedResponseBody, response, "Unexpected access query response");
+    }
+
+    @Test
+    void test_not_a_valid_uri_value() throws Exception {
+        final String requestLondonEngland = """
+                {
+                  "triples" : [ {
+                    "subject" : "http://dbpedia.org/resource/London",
+                    "predicate" : "http://xmlns.com/foaf/0.1/homepage",
+                    "object" : {
+                      "value" : "not a URI"
+                    }
+                  } ]
+                }""";
+        final String expectedResponseBody = """
+                {
+                  "error" : "Illegal character in path at index 3: not a URI"
                 }""";
         startServer();
         loadData();
@@ -641,7 +681,6 @@ public class TestAccessTriplesService extends TestAccessBase {
                   "subject" : "http://dbpedia.org/resource/%s",
                   "predicate" : "http://dbpedia.org/ontology/%s",
                   "object" : {
-                    "dataType" : "xsd:anyURI",
                     "value" : "http://dbpedia.org/resource/%s"
                   }
                 }""".formatted(s, p, o);
