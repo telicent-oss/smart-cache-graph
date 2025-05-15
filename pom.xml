@@ -86,7 +86,7 @@
     <dependency.fuseki-kafka>1.5.3</dependency.fuseki-kafka>
     <dependency.jena>5.4.0</dependency.jena>
     <dependency.fuseki-server>${dependency.jena}</dependency.fuseki-server>
-    <dependency.graphql>0.9.3</dependency.graphql>
+    <dependency.graphql>0.10.0</dependency.graphql>
     <dependency.jwt-servlet-auth>1.0.1</dependency.jwt-servlet-auth>
     <dependency.smart-caches-core>0.29.0</dependency.smart-caches-core>
 
