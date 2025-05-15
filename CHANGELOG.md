@@ -1,5 +1,12 @@
 # Smart Cache Graph
 
+## 0.84.0
+
+- GraphQL Improvements:
+   - Telicent Schema now supports pagination within Node and State array fields
+- Build improvements:
+   - Upgraded GraphQL Jena to 0.10.0 
+
 ## 0.83.8
 - Addressing build issue
 
