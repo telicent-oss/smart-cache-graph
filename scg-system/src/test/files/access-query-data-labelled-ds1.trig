@@ -1,17 +1,21 @@
 PREFIX dbr: <http://dbpedia.org/resource/>
 PREFIX dbo: <http://dbpedia.org/ontology/>
+PREFIX foaf: <http://xmlns.com/foaf/0.1/>
 PREFIX security: <http://telicent.io/security#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 
 ## Some London data
 dbr:London dbo:populationTotal 8799800 .
 dbr:London dbo:country dbr:United_Kingdom .
 dbr:London dbo:country dbr:England .
+dbr:London foaf:homepage "https://www.london.gov.uk/"^^xsd:anyURI .
 
 ## ABAC Security labels to apply
 GRAPH security:labels {
 
     ## Something everyone can see
     [ security:pattern 'dbr:London dbo:country dbr:United_Kingdom'  ; security:label "everyone" ] .
+    [ security:pattern 'dbr:London foaf:homepage "https://www.london.gov.uk/"^^xsd:anyURI' ; security:label "everyone" ] .
 
     ## Something only admin users can see
     [ security:pattern 'dbr:London dbo:populationTotal 8799800'  ; security:label "admin" ] .

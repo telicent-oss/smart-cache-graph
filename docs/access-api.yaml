@@ -139,6 +139,10 @@ paths:
                             description: Can be a full URI or prefixed value (eg. xsd:string)
                           value:
                             type: string
+                            description: If supplied without a dataType or language is assumed to be a URI
+                          language:
+                            type: string
+                            description: An IETF BCP 47 language tag (e.g. 'en' or 'fr')
             examples:
               London:
                 value:
@@ -151,8 +155,17 @@ paths:
                     - subject: http://dbpedia.org/resource/London
                       predicate: http://dbpedia.org/ontology/country
                       object:
+                        value:  http://dbpedia.org/resource/United_Kingdom
+                    - subject: http://dbpedia.org/resource/London
+                      predicate: http://xmlns.com/foaf/0.1/homepage
+                      object:
                         - dataType: xsd:anyURI
-                          value:  http://dbpedia.org/resource/United_Kingdom
+                          value: "https://www.london.gov.uk/"
+                    - subject: http://dbpedia.org/resource/London
+                      predicate: http://dbpedia.org/ontology/name
+                      object:
+                        - value: "London"
+                          language: "en"
       responses:
         '200':
           description: Request processed successfully.
@@ -167,7 +180,7 @@ paths:
                       type: object
                       properties:
                         subject:
-                          type: array
+                          type: string
                         predicate:
                           type: string
                         object:
@@ -176,6 +189,8 @@ paths:
                             dataType:
                               type: string
                             value:
+                              type: string
+                            language:
                               type: string
                   visible:
                     type: boolean
@@ -191,11 +206,20 @@ paths:
                       - subject: http://dbpedia.org/resource/London
                         predicate: http://dbpedia.org/ontology/country
                         object:
+                          - value: http://dbpedia.org/resource/United_Kingdom
+                      - subject: http://dbpedia.org/resource/London
+                        predicate: http://xmlns.com/foaf/0.1/homepage
+                        object:
                           - dataType: xsd:anyURI
-                            value: http://dbpedia.org/resource/United_Kingdom
+                            value: "https://www.london.gov.uk/"
+                      - subject: http://dbpedia.org/resource/London
+                        predicate: http://dbpedia.org/ontology/name
+                        object:
+                          - value: "London"
+                            language: "en"
                     visible: true
-        '500':
-          description: Internal server error.
+        '400':
+          description: Bad Request.
           content:
             application/json:
               schema:

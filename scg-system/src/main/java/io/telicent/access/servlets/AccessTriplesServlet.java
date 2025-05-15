@@ -21,11 +21,13 @@ import org.slf4j.Logger;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-import static io.telicent.utils.ServletUtils.*;
+import static io.telicent.utils.ServletUtils.handleError;
+import static io.telicent.utils.ServletUtils.processResponse;
 
 public class AccessTriplesServlet extends HttpServlet {
 
@@ -89,17 +91,34 @@ public class AccessTriplesServlet extends HttpServlet {
                 final Node s = NodeFactory.createURI(Objects.requireNonNull(accessTriple.subject));
                 final Node p = NodeFactory.createURI(Objects.requireNonNull(accessTriple.predicate));
                 final Node o;
-                if (accessTriple.object.value.startsWith(HTTP) || accessTriple.object.value.startsWith(HTTPS)) {
-                    o = NodeFactory.createURI(Objects.requireNonNull(accessTriple.object.value));
+                if (accessTriple.object.value.isEmpty()) {
+                    throw new SmartCacheGraphException("Triple object value cannot be empty");
                 } else {
-                    final TypedObject typedObject = Objects.requireNonNull(TypedObject.from(accessTriple.object));
-                    o = NodeFactory.createLiteralDT(typedObject.value, typedObject.datatype);
+                    if (accessTriple.object.language == null || accessTriple.object.language.isEmpty()) {
+                        // no language so either a typed literal or a URI
+                        if (accessTriple.object.dataType == null || accessTriple.object.dataType.isEmpty()) {
+                            // no datatype so value must be a URI
+                            final URI objectUri = URI.create(Objects.requireNonNull(accessTriple.object.value));
+                            o = NodeFactory.createURI(objectUri.toString());
+                        } else {
+                            // must be a typed literal (this could include a literal URI value)
+                            final TypedObject typedObject = Objects.requireNonNull(TypedObject.from(accessTriple.object));
+                            o = NodeFactory.createLiteralDT(typedObject.value, typedObject.datatype);
+                        }
+                    } else if (accessTriple.object.dataType == null || accessTriple.object.dataType.isEmpty()) {
+                        final TypedObject typedObject = Objects.requireNonNull(TypedObject.from(accessTriple.object));
+                        o = NodeFactory.createLiteralLang(typedObject.value, typedObject.language);
+                    } else {
+                        throw new SmartCacheGraphException("Cannot have both language and dataType in request object");
+                    }
                 }
                 triples.add(Triple.create(s, p, o));
             }
             return triples;
         } catch (NullPointerException npex) {
             throw new SmartCacheGraphException("Unable to process request as missing required values");
+        } catch (IllegalArgumentException iaex){
+            throw new SmartCacheGraphException(iaex.getMessage());
         }
     }
 }
