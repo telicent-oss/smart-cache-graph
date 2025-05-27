@@ -41,7 +41,7 @@ import org.apache.jena.rdf.model.Model;
 import org.apache.jena.sparql.core.DatasetGraph;
 
 import static io.telicent.backup.services.DatasetBackupService.sanitiseName;
-import static io.telicent.backup.utils.BackupUtils.MAPPER;
+import static io.telicent.backup.utils.JsonFileUtils.OBJECT_MAPPER;
 import static org.apache.jena.kafka.FusekiKafka.LOG;
 
 /**
@@ -118,7 +118,7 @@ public class FMod_FusekiKafkaSCG extends FMod_FusekiKafka {
     public void backupKafka(DataAccessPoint dataAccessPoint, String path, ObjectNode resultNode) {
         String dataset = dataAccessPoint.getName();
         List<KConnectorDesc> kafkaConnectionList = obtainKafkaConnection(dataset, dataAccessPoint.getDataService());
-        ArrayNode nodeList = MAPPER.createArrayNode();
+        ArrayNode nodeList = OBJECT_MAPPER.createArrayNode();
         for (KConnectorDesc conn : kafkaConnectionList) {
             nodeList.add(backupKafkaConnection(conn, path));
         }
@@ -128,7 +128,7 @@ public class FMod_FusekiKafkaSCG extends FMod_FusekiKafka {
     public void restoreKafka(DataAccessPoint dataAccessPoint, String path, ObjectNode resultNode) {
         String dataset = dataAccessPoint.getName();
         List<KConnectorDesc> kafkaConnectionList = obtainKafkaConnection(dataset, dataAccessPoint.getDataService());
-        ArrayNode nodeList = MAPPER.createArrayNode();
+        ArrayNode nodeList = OBJECT_MAPPER.createArrayNode();
         for (KConnectorDesc conn : kafkaConnectionList) {
             nodeList.add(restoreKafkaConnection(conn, dataset, path));
         }
@@ -152,7 +152,7 @@ public class FMod_FusekiKafkaSCG extends FMod_FusekiKafka {
     }
 
     private ObjectNode backupKafkaConnection(KConnectorDesc conn, String path) {
-        ObjectNode resultNode = MAPPER.createObjectNode();
+        ObjectNode resultNode = OBJECT_MAPPER.createObjectNode();
         String sanitizedDataset = sanitiseName(conn.getLocalDispatchPath());
         resultNode.put("name", sanitizedDataset);
         String filename = path + "/" + sanitizedDataset + ".json";
@@ -164,7 +164,7 @@ public class FMod_FusekiKafkaSCG extends FMod_FusekiKafka {
     }
 
     private ObjectNode restoreKafkaConnection(KConnectorDesc conn, String dataset, String path) {
-        ObjectNode resultNode = MAPPER.createObjectNode();
+        ObjectNode resultNode = OBJECT_MAPPER.createObjectNode();
         String sanitizedDataset = sanitiseName(conn.getLocalDispatchPath());
         resultNode.put("name", sanitizedDataset);
         String filename = path + "/" + sanitizedDataset + ".json";

@@ -32,7 +32,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
-import static io.telicent.backup.utils.BackupUtils.MAPPER;
+import static io.telicent.backup.utils.JsonFileUtils.OBJECT_MAPPER;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -52,7 +52,7 @@ public class TestFusekiKafkaSCG {
         when(mockDataAccessPoint.getName()).thenReturn(dataset);
 
         // when
-        ObjectNode node = MAPPER.createObjectNode();
+        ObjectNode node = OBJECT_MAPPER.createObjectNode();
         cut.backupKafka(mockDataAccessPoint, "path doesn't matter", node);
 
         // then
@@ -76,7 +76,7 @@ public class TestFusekiKafkaSCG {
         when(mockDataAccessPoint.getName()).thenReturn(dataset);
 
         // when
-        ObjectNode node = MAPPER.createObjectNode();
+        ObjectNode node = OBJECT_MAPPER.createObjectNode();
         cut.backupKafka(mockDataAccessPoint, "path doesn't matter", node);
 
         // then
@@ -108,7 +108,7 @@ public class TestFusekiKafkaSCG {
             writer.write(jsonString);
         }
 
-        ObjectNode node = MAPPER.createObjectNode();
+        ObjectNode node = OBJECT_MAPPER.createObjectNode();
 
         String localPath = "/matchingdataset/sendkafka";
 
@@ -205,7 +205,7 @@ public class TestFusekiKafkaSCG {
         when(mockDataAccessPoint.getName()).thenReturn(dataset);
 
         // when
-        ObjectNode node = MAPPER.createObjectNode();
+        ObjectNode node = OBJECT_MAPPER.createObjectNode();
         cut.backupKafka(mockDataAccessPoint, tempDir.toString(), node);
 
         // then
@@ -240,7 +240,7 @@ public class TestFusekiKafkaSCG {
         when(mockDataAccessPoint.getName()).thenReturn(dataset);
 
         // when
-        ObjectNode node = MAPPER.createObjectNode();
+        ObjectNode node = OBJECT_MAPPER.createObjectNode();
         cut.restoreKafka(mockDataAccessPoint, "path doesn't matter", node);
 
         // then
@@ -264,7 +264,7 @@ public class TestFusekiKafkaSCG {
         when(mockDataAccessPoint.getName()).thenReturn(dataset);
 
         // when
-        ObjectNode node = MAPPER.createObjectNode();
+        ObjectNode node = OBJECT_MAPPER.createObjectNode();
         cut.restoreKafka(mockDataAccessPoint, "path doesn't matter", node);
 
         // then
@@ -280,7 +280,7 @@ public class TestFusekiKafkaSCG {
         Path tempDir = Files.createTempDirectory("test_restore_dir");
         tempDir.toFile().deleteOnExit();
 
-        ObjectNode node = MAPPER.createObjectNode();
+        ObjectNode node = OBJECT_MAPPER.createObjectNode();
         KConnectorDesc mockDesc = mock(KConnectorDesc.class);
 
         String dataset = "matching dataset";
@@ -332,7 +332,7 @@ public class TestFusekiKafkaSCG {
             writer.write(jsonString);
         }
 
-        ObjectNode node = MAPPER.createObjectNode();
+        ObjectNode node = OBJECT_MAPPER.createObjectNode();
         KConnectorDesc mockDesc = mock(KConnectorDesc.class);
         String localPath = "/matchingdataset/upload";
         when(mockDesc.getLocalDispatchPath()).thenReturn(localPath);
@@ -393,7 +393,7 @@ public class TestFusekiKafkaSCG {
             writer.write(jsonString);
         }
 
-        ObjectNode node = MAPPER.createObjectNode();
+        ObjectNode node = OBJECT_MAPPER.createObjectNode();
         KConnectorDesc mockDesc = mock(KConnectorDesc.class);
         String localPath = "/matchingdataset/upload";
         when(mockDesc.getLocalDispatchPath()).thenReturn(localPath);

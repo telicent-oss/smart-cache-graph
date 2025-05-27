@@ -15,7 +15,6 @@
  */
 package io.telicent.backup;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.telicent.LibTestsSCG;
 import io.telicent.backup.services.DatasetBackupService;
 import io.telicent.backup.services.DatasetBackupService_Test;
@@ -41,6 +40,7 @@ import java.util.List;
 
 import static io.telicent.TestJwtServletAuth.makeAuthGETCallWithPath;
 import static io.telicent.TestJwtServletAuth.makeAuthPOSTCallWithPath;
+import static io.telicent.backup.utils.JsonFileUtils.OBJECT_MAPPER;
 import static org.apache.jena.graph.Graph.emptyGraph;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -240,9 +240,8 @@ public class TestBackupData {
         try {
             InputStream inputStream = response.body();
             InputStreamReader reader = new InputStreamReader(inputStream);
-            ObjectMapper mapper = new ObjectMapper();
-            Object jsonObject = mapper.readValue(reader, Object.class);
-            return mapper.writeValueAsString(jsonObject);
+            Object jsonObject = OBJECT_MAPPER.readValue(reader, Object.class);
+            return OBJECT_MAPPER.writeValueAsString(jsonObject);
         }catch (IOException e) {
             return e.getMessage();
         }

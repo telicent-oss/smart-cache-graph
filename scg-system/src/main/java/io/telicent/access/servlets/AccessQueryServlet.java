@@ -1,7 +1,6 @@
 package io.telicent.access.servlets;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.telicent.access.AccessQuery;
 import io.telicent.access.AccessQueryResults;
 import io.telicent.access.services.AccessQueryService;
@@ -25,14 +24,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import static io.telicent.backup.utils.JsonFileUtils.OBJECT_MAPPER;
 import static io.telicent.utils.ServletUtils.handleError;
 import static io.telicent.utils.ServletUtils.processResponse;
 
 public class AccessQueryServlet extends HttpServlet {
 
     private final static Logger LOG = FusekiKafka.LOG;
-
-    public static ObjectMapper MAPPER = new ObjectMapper();
 
     private final AccessQueryService queryService;
 
@@ -43,7 +41,7 @@ public class AccessQueryServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
         try (final InputStream inputStream = request.getInputStream()) {
-            final AccessQuery query = MAPPER.readValue(inputStream, AccessQuery.class);
+            final AccessQuery query = OBJECT_MAPPER.readValue(inputStream, AccessQuery.class);
             final Triple accessQueryTriple = getAccessQueryTriple(query);
             final HttpAction action = new HttpAction(1L, LOG, ActionCategory.ACTION, request, response);
             final List<Triple> triples = queryService.getTriples(action, accessQueryTriple);
@@ -63,11 +61,11 @@ public class AccessQueryServlet extends HttpServlet {
                 }
             }
             final AccessQueryResults queryResults = new AccessQueryResults(query, (results.isEmpty() ? null : results));
-            processResponse(response, MAPPER.valueToTree(queryResults));
+            processResponse(response, OBJECT_MAPPER.valueToTree(queryResults));
         } catch (SmartCacheGraphException ex) {
-            handleError(response, MAPPER.createObjectNode(), HttpServletResponse.SC_BAD_REQUEST, ex.getMessage());
+            handleError(response, OBJECT_MAPPER.createObjectNode(), HttpServletResponse.SC_BAD_REQUEST, ex.getMessage());
         } catch (JsonProcessingException ex) {
-            handleError(response, MAPPER.createObjectNode(), HttpServletResponse.SC_BAD_REQUEST, "Missing or invalid request body content");
+            handleError(response, OBJECT_MAPPER.createObjectNode(), HttpServletResponse.SC_BAD_REQUEST, "Missing or invalid request body content");
         }
     }
 

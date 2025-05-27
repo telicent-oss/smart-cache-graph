@@ -25,7 +25,9 @@ import org.apache.jena.fuseki.kafka.lib.FKLib;
 import org.apache.jena.fuseki.main.FusekiServer;
 import org.apache.jena.fuseki.system.FusekiLogging;
 import org.apache.jena.http.HttpOp;
-import org.apache.jena.query.*;
+import org.apache.jena.query.Query;
+import org.apache.jena.query.QueryFactory;
+import org.apache.jena.query.ResultSet;
 import org.apache.jena.rdf.model.*;
 import org.apache.jena.riot.WebContent;
 import org.apache.jena.sparql.core.DatasetGraphFactory;
@@ -36,14 +38,13 @@ import org.apache.jena.sparql.exec.RowSetRewindable;
 import org.apache.jena.sparql.exec.http.DSP;
 import org.apache.jena.sparql.exec.http.QueryExecHTTP;
 import org.apache.jena.sparql.exec.http.QueryExecHTTPBuilder;
-import org.apache.jena.sparql.resultset.ResultSetCompare;
+import org.apache.jena.sparql.resultset.RDFOutput;
 import org.junit.jupiter.api.*;
 import org.testcontainers.shaded.org.apache.commons.lang3.StringUtils;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 
@@ -233,25 +234,21 @@ class DockerTestYamlConfigParser {
         RowSetRewindable actualResponseRSR;
         load(server);
         actualResponseRSR = query(server, "u1");
-        boolean equals = ResultSetCompare.isomorphic(expectedRSR, actualResponseRSR);
+        boolean equals = isomorphic(expectedRSR, actualResponseRSR);
         assertTrue(equals);
     }
 
     @Test
     void fail_yaml_config_bad_file() {
         List<String> arguments = List.of("--conf",DIR + "/yaml/config-no-server-field.yaml");
-        RuntimeException ex = assertThrows(RuntimeException.class,() -> {
-            server = construct(arguments.toArray(new String[0])).start();
-        });
+        RuntimeException ex = assertThrows(RuntimeException.class,() -> server = construct(arguments.toArray(new String[0])).start());
         assertEquals("Failure parsing the YAML config file: java.lang.IllegalArgumentException: 'server' field is missing", ex.getMessage());
     }
 
     @Test
     void fail_yaml_config_missing_file() {
         List<String> arguments = List.of("--conf",DIR + "/yaml/no-config.yaml");
-        RuntimeException ex = assertThrows(RuntimeException.class,() -> {
-            server = construct(arguments.toArray(new String[0])).start();
-        });
+        RuntimeException ex = assertThrows(RuntimeException.class,() -> server = construct(arguments.toArray(new String[0])).start());
         assertEquals("Failure parsing the YAML config file: java.io.UncheckedIOException: java.io.FileNotFoundException: src/test/files/yaml/no-config.yaml (No such file or directory)", ex.getMessage());
     }
 
@@ -314,4 +311,9 @@ class DockerTestYamlConfigParser {
         }
     }
 
+    public static boolean isomorphic(RowSet rs1, RowSet rs2) {
+        Model m1 = RDFOutput.encodeAsModel(ResultSet.adapt(rs1));
+        Model m2 = RDFOutput.encodeAsModel(ResultSet.adapt(rs2));
+        return m1.isIsomorphicWith(m2);
+    }
 }
