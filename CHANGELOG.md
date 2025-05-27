@@ -1,5 +1,11 @@
 # Smart Cache Graph
 
+## 0.83.11
+- Build improvements:
+  - Apache Kafka upgraded to 3.9.1
+  - GraphQL Jena upgraded to 0.10.2
+  - Test dependencies upgraded to latest available 
+
 ## 0.83.10
 - Build improvements:
   - GraphQL Jena (0.10.1)

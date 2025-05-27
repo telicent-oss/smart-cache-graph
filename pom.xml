@@ -22,7 +22,7 @@
   <groupId>io.telicent.smart-caches.graph</groupId>
   <artifactId>scg-base</artifactId>
   <packaging>pom</packaging>
-  <version>0.83.11-SNAPSHOT</version>
+  <version>0.83.12-SNAPSHOT</version>
 
   <name>Telicent Smart Cache Graph - Parent</name>
   <description>Telicent Smart Cache Graph</description>
@@ -56,7 +56,7 @@
   <properties>
     <!-- Build properties -->
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <project.build.outputTimestamp>2025-05-19T11:18:00Z</project.build.outputTimestamp>
+    <project.build.outputTimestamp>2025-05-27T12:49:28Z</project.build.outputTimestamp>
     <java.version>21</java.version>
 
     <!-- Maven Plugin versions -->
@@ -86,7 +86,7 @@
     <dependency.fuseki-kafka>1.5.3</dependency.fuseki-kafka>
     <dependency.jena>5.4.0</dependency.jena>
     <dependency.fuseki-server>${dependency.jena}</dependency.fuseki-server>
-    <dependency.graphql>0.10.1</dependency.graphql>
+    <dependency.graphql>0.10.2</dependency.graphql>
     <dependency.jwt-servlet-auth>1.0.1</dependency.jwt-servlet-auth>
     <dependency.smart-caches-core>0.29.0</dependency.smart-caches-core>
 
