@@ -106,7 +106,7 @@
     <dependency.jmh>1.37</dependency.jmh>
     <dependency.junit5>5.12.2</dependency.junit5>
     <dependency.junit5-platform>1.12.2</dependency.junit5-platform>
-    <dependency.mockito>5.17.0</dependency.mockito>
+    <dependency.mockito>5.18.0</dependency.mockito>
     <dependency.testcontainers>1.21.0</dependency.testcontainers>
 
     <dependency.yaml-config>1.0.7</dependency.yaml-config>
