@@ -452,7 +452,7 @@ public class DatasetBackupService {
             executeDeleteBackup(deletePath);
             executeDeleteBackup(deletePath+ JSON_INFO_SUFFIX);
             executeDeleteBackup(deletePath+ ZIP_SUFFIX);
-//            deleteFilesRegEx(getBackUpDir(), deleteID + WILDCARD_REPORT_SUFFIX);
+            deleteFilesRegEx(getBackUpDir(), deleteID + WILDCARD_REPORT_SUFFIX);
             response.put("success", true);
         }
         return response;
