@@ -200,7 +200,7 @@ public class CompressionUtils {
         try {
             deleteDirectoryRecursive(Path.of(path));
         } catch (IOException e) {
-            LOG.error(String.format("Unable to clean up directory: %s", path), e);
+            LOG.error("Unable to clean up directory: {}", path, e);
         }
     }
 
