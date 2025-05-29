@@ -1,7 +1,6 @@
 package io.telicent.access.servlets;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.telicent.access.AccessTriplesResults;
 import io.telicent.access.services.AccessQueryService;
 import io.telicent.model.JsonTriple;
@@ -26,15 +25,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import static io.telicent.backup.utils.JsonFileUtils.OBJECT_MAPPER;
 import static io.telicent.utils.ServletUtils.handleError;
 import static io.telicent.utils.ServletUtils.processResponse;
 
 public class AccessTriplesServlet extends HttpServlet {
 
     private final static Logger LOG = FusekiKafka.LOG;
-
-    public static ObjectMapper MAPPER = new ObjectMapper();
-
 
     private final AccessQueryService queryService;
 
@@ -46,7 +43,7 @@ public class AccessTriplesServlet extends HttpServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
         boolean requireAllVisible = isAllVisibleRequired(request.getQueryString());
         try (final InputStream inputStream = request.getInputStream()) {
-            final JsonTriples query = MAPPER.readValue(inputStream, JsonTriples.class);
+            final JsonTriples query = OBJECT_MAPPER.readValue(inputStream, JsonTriples.class);
             final List<Triple> requestedTriples = getTripleList(query);
             final HttpAction action = new HttpAction(1L, LOG, ActionCategory.ACTION, request, response);
             final int requestedTriplesCount = query.triples.size();
@@ -60,15 +57,15 @@ public class AccessTriplesServlet extends HttpServlet {
                 createResponse(response, query, true);
             }
         } catch (SmartCacheGraphException ex) {
-            handleError(response, MAPPER.createObjectNode(), HttpServletResponse.SC_BAD_REQUEST, ex.getMessage());
+            handleError(response, OBJECT_MAPPER.createObjectNode(), HttpServletResponse.SC_BAD_REQUEST, ex.getMessage());
         } catch (JsonProcessingException jpex) {
-            handleError(response, MAPPER.createObjectNode(), HttpServletResponse.SC_BAD_REQUEST, "Unable to interpret JSON request");
+            handleError(response, OBJECT_MAPPER.createObjectNode(), HttpServletResponse.SC_BAD_REQUEST, "Unable to interpret JSON request");
         }
     }
 
     private void createResponse(HttpServletResponse response, JsonTriples query, boolean hasVisibility) {
         final AccessTriplesResults results = new AccessTriplesResults(query.triples, hasVisibility);
-        processResponse(response, MAPPER.valueToTree(results));
+        processResponse(response, OBJECT_MAPPER.valueToTree(results));
     }
 
     private boolean isAllVisibleRequired(String queryString) {

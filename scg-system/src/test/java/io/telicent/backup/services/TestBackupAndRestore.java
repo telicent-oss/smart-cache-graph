@@ -18,7 +18,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import static io.telicent.backup.utils.BackupUtils.MAPPER;
+import static io.telicent.backup.utils.JsonFileUtils.OBJECT_MAPPER;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class TestBackupAndRestore {
@@ -94,7 +94,7 @@ public class TestBackupAndRestore {
 
         String backupFilename = TEST_BACKUP_DIR + "test_file.nq";
         String backupCompressedFilename = backupFilename+".gz";
-        ObjectNode resultNode = MAPPER.createObjectNode();
+        ObjectNode resultNode = OBJECT_MAPPER.createObjectNode();
         // when
         datasetBackupService.executeBackupTDB(dsgABAC, backupFilename, resultNode);
         // then

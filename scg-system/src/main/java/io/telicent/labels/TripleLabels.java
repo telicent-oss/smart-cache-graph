@@ -1,15 +1,14 @@
 package io.telicent.labels;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.jena.graph.Triple;
 
 import java.util.List;
 
-public class TripleLabels {
+import static io.telicent.backup.utils.JsonFileUtils.OBJECT_MAPPER;
 
-    public static ObjectMapper MAPPER = new ObjectMapper();
+public class TripleLabels {
 
     public TripleLabels(Triple triple, List<String> labels){
         this.triple = triple;
@@ -20,11 +19,11 @@ public class TripleLabels {
     public Triple triple;
 
     public ObjectNode toJSONNode() {
-        ObjectNode node = MAPPER.createObjectNode();
+        ObjectNode node = OBJECT_MAPPER.createObjectNode();
         node.put("subject", triple.getSubject().toString());
         node.put("predicate", triple.getPredicate().toString());
         node.put("object", triple.getObject().toString());
-        ArrayNode labelNode = MAPPER.createArrayNode();
+        ArrayNode labelNode = OBJECT_MAPPER.createArrayNode();
         labels.forEach(labelNode::add);
         node.set("labels", labelNode);
         return node;

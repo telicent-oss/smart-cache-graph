@@ -1,12 +1,13 @@
 package io.telicent.utils;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletResponse;
 import org.apache.jena.riot.WebContent;
 
 import java.io.IOException;
+
+import static io.telicent.backup.utils.JsonFileUtils.OBJECT_MAPPER;
 
 /**
  * Utility class for carrying out common servlet operations
@@ -15,8 +16,6 @@ public class ServletUtils {
 
     public final static String HTTP = "http://";
     public final static String HTTPS = "https://";
-
-    public static ObjectMapper MAPPER = new ObjectMapper();
 
     /**
      * Populate an HTTP Response from given JSON Node
@@ -27,7 +26,7 @@ public class ServletUtils {
     public static void processResponse(HttpServletResponse response, ObjectNode jsonResponse) {
         String jsonOutput;
         try (ServletOutputStream out = response.getOutputStream()) {
-            jsonOutput = MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(jsonResponse);
+            jsonOutput = OBJECT_MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(jsonResponse);
             response.setContentLength(jsonOutput.length());
             response.setContentType(WebContent.contentTypeJSON);
             response.setCharacterEncoding(WebContent.charsetUTF8);

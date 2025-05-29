@@ -36,6 +36,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.*;
 import java.net.URL;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -45,7 +46,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import static io.telicent.backup.services.DatasetBackupService_Test.*;
-import static io.telicent.backup.utils.BackupUtils.MAPPER;
+import static io.telicent.backup.utils.JsonFileUtils.OBJECT_MAPPER;
 import static java.util.Collections.emptyList;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -57,7 +58,7 @@ public class TestDatasetBackupService {
 
     private final DatasetBackupService cut = new DatasetBackupService_Test(mockRegistry);
 
-    private final ObjectNode RESULT_NODE = MAPPER.createObjectNode();
+    private final ObjectNode RESULT_NODE = OBJECT_MAPPER.createObjectNode();
     private Path baseDir;
 
     @BeforeEach
@@ -101,7 +102,7 @@ public class TestDatasetBackupService {
         ObjectNode result = cut.deleteBackup(existingID);
 
         // then
-        assertEquals(1, DatasetBackupService_Test.getCallCount(DELETE_BACKUP_DIR));
+        assertEquals(3, DatasetBackupService_Test.getCallCount(DELETE_BACKUP_DIR));
         assertTrue(result.has("success"));
         assertTrue(result.get("success").asBoolean());
     }
@@ -117,22 +118,25 @@ public class TestDatasetBackupService {
         ObjectNode result = cut.listBackups();
 
         // then
-        assertTrue(result.has("backups"));
-        assertEquals("{}", result.get("backups").toString());
+        assertEquals("{}", result.toString());
     }
 
     @Test
-    public void test_listBackups_contents() {
+    public void test_listBackups_contents() throws IOException {
         // given
         Path parent = baseDir.getParent();
         BackupUtils.dirBackups = parent.toAbsolutePath().toString();
+        try {
+            Files.createFile(Path.of(BackupUtils.dirBackups + "/1_info.json"));
+        } catch (FileAlreadyExistsException e) {
+            // ignore
+        }
 
         // when
         ObjectNode result = cut.listBackups();
 
         // then
-        assertTrue(result.has("backups"));
-        assertNotEquals("{}", result.get("backups").toString());
+        assertNotEquals("{}", result.toString());
     }
 
     /*
@@ -1178,7 +1182,7 @@ public class TestDatasetBackupService {
     public void applyRestoreMethods_noMethodsNoOp() {
         // given
         restoreConsumerMap.clear();
-        ObjectNode node = MAPPER.createObjectNode();
+        ObjectNode node = OBJECT_MAPPER.createObjectNode();
         // when
         cut.applyRestoreMethods(node, null, "ignored");
         // then

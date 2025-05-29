@@ -116,6 +116,7 @@
                                         <exclude>META-INF/maven/**</exclude>
                                         <exclude>META-INF/org/**</exclude>
                                         <exclude>META-INF/proguard/*</exclude>
+                                        <exclude>META-INF/versions/9/OSGI-INF/MANIFEST.MF</exclude>
                                         <exclude>LICENSE</exclude>
                                         <exclude>THIRD-PARTY</exclude>
                                         <exclude>**/module-info.class</exclude>
