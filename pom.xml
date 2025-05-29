@@ -108,8 +108,10 @@
     <dependency.junit5-platform>1.12.2</dependency.junit5-platform>
     <dependency.mockito>5.18.0</dependency.mockito>
     <dependency.testcontainers>1.21.0</dependency.testcontainers>
-
     <dependency.yaml-config>1.0.7</dependency.yaml-config>
+
+    <!-- CVE Patches -->
+    <dependency.commons-beanutils>1.11.0</dependency.commons-beanutils>
 
   </properties>
 
@@ -129,6 +131,11 @@
         <artifactId>jena-fuseki-main</artifactId>
         <version>${dependency.jena}</version>
         <exclusions>
+          <!-- CVE-2025-48734-->
+          <exclusion>
+            <groupId>commons-beanutils</groupId>
+            <artifactId>commons-beanutils</artifactId>
+          </exclusion>
           <exclusion>
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
@@ -455,6 +462,15 @@
         <artifactId>jmh-generator-annprocess</artifactId>
         <version>${dependency.jmh}</version>
       </dependency>
+
+      <!-- CVE Fixes -->
+      <!-- CVE-2025-48734-->
+      <dependency>
+        <groupId>commons-beanutils</groupId>
+        <artifactId>commons-beanutils</artifactId>
+        <version>${dependency.commons-beanutils}</version>
+      </dependency>
+
     </dependencies>
   </dependencyManagement>
 
