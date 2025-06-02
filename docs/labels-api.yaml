@@ -51,13 +51,13 @@ paths:
                   subject: http://dbpedia.org/resource/London
                   predicate: http://dbpedia.org/ontology/country
                   object:
-                    value: "http://dbpedia.org/resource/United_Kingdom"
+                    value: http://dbpedia.org/resource/United_Kingdom
               London_Name:
                 value:
                   subject: http://dbpedia.org/resource/London
                   predicate: http://dbpedia.org/ontology/name
                   object:
-                    value: "London"
+                    value: London
                     language: en
       responses:
         '200':
