@@ -24,18 +24,41 @@ paths:
                 predicate:
                   type: string
                 object:
-                  type: string
+                  type: object
+                  properties:
+                    dataType:
+                      type: string
+                    value:
+                      type: string
+                    language:
+                      type: string
+                  required:
+                    - value
+              required:
+                - subject
+                - predicate
+                - object
             examples:
               London_Population:
                 value:
                   subject: http://dbpedia.org/resource/London
                   predicate: http://dbpedia.org/ontology/populationTotal
-                  object: 8799800
+                  object:
+                    value: 8799800
+                    dataType: xsd:integer
               London_Country:
                 value:
                   subject: http://dbpedia.org/resource/London
                   predicate: http://dbpedia.org/ontology/country
-                  object: "http://dbpedia.org/resource/United_Kingdom"
+                  object:
+                    value: "http://dbpedia.org/resource/United_Kingdom"
+              London_Name:
+                value:
+                  subject: http://dbpedia.org/resource/London
+                  predicate: http://dbpedia.org/ontology/name
+                  object:
+                    value: "London"
+                    language: en
       responses:
         '200':
           description: Request processed successfully.
@@ -59,4 +82,3 @@ paths:
                   error:
                     type: string
                     description: Error message.
-
