@@ -210,7 +210,8 @@ public class TestLabelsQuery {
                 {
                   "subject": "http://dbpedia.org/resource/Rome",
                   "predicate": "http://dbpedia.org/ontology/country",
-                  "object": "http://dbpedia.org/resource/Italy"
+                  "object": {
+                    "value": "http://dbpedia.org/resource/Italy"
                 }""";
 
         final HttpRequest request = HttpRequest.newBuilder(new URI(BASE_URI + "/$/labels/query"))
