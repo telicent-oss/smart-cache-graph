@@ -104,10 +104,10 @@
 
     <!-- Test dependencies -->
     <dependency.jmh>1.37</dependency.jmh>
-    <dependency.junit5>5.12.2</dependency.junit5>
-    <dependency.junit5-platform>1.12.2</dependency.junit5-platform>
+    <dependency.junit5>5.13.0</dependency.junit5>
+    <dependency.junit5-platform>1.13.0</dependency.junit5-platform>
     <dependency.mockito>5.18.0</dependency.mockito>
-    <dependency.testcontainers>1.21.0</dependency.testcontainers>
+    <dependency.testcontainers>1.21.1</dependency.testcontainers>
     <dependency.yaml-config>1.0.7</dependency.yaml-config>
 
     <!-- CVE Patches -->
