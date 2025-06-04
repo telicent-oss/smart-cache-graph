@@ -96,7 +96,14 @@ public class DatasetBackupService {
             processResponse(response, resultNode);
         } else {
             try {
+                //TODO
+                // maybe change it here? If missing get the highest
+                // is backup path and restore path the same thing?
                 String id = request.getPathInfo();
+                /*if (id == null) {
+                    // how do I get the backup ids?
+                    id = getBackUpDir() + getNextDirectoryNumberAndCreate(getBackUpDir());
+                }*/
                 resultNode.put("id", id);
                 resultNode.put("date", DateTimeUtils.nowAsString("yyyy-MM-dd_HH-mm-ss"));
                 resultNode.put("user", request.getRemoteUser());
@@ -259,6 +266,26 @@ public class DatasetBackupService {
      * @return a node of the results
      */
     public ObjectNode restoreDatasets(String restoreId) {
+        //TODO
+        // maybe change it here? If missing get the highest
+        // restoreIds are usually names.
+        // I can for the given directory find the highest numbered directory
+        // so far and return +1 and create the relevant directory.
+        // But instead, I want to find the name of the last directory I'm assuming.
+        if (restoreId == null) {
+            System.out.println("restoreId is null************************************");
+            //restoreId = String.valueOf(getNextDirectoryNumberAndCreate(getBackUpDir()));
+            for (String name : getSubdirectoryNames(getBackUpDir())) {
+                System.out.println("Name: " + name + "\n");
+            }
+            int highestDirNumber = getHighestExistingDirectoryNumber(getBackUpDir());
+            /*if (highestDirNumber <= 0) {
+                throw new IllegalStateException("No valid backup directories found in " + getBackUpDir());
+            }*/
+            restoreId = getSubdirectoryNames(getBackUpDir()).get(highestDirNumber/* - 1*/);
+            //restoreId = getSubdirectoryNames(getBackUpDir()).get(getHighestExistingDirectoryNumber(getBackUpDir())-1);
+            System.out.println("Added ID: " + restoreId + "************************************");
+        }
         ObjectNode response = MAPPER.createObjectNode();
         String restorePath = getBackUpDir() + "/" + restoreId;
         response.put("restorePath", restorePath);

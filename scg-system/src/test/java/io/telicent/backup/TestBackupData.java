@@ -151,6 +151,8 @@ public class TestBackupData {
         assertEquals(200, createBackupResponse.statusCode());
     }
 
+    //TODO
+    // a test like this?
     @Test
     public void test_deleteBackup_emptyGraph() {
         // given
