@@ -19,6 +19,7 @@ package io.telicent;
 import io.telicent.jena.abac.core.Attributes;
 import io.telicent.jena.abac.core.AttributesStore;
 import io.telicent.jena.abac.fuseki.SysFusekiABAC;
+import io.telicent.jena.abac.labels.Label;
 import io.telicent.jena.abac.labels.LabelsStore;
 import io.telicent.jena.abac.labels.LabelsStoreRocksDB;
 import io.telicent.jena.abac.labels.StoreFmtByString;
@@ -155,12 +156,12 @@ class TestYamlConfigParserAuthz {
         if (iterator.hasNext()) {
             iterator.next();
             triple = iterator.nextStatement().asTriple();
-            assertEquals(labelsStore.labelsForTriples(triple).getFirst(), "manager");
+            assertEquals(labelsStore.labelsForTriples(triple).getFirst(), Label.fromText("manager"));
         }
         if (iterator.hasNext()) {
             iterator.next();
             triple = iterator.nextStatement().asTriple();
-            assertEquals(labelsStore.labelsForTriples(triple).getFirst(), "level-1");
+            assertEquals(labelsStore.labelsForTriples(triple).getFirst(), Label.fromText("level-1"));
         }
         iterator.close();
 
