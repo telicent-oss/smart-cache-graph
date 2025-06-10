@@ -72,7 +72,7 @@
     <plugin.jacoco>0.8.13</plugin.jacoco>
     <plugin.javadoc>3.11.2</plugin.javadoc>
     <plugin.nexus>1.7.0</plugin.nexus>
-    <plugin.owasp-dependency-check>12.1.1</plugin.owasp-dependency-check>
+    <plugin.owasp-dependency-check>12.1.2</plugin.owasp-dependency-check>
     <plugin.resources>3.3.1</plugin.resources>
     <plugin.shade>3.4.1</plugin.shade>
     <plugin.site>3.9.1</plugin.site>
@@ -88,7 +88,7 @@
     <dependency.fuseki-server>${dependency.jena}</dependency.fuseki-server>
     <dependency.graphql>0.10.2</dependency.graphql>
     <dependency.jwt-servlet-auth>1.0.1</dependency.jwt-servlet-auth>
-    <dependency.smart-caches-core>0.29.0</dependency.smart-caches-core>
+    <dependency.smart-caches-core>0.29.1</dependency.smart-caches-core>
 
     <!-- External dependencies -->
     <dependency.jackson>2.19.0</dependency.jackson>
@@ -104,8 +104,8 @@
 
     <!-- Test dependencies -->
     <dependency.jmh>1.37</dependency.jmh>
-    <dependency.junit5>5.13.0</dependency.junit5>
-    <dependency.junit5-platform>1.13.0</dependency.junit5-platform>
+    <dependency.junit5>5.13.1</dependency.junit5>
+    <dependency.junit5-platform>1.13.1</dependency.junit5-platform>
     <dependency.mockito>5.18.0</dependency.mockito>
     <dependency.testcontainers>1.21.1</dependency.testcontainers>
     <dependency.yaml-config>1.0.7</dependency.yaml-config>
