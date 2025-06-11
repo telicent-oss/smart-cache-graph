@@ -53,10 +53,11 @@ public class TestBackupData {
 
     private FMod_BackupData testModule;
 
-    private static DatasetBackupService mockService = mock(DatasetBackupService.class);
+    private DatasetBackupService mockService;
 
     @BeforeEach
     public void createAndSetupServerDetails() throws Exception {
+        mockService = mock(DatasetBackupService.class);
         LibTestsSCG.setupAuthentication();
         LibTestsSCG.disableInitialCompaction();
         LibTestsSCG.enableBackups();
@@ -168,7 +169,7 @@ public class TestBackupData {
         // given
         server = buildServer("--port=0", "--empty");
         // when
-        HttpResponse<InputStream> createBackupResponse = makeAuthPOSTCallWithPath(server, "$/backups/restore", "test");
+        HttpResponse<InputStream> createBackupResponse = makeAuthPOSTCallWithPath(server, "$/backups/restore/1", "test");
         // then
 //        debug(createBackupResponse);
         assertEquals(200, createBackupResponse.statusCode());
@@ -251,7 +252,7 @@ public class TestBackupData {
      * Extension of the Backup Module for testing purposes.
      * Uses a test instance of actual back up service.
      */
-    public static class FMod_BackupData_Test extends FMod_BackupData {
+    public class FMod_BackupData_Test extends FMod_BackupData {
 
         @Override
         DatasetBackupService getBackupService(DataAccessPointRegistry dapRegistry) {
@@ -263,7 +264,7 @@ public class TestBackupData {
      * Extension of the Backup Module for testing purposes.
      * Causes a null pointer exception to be thrown.
      */
-    public static class FMod_BackupData_Null extends FMod_BackupData {
+    public class FMod_BackupData_Null extends FMod_BackupData {
 
         @Override
         DatasetBackupService getBackupService(DataAccessPointRegistry dapRegistry) {
@@ -275,7 +276,7 @@ public class TestBackupData {
      * Extension of the Backup Module for testing purposes.
      * Allows the underlying service to be mocked
      */
-    public static class FMod_BackupData_Mock extends FMod_BackupData {
+    public class FMod_BackupData_Mock extends FMod_BackupData {
 
         @Override
         DatasetBackupService getBackupService(DataAccessPointRegistry dapRegistry) {
