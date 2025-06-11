@@ -113,12 +113,13 @@ public class BackupUtils extends ServletUtils {
      * For the given directory find the highest numbered directory or zip
      *
      * @param directoryPath the directory to check
-     * @return the highest number (or -1 if unavailable)
+     * @return the highest number (or throws exception if unavailable)
      */
     public static int getNextDirectoryNumberAndCreate(String directoryPath) {
         if (!checkPathExistsAndIsDir(directoryPath)) {
-            FmtLog.error(LOG, "Base dir does not exist properly : " + directoryPath);
-            return -1;
+            String errorMsg = "Base dir does not exist properly: " + directoryPath;
+            FmtLog.error(LOG, errorMsg);
+            throw new BackupException(errorMsg);
         }
         File baseDir = new File(directoryPath);
 
@@ -140,8 +141,9 @@ public class BackupUtils extends ServletUtils {
         File newDirectory = new File(baseDir, newDirectoryName);
 
         if (!newDirectory.mkdir()) {
-            FmtLog.error(LOG,"Failed to create new directory: " + newDirectory.getAbsolutePath());
-            return -1;
+            String errorMsg = "Failed to create new directory: " + newDirectory.getAbsolutePath();
+            FmtLog.error(LOG, errorMsg);
+            throw new BackupException(errorMsg);
         }
 
         LOG.info("Created new directory: {}", newDirectory.getAbsolutePath());

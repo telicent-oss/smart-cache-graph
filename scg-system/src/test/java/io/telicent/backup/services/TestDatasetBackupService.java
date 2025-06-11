@@ -78,6 +78,7 @@ public class TestDatasetBackupService {
     @AfterEach
     public void cleanup() throws Exception {
         Files.walk(baseDir)
+                .filter(p -> !p.equals(baseDir))
                 .sorted(Comparator.reverseOrder())
                 .map(Path::toFile)
                 .forEach(File::delete);

@@ -21,7 +21,10 @@ import io.telicent.smart.cache.configuration.sources.PropertiesSource;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletResponse;
 import org.apache.jena.riot.WebContent;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
@@ -445,7 +448,7 @@ public class TestBackupUtils {
         // given
         // when
         // then
-        assertEquals(-1, getNextDirectoryNumberAndCreate(null));
+        assertThrows(BackupException.class, () -> getNextDirectoryNumberAndCreate(null));
     }
 
     @Test
@@ -455,9 +458,8 @@ public class TestBackupUtils {
         try (MockedStatic<BackupUtils> mocked = Mockito.mockStatic(BackupUtils.class, CALLS_REAL_METHODS)) {
             mocked.when(() -> BackupUtils.createPathIfNotExists(anyString())).thenReturn(true).thenReturn(false); // First call for parent succeeds, second for child fails
             // when
-            int actual = getNextDirectoryNumberAndCreate("/temp/path/that/fails/creation");
             // then
-            assertEquals(-1, actual);
+            assertThrows(BackupException.class, () -> getNextDirectoryNumberAndCreate("/temp/path/that/fails/creation"));
         }
     }
 
@@ -467,9 +469,8 @@ public class TestBackupUtils {
         // given
         try (MockedStatic<BackupUtils> mocked = Mockito.mockStatic(BackupUtils.class, CALLS_REAL_METHODS)) {
             // when
-            int actual = getNextDirectoryNumberAndCreate("/some/path");
             // then
-            assertEquals(-1, actual);
+            assertThrows(BackupException.class, () -> getNextDirectoryNumberAndCreate("/some/path"));
         }
     }
 
