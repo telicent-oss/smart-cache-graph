@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import static io.telicent.backup.utils.BackupUtils.*;
+import static io.telicent.backup.utils.JsonFileUtils.OBJECT_MAPPER;
 
 public class ReportServlet extends HttpServlet {
 
@@ -23,7 +24,7 @@ public class ReportServlet extends HttpServlet {
             final ObjectNode report = backupService.getReport(pathElems[0], pathElems[1], response);
             processResponse(response, report);
         } catch (Exception exception) {
-            final ObjectNode resultNode = MAPPER.createObjectNode();
+            final ObjectNode resultNode = OBJECT_MAPPER.createObjectNode();
             handleError(response, resultNode, exception);
         }
     }

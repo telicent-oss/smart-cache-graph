@@ -23,7 +23,10 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.apache.jena.atlas.lib.DateTimeUtils;
 
+import static io.telicent.backup.utils.BackupConstants.DATE_FORMAT;
 import static io.telicent.backup.utils.BackupUtils.*;
+import static io.telicent.backup.utils.JsonFileUtils.OBJECT_MAPPER;
+
 /**
  * Servlet class responsible for information on available back-ups.
  */
@@ -36,10 +39,10 @@ public class ListBackupsServlet extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) {
-        ObjectNode resultNode = MAPPER.createObjectNode();
+        ObjectNode resultNode = OBJECT_MAPPER.createObjectNode();
         try {
-            resultNode.put("date", DateTimeUtils.nowAsString("yyyy-MM-dd_HH-mm-ss"));
-            resultNode.set("list", backupService.listBackups());
+            resultNode.put("date", DateTimeUtils.nowAsString(DATE_FORMAT));
+            resultNode.set("backups", backupService.listBackups());
             processResponse(response, resultNode);
         } catch (Exception exception) {
             handleError(response, resultNode, exception);

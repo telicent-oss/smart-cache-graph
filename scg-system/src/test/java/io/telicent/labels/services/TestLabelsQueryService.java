@@ -1,5 +1,6 @@
 package io.telicent.labels.services;
 
+import io.telicent.jena.abac.labels.Label;
 import io.telicent.jena.abac.labels.LabelsStore;
 import io.telicent.labels.TripleLabels;
 import org.apache.jena.graph.Node;
@@ -38,7 +39,7 @@ class TestLabelsQueryService {
 
     @BeforeAll
     public static void beforeAll() {
-        when(mockLabelsStore.labelsForTriples(any(Triple.class))).thenReturn(List.of("example"));
+        when(mockLabelsStore.labelsForTriples(any(Triple.class))).thenReturn(List.of(Label.fromText("example")));
     }
 
     @AfterEach

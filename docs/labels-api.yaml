@@ -6,6 +6,25 @@ info:
 servers:
   - url: http://localhost:3030/
     description: Base path for query operations.
+components:
+  securitySchemes:
+    BearerAuth:
+      description: Generic Bearer Authentication is supported using JWTs
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    AwsBearerAuth:
+      description: |
+        For AWS usage we support JWTs that are injected into requests by the ELB.  
+        Since these come in a non-standard HTTP header we have to declare this as
+        an API Key scheme in OpenAPI spec as it doesn't have a notion of using a
+        HTTP scheme in a non-standard way (yay AWS weirdness!)
+      type: apiKey
+      in: header
+      name: X-Amzn-Oidc-Data
+security:
+  - BearerAuth: []
+  - AwsBearerAuth: []
 paths:
   /$/labels/query:
     post:
@@ -19,23 +38,54 @@ paths:
             schema:
               type: object
               properties:
-                subject:
-                  type: string
-                predicate:
-                  type: string
-                object:
-                  type: string
+                triples:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      subject:
+                        type: string
+                      predicate:
+                        type: string
+                      object:
+                        type: object
+                        properties:
+                          dataType:
+                            type: string
+                          value:
+                            type: string
+                          language:
+                            type: string
+                        required:
+                          - value
+                    required:
+                      - subject
+                      - predicate
+                      - object
             examples:
               London_Population:
                 value:
-                  subject: http://dbpedia.org/resource/London
-                  predicate: http://dbpedia.org/ontology/populationTotal
-                  object: 8799800
+                  triples:
+                    - subject: http://dbpedia.org/resource/London
+                      predicate: http://dbpedia.org/ontology/populationTotal
+                      object:
+                        value: 8799800
+                        dataType: xsd:integer
               London_Country:
                 value:
-                  subject: http://dbpedia.org/resource/London
-                  predicate: http://dbpedia.org/ontology/country
-                  object: "http://dbpedia.org/resource/United_Kingdom"
+                  triples:
+                    - subject: http://dbpedia.org/resource/London
+                      predicate: http://dbpedia.org/ontology/country
+                      object:
+                        value: http://dbpedia.org/resource/United_Kingdom
+              London_Name:
+                value:
+                  triples:
+                    - subject: http://dbpedia.org/resource/London
+                      predicate: http://dbpedia.org/ontology/name
+                      object:
+                        value: London
+                        language: en
       responses:
         '200':
           description: Request processed successfully.
@@ -44,11 +94,23 @@ paths:
               schema:
                 type: object
                 properties:
-                  labels:
+                  results:
                     type: array
                     items:
-                      type: string
-                    description: List of the labels.
+                      type: object
+                      properties:
+                        subject:
+                          type: string
+                        predicate:
+                          type: string
+                        object:
+                          type: string
+                        labels:
+                          type: array
+                          description: List of the labels.
+                          items:
+                            type: string
+                            description: List of the labels.
         '500':
           description: Internal server error.
           content:

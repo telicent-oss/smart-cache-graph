@@ -15,7 +15,6 @@
  */
 package io.telicent.backup;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.telicent.LibTestsSCG;
 import io.telicent.backup.services.DatasetBackupService;
 import io.telicent.backup.services.DatasetBackupService_Test;
@@ -41,6 +40,7 @@ import java.util.List;
 
 import static io.telicent.TestJwtServletAuth.makeAuthGETCallWithPath;
 import static io.telicent.TestJwtServletAuth.makeAuthPOSTCallWithPath;
+import static io.telicent.backup.utils.JsonFileUtils.OBJECT_MAPPER;
 import static org.apache.jena.graph.Graph.emptyGraph;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -53,10 +53,11 @@ public class TestBackupData {
 
     private FMod_BackupData testModule;
 
-    private static DatasetBackupService mockService = mock(DatasetBackupService.class);
+    private DatasetBackupService mockService;
 
     @BeforeEach
     public void createAndSetupServerDetails() throws Exception {
+        mockService = mock(DatasetBackupService.class);
         LibTestsSCG.setupAuthentication();
         LibTestsSCG.disableInitialCompaction();
         LibTestsSCG.enableBackups();
@@ -253,9 +254,8 @@ public class TestBackupData {
         try {
             InputStream inputStream = response.body();
             InputStreamReader reader = new InputStreamReader(inputStream);
-            ObjectMapper mapper = new ObjectMapper();
-            Object jsonObject = mapper.readValue(reader, Object.class);
-            return mapper.writeValueAsString(jsonObject);
+            Object jsonObject = OBJECT_MAPPER.readValue(reader, Object.class);
+            return OBJECT_MAPPER.writeValueAsString(jsonObject);
         }catch (IOException e) {
             return e.getMessage();
         }
@@ -265,7 +265,7 @@ public class TestBackupData {
      * Extension of the Backup Module for testing purposes.
      * Uses a test instance of actual back up service.
      */
-    public static class FMod_BackupData_Test extends FMod_BackupData {
+    public class FMod_BackupData_Test extends FMod_BackupData {
 
         @Override
         DatasetBackupService getBackupService(DataAccessPointRegistry dapRegistry) {
@@ -277,7 +277,7 @@ public class TestBackupData {
      * Extension of the Backup Module for testing purposes.
      * Causes a null pointer exception to be thrown.
      */
-    public static class FMod_BackupData_Null extends FMod_BackupData {
+    public class FMod_BackupData_Null extends FMod_BackupData {
 
         @Override
         DatasetBackupService getBackupService(DataAccessPointRegistry dapRegistry) {
@@ -289,7 +289,7 @@ public class TestBackupData {
      * Extension of the Backup Module for testing purposes.
      * Allows the underlying service to be mocked
      */
-    public static class FMod_BackupData_Mock extends FMod_BackupData {
+    public class FMod_BackupData_Mock extends FMod_BackupData {
 
         @Override
         DatasetBackupService getBackupService(DataAccessPointRegistry dapRegistry) {

@@ -23,7 +23,10 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.apache.jena.atlas.lib.DateTimeUtils;
 
+import static io.telicent.backup.utils.BackupConstants.DATE_FORMAT;
 import static io.telicent.backup.utils.BackupUtils.*;
+import static io.telicent.backup.utils.JsonFileUtils.OBJECT_MAPPER;
+
 /**
  * Servlet class responsible for the deletion of backups.
  */
@@ -36,11 +39,11 @@ public class DeleteServlet extends HttpServlet {
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) {
-        ObjectNode resultNode = MAPPER.createObjectNode();
+        ObjectNode resultNode = OBJECT_MAPPER.createObjectNode();
         try {
             String deleteId = request.getPathInfo();
             resultNode.put("delete-id", deleteId);
-            resultNode.put("date", DateTimeUtils.nowAsString("yyyy-MM-dd_HH-mm-ss"));
+            resultNode.put("date", DateTimeUtils.nowAsString(DATE_FORMAT));
             resultNode.set("delete", backupService.deleteBackup(deleteId));
             processResponse(response, resultNode);
         } catch (Exception exception) {

@@ -16,18 +16,30 @@
 
 package io.telicent.backup.utils;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.telicent.smart.cache.configuration.Configurator;
 import io.telicent.utils.ServletUtils;
 import jakarta.servlet.http.HttpServletResponse;
+import org.apache.commons.io.FileUtils;
 import org.apache.jena.atlas.logging.FmtLog;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.PathMatcher;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
+
+import static io.telicent.backup.utils.JsonFileUtils.OBJECT_MAPPER;
 
 /**
  * Utility class for carrying out common back-up operations and file I/O.
@@ -35,6 +47,8 @@ import java.util.stream.Stream;
 public class BackupUtils extends ServletUtils {
 
     public static final Logger LOG = LoggerFactory.getLogger("BackupUtils");
+
+    private static final Pattern NUMBERED_ITEM_PATTERN = Pattern.compile("^(\\d+)(\\.zip)?$");
 
     /**
      * Configuration parameter for determining location of backups (if unset defaults to PWD/backups)
@@ -96,68 +110,64 @@ public class BackupUtils extends ServletUtils {
     }
 
     /**
-     * For the given directory find the highest numbered directory
+     * For the given directory find the highest numbered directory or zip
      *
      * @param directoryPath the directory to check
      * @return the highest number (or -1 if unavailable)
      */
-    public static int getHighestExistingDirectoryNumber(String directoryPath) {
-        if (!createPathIfNotExists(directoryPath)) {
-            FmtLog.error(LOG, "Failed to create directory: " + directoryPath);
-            return -1;
-        }
-        File dir = new File(directoryPath);
-
-        return Stream.of(Objects.requireNonNull(dir.listFiles(File::isDirectory)))
-                .filter(File::isDirectory)
-                .map(File::getName)
-                .filter(name -> name.matches("\\d+"))
-                .map(Integer::parseInt)
-                .max(Comparator.naturalOrder())
-                .orElse(0);
-    }
-
-    /**
-     * For the given directory find the highest numbered directory
-     * so far and return +1
-     *
-     * @param directoryPath the directory to check
-     * @return the next number (or -1 if unavailable)
-     */
-    public static int getNextDirectoryNumber(String directoryPath) {
-        int highestSoFar = getHighestExistingDirectoryNumber(directoryPath);
-        if (highestSoFar < 0) {
-            FmtLog.error(LOG, "Failed to obtain number for : " + directoryPath);
-            return -1;
-        }
-        return highestSoFar + 1;
-    }
-
-    /**
-     * For the given directory find the highest numbered directory
-     * so far and return +1 and create the relevant directory.
-     *
-     * @param directoryPath the directory to check
-     * @return the next number (or -1 if unavailable)
-     */
     public static int getNextDirectoryNumberAndCreate(String directoryPath) {
-        int nextNumber = getNextDirectoryNumber(directoryPath);
-        if (nextNumber < 1) {
-            FmtLog.error(LOG, "Failed to obtain number for : " + directoryPath);
+        if (!checkPathExistsAndIsDir(directoryPath)) {
+            FmtLog.error(LOG, "Base dir does not exist properly : " + directoryPath);
+            return -1;
+        }
+        File baseDir = new File(directoryPath);
+
+        int maxNumber = 0;
+
+        File[] files = baseDir.listFiles();
+        if (files != null) {
+            maxNumber = Arrays.stream(files)
+                    .map(File::getName)
+                    .map(BackupUtils::extractNumberFromNumberedItem) // Modified line
+                    .filter(Optional::isPresent)
+                    .mapToInt(Optional::get)
+                    .max()
+                    .orElse(0);
+        }
+
+        int nextNumber = maxNumber + 1;
+        String newDirectoryName = String.valueOf(nextNumber);
+        File newDirectory = new File(baseDir, newDirectoryName);
+
+        if (!newDirectory.mkdir()) {
+            FmtLog.error(LOG,"Failed to create new directory: " + newDirectory.getAbsolutePath());
             return -1;
         }
 
-        // Create the new directory path
-        String newDirectoryPath = directoryPath + "/" + nextNumber;
-
-        // Create the directory
-        if (!createPathIfNotExists(newDirectoryPath)) {
-            FmtLog.error(LOG, "Failed to create directory: " + newDirectoryPath);
-            return -1;
-        }
+        LOG.info("Created new directory: {}", newDirectory.getAbsolutePath());
         return nextNumber;
     }
 
+    /**
+     * Extracts a number from a given file or directory name if it matches the pattern of a number
+     * or a numbered zip file.
+     *
+     * @param name The name of the file or directory.
+     * @return An Optional containing the extracted number, or empty if no number can be extracted.
+     */
+    private static Optional<Integer> extractNumberFromNumberedItem(String name) { // New method
+        Matcher matcher = NUMBERED_ITEM_PATTERN.matcher(name);
+        if (matcher.matches()) {
+            try {
+                return Optional.of(Integer.parseInt(matcher.group(1)));
+            } catch (NumberFormatException e) {
+                // Should not happen if regex matches, but good to handle defensively
+                LOG.warn("Failed to parse number from matched item: {}", name, e);
+                return Optional.empty();
+            }
+        }
+        return Optional.empty();
+    }
     /**
      * Takes a string path and if it doesn't exist, creates it.
      *
@@ -240,7 +250,7 @@ public class BackupUtils extends ServletUtils {
      * @return a node containing the directory contents
      */
     public static ObjectNode populateNodeFromDir(String path) {
-        ObjectNode rootNode = MAPPER.createObjectNode();
+        ObjectNode rootNode = OBJECT_MAPPER.createObjectNode();
         File rootDir = new File(path);
         populateNodeFromDir(rootDir, rootNode);
         return rootNode;
@@ -272,7 +282,7 @@ public class BackupUtils extends ServletUtils {
      * @return an object node of the contents
      */
     public static ObjectNode populateNodeFromDirNumerically(String path) {
-        ObjectNode rootNode = MAPPER.createObjectNode();
+        ObjectNode rootNode = OBJECT_MAPPER.createObjectNode();
         File rootDir = new File(path);
         populateNodeFromDirNumerically(rootDir, rootNode);
         return rootNode;
@@ -309,7 +319,7 @@ public class BackupUtils extends ServletUtils {
     static void processFiles(File[] files, ObjectNode node) {
         for (File file : files) {
             if (file.isDirectory()) {
-                ObjectNode childNode = MAPPER.createObjectNode();
+                ObjectNode childNode = OBJECT_MAPPER.createObjectNode();
                 node.set(file.getName(), childNode);
                 populateNodeFromDir(file, childNode);
             } else {
@@ -317,6 +327,145 @@ public class BackupUtils extends ServletUtils {
                 filesNode.add(file.getName());
             }
         }
+    }
+
+    /**
+     * Lists files in a given directory that match a specific numeric prefix and suffix,
+     * returning them in numerical order based on their prefix.
+     * For example, given suffix "_info.json", it will find "1_info.json", "10_info.json", etc.
+     *
+     * @param directoryPath The path to the directory to scan.
+     * @param suffix        The suffix to match (e.g., "_info.json").
+     * @return A sorted list of Paths to the matching files. Returns an empty list if the directory
+     * does not exist, is not a directory, or contains no matching files.
+     */
+    public static List<Path> getNumberedFilesBySuffix(String directoryPath, String suffix) {
+        List<Path> matchingFiles = new ArrayList<>();
+        if (requestIsEmpty(directoryPath) || suffix == null || suffix.isEmpty()) {
+            return matchingFiles;
+        }
+
+        File directory = new File(directoryPath);
+        if (!directory.exists() || !directory.isDirectory()) {
+            return matchingFiles;
+        }
+
+        Pattern pattern = Pattern.compile("^(\\d+)" + Pattern.quote(suffix) + "$");
+
+        File[] files = directory.listFiles();
+        if (files != null) {
+            Stream.of(files)
+                  .filter(File::isFile)
+                  .filter(file -> {
+                      Matcher matcher = pattern.matcher(file.getName());
+                      return matcher.matches();
+                  })
+                  .sorted(Comparator.comparingInt(file -> {
+                      Matcher matcher = pattern.matcher(file.getName());
+                      if (matcher.matches()) {
+                          return Integer.parseInt(matcher.group(1));
+                      }
+                      return Integer.MAX_VALUE;
+                  }))
+                  .map(File::toPath)
+                  .forEach(matchingFiles::add);
+        }
+        return matchingFiles;
+    }
+
+    /**
+     * Reads JSON content from numerically ordered files (e.g., "1_info.json", "2_info.json")
+     * into a single ObjectNode. Each file's content is added as a child of the
+     * provided ObjectNode, using the file's numerical prefix as the key.
+     *
+     * @param targetNode    The ObjectNode to which the file contents will be added.
+     * @param directoryPath The path to the directory containing the files.
+     * @param suffix        The suffix of the files to read (e.g., "_info.json").
+     * @throws IOException If an I/O error occurs while reading a file or parsing JSON.
+     * @throws NullPointerException If targetNode, directoryPath, or suffix is null.
+     */
+    public static void populateObjectNodeFromNumberedFiles(ObjectNode targetNode, String directoryPath, String suffix) throws IOException {
+        Objects.requireNonNull(targetNode, "Target ObjectNode cannot be null.");
+        Objects.requireNonNull(directoryPath, "Directory path cannot be null.");
+        Objects.requireNonNull(suffix, "Suffix cannot be null.");
+
+        List<Path> orderedFiles = getNumberedFilesBySuffix(directoryPath, suffix);
+        Pattern pattern = Pattern.compile("^(\\d+)" + Pattern.quote(suffix) + "$");
+
+        for (Path filePath : orderedFiles) {
+            String fileName = filePath.getFileName().toString();
+            Matcher matcher = pattern.matcher(fileName);
+            if (matcher.matches()) {
+                String numericKey = matcher.group(1);
+
+                try {
+                    JsonNode fileContent = OBJECT_MAPPER.readTree(Files.readString(filePath));
+                    System.out.println(fileContent.toPrettyString());
+                    targetNode.set(numericKey, fileContent);
+                } catch (IOException e) {
+                    FmtLog.error(LOG, "Error reading or parsing JSON from file %s: %s", filePath, e.getMessage());
+                    throw e;
+                }
+            }
+        }
+    }
+
+    /**
+     * Reads JSON content from numerically ordered files (e.g., "1_info.json", "2_info.json")
+     * and returns a new ObjectNode containing their combined contents.
+     * Each file's content is added as a child of the returned ObjectNode,
+     * using the file's numerical prefix as the key.
+     *
+     * @param directoryPath The path to the directory containing the files.
+     * @param suffix        The suffix of the files to read (e.g., "_info.json").
+     * @return A new ObjectNode containing the combined JSON contents, or an empty ObjectNode if no files are found.
+     */
+    public static ObjectNode getObjectNodeFromNumberedFiles(String directoryPath, String suffix) {
+        ObjectNode resultNode = OBJECT_MAPPER.createObjectNode();
+        try {
+            populateObjectNodeFromNumberedFiles(resultNode, directoryPath, suffix);
+        } catch (IOException e) {
+            FmtLog.error(LOG, "Error reading or parsing JSON from file %s: %s", directoryPath, e.getMessage());
+            throw new RuntimeException(e);
+        }
+        return resultNode;
+    }
+
+    /**
+     * Delete everything within the given directory using wildcard
+     * @param deletePath path to delete
+     * @param pattern regular expression for files
+     */
+    public static void deleteFilesRegEx(String deletePath, String pattern) {
+        Path delDir = Path.of(deletePath);
+        PathMatcher matcher = FileSystems.getDefault().getPathMatcher("glob:" + pattern);
+
+        try (Stream<Path> walk = Files.walk(delDir)) {
+            walk.filter(path -> Files.isRegularFile(path) && matcher.matches(path.getFileName()))
+                    .sorted(Comparator.reverseOrder())
+                    .forEach(path -> {
+                        try {
+                            Files.delete(path);
+                        } catch (IOException e) {
+                            // Handle deletion failure for individual files
+                            LOG.error("Failed to delete file: {}. Reason: {}", path, e.getMessage());
+                            // You could also choose to rethrow a custom exception or accumulate failures
+                        }
+                    });
+        } catch (UncheckedIOException | IOException e) {
+            LOG.error("Failed to delete files from {}. Reason: {}", deletePath, e.getMessage());
+        }
+    }
+
+    /**
+     * Delete everything within the given directory
+     * @param deletePath path to delete
+     */
+    public static void deleteDirectoryRecursively(String deletePath) {
+        if (null == deletePath || deletePath.isEmpty()) {
+            return;
+        }
+        deleteDirectoryRecursively(new File(deletePath));
     }
 
     /**
@@ -369,4 +518,13 @@ public class BackupUtils extends ServletUtils {
         } else return requestName.trim().equals("/");
     }
 
+    /**
+     * Deletes each of the entries provided
+     * @param paths a list of directories
+     */
+    public static void cleanUp(final List<Path> paths) {
+        for (Path path : paths) {
+            FileUtils.deleteQuietly(path.toFile());
+        }
+    }
 }

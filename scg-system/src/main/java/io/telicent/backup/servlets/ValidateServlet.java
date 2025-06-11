@@ -11,6 +11,7 @@ import java.io.InputStream;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static io.telicent.backup.utils.BackupUtils.*;
+import static io.telicent.backup.utils.JsonFileUtils.OBJECT_MAPPER;
 
 public class ValidateServlet extends HttpServlet {
 
@@ -29,17 +30,17 @@ public class ValidateServlet extends HttpServlet {
                 if (request.getContentType().equals("text/turtle")) {
                     processRequest(request, response);
                 } else {
-                    final ObjectNode resultNode = MAPPER.createObjectNode();
+                    final ObjectNode resultNode = OBJECT_MAPPER.createObjectNode();
                     handleError(response, resultNode, HttpServletResponse.SC_BAD_REQUEST, "Invalid content type: " + request.getContentType());
                 }
             } catch (Exception exception) {
-                final ObjectNode resultNode = MAPPER.createObjectNode();
+                final ObjectNode resultNode = OBJECT_MAPPER.createObjectNode();
                 handleError(response, resultNode, exception);
             } finally {
                 RUNNING.set(false);
             }
         } else {
-            final ObjectNode resultNode = MAPPER.createObjectNode();
+            final ObjectNode resultNode = OBJECT_MAPPER.createObjectNode();
             response.setStatus(HttpServletResponse.SC_CONFLICT);
             resultNode.put("error", "Validation already in progress");
             processResponse(response, resultNode);

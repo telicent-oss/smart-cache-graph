@@ -1,5 +1,10 @@
 # Smart Cache Graph
 
+## 0.83.12
+- Compress back-ups.
+- Build improvements:
+  - Addressing CVE-2025-48734
+  
 ## 0.83.11
 - Build improvements:
   - Apache Kafka upgraded to 3.9.1

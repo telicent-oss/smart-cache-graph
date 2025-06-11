@@ -1,9 +1,6 @@
 package io.telicent.labels.services;
 
-import io.telicent.jena.abac.labels.Labels;
-import io.telicent.jena.abac.labels.LabelsStore;
-import io.telicent.jena.abac.labels.LabelsStoreRocksDB;
-import io.telicent.jena.abac.labels.StoreFmtByString;
+import io.telicent.jena.abac.labels.*;
 import io.telicent.labels.TripleLabels;
 import org.apache.commons.io.FileUtils;
 import org.apache.jena.graph.NodeFactory;
@@ -38,7 +35,7 @@ public class TestLabelsQueryServiceRocksDB {
         );
         final LabelsStore rocksDbLabelsStore = Labels.createLabelsStoreRocksDB(
                 dbDir, LabelsStoreRocksDB.LabelMode.Overwrite, null, new StoreFmtByString());
-        rocksDbLabelsStore.add(triple, "example");
+        rocksDbLabelsStore.add(triple, Label.fromText("example"));
         final DatasetGraph emptyDsg = DatasetGraphFactory.create();
         final LabelsQueryService queryService = new LabelsQueryService(rocksDbLabelsStore, emptyDsg);
         final List<TripleLabels> labels = queryService.queryOnlyLabelStore(triple);
@@ -56,7 +53,7 @@ public class TestLabelsQueryServiceRocksDB {
         );
         final LabelsStore rocksDbLabelsStore = Labels.createLabelsStoreRocksDB(
                 dbDir, LabelsStoreRocksDB.LabelMode.Overwrite, null, new StoreFmtByString());
-        rocksDbLabelsStore.add(triple, "example");
+        rocksDbLabelsStore.add(triple, Label.fromText("example"));
         final DatasetGraph emptyDsg = DatasetGraphFactory.create();
         final LabelsQueryService queryService = new LabelsQueryService(rocksDbLabelsStore, emptyDsg);
         final List<TripleLabels> labels = queryService.queryOnlyLabelStore(triple);

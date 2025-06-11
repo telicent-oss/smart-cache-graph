@@ -1,7 +1,6 @@
 package io.telicent.labels.servlets;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.telicent.labels.TripleLabels;
@@ -22,6 +21,7 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
+import static io.telicent.backup.utils.JsonFileUtils.OBJECT_MAPPER;
 import static io.telicent.utils.ServletUtils.*;
 
 public class LabelsQueryServlet extends HttpServlet {
@@ -34,8 +34,6 @@ public class LabelsQueryServlet extends HttpServlet {
 
     private final LabelsQueryService queryService;
 
-    public static ObjectMapper MAPPER = new ObjectMapper();
-
     public LabelsQueryServlet(LabelsQueryService queryService) {
         this.queryService = queryService;
     }
@@ -43,13 +41,13 @@ public class LabelsQueryServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) {
         List<Triple> tripleQueryList = obtainTripleQueries(request);
-        ObjectNode resultNode = MAPPER.createObjectNode();
+        ObjectNode resultNode = OBJECT_MAPPER.createObjectNode();
         resultNode.set("results", processQueryList(tripleQueryList));
         processResponse(response, resultNode);
     }
 
     ArrayNode processQueryList(List<Triple> tripleQueryList) {
-        ArrayNode resultNodeList = MAPPER.createArrayNode();
+        ArrayNode resultNodeList = OBJECT_MAPPER.createArrayNode();
         tripleQueryList.forEach(triple -> {
             List<TripleLabels> results = processTriple(triple);
             results.forEach(tripleLabel -> resultNodeList.add(tripleLabel.toJSONNode()));
@@ -78,9 +76,9 @@ public class LabelsQueryServlet extends HttpServlet {
     private List<Triple> obtainTripleQueries(HttpServletRequest request) {
         List<Triple> tripleList = new ArrayList<>();
         try (final InputStream inputStream = request.getInputStream()) {
-            JsonNode rootNode = MAPPER.readTree(inputStream);
+            JsonNode rootNode = OBJECT_MAPPER.readTree(inputStream);
             if (rootNode.has("triples") && rootNode.get("triples").isArray()) {
-                JsonTriples queryRequest = MAPPER.convertValue(rootNode, JsonTriples.class);
+                JsonTriples queryRequest = OBJECT_MAPPER.convertValue(rootNode, JsonTriples.class);
                 for (JsonTriple query : queryRequest.triples) {
                     tripleList.add(getTriple(query));
                 }

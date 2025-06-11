@@ -20,6 +20,8 @@ import static java.lang.String.format;
 
 import java.io.InputStream;
 import java.nio.charset.CharacterCodingException;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -30,6 +32,7 @@ import io.telicent.jena.abac.core.AuthzException;
 import io.telicent.jena.abac.core.DatasetGraphABAC;
 import io.telicent.jena.abac.core.StreamSplitter;
 import io.telicent.jena.abac.core.VocabAuthz;
+import io.telicent.jena.abac.labels.Label;
 import io.telicent.jena.abac.labels.LabelsStore;
 import io.telicent.jena.abac.labels.node.LabelToNodeGenerator;
 import org.apache.jena.atlas.RuntimeIOException;
@@ -150,7 +153,7 @@ public class FKProcessorSCG extends FKProcessorBaseAction /*implements FKProcess
     }
 
     private void actionRDFPatchLabel(String id, RequestFK request, InputStream data) {
-        String headerSecurityLabel = request.getHeaders().get(SysABAC.hSecurityLabel);
+        Label headerSecurityLabel = Label.fromText(request.getHeaders().get(SysABAC.hSecurityLabel));
         RDFChanges changes = new RDFChangesApplyWithLabels(id, dsgz, headerSecurityLabel);
         execRDFPatchNoLabel(id, request, data, changes);
     }
@@ -196,11 +199,11 @@ public class FKProcessorSCG extends FKProcessorBaseAction /*implements FKProcess
 
     private class RDFChangesApplyWithLabels extends RDFChangesApply {
 
-        private final String securityLabel;
+        private final Label securityLabel;
         private final String id;
         private boolean quadWarningLog = false;
 
-        public RDFChangesApplyWithLabels(String id, DatasetGraphABAC dsgz, String securitylabel) {
+        public RDFChangesApplyWithLabels(String id, DatasetGraphABAC dsgz, Label securitylabel) {
             super(dsgz);
             this.securityLabel = securitylabel;
             this.id = id;
@@ -272,7 +275,7 @@ public class FKProcessorSCG extends FKProcessorBaseAction /*implements FKProcess
         Timer timer = new Timer();
         timer.startTimer();
         String headerSecurityLabel = request.getHeaders().get(SysABAC.hSecurityLabel);
-        List<String> dataDftLabels = parseAttributeList(headerSecurityLabel);
+        List<Label> dataDftLabels = parseAttributeListToLabels(headerSecurityLabel);
         if ( dataDftLabels != null )
             FmtLog.debug(LOG, "[%s] Security-Label %s", id, dataDftLabels);
         else
@@ -363,7 +366,7 @@ public class FKProcessorSCG extends FKProcessorBaseAction /*implements FKProcess
      * Determine if the data is plain RDF (a triple format) and the ABAC labels are
      * only going to come from the header only.
      */
-    private boolean canStream(Lang lang, List<String> defaultLabels) {
+    private boolean canStream(Lang lang, List<Label> defaultLabels) {
         return RDFLanguages.isTriples(lang);
     }
 
@@ -413,10 +416,12 @@ public class FKProcessorSCG extends FKProcessorBaseAction /*implements FKProcess
         }
     }
 
-    private List<String> parseAttributeList(String securityLabelsList) {
-        if ( securityLabelsList == null )
-            return null;
-        List<AttributeExpr> x = AE.parseExprList(securityLabelsList);
-        return AE.asStrings(x);
+    private List<Label> parseAttributeListToLabels(String securityLabelsList) {
+        List<AttributeExpr> exprList = AE.parseExprList(securityLabelsList);
+        List<Label> labels = new ArrayList<>(exprList.size());
+        for (AttributeExpr expr : exprList) {
+            labels.add(Label.fromText(expr.str(), StandardCharsets.UTF_8));
+        }
+        return labels;
     }
 }

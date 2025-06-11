@@ -4,6 +4,7 @@ import io.telicent.jena.abac.AttributeValueSet;
 import io.telicent.jena.abac.core.AttributesStoreLocal;
 import io.telicent.jena.abac.core.DatasetGraphABAC;
 import io.telicent.jena.abac.fuseki.ABAC_SPARQL_QueryDataset;
+import io.telicent.jena.abac.labels.Label;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletRequest;
@@ -93,7 +94,7 @@ public class SCGBenchmark {
     private static void createDataService() {
         AttributesStoreLocal store = new AttributesStoreLocal();
         store.put("user", AttributeValueSet.of("userAttribute"));
-        datasetGraph = new DatasetGraphABAC(DatasetGraphFactory.createTxnMem(), "userAttribute", createLabelsStoreMem(), "test", store);
+        datasetGraph = new DatasetGraphABAC(DatasetGraphFactory.createTxnMem(), "userAttribute", createLabelsStoreMem(), Label.fromText("test"), store);
         dataService = DataService.newBuilder(datasetGraph).build();
         dataService.goActive();
     }

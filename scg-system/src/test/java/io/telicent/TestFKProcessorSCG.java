@@ -31,6 +31,8 @@ import io.telicent.jena.abac.AttributeValueSet;
 import io.telicent.jena.abac.SysABAC;
 import io.telicent.jena.abac.attributes.Attribute;
 import io.telicent.jena.abac.attributes.AttributeValue;
+import io.telicent.jena.abac.attributes.ValueTerm;
+import io.telicent.jena.abac.attributes.syntax.AEX;
 import io.telicent.jena.abac.core.AttributesStore;
 import io.telicent.jena.abac.core.AttributesStoreLocal;
 import io.telicent.jena.abac.core.AttributesStoreModifiable;
@@ -322,7 +324,7 @@ class TestFKProcessorSCG {
             checkDatasetSize(dsgBase, 0);
             processorRequest(proc, """
                              A <http://ex/s2> <http://ex/p> "triple2" .
-                             """, WebContent.contentTypePatch, null);
+                             """, WebContent.contentTypePatch, AttributeValue.of("", ValueTerm.value(null)));
             checkDatasetSize(dsgBase, 1);
 
             long c1 = count(URLauthz, queryAll, userPermit);
@@ -572,10 +574,10 @@ class TestFKProcessorSCG {
         attributesStore.put(userOther,  AttributeValueSet.of("OTHER"));
 
         DatasetGraphABAC dsgz = ABAC.authzDataset(dsgBase,
-                                                  SysABAC.allowLabel,   // API access label
-                                                  labelsStore,
-                                                  SysABAC.denyLabel,    // Dataset data label default.
-                                                  attributesStore);
+                AEX.strALLOW,   // API access label
+                labelsStore,
+                SysABAC.denyLabel,    // Dataset data label default.
+                attributesStore);
         DataService dataSrv = DataService
                 .newBuilder(dsgz)
                 .addEndpoint(Operation.Query)

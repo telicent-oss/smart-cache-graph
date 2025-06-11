@@ -60,7 +60,6 @@ public class TestLabelsQuery {
                         "subject": "http://dbpedia.org/resource/London",
                         "predicate": "http://dbpedia.org/ontology/country",
                         "object": {
-                          "dataType" : "xsd:anyURI",
                           "value" : "http://dbpedia.org/resource/United_Kingdom"
                         }
                     }
@@ -114,7 +113,6 @@ public class TestLabelsQuery {
                             "subject": "http://dbpedia.org/resource/Rome",
                             "predicate": "http://dbpedia.org/ontology/country",
                              "object" : {
-                               "dataType" : "xsd:anyURI",
                                "value" : "http://dbpedia.org/resource/Italy"
                              }
                         }
@@ -141,7 +139,6 @@ public class TestLabelsQuery {
                           "subject": "http://dbpedia.org/resource/Rome",
                           "predicate": "http://dbpedia.org/ontology/country",
                           "object": {
-                            "dataType" : "xsd:anyURI",
                             "value" : "http://dbpedia.org/resource/Italy"
                           }
                         },
@@ -149,7 +146,6 @@ public class TestLabelsQuery {
                           "subject": "http://dbpedia.org/resource/Paris",
                           "predicate": "http://dbpedia.org/ontology/country",
                           "object": {
-                            "dataType" : "xsd:anyURI",
                             "value" : "http://dbpedia.org/resource/France"
                           }
                         }
@@ -208,9 +204,15 @@ public class TestLabelsQuery {
 
         final String jsonRequestBody = """
                 {
-                  "subject": "http://dbpedia.org/resource/Rome",
-                  "predicate": "http://dbpedia.org/ontology/country",
-                  "object": "http://dbpedia.org/resource/Italy"
+                  "triples":[
+                    {
+                      "subject": "http://dbpedia.org/resource/Rome",
+                      "predicate": "http://dbpedia.org/ontology/country",
+                      "object": {
+                        "value": "http://dbpedia.org/resource/Italy"
+                      }
+                    }
+                  ]
                 }""";
 
         final HttpRequest request = HttpRequest.newBuilder(new URI(BASE_URI + "/$/labels/query"))

@@ -22,7 +22,7 @@
   <groupId>io.telicent.smart-caches.graph</groupId>
   <artifactId>scg-base</artifactId>
   <packaging>pom</packaging>
-  <version>0.83.12-SNAPSHOT</version>
+  <version>0.83.13-SNAPSHOT</version>
 
   <name>Telicent Smart Cache Graph - Parent</name>
   <description>Telicent Smart Cache Graph</description>
@@ -56,7 +56,7 @@
   <properties>
     <!-- Build properties -->
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <project.build.outputTimestamp>2025-05-27T12:49:28Z</project.build.outputTimestamp>
+    <project.build.outputTimestamp>2025-05-29T13:02:45Z</project.build.outputTimestamp>
     <java.version>21</java.version>
 
     <!-- Maven Plugin versions -->
@@ -72,7 +72,7 @@
     <plugin.jacoco>0.8.13</plugin.jacoco>
     <plugin.javadoc>3.11.2</plugin.javadoc>
     <plugin.nexus>1.7.0</plugin.nexus>
-    <plugin.owasp-dependency-check>12.1.1</plugin.owasp-dependency-check>
+    <plugin.owasp-dependency-check>12.1.2</plugin.owasp-dependency-check>
     <plugin.resources>3.3.1</plugin.resources>
     <plugin.shade>3.4.1</plugin.shade>
     <plugin.site>3.9.1</plugin.site>
@@ -82,13 +82,13 @@
 
     <!-- Dependency versions -->
     <!-- Internal dependencies -->
-    <dependency.rdf-abac>0.73.4</dependency.rdf-abac>
+    <dependency.rdf-abac>1.0.2</dependency.rdf-abac>
     <dependency.fuseki-kafka>1.5.3</dependency.fuseki-kafka>
     <dependency.jena>5.4.0</dependency.jena>
     <dependency.fuseki-server>${dependency.jena}</dependency.fuseki-server>
     <dependency.graphql>0.10.2</dependency.graphql>
     <dependency.jwt-servlet-auth>1.0.1</dependency.jwt-servlet-auth>
-    <dependency.smart-caches-core>0.29.0</dependency.smart-caches-core>
+    <dependency.smart-caches-core>0.29.1</dependency.smart-caches-core>
 
     <!-- External dependencies -->
     <dependency.jackson>2.19.0</dependency.jackson>
@@ -104,12 +104,14 @@
 
     <!-- Test dependencies -->
     <dependency.jmh>1.37</dependency.jmh>
-    <dependency.junit5>5.12.2</dependency.junit5>
-    <dependency.junit5-platform>1.12.2</dependency.junit5-platform>
+    <dependency.junit5>5.13.1</dependency.junit5>
+    <dependency.junit5-platform>1.13.1</dependency.junit5-platform>
     <dependency.mockito>5.18.0</dependency.mockito>
-    <dependency.testcontainers>1.21.0</dependency.testcontainers>
-
+    <dependency.testcontainers>1.21.1</dependency.testcontainers>
     <dependency.yaml-config>1.0.7</dependency.yaml-config>
+
+    <!-- CVE Patches -->
+    <dependency.commons-beanutils>1.11.0</dependency.commons-beanutils>
 
   </properties>
 
@@ -129,6 +131,11 @@
         <artifactId>jena-fuseki-main</artifactId>
         <version>${dependency.jena}</version>
         <exclusions>
+          <!-- CVE-2025-48734-->
+          <exclusion>
+            <groupId>commons-beanutils</groupId>
+            <artifactId>commons-beanutils</artifactId>
+          </exclusion>
           <exclusion>
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
@@ -178,11 +185,6 @@
         <version>${dependency.jena}</version>
       </dependency>
 
-      <dependency>
-        <groupId>org.apache.jena</groupId>
-        <artifactId>jena-fuseki-webapp</artifactId>
-        <version>${dependency.jena}</version>
-      </dependency>
       <dependency>
         <groupId>org.apache.jena</groupId>
         <artifactId>jena-rdfpatch</artifactId>
@@ -460,6 +462,15 @@
         <artifactId>jmh-generator-annprocess</artifactId>
         <version>${dependency.jmh}</version>
       </dependency>
+
+      <!-- CVE Fixes -->
+      <!-- CVE-2025-48734-->
+      <dependency>
+        <groupId>commons-beanutils</groupId>
+        <artifactId>commons-beanutils</artifactId>
+        <version>${dependency.commons-beanutils}</version>
+      </dependency>
+
     </dependencies>
   </dependencyManagement>
 

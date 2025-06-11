@@ -24,7 +24,6 @@ import io.telicent.jena.abac.labels.LabelsStoreRocksDB;
 import io.telicent.jena.abac.labels.node.LabelToNodeGenerator;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.apache.commons.io.FileUtils;
 import org.apache.jena.atlas.lib.DateTimeUtils;
 import org.apache.jena.fuseki.mgt.Backup;
 import org.apache.jena.fuseki.server.DataAccessPoint;
@@ -57,15 +56,17 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.zip.GZIPInputStream;
 
+import static io.telicent.backup.utils.BackupConstants.*;
 import static io.telicent.backup.utils.BackupUtils.*;
+import static io.telicent.backup.utils.CompressionUtils.*;
+import static io.telicent.backup.utils.JsonFileUtils.OBJECT_MAPPER;
+import static io.telicent.backup.utils.JsonFileUtils.writeObjectNodeToFile;
 import static io.telicent.otel.FMod_OpenTelemetry.fixupName;
 import static org.apache.jena.riot.Lang.NQUADS;
 
 public class DatasetBackupService {
 
     private final static String BACKUP_SUFFIX = "_backup";
-
-    private final static String REPORT_SUFFIX = "-validation-report.ttl";
 
     private final ReentrantLock lock;
 
@@ -90,7 +91,7 @@ public class DatasetBackupService {
      */
     public void process(HttpServletRequest request, HttpServletResponse response, boolean backup) {
         // Try to acquire the lock without blocking
-        ObjectNode resultNode = MAPPER.createObjectNode();
+        ObjectNode resultNode = OBJECT_MAPPER.createObjectNode();
         if (!lock.tryLock()) {
             response.setStatus(HttpServletResponse.SC_CONFLICT);
             resultNode.put("error", "Another conflicting operation is already in progress. Please try again later.");
@@ -106,7 +107,7 @@ public class DatasetBackupService {
                     id = getBackUpDir() + getNextDirectoryNumberAndCreate(getBackUpDir());
                 }*/
                 resultNode.put("id", id);
-                resultNode.put("date", DateTimeUtils.nowAsString("yyyy-MM-dd_HH-mm-ss"));
+                resultNode.put("date", DateTimeUtils.nowAsString(DATE_FORMAT));
                 resultNode.put("user", request.getRemoteUser());
                 String name = request.getParameter("description");
                 if (name != null) {
@@ -133,25 +134,26 @@ public class DatasetBackupService {
      */
     public ObjectNode backupDataset(String datasetName) {
         String sanitizedDatasetName = sanitiseName(datasetName);
-        ObjectNode response = MAPPER.createObjectNode();
+        ObjectNode response = OBJECT_MAPPER.createObjectNode();
         String backupPath = getBackUpDir();
         int backupID = getNextDirectoryNumberAndCreate(backupPath);
         String backupIDPath = backupPath + "/" + backupID;
         response.put("backup-id", backupID);
-        response.put("date", DateTimeUtils.nowAsString("yyyy-MM-dd_HH-mm-ss"));
+        response.put("date", DateTimeUtils.nowAsString(DATE_FORMAT));
 
-        ArrayNode datasetNodes = MAPPER.createArrayNode();
+        ArrayNode datasetNodes = OBJECT_MAPPER.createArrayNode();
         for (DataAccessPoint dataAccessPoint : dapRegistry.accessPoints()) {
             String dataAccessPointName = dataAccessPoint.getName();
             String sanitizedDataAccessPointName = sanitiseName(dataAccessPointName);
             if (requestIsEmpty(sanitizedDatasetName) || sanitizedDataAccessPointName.equals(sanitizedDatasetName)) {
-                ObjectNode datasetJSON = MAPPER.createObjectNode();
+                ObjectNode datasetJSON = OBJECT_MAPPER.createObjectNode();
                 datasetJSON.put("dataset-id", sanitizedDataAccessPointName);
                 applyBackUpMethods(datasetJSON, dataAccessPoint, backupIDPath + "/" + sanitizedDataAccessPointName);
                 datasetNodes.add(datasetJSON);
             }
         }
         response.set("datasets", datasetNodes);
+        compressAndStoreBackupMetadata(response, backupIDPath);
         return response;
     }
 
@@ -164,7 +166,7 @@ public class DatasetBackupService {
      */
     public void applyBackUpMethods(ObjectNode moduleJSON, DataAccessPoint dataAccessPoint, String backupPath) {
         for (Map.Entry<String, TriConsumer<DataAccessPoint, String, ObjectNode>> entry : backupConsumerMap.entrySet()) {
-            ObjectNode node = MAPPER.createObjectNode();
+            ObjectNode node = OBJECT_MAPPER.createObjectNode();
             String modBackupPath = backupPath + "/" + entry.getKey() + "/";
             node.put("folder", modBackupPath);
             if (!createPathIfNotExists(modBackupPath)) {
@@ -254,10 +256,7 @@ public class DatasetBackupService {
      * @return Object Node of the results
      */
     public ObjectNode listBackups() {
-        ObjectNode response = MAPPER.createObjectNode();
-        response.put("date", DateTimeUtils.nowAsString("yyyy-MM-dd_HH-mm-ss"));
-        response.set("backups", populateNodeFromDirNumerically(getBackUpDir()));
-        return response;
+        return getObjectNodeFromNumberedFiles(getBackUpDir(), JSON_INFO_SUFFIX);
     }
 
     /**
@@ -291,13 +290,19 @@ public class DatasetBackupService {
 ////            restoreId = String.valueOf(highestDirNumber);
 ////            System.out.println("Last snapshot: " + restoreId + "************************************");
 //        }
-        ObjectNode response = MAPPER.createObjectNode();
+        ObjectNode response = OBJECT_MAPPER.createObjectNode();
         String restorePath = getBackUpDir() + "/" + restoreId;
 //        if (restoreId == null) {
 //            //System.out.println("new restore path:" + getBackUpDir());
 //            restorePath = getBackUpDir();
 //        }
         response.put("restorePath", restorePath);
+
+        boolean decompressDir = false;
+        if (checkPathExistsAndIsFile(restorePath + ZIP_SUFFIX)) {
+            unzipDirectory(restorePath + ZIP_SUFFIX, restorePath);
+            decompressDir=true;
+        }
         if (!checkPathExistsAndIsDir(restorePath)) {
             response.put("reason", "Restore path unsuitable: " + restorePath);
             response.put("success", false);
@@ -312,6 +317,10 @@ public class DatasetBackupService {
                 }
             }
         }
+
+        if(decompressDir) {
+            cleanupDirectory(restorePath);
+        }
         return response;
     }
 
@@ -323,7 +332,7 @@ public class DatasetBackupService {
      * @return a node with the results of the operation
      */
     ObjectNode restoreDataset(String restorePath, String datasetName) {
-        ObjectNode response = MAPPER.createObjectNode();
+        ObjectNode response = OBJECT_MAPPER.createObjectNode();
         response.put("dataset-id", datasetName);
         DataAccessPoint dataAccessPoint = getDataAccessPoint(datasetName);
         if (dataAccessPoint == null || dataAccessPoint.getDataService() == null) {
@@ -349,7 +358,7 @@ public class DatasetBackupService {
      * @param node            the results of the operation.
      */
     void restoreTDB(DataAccessPoint dataAccessPoint, String restorePath, ObjectNode node) {
-        String tdbRestoreFile = restorePath + "/" + sanitiseName(dataAccessPoint.getName()) + BACKUP_SUFFIX + ".nq.gz";
+        String tdbRestoreFile = restorePath + "/" + sanitiseName(dataAccessPoint.getName()) + BACKUP_SUFFIX + RDF_BACKUP_SUFFIX;
         node.put("restorePath", tdbRestoreFile);
         if (!checkPathExistsAndIsFile(tdbRestoreFile)) {
             node.put("reason", "Restore file not found: " + tdbRestoreFile);
@@ -375,7 +384,7 @@ public class DatasetBackupService {
      */
     public void applyRestoreMethods(ObjectNode moduleJSON, DataAccessPoint dataAccessPoint, String restorePath) {
         for (Map.Entry<String, TriConsumer<DataAccessPoint, String, ObjectNode>> entry : restoreConsumerMap.entrySet()) {
-            ObjectNode node = MAPPER.createObjectNode();
+            ObjectNode node = OBJECT_MAPPER.createObjectNode();
             String modRestorePath = restorePath + "/" + entry.getKey() + "/";
             node.put("folder", modRestorePath);
             if (!checkPathExistsAndIsDir(modRestorePath)) {
@@ -470,15 +479,18 @@ public class DatasetBackupService {
      */
     public ObjectNode deleteBackup(String deleteID) {
         String deletePath = getBackUpDir() + "/" + deleteID;
-        ObjectNode response = MAPPER.createObjectNode();
+        ObjectNode response = OBJECT_MAPPER.createObjectNode();
         response.put("delete-id", deleteID);
-        response.put("date", DateTimeUtils.nowAsString("yyyy-MM-dd_HH-mm-ss"));
+        response.put("date", DateTimeUtils.nowAsString(DATE_FORMAT));
         response.put("deletePath", deletePath);
-        if (!checkPathExistsAndIsDir(deletePath)) {
+        if (!checkPathExistsAndIsDir(deletePath) && !checkPathExistsAndIsFile(deletePath + JSON_INFO_SUFFIX)&& !checkPathExistsAndIsFile(deletePath + ZIP_SUFFIX)) {
             response.put("reason", "Backup path unsuitable: " + deletePath);
             response.put("success", false);
         } else {
             executeDeleteBackup(deletePath);
+            executeDeleteBackup(deletePath+ JSON_INFO_SUFFIX);
+            executeDeleteBackup(deletePath+ ZIP_SUFFIX);
+            deleteFilesRegEx(getBackUpDir(), deleteID + WILDCARD_REPORT_SUFFIX);
             response.put("success", true);
         }
         return response;
@@ -496,8 +508,13 @@ public class DatasetBackupService {
         final String validatePath = getBackUpDir() + "/" + validateParams[0];
         final Model shapesModel = getShapeModel(shapeInputStream);
         final Graph shapesGraph = shapesModel.getGraph();
-        final ObjectNode resultNode = MAPPER.createObjectNode();
+        final ObjectNode resultNode = OBJECT_MAPPER.createObjectNode();
         final String datasetName = (validateParams.length > 1) ? "/" + validateParams[1] : "";
+        boolean decompressDir = false;
+        if (checkPathExistsAndIsFile(validatePath + ZIP_SUFFIX)) {
+            unzipDirectory(validatePath + ZIP_SUFFIX, validatePath);
+            decompressDir=true;
+        }
         if (!checkPathExistsAndIsDir(validatePath + datasetName)) {
             response.setStatus(HttpServletResponse.SC_NOT_FOUND);
             resultNode.put("reason", "Validation path unsuitable: " + validatePath + datasetName);
@@ -505,13 +522,16 @@ public class DatasetBackupService {
         } else {
             final Set<String> datasetDirs = listDirectories(validatePath, validateParams);
             resultNode.put("backup-id", validateParams[0]);
-            resultNode.put("date", DateTimeUtils.nowAsString("yyyy-MM-dd_HH-mm-ss"));
+            resultNode.put("date", DateTimeUtils.nowAsString(DATE_FORMAT));
             resultNode.put("validate-path", validatePath + datasetName);
-            final ObjectNode datasetResult = MAPPER.createObjectNode();
+            final ObjectNode datasetResult = OBJECT_MAPPER.createObjectNode();
             for (String datasetDir : datasetDirs) {
                 datasetResult.set(datasetDir, executeValidation(validatePath, datasetDir, shapesGraph));
             }
             resultNode.set("results", datasetResult);
+        }
+        if(decompressDir) {
+            cleanupDirectory(validatePath);
         }
         return resultNode;
     }
@@ -522,18 +542,19 @@ public class DatasetBackupService {
      * @param backupId    the back-up identifier
      * @param datasetName the dataset name
      * @return the SHACL validation report as a JSON String
-     * @throws Exception
+     * @throws Exception If error occurs
      */
     public ObjectNode getReport(final String backupId, final String datasetName, final HttpServletResponse response) throws Exception {
-        final ObjectNode resultNode = MAPPER.createObjectNode();
-        final String reportPathString = getBackUpDir() + "/" + backupId + "/" + datasetName + "/tdb/" + datasetName + BACKUP_SUFFIX + REPORT_SUFFIX;
+        final ObjectNode resultNode = OBJECT_MAPPER.createObjectNode();
+        final String reportPathString = getBackUpDir() + "/" + backupId + "-" + datasetName + REPORT_SUFFIX;
+
         if (checkPathExistsAndIsFile(reportPathString)) {
             final Model model = RDFDataMgr.loadModel(reportPathString);
             try (final ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
                 RDFDataMgr.write(baos, model, Lang.RDFJSON);
                 resultNode.put("backup-id", backupId);
                 resultNode.put("dataset-name", datasetName);
-                return resultNode.set("result", MAPPER.readValue(baos.toString(StandardCharsets.UTF_8), ObjectNode.class));
+                return resultNode.set("result", OBJECT_MAPPER.readValue(baos.toString(StandardCharsets.UTF_8), ObjectNode.class));
             }
         } else {
             response.setStatus(HttpServletResponse.SC_NOT_FOUND);
@@ -591,16 +612,16 @@ public class DatasetBackupService {
     }
 
     private ObjectNode executeValidation(String validatePath, String datasetDir, Graph shapesGraph) {
-        final ObjectNode response = MAPPER.createObjectNode();
+        final ObjectNode response = OBJECT_MAPPER.createObjectNode();
         try {
-            final Path source = Path.of(validatePath, datasetDir, "tdb", datasetDir + BACKUP_SUFFIX + ".nq.gz");
+            final Path source = Path.of(validatePath, datasetDir, "tdb", datasetDir + BACKUP_SUFFIX + RDF_BACKUP_SUFFIX);
             final List<Path> tempPaths = new ArrayList<>();
 
             final Graph dataGraph = RDFDataMgr.loadGraph(source.toString());
             final Shapes shapes = Shapes.parse(shapesGraph);
 
             final ValidationReport report = ShaclValidator.get().validate(shapes, dataGraph);
-            writeValidationReport(report, source);
+            writeValidationReport(report, datasetDir, Path.of(validatePath));
             cleanUp(tempPaths);
             response.put("success", true);
         } catch (Exception ex) {
@@ -625,21 +646,16 @@ public class DatasetBackupService {
         return model.read(shapeInputStream, null, "TTL");
     }
 
-    private void writeValidationReport(final ValidationReport report, Path sourcePath) throws IOException {
-        String reportPathString = sourcePath.toString().replace(".nq.gz", REPORT_SUFFIX);
-        Path reportPath = Path.of(reportPathString);
+    private void writeValidationReport(final ValidationReport report, String dataset, Path sourcePath) throws IOException {
+        Path reportPath = Path.of(sourcePath + "-" + dataset + REPORT_SUFFIX);
         try (final FileOutputStream fos = new FileOutputStream(reportPath.toString())) {
             RDFDataMgr.write(fos, report.getModel(), Lang.TTL);
         }
     }
 
-    private void cleanUp(final List<Path> paths) {
-        for (Path path : paths) {
-            FileUtils.deleteQuietly(path.toFile());
-        }
-    }
 
-    /** Obtain the access point from the registry.
+    /**
+     * Obtain the access point from the registry.
      * We do two passes - a straight check and one
      * using the sanitised name
      * @param datasetName name
@@ -656,6 +672,17 @@ public class DatasetBackupService {
             }
         }
         return null;
+    }
+
+    /**
+     * Compress the files generated into a single zipped file and
+     * write a complimentary metadata file.
+     * @param response JSON object returned to client calls (and used to write metadata)
+     * @param dirPath location of files to compress
+     */
+    private void compressAndStoreBackupMetadata(ObjectNode response, String dirPath) {
+        zipDirectory(dirPath, dirPath + ZIP_SUFFIX, DELETE_GENERATED_FILES);
+        writeObjectNodeToFile(response, dirPath + JSON_INFO_SUFFIX);
     }
 
 }
