@@ -7,6 +7,7 @@ import io.telicent.labels.TripleLabels;
 import io.telicent.labels.services.LabelsQueryService;
 import io.telicent.model.JsonTriple;
 import io.telicent.model.JsonTriples;
+import io.telicent.utils.SmartCacheGraphException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -17,12 +18,14 @@ import org.apache.jena.graph.Triple;
 import org.apache.jena.kafka.FusekiKafka;
 import org.slf4j.Logger;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
 import static io.telicent.backup.utils.JsonFileUtils.OBJECT_MAPPER;
-import static io.telicent.utils.ServletUtils.*;
+import static io.telicent.utils.ServletUtils.handleError;
+import static io.telicent.utils.ServletUtils.processResponse;
 
 public class LabelsQueryServlet extends HttpServlet {
 
@@ -40,10 +43,14 @@ public class LabelsQueryServlet extends HttpServlet {
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) {
-        List<Triple> tripleQueryList = obtainTripleQueries(request);
-        ObjectNode resultNode = OBJECT_MAPPER.createObjectNode();
-        resultNode.set("results", processQueryList(tripleQueryList));
-        processResponse(response, resultNode);
+        try {
+            List<Triple> tripleQueryList = obtainTripleQueries(request);
+            ObjectNode resultNode = OBJECT_MAPPER.createObjectNode();
+            resultNode.set("results", processQueryList(tripleQueryList));
+            processResponse(response, resultNode);
+        } catch (SmartCacheGraphException ex) {
+            handleError(response, OBJECT_MAPPER.createObjectNode(), HttpServletResponse.SC_BAD_REQUEST, "Unable to interpret JSON request");
+        }
     }
 
     ArrayNode processQueryList(List<Triple> tripleQueryList) {
@@ -64,7 +71,6 @@ public class LabelsQueryServlet extends HttpServlet {
         }
     }
 
-
     public static boolean isWildcardTriple(Triple triple) {
         if (Node.ANY.equals(triple.getSubject())) {
             return true;
@@ -73,7 +79,7 @@ public class LabelsQueryServlet extends HttpServlet {
         } else return Node.ANY.equals(triple.getObject());
     }
 
-    private List<Triple> obtainTripleQueries(HttpServletRequest request) {
+    private List<Triple> obtainTripleQueries(HttpServletRequest request) throws SmartCacheGraphException {
         List<Triple> tripleList = new ArrayList<>();
         try (final InputStream inputStream = request.getInputStream()) {
             JsonNode rootNode = OBJECT_MAPPER.readTree(inputStream);
@@ -83,10 +89,13 @@ public class LabelsQueryServlet extends HttpServlet {
                     tripleList.add(getTriple(query));
                 }
             } else {
-                FmtLog.error(LOG, "Invalid JSON format: Missing 'triples' array.");
+                final String message = "Invalid JSON format: Missing 'triples' array.";
+                FmtLog.error(LOG, message);
+                throw new SmartCacheGraphException(message);
             }
-        } catch (Exception exception) {
+        } catch (IOException | IllegalArgumentException exception) {
             FmtLog.error(LOG, exception.getMessage());
+            throw new SmartCacheGraphException(exception.getMessage());
         }
         return tripleList;
     }

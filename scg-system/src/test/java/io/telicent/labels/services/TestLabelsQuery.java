@@ -178,7 +178,7 @@ public class TestLabelsQuery {
                 }""";
         final String expectedJsonResponse = """
                 {
-                  "results" : [ ]
+                  "error" : "Unable to interpret JSON request"
                 }""";
         callAndAssert(jsonRequestBody, expectedJsonResponse);
     }
@@ -190,7 +190,7 @@ public class TestLabelsQuery {
                 }""";
         final String expectedJsonResponse = """
                 {
-                  "results" : [ ]
+                  "error" : "Unable to interpret JSON request"
                 }""";
         callAndAssert(jsonRequestBody, expectedJsonResponse);
     }
