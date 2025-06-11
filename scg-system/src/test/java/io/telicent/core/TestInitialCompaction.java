@@ -3,6 +3,7 @@ package io.telicent.core;
 import io.telicent.LibTestsSCG;
 import io.telicent.jena.abac.ABAC;
 import io.telicent.jena.abac.SysABAC;
+import io.telicent.jena.abac.attributes.syntax.AEX;
 import io.telicent.jena.abac.core.Attributes;
 import io.telicent.jena.abac.core.AttributesStoreLocal;
 import io.telicent.jena.abac.core.DatasetGraphABAC;
@@ -158,7 +159,7 @@ public class TestInitialCompaction {
     public void test_ABACDSG_wrapped_memGraph() {
         // given
         DatasetGraphABAC dsgABAC = ABAC.authzDataset(DatasetGraphFactory.createTxnMem(),
-                SysABAC.allowLabel,
+                AEX.strALLOW,
                 Labels.createLabelsStoreMem(),
                 SysABAC.denyLabel,
                 new AttributesStoreLocal());
@@ -173,7 +174,7 @@ public class TestInitialCompaction {
         // given
         DatasetGraphSwitchable dsgPersists = new DatasetGraphSwitchable(Path.of("./"), null, DatasetGraphFactory.createTxnMem());
         DatasetGraphABAC dsgABAC = ABAC.authzDataset(dsgPersists,
-                SysABAC.allowLabel,
+                AEX.strALLOW,
                 Labels.createLabelsStoreMem(),
                 SysABAC.denyLabel,
                 new AttributesStoreLocal());
@@ -281,7 +282,7 @@ public class TestInitialCompaction {
     public void test_compactLabels_notRocksDB() {
         // given
         DatasetGraphABAC dsgABAC = ABAC.authzDataset(DatasetGraphFactory.createTxnMem(),
-                SysABAC.allowLabel,
+                AEX.strALLOW,
                 Labels.createLabelsStoreMem(),
                 SysABAC.denyLabel,
                 new AttributesStoreLocal());

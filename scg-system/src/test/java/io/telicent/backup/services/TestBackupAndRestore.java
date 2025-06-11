@@ -2,6 +2,7 @@ package io.telicent.backup.services;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.telicent.jena.abac.ABAC;
+import io.telicent.jena.abac.SysABAC;
 import io.telicent.jena.abac.core.DatasetGraphABAC;
 import io.telicent.jena.abac.labels.LabelsStoreMem;
 import org.apache.jena.atlas.lib.FileOps;
@@ -41,7 +42,7 @@ public class TestBackupAndRestore {
         dsgABAC = ABAC.authzDataset(DatasetGraphFactory.createTxnMem(),
                 null,
                 LabelsStoreMem.create(),
-                "*",
+                SysABAC.allowLabel,
                 null);
     }
 
