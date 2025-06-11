@@ -48,6 +48,8 @@ public class BackupUtils extends ServletUtils {
 
     public static final Logger LOG = LoggerFactory.getLogger("BackupUtils");
 
+    private static final Pattern NUMBERED_ITEM_PATTERN = Pattern.compile("^(\\d+)(\\.zip)?$");
+
     /**
      * Configuration parameter for determining location of backups (if unset defaults to PWD/backups)
      */
@@ -108,68 +110,64 @@ public class BackupUtils extends ServletUtils {
     }
 
     /**
-     * For the given directory find the highest numbered directory
+     * For the given directory find the highest numbered directory or zip
      *
      * @param directoryPath the directory to check
      * @return the highest number (or -1 if unavailable)
      */
-    public static int getHighestExistingDirectoryNumber(String directoryPath) {
-        if (!createPathIfNotExists(directoryPath)) {
-            FmtLog.error(LOG, "Failed to create directory: " + directoryPath);
-            return -1;
-        }
-        File dir = new File(directoryPath);
-
-        return Stream.of(Objects.requireNonNull(dir.listFiles(File::isDirectory)))
-                .filter(File::isDirectory)
-                .map(File::getName)
-                .filter(name -> name.matches("\\d+"))
-                .map(Integer::parseInt)
-                .max(Comparator.naturalOrder())
-                .orElse(0);
-    }
-
-    /**
-     * For the given directory find the highest numbered directory
-     * so far and return +1
-     *
-     * @param directoryPath the directory to check
-     * @return the next number (or -1 if unavailable)
-     */
-    public static int getNextDirectoryNumber(String directoryPath) {
-        int highestSoFar = getHighestExistingDirectoryNumber(directoryPath);
-        if (highestSoFar < 0) {
-            FmtLog.error(LOG, "Failed to obtain number for : " + directoryPath);
-            return -1;
-        }
-        return highestSoFar + 1;
-    }
-
-    /**
-     * For the given directory find the highest numbered directory
-     * so far and return +1 and create the relevant directory.
-     *
-     * @param directoryPath the directory to check
-     * @return the next number (or -1 if unavailable)
-     */
     public static int getNextDirectoryNumberAndCreate(String directoryPath) {
-        int nextNumber = getNextDirectoryNumber(directoryPath);
-        if (nextNumber < 1) {
-            FmtLog.error(LOG, "Failed to obtain number for : " + directoryPath);
+        if (!checkPathExistsAndIsDir(directoryPath)) {
+            FmtLog.error(LOG, "Base dir does not exist properly : " + directoryPath);
+            return -1;
+        }
+        File baseDir = new File(directoryPath);
+
+        int maxNumber = 0;
+
+        File[] files = baseDir.listFiles();
+        if (files != null) {
+            maxNumber = Arrays.stream(files)
+                    .map(File::getName)
+                    .map(BackupUtils::extractNumberFromNumberedItem) // Modified line
+                    .filter(Optional::isPresent)
+                    .mapToInt(Optional::get)
+                    .max()
+                    .orElse(0);
+        }
+
+        int nextNumber = maxNumber + 1;
+        String newDirectoryName = String.valueOf(nextNumber);
+        File newDirectory = new File(baseDir, newDirectoryName);
+
+        if (!newDirectory.mkdir()) {
+            FmtLog.error(LOG,"Failed to create new directory: " + newDirectory.getAbsolutePath());
             return -1;
         }
 
-        // Create the new directory path
-        String newDirectoryPath = directoryPath + "/" + nextNumber;
-
-        // Create the directory
-        if (!createPathIfNotExists(newDirectoryPath)) {
-            FmtLog.error(LOG, "Failed to create directory: " + newDirectoryPath);
-            return -1;
-        }
+        LOG.info("Created new directory: {}", newDirectory.getAbsolutePath());
         return nextNumber;
     }
 
+    /**
+     * Extracts a number from a given file or directory name if it matches the pattern of a number
+     * or a numbered zip file.
+     *
+     * @param name The name of the file or directory.
+     * @return An Optional containing the extracted number, or empty if no number can be extracted.
+     */
+    private static Optional<Integer> extractNumberFromNumberedItem(String name) { // New method
+        Matcher matcher = NUMBERED_ITEM_PATTERN.matcher(name);
+        if (matcher.matches()) {
+            try {
+                return Optional.of(Integer.parseInt(matcher.group(1)));
+            } catch (NumberFormatException e) {
+                // Should not happen if regex matches, but good to handle defensively
+                LOG.warn("Failed to parse number from matched item: {}", name, e);
+                return Optional.empty();
+            }
+        }
+        return Optional.empty();
+    }
     /**
      * Takes a string path and if it doesn't exist, creates it.
      *

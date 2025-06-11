@@ -31,7 +31,9 @@ import org.apache.jena.fuseki.server.DataAccessPointRegistry;
 import org.apache.jena.fuseki.server.DataService;
 import org.apache.jena.sparql.core.DatasetGraph;
 import org.apache.jena.sparql.core.DatasetGraphFactory;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.io.*;
@@ -40,6 +42,7 @@ import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -72,10 +75,19 @@ public class TestDatasetBackupService {
         RESULT_NODE.removeAll();
     }
 
+    @AfterEach
+    public void cleanup() throws Exception {
+        Files.walk(baseDir)
+                .sorted(Comparator.reverseOrder())
+                .map(Path::toFile)
+                .forEach(File::delete);
+    }
+
     /*
      * DELETE TESTS
      */
     @Test
+    @DisplayName("Delete backup does nothing when the ID does not exist")
     public void test_delete_when_ID_does_not_exist() {
         // given
         String missingID = "not-there";
@@ -92,6 +104,7 @@ public class TestDatasetBackupService {
     }
 
     @Test
+    @DisplayName("Delete backup works when the ID does exist")
     public void test_delete_when_ID_does_exist() {
         // given
         Path parent = baseDir.getParent();
@@ -112,6 +125,7 @@ public class TestDatasetBackupService {
      */
 
     @Test
+    @DisplayName("List displays empty json when directory is empty")
     public void test_listBackups_emptyDir() {
         // given
         // when
@@ -122,6 +136,7 @@ public class TestDatasetBackupService {
     }
 
     @Test
+    @DisplayName("List backups when directory contains details")
     public void test_listBackups_contents() throws IOException {
         // given
         Path parent = baseDir.getParent();
@@ -144,6 +159,7 @@ public class TestDatasetBackupService {
      */
 
     @Test
+    @DisplayName("Calling backup with a missing dataset name")
     public void test_backup_missing_DatasetName() {
         // given
         String datasetName = "datasetName";
@@ -164,6 +180,7 @@ public class TestDatasetBackupService {
     }
 
     @Test
+    @DisplayName("Call backup with an empty registry of endpoints")
     public void test_backup_emptyRegistry() {
         // given
         String datasetName = "datasetName";
@@ -184,6 +201,7 @@ public class TestDatasetBackupService {
 
 
     @Test
+    @DisplayName("Happy path call of backup with ABAC and RocksDB labels entries")
     public void test_backup_happyPath_abac_rocksDB_labels() {
         // given
         String datasetName = "dataset-name";
@@ -226,6 +244,61 @@ public class TestDatasetBackupService {
     }
 
     @Test
+    @DisplayName("Happy path call of backup with ABAC and RocksDB labels entries with multiple entries already (will be ID 3)")
+    public void test_backup_happyPath_abac_rocksDB_labels_multi() throws IOException {
+        // given
+
+        // This only needs to be a zip file (no contents required)
+        File altZip = new File(baseDir.toString() + "/1.zip");
+        assertTrue(altZip.createNewFile());
+        altZip.deleteOnExit();
+
+        // This only needs to be a directory (no contents required)
+        File altDir = new File(baseDir.toString() + "/2");
+        assertTrue(altDir.mkdir());
+        altDir.deleteOnExit();
+
+        String datasetName = "dataset-name";
+        DatasetGraphABAC dsgABAC = ABAC.authzDataset(DatasetGraphFactory.createTxnMem(),
+                null,
+                mock(LabelsStoreRocksDB.class),
+                null,
+                null);
+        DataAccessPoint dap = new DataAccessPoint("dataset-name", DataService.newBuilder().dataset(dsgABAC).build());
+        DataAccessPoint dap2 = new DataAccessPoint("dataset-ignore", DataService.newBuilder().dataset(dsgABAC).build());
+        when(mockRegistry.accessPoints()).thenReturn(List.of(dap, dap2));
+
+        // when
+        ObjectNode result = cut.backupDataset(datasetName);
+
+        // then
+        assertTrue(result.has("backup-id"));
+        assertEquals(3, result.get("backup-id").asInt());
+        assertTrue(result.has("datasets"));
+        assertTrue(result.get("datasets").isArray());
+        assertEquals(1, result.get("datasets").size());
+        ArrayNode datasets = (ArrayNode) result.get("datasets");
+        JsonNode dataset = datasets.get(0);
+        assertTrue(dataset.has("dataset-id"));
+        assertTrue(dataset.get("dataset-id").isTextual());
+        assertEquals(datasetName, dataset.get("dataset-id").asText());
+
+        assertTrue(dataset.has("tdb"));
+        JsonNode tdbNode = dataset.get("tdb");
+        assertTrue(tdbNode.has("success"));
+        assertTrue(tdbNode.get("success").asBoolean());
+
+        assertTrue(dataset.has("labels"));
+        JsonNode labelsNode = dataset.get("labels");
+        assertTrue(labelsNode.has("success"));
+        assertTrue(labelsNode.get("success").asBoolean());
+
+        assertEquals(1, DatasetBackupService_Test.getCallCount(BACKUP_TDB));
+        assertEquals(1, DatasetBackupService_Test.getCallCount(BACKUP_LABELS));
+    }
+
+    @Test
+    @DisplayName("Happy path backup all datasets with ABAC and RocksDB labels when no ID is specified")
     public void test_backup_happyPath_abac_rocksDB_labels_noID() {
         // given
         String datasetName = "dataset-name";
@@ -285,6 +358,7 @@ public class TestDatasetBackupService {
     }
 
     @Test
+    @DisplayName("Happy path backup with TDB only (no ABAC or Labels)")
     public void test_backup_happyPath_tdb_only() {
         // given
         String datasetName = "dataset-name";
@@ -321,6 +395,7 @@ public class TestDatasetBackupService {
     }
 
     @Test
+    @DisplayName("Happy path backup with ABAC but not RocksDB labels")
     public void test_backup_happyPath_abac_not_rocksDB() {
         // given
         String datasetName = "dataset-name";
@@ -363,6 +438,7 @@ public class TestDatasetBackupService {
     }
 
     @Test
+    @DisplayName("Backup when TDB encounters an exception")
     public void test_backup_happyPath_tdb_exception() {
         // given
         String datasetName = "dataset-name";
@@ -402,6 +478,7 @@ public class TestDatasetBackupService {
 
 
     @Test
+    @DisplayName("Backup with ABAC and RocksDB labels when both TDB and Labels encounter exceptions")
     public void test_backup_abac_rocksDB_exceptions() {
         // given
         String datasetName = "dataset-name";
@@ -446,6 +523,7 @@ public class TestDatasetBackupService {
     }
 
     @Test
+    @DisplayName("Restore TDB when the directory is wrong/missing")
     public void test_restoreTDB_wrongDir() {
         // given
         String missingPath = "/does_not_exist";
@@ -464,6 +542,7 @@ public class TestDatasetBackupService {
     }
 
     @Test
+    @DisplayName("Happy path for executing backup of Label Store")
     public void test_executeBackupLabelStore_happyPath() {
         // given
         LabelsStoreRocksDB mockRocksDB = mock(LabelsStoreRocksDB.class);
@@ -476,6 +555,7 @@ public class TestDatasetBackupService {
     }
 
     @Test
+    @DisplayName("Happy path for executing restore of Label Store")
     public void test_executeRestoreLabelStore_happyPath() {
         // given
         LabelsStoreRocksDB mockRocksDB = mock(LabelsStoreRocksDB.class);
@@ -492,6 +572,7 @@ public class TestDatasetBackupService {
      */
 
     @Test
+    @DisplayName("Restore datasets when the directory is wrong/missing")
     public void test_restoreDatasets_wrongDir() {
         // given
         String missingID = "does_not_exist";
@@ -509,6 +590,7 @@ public class TestDatasetBackupService {
     }
 
     @Test
+    @DisplayName("Restore datasets when there are no backups in the directory")
     public void test_restoreDatasets_NoBackups() {
         // given
         String emptyID = "empty_dir";
@@ -531,6 +613,7 @@ public class TestDatasetBackupService {
 
 
     @Test
+    @DisplayName("Restore datasets when no matching dataset is found")
     public void test_restoreDatasets_NoMatch() {
         // given
         String restoreID = "restore";
@@ -560,6 +643,7 @@ public class TestDatasetBackupService {
     }
 
     @Test
+    @DisplayName("Restore datasets with ABAC and RocksDB labels (happy path)")
     public void test_restoreDatasets_abac_rocksDB() throws IOException {
         // given
         String restoreID = "restore";
@@ -623,6 +707,82 @@ public class TestDatasetBackupService {
     }
 
     @Test
+    @DisplayName("Restore datasets with ABAC and RocksDB labels (multiple entries)")
+    public void test_restoreDatasets_abac_rocksDB_multiple_entries() throws IOException {
+        // given
+
+        // This only needs to be a directory (no contents required)
+        File altDir = new File(baseDir.toString() + "/1");
+        assertTrue(altDir.mkdir());
+        altDir.deleteOnExit();
+
+        // This only needs to be a zip file (no contents required)
+        File altZip = new File(baseDir.toString() + "/2.zip");
+        assertTrue(altZip.createNewFile());
+        altZip.deleteOnExit();
+
+        String restoreID = "3";
+        File newDir = new File(baseDir.toString() + "/" + restoreID);
+        assertTrue(newDir.mkdir());
+        newDir.deleteOnExit();
+
+        String datasetName = "dataset-name";
+        File newDataset = new File(newDir + "/" + datasetName);
+        assertTrue(newDataset.mkdir());
+        newDataset.deleteOnExit();
+
+        File tdbDir = new File(newDataset + "/tdb/");
+        assertTrue(tdbDir.mkdir());
+        tdbDir.deleteOnExit();
+
+        File tdbFile = new File(newDataset + "/tdb/" + datasetName + "_backup.nq.gz");
+        assertTrue(tdbFile.createNewFile());
+        tdbFile.deleteOnExit();
+
+        File labelsDir = new File(newDataset + "/labels/");
+        assertTrue(labelsDir.mkdir());
+        labelsDir.deleteOnExit();
+
+        LabelsStoreRocksDB mockRocksDbLabelStore = mock(LabelsStoreRocksDB.class);
+        when(mockRocksDbLabelStore.getTransactional()).thenReturn(DatasetGraphFactory.createTxnMem());
+
+
+        DatasetGraphABAC dsgABAC = ABAC.authzDataset(DatasetGraphFactory.createTxnMem(),
+                null,
+                mockRocksDbLabelStore,
+                null,
+                null);
+        DataAccessPoint dap = new DataAccessPoint("dataset-name", DataService.newBuilder().dataset(dsgABAC).build());
+
+        when(mockRegistry.get("dataset-name")).thenReturn(dap);
+
+        // when
+        ObjectNode result = cut.restoreDatasets(restoreID);
+
+        // then
+        assertTrue(result.has("restorePath"));
+        assertFalse(result.has("success"));
+        assertTrue(result.has(datasetName));
+        JsonNode dataset = result.get(datasetName);
+        assertTrue(dataset.has("dataset-id"));
+        assertEquals(dataset.get("dataset-id").asText(), datasetName);
+
+        assertTrue(dataset.has("tdb"));
+        JsonNode tdb = dataset.get("tdb");
+        assertTrue(tdb.has("success"));
+        assertTrue(tdb.get("success").asBoolean());
+
+        assertTrue(dataset.has("labels"));
+        JsonNode labels = dataset.get("labels");
+        assertTrue(labels.has("success"));
+        assertTrue(labels.get("success").asBoolean());
+
+        assertEquals(1, DatasetBackupService_Test.getCallCount(RESTORE_TDB));
+        assertEquals(1, DatasetBackupService_Test.getCallCount(RESTORE_LABELS));
+    }
+
+    @Test
+    @DisplayName("Restore datasets when the dataset is not ABAC DSG")
     public void test_restoreDatasets_not_abac_dsg() throws IOException {
         // given
         String restoreID = "restore";
@@ -677,6 +837,7 @@ public class TestDatasetBackupService {
 
 
     @Test
+    @DisplayName("Restore datasets when an exception occurs during restore process")
     public void test_restoreDatasets_exception() throws IOException {
         // given
         String restoreID = "restore";
@@ -732,6 +893,7 @@ public class TestDatasetBackupService {
     }
 
     @Test
+    @DisplayName("Restore datasets when DataAccessPoint is invalid")
     public void test_restoreDatasets_invalidDataAccessPoint() throws IOException {
         // given
         String restoreID = "restore";
@@ -782,6 +944,7 @@ public class TestDatasetBackupService {
     }
 
     @Test
+    @DisplayName("Restore datasets with ABAC DSG but not RocksDB")
     public void test_restoreDatasets_abac_dsg_not_rocksdb() throws IOException {
         // given
         String restoreID = "restore";
@@ -840,6 +1003,7 @@ public class TestDatasetBackupService {
     }
 
     @Test
+    @DisplayName("Restore datasets with ABAC and RocksDB labels when exceptions occur")
     public void test_restoreDatasets_abac_rocksDB_exceptions() throws IOException {
         // given
         String restoreID = "restore";
@@ -905,6 +1069,7 @@ public class TestDatasetBackupService {
     }
 
     @Test
+    @DisplayName("Restore datasets with ABAC and RocksDB labels when no backup files are found")
     public void test_restoreDatasets_abac_rocksDB_noFiles() {
         // given
         String restoreID = "restore";
@@ -959,6 +1124,7 @@ public class TestDatasetBackupService {
     }
 
     @Test
+    @DisplayName("Validate backup when successful for one dataset")
     public void testValidateBackup_success_one_dataset() throws Exception {
         final String datasetName = "dataset-name";
         final String[] validateParams = {"validate", datasetName};
@@ -988,6 +1154,7 @@ public class TestDatasetBackupService {
     }
 
     @Test
+    @DisplayName("Validate backup when successful for two datasets")
     public void testValidateBackup_success_two_datasets() throws Exception {
         final String[] validateParams = {"validate"};
         final File newDir = createTestDirectory(validateParams[0]);
@@ -1030,6 +1197,7 @@ public class TestDatasetBackupService {
     }
 
     @Test
+    @DisplayName("Validate backup fails with an invalid ID")
     public void testValidateBackup_fail_invalid_id() throws Exception {
         try (final InputStream inputStream = getShapeInputStream()) {
             final HttpServletResponse mockResponse = mock(HttpServletResponse.class);
@@ -1044,6 +1212,7 @@ public class TestDatasetBackupService {
     }
 
     @Test
+    @DisplayName("Validate backup fails due to unzip error")
     public void testValidateBackup_fail_unzip() throws Exception {
         final String[] validateParams = {"validate"};
         final File newDir = createTestDirectory(validateParams[0]);
@@ -1074,6 +1243,7 @@ public class TestDatasetBackupService {
     }
 
     @Test
+    @DisplayName("Validate backup partially fails due to unzip error for one dataset")
     public void testValidateBackup_partial_fail_unzip() throws Exception {
         final String[] validateParams = {"validate"};
         final File newDir = createTestDirectory(validateParams[0]);
@@ -1118,6 +1288,7 @@ public class TestDatasetBackupService {
     }
 
     @Test
+    @DisplayName("Apply backup methods when no methods are registered (no-op)")
     public void applyBackUpMethods_noMethodsNoOp() {
         // given
         backupConsumerMap.clear();
@@ -1129,6 +1300,7 @@ public class TestDatasetBackupService {
 
 
     @Test
+    @DisplayName("Apply backup methods when the directory is missing")
     public void applyBackUpMethods_missingDir() {
         // given
         String missingPath = "/does_not_exist";
@@ -1144,6 +1316,7 @@ public class TestDatasetBackupService {
     }
 
     @Test
+    @DisplayName("Apply backup methods when an exception occurs during execution")
     public void applyBackupMethods_exception() {
         // given
         File newDir = new File(baseDir.toString() + "/test");
@@ -1161,6 +1334,7 @@ public class TestDatasetBackupService {
     }
 
     @Test
+    @DisplayName("Apply backup methods happy path")
     public void applyBackUpMethods_happyPath() {
         // given
         File newDir = new File(baseDir.toString() + "/test");
@@ -1179,6 +1353,7 @@ public class TestDatasetBackupService {
     }
 
     @Test
+    @DisplayName("Apply restore methods when no methods are registered (no-op)")
     public void applyRestoreMethods_noMethodsNoOp() {
         // given
         restoreConsumerMap.clear();
@@ -1190,6 +1365,7 @@ public class TestDatasetBackupService {
     }
 
     @Test
+    @DisplayName("Apply restore methods when the directory is missing")
     public void applyRestoreMethods_missingDir() {
         // given
         String missingPath = "/does_not_exist";
@@ -1205,6 +1381,7 @@ public class TestDatasetBackupService {
     }
 
     @Test
+    @DisplayName("Apply restore methods when an exception occurs during execution")
     public void applyRestoreMethods_exception() {
         // given
         File newDir = new File(baseDir.toString() + "/test");
@@ -1222,6 +1399,7 @@ public class TestDatasetBackupService {
     }
 
     @Test
+    @DisplayName("Apply restore methods happy path")
     public void applyRestoreMethods_happyPath() {
         // given
         File newDir = new File(baseDir.toString() + "/test");
@@ -1241,6 +1419,7 @@ public class TestDatasetBackupService {
     }
 
     @Test
+    @DisplayName("Restore label store when the dataset is not ABAC enabled")
     public void test_restoreLabelStore_nonABAC() {
         // given
         DatasetGraph dsgNonABAC = DatasetGraphFactory.createTxnMem();
@@ -1260,6 +1439,7 @@ public class TestDatasetBackupService {
 
 
     @Test
+    @DisplayName("Restore label store when the label store is not RocksDB")
     public void test_restoreLabelStore_nonRocksDB() {
         // given
         DatasetGraphABAC dsgABAC = ABAC.authzDataset(DatasetGraphFactory.createTxnMem(),
@@ -1281,6 +1461,7 @@ public class TestDatasetBackupService {
     }
 
     @Test
+    @DisplayName("Restore label store when the path is wrong/missing")
     public void test_restoreLabelStore_wrongPath() {
         // given
         String datasetName = "/dataset-name";
@@ -1304,6 +1485,7 @@ public class TestDatasetBackupService {
     }
 
     @Test
+    @DisplayName("Process method handles general failure")
     public void test_process_failure() throws IOException {
         // given
         HttpServletRequest request = mock(HttpServletRequest.class);
@@ -1319,6 +1501,7 @@ public class TestDatasetBackupService {
     }
 
     @Test
+    @DisplayName("Process method handles multiple concurrent calls")
     public void test_process_multipleCalls() throws InterruptedException, IOException {
         HttpServletRequest request = mock(HttpServletRequest.class);
         when(request.getRemoteUser()).thenReturn("testUser");
@@ -1347,6 +1530,7 @@ public class TestDatasetBackupService {
     }
 
     @Test
+    @DisplayName("Process method handles exceptions during path info retrieval")
     public void test_process_exception() throws IOException {
         // given
         HttpServletRequest request = mock(HttpServletRequest.class);

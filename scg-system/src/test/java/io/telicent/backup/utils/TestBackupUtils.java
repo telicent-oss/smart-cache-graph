@@ -21,9 +21,7 @@ import io.telicent.smart.cache.configuration.sources.PropertiesSource;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletResponse;
 import org.apache.jena.riot.WebContent;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
@@ -32,10 +30,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Properties;
+import java.util.*;
 
 import static io.telicent.backup.utils.BackupUtils.*;
 import static io.telicent.backup.utils.JsonFileUtils.OBJECT_MAPPER;
@@ -51,6 +46,14 @@ public class TestBackupUtils {
     public void setup() {
         dirBackups = null;
         Configurator.reset();
+    }
+
+    @AfterEach
+    public void cleanup() throws IOException {
+        Files.walk(tempDir)
+                .sorted(Comparator.reverseOrder())
+                .map(Path::toFile)
+                .forEach(File::delete);
     }
 
     private final String EXPECTED_DEFAULT_DIR = System.getenv("PWD") + "/backups";
@@ -409,119 +412,6 @@ public class TestBackupUtils {
     }
 
     @Test
-    @DisplayName("Tests getHighestExistingDirectoryNumber with an empty directory")
-    public void test_getHighestExistingDirectoryNumber_emptyDirectory() throws IOException {
-        // given
-        // when
-        Path testDir = Files.createDirectory(tempDir.resolve("empty_numbered_dir"));
-        // then
-        assertEquals(0, getHighestExistingDirectoryNumber(testDir.toAbsolutePath().toString()));
-    }
-
-    @Test
-    @DisplayName("Tests getHighestExistingDirectoryNumber with numerically named directories")
-    public void test_getHighestExistingDirectoryNumber_withNumberedDirectories() throws IOException {
-        // given
-        Path testDir = Files.createDirectory(tempDir.resolve("numbered_dirs"));
-        Files.createDirectory(testDir.resolve("1"));
-        Files.createDirectory(testDir.resolve("5"));
-        Files.createDirectory(testDir.resolve("10"));
-        Files.createDirectory(testDir.resolve("abc")); // Non-numeric
-        Files.createFile(testDir.resolve("2.txt")); // File, not directory
-        // when
-        int actual = getHighestExistingDirectoryNumber(testDir.toAbsolutePath().toString());
-        // then
-        assertEquals(10, actual);
-    }
-
-    @Test
-    @DisplayName("Tests getHighestExistingDirectoryNumber with no numerically named directories")
-    public void test_getHighestExistingDirectoryNumber_noNumericDirectories() throws IOException {
-        // given
-        Path testDir = Files.createDirectory(tempDir.resolve("no_numeric_dirs"));
-        Files.createDirectory(testDir.resolve("abc"));
-        Files.createDirectory(testDir.resolve("xyz"));
-        Files.createFile(testDir.resolve("file.txt"));
-        // when
-        int actual = getHighestExistingDirectoryNumber(testDir.toAbsolutePath().toString());
-        // then
-        assertEquals(0, actual);
-    }
-
-    @Test
-    @DisplayName("Tests getHighestExistingDirectoryNumber with a non-existent directory")
-    public void test_getHighestExistingDirectoryNumber_nonExistentDirectory() {
-        // given
-        // when
-        // then
-        assertEquals(-1, getHighestExistingDirectoryNumber("/this/path/does/not/exist"));
-    }
-
-    @Test
-    @DisplayName("Tests getHighestExistingDirectoryNumber with a null path")
-    public void test_getHighestExistingDirectoryNumber_nullPath() {
-        // given
-        // when
-        // then
-        assertEquals(-1, getHighestExistingDirectoryNumber(null));
-    }
-
-    @Test
-    @DisplayName("Tests getHighestExistingDirectoryNumber when directory creation fails")
-    public void test_getHighestExistingDirectoryNumber_cannot_mkdir() {
-        // given
-        try (MockedStatic<BackupUtils> mocked = Mockito.mockStatic(BackupUtils.class, CALLS_REAL_METHODS)) {
-            mocked.when(() -> BackupUtils.createPathIfNotExists(anyString())).thenReturn(false);
-            // when
-            int actual = getHighestExistingDirectoryNumber("/this/will/not/work");
-            // then
-            assertEquals(-1, actual);
-        }
-    }
-
-    @Test
-    @DisplayName("Tests getNextDirectoryNumber with an empty directory")
-    public void test_getNextDirectoryNumber_emptyDirectory() throws IOException {
-        // given
-        Path testDir = Files.createDirectory(tempDir.resolve("next_num_empty"));
-        // when
-        int actual = getNextDirectoryNumber(testDir.toAbsolutePath().toString());
-        // then
-        assertEquals(1, actual);
-    }
-
-    @Test
-    @DisplayName("Tests getNextDirectoryNumber with existing numbered directories")
-    public void test_getNextDirectoryNumber_withExistingDirectories() throws IOException {
-        // given
-        Path testDir = Files.createDirectory(tempDir.resolve("next_num_existing"));
-        Files.createDirectory(testDir.resolve("1"));
-        Files.createDirectory(testDir.resolve("5"));
-        // when
-        int actual = getNextDirectoryNumber(testDir.toAbsolutePath().toString());
-        // then
-        assertEquals(6, actual);
-    }
-
-    @Test
-    @DisplayName("Tests getNextDirectoryNumber with a non-existent directory")
-    public void test_getNextDirectoryNumber_nonExistentDirectory() {
-        // given
-        // when
-        // then
-        assertEquals(-1, getNextDirectoryNumber("/non/existent/path/for/next"));
-    }
-
-    @Test
-    @DisplayName("Tests getNextDirectoryNumber with a null path")
-    public void test_getNextDirectoryNumber_nullPath() {
-        // given
-        // when
-        // then
-        assertEquals(-1, getNextDirectoryNumber(null));
-    }
-
-    @Test
     @DisplayName("Tests getNextDirectoryNumberAndCreate with an empty directory")
     public void test_getNextDirectoryNumberAndCreate_emptyDirectory() throws IOException {
         // given
@@ -550,17 +440,6 @@ public class TestBackupUtils {
     }
 
     @Test
-    @DisplayName("Tests getNextDirectoryNumberAndCreate when parent directory does not exist (should create it)")
-    public void test_getNextDirectoryNumberAndCreate_nonExistentParentDirectory() {
-        // given
-        // when
-        String nonExistentParent = tempDir.resolve("non_existent_parent_for_create").toAbsolutePath().toString();
-        // then
-        assertEquals(1, getNextDirectoryNumberAndCreate(nonExistentParent));
-        assertTrue(Files.exists(new File(nonExistentParent + "/1").toPath()));
-    }
-
-    @Test
     @DisplayName("Tests getNextDirectoryNumberAndCreate with a null path")
     public void test_getNextDirectoryNumberAndCreate_nullPath() {
         // given
@@ -575,7 +454,6 @@ public class TestBackupUtils {
         // given
         try (MockedStatic<BackupUtils> mocked = Mockito.mockStatic(BackupUtils.class, CALLS_REAL_METHODS)) {
             mocked.when(() -> BackupUtils.createPathIfNotExists(anyString())).thenReturn(true).thenReturn(false); // First call for parent succeeds, second for child fails
-            mocked.when(() -> BackupUtils.getNextDirectoryNumber(anyString())).thenReturn(1); // Simulate that getNextNumber works
             // when
             int actual = getNextDirectoryNumberAndCreate("/temp/path/that/fails/creation");
             // then
@@ -588,7 +466,6 @@ public class TestBackupUtils {
     public void test_getNextDirectoryNumberAndCreate_getNextNumberFails() {
         // given
         try (MockedStatic<BackupUtils> mocked = Mockito.mockStatic(BackupUtils.class, CALLS_REAL_METHODS)) {
-            mocked.when(() -> BackupUtils.getNextDirectoryNumber(anyString())).thenReturn(-1);
             // when
             int actual = getNextDirectoryNumberAndCreate("/some/path");
             // then
