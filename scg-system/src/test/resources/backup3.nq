@@ -1,0 +1,11 @@
+<http://iso.org/iso3166#COD> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://ies.data.gov.uk/ontology/ies4#Country> .
+<http://iso.org/iso3166#COD> <http://ies.data.gov.uk/ontology/ies4#hasName> <http://iso.org/iso3166#COD_name> .
+<http://iso.org/iso3166#COD> <http://ies.data.gov.uk/ontology/ies4#inLocation> <http://un.org/region#017> .
+<http://iso.org/iso3166#COD> <http://ies.data.gov.uk/ontology/ies4#isIdentifiedBy> <http://nist.gov/standardsgov/federal-information-processing-standards#CG_fips_10_4> .
+<http://iso.org/iso3166#COD> <http://ies.data.gov.uk/ontology/ies4#isIdentifiedBy> <http://iso.org/iso3166#COD_iso_num> .
+<http://iso.org/iso3166#COD> <http://ies.data.gov.uk/ontology/ies4#isIdentifiedBy> <http://iso.org/iso3166#COD_iso_a3> .
+<http://iso.org/iso3166#COD> <http://ies.data.gov.uk/ontology/ies4#isIdentifiedBy> <http://iso.org/iso3166#COD_iso_a2> .
+<http://iso.org/iso3166#COD> <http://ies.data.gov.uk/ontology/ies4#isRepresentedAs> <http://telicent.io/data#geojson_of_COD> .
+<http://iso.org/iso3166#COD> <http://telicent.io/ontology/primaryName> "Congo, Democratic Republic of the" .
+<http://iso.org/iso3166#COD> <http://ies.data.gov.uk/ontology/ies4#inLocation> <http://un.org/region#018> .
+<http://iso.org/iso3166#COD> <http://ies.data.gov.uk/ontology/ies4#inLocation> <http://un.org/region#019> .

@@ -44,6 +44,7 @@ import org.apache.jena.system.Txn;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -267,27 +268,35 @@ public class DatasetBackupService {
      */
     public ObjectNode restoreDatasets(String restoreId) {
         //TODO
-        // maybe change it here? If missing get the highest
-        // restoreIds are usually names.
-        // I can for the given directory find the highest numbered directory
-        // so far and return +1 and create the relevant directory.
-        // But instead, I want to find the name of the last directory I'm assuming.
-        if (restoreId == null) {
-            System.out.println("restoreId is null************************************");
-            //restoreId = String.valueOf(getNextDirectoryNumberAndCreate(getBackUpDir()));
-            for (String name : getSubdirectoryNames(getBackUpDir())) {
-                System.out.println("Name: " + name + "\n");
-            }
-            int highestDirNumber = getHighestExistingDirectoryNumber(getBackUpDir());
-            /*if (highestDirNumber <= 0) {
-                throw new IllegalStateException("No valid backup directories found in " + getBackUpDir());
-            }*/
-            restoreId = getSubdirectoryNames(getBackUpDir()).get(highestDirNumber/* - 1*/);
-            //restoreId = getSubdirectoryNames(getBackUpDir()).get(getHighestExistingDirectoryNumber(getBackUpDir())-1);
-            System.out.println("Added ID: " + restoreId + "************************************");
-        }
+        // maybe change it here? If missing get all ids?
+        // does it even do what it says?
+        // restoreId is just restore, what about the datasetName, it's not an argument. Neither is the backupId
+//        if (restoreId == null) {
+////            //--------------------
+////            // TestBackupData.test_restoreBackup_emptyGraph:176 expected: <200> but was: <500>
+//              // gets restore2
+////            int highestDirNumber = getHighestExistingDirectoryNumber(getBackUpDir());
+////            System.out.println("Highest Directory Number: " + highestDirNumber);
+////            System.out.println("BackupDir: " + getBackUpDir());
+//////            if (highestDirNumber < 0) {
+//////                throw new IllegalStateException("No valid backup directories found in " + getBackUpDir());
+//////            } else if (highestDirNumber == 0) {
+//////                restoreId = getSubdirectoryNames(getBackUpDir()).getFirst();
+//////            } else {
+//////                restoreId = getSubdirectoryNames(getBackUpDir()).get(1);
+//////            }
+////            //-----------------
+////            // gets restore2 or 3, they actualy are the first ones, but they aren't in order
+////            //restoreId = getSubdirectoryNames(getBackUpDir()).getLast();
+////            restoreId = String.valueOf(highestDirNumber);
+////            System.out.println("Last snapshot: " + restoreId + "************************************");
+//        }
         ObjectNode response = MAPPER.createObjectNode();
         String restorePath = getBackUpDir() + "/" + restoreId;
+//        if (restoreId == null) {
+//            //System.out.println("new restore path:" + getBackUpDir());
+//            restorePath = getBackUpDir();
+//        }
         response.put("restorePath", restorePath);
         if (!checkPathExistsAndIsDir(restorePath)) {
             response.put("reason", "Restore path unsuitable: " + restorePath);
@@ -406,6 +415,8 @@ public class DatasetBackupService {
         }
     }
 
+    //TODO
+    // add the same thing in restoring the label store???
     /**
      * Restore the underlying label store of the dataset
      *
