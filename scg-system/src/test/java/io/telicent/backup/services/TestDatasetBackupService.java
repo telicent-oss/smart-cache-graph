@@ -817,6 +817,100 @@ public class TestDatasetBackupService {
         assertEquals(2, DatasetBackupService_Test.getCallCount(RESTORE_LABELS));
     }
 
+    @Test
+    public void test_backupRestoreDatasets_abac_rocksDB_no_arg_multiple_2() throws IOException {
+        // given
+        String restoreID = "restore";
+        File newDir = new File(baseDir.toString() + "/" + restoreID);
+        assertTrue(newDir.mkdir());
+        newDir.deleteOnExit();
+
+        String datasetName = "dataset-name";
+        File newDataset = new File(newDir + "/" + datasetName);
+        assertTrue(newDataset.mkdir());
+        newDataset.deleteOnExit();
+
+        String secondDatasetName = "second-dataset-name";
+        File newSecondDataset = new File(newDir + "/" + secondDatasetName);
+        assertTrue(newSecondDataset.mkdir());
+        newSecondDataset.deleteOnExit();
+
+        File tdbDir = new File(newDataset + "/tdb/");
+        assertTrue(tdbDir.mkdir());
+        tdbDir.deleteOnExit();
+
+        File secondTdbDir = new File(newSecondDataset + "/tdb/");
+        assertTrue(secondTdbDir.mkdir());
+        secondTdbDir.deleteOnExit();
+
+        File tdbFile = new File(newDataset + "/tdb/" + datasetName + "_backup.nq.gz");
+        assertTrue(tdbFile.createNewFile());
+        tdbFile.deleteOnExit();
+
+        File secondTdbFile = new File(newSecondDataset + "/tdb/" + secondDatasetName + "_backup.nq.gz");
+        assertTrue(secondTdbFile.createNewFile());
+        secondTdbFile.deleteOnExit();
+
+        File labelsDir = new File(newDataset + "/labels/");
+        assertTrue(labelsDir.mkdir());
+        labelsDir.deleteOnExit();
+
+        File secondLabelsDir = new File(newSecondDataset + "/labels/");
+        assertTrue(secondLabelsDir.mkdir());
+        secondLabelsDir.deleteOnExit();
+
+        LabelsStoreRocksDB mockRocksDbLabelStore = mock(LabelsStoreRocksDB.class);
+        when(mockRocksDbLabelStore.getTransactional()).thenReturn(DatasetGraphFactory.createTxnMem());
+
+
+        DatasetGraphABAC dsgABAC = ABAC.authzDataset(DatasetGraphFactory.createTxnMem(),
+                null,
+                mockRocksDbLabelStore,
+                null,
+                null);
+        DataAccessPoint dap = new DataAccessPoint("dataset-name", DataService.newBuilder().dataset(dsgABAC).build());
+        DataAccessPoint dap2 = new DataAccessPoint("second-dataset-name", DataService.newBuilder().dataset(dsgABAC).build());
+
+        when(mockRegistry.accessPoints()).thenReturn(List.of(dap, dap2));
+        when(mockRegistry.get("dataset-name")).thenReturn(dap);
+        when(mockRegistry.get("second-dataset-name")).thenReturn(dap2);
+
+
+        cut.backupDataset(datasetName);
+        cut.backupDataset(datasetName);
+
+        ObjectNode result = cut.restoreDatasets("restore/2");
+        System.out.println(result);
+        ObjectNode backups = cut.listBackups();
+        System.out.println("Backups: " + backups);
+
+        // then
+        assertTrue(result.has("restorePath"));
+        String restorePath = result.get("restorePath").asText();
+        System.out.println(restorePath);
+        assertFalse(result.has("success"));
+        assertTrue(result.get("datasets").isArray());
+        assertEquals(2, result.get("datasets").size());
+        ArrayNode datasets = (ArrayNode) result.get("datasets");
+        assertTrue(result.has(datasetName));
+        JsonNode dataset = result.get(datasetName);
+        assertTrue(dataset.has("dataset-id"));
+        assertEquals(dataset.get("dataset-id").asText(), datasetName);
+
+        assertTrue(dataset.has("tdb"));
+        JsonNode tdb = dataset.get("tdb");
+        assertTrue(tdb.has("success"));
+        assertTrue(tdb.get("success").asBoolean());
+
+        assertTrue(dataset.has("labels"));
+        JsonNode labels = dataset.get("labels");
+        assertTrue(labels.has("success"));
+        assertTrue(labels.get("success").asBoolean());
+
+        assertEquals(2, DatasetBackupService_Test.getCallCount(RESTORE_TDB));
+        assertEquals(2, DatasetBackupService_Test.getCallCount(RESTORE_LABELS));
+    }
+
     //TODO
     // the workflow should be:
     //  data uploaded to the database
