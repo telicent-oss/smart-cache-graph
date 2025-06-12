@@ -1,5 +1,20 @@
 # Smart Cache Graph
 
+## 0.90.0
+
+- **BREAKING** Upgraded Fuseki Kafka to 2.0.0
+    - This contains many improvements, but also breaking changes to, the Kafka connector support
+    - New `SmartCacheGraphSink` replaces `FKProcessor_SCG` and associated code paths
+    - Please refer to Fuseki Kafka [release notes](https://github.com/telicent-oss/jena-fuseki-kafka/releases/tag/2.0.0)
+      for more details
+- Backup/Restore changes
+    - Response to a restore operation now has an `offsets` object with all relevant offsets in place of a singular
+      `offset` key.  This reflects the ability of Fuseki Kafka connectors to now operate upon multi-partition topics,
+      and/or multiple topics.
+- Build improvements:
+    - Fuseki Kafka upgraded to 2.0.0
+    - Fuseki YAML Config upgraded to 2.0.0
+
 ## 0.83.16
 - Build improvements:
   - CVE patches

@@ -22,7 +22,7 @@
   <groupId>io.telicent.smart-caches.graph</groupId>
   <artifactId>scg-base</artifactId>
   <packaging>pom</packaging>
-  <version>0.83.17-SNAPSHOT</version>
+  <version>0.90.0-SNAPSHOT</version>
 
   <name>Telicent Smart Cache Graph - Parent</name>
   <description>Telicent Smart Cache Graph</description>
@@ -56,7 +56,7 @@
   <properties>
     <!-- Build properties -->
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <project.build.outputTimestamp>2025-06-17T08:15:11Z</project.build.outputTimestamp>
+    <project.build.outputTimestamp>2025-06-17T08:18:48Z</project.build.outputTimestamp>
     <java.version>21</java.version>
 
     <!-- Maven Plugin versions -->
@@ -83,7 +83,7 @@
     <!-- Dependency versions -->
     <!-- Internal dependencies -->
     <dependency.rdf-abac>1.0.2</dependency.rdf-abac>
-    <dependency.fuseki-kafka>1.5.3</dependency.fuseki-kafka>
+    <dependency.fuseki-kafka>2.0.0</dependency.fuseki-kafka>
     <dependency.jena>5.4.0</dependency.jena>
     <dependency.fuseki-server>${dependency.jena}</dependency.fuseki-server>
     <dependency.graphql>0.10.2</dependency.graphql>
@@ -108,7 +108,7 @@
     <dependency.junit5-platform>1.13.1</dependency.junit5-platform>
     <dependency.mockito>5.18.0</dependency.mockito>
     <dependency.testcontainers>1.21.1</dependency.testcontainers>
-    <dependency.yaml-config>1.0.7</dependency.yaml-config>
+    <dependency.yaml-config>2.0.0</dependency.yaml-config>
 
     <!-- CVE Patches -->
     <!-- CVE-2025-48734-->
