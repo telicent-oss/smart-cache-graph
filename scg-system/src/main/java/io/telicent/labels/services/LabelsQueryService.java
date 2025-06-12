@@ -12,13 +12,18 @@ import java.util.List;
 
 public class LabelsQueryService {
 
-
     private final LabelsStore labelStore;
     private final DatasetGraph datasetGraph;
+    private final String datasetName;
 
-    public LabelsQueryService(LabelsStore labelStore, DatasetGraph datasetGraph) {
+    public LabelsQueryService(LabelsStore labelStore, DatasetGraph datasetGraph, String datasetName) {
         this.labelStore = labelStore;
         this.datasetGraph = datasetGraph;
+        this.datasetName = datasetName;
+    }
+
+    public String getDatasetName() {
+        return datasetName;
     }
 
     public List<TripleLabels> queryOnlyLabelStore(Triple triple) {

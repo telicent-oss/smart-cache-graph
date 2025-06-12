@@ -23,7 +23,7 @@ class TestLabelsQueryService {
 
     private static final LabelsStore mockLabelsStore = mock(LabelsStore.class);
     private static final DatasetGraph emptyDsg = DatasetGraphFactory.create();
-    private static final LabelsQueryService queryService = new LabelsQueryService(mockLabelsStore, emptyDsg);
+    private static final LabelsQueryService queryService = new LabelsQueryService(mockLabelsStore, emptyDsg,"");
 
     private static final Triple TRIPLE = Triple.create(
             NodeFactory.createURI("http://example.org/subject"),
