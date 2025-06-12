@@ -19,7 +19,10 @@ import java.util.List;
 
 public class TestLabelsQueryServiceRocksDB {
 
-    private static File dbDir;
+    private static final String DATASET_NAME = "test";
+
+    private File dbDir;
+
 
     @BeforeEach
     public void setUp() throws IOException {
@@ -37,7 +40,7 @@ public class TestLabelsQueryServiceRocksDB {
                 dbDir, LabelsStoreRocksDB.LabelMode.Overwrite, null, new StoreFmtByString());
         rocksDbLabelsStore.add(triple, Label.fromText("example"));
         final DatasetGraph emptyDsg = DatasetGraphFactory.create();
-        final LabelsQueryService queryService = new LabelsQueryService(rocksDbLabelsStore, emptyDsg);
+        final LabelsQueryService queryService = new LabelsQueryService(rocksDbLabelsStore, emptyDsg, DATASET_NAME);
         final List<TripleLabels> labels = queryService.queryOnlyLabelStore(triple);
         Assertions.assertEquals(1, labels.size());
         Assertions.assertEquals(1, labels.getFirst().labels.size());
@@ -55,7 +58,7 @@ public class TestLabelsQueryServiceRocksDB {
                 dbDir, LabelsStoreRocksDB.LabelMode.Overwrite, null, new StoreFmtByString());
         rocksDbLabelsStore.add(triple, Label.fromText("example"));
         final DatasetGraph emptyDsg = DatasetGraphFactory.create();
-        final LabelsQueryService queryService = new LabelsQueryService(rocksDbLabelsStore, emptyDsg);
+        final LabelsQueryService queryService = new LabelsQueryService(rocksDbLabelsStore, emptyDsg, DATASET_NAME);
         final List<TripleLabels> labels = queryService.queryOnlyLabelStore(triple);
         Assertions.assertEquals(1, labels.size());
         Assertions.assertEquals(1, labels.getFirst().labels.size());

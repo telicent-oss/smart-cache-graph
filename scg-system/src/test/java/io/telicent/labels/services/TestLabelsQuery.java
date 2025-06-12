@@ -37,9 +37,16 @@ public class TestLabelsQuery {
 
     private final static URL BACKUP_URL = TestLabelsQuery.class.getClassLoader().getResource("config-labels-query-test.ttl");
 
-    private final static URL DATA_URL = TestLabelsQuery.class.getClassLoader().getResource("test-data-labelled.trig");
+    private final static URL DATA1_URL = TestLabelsQuery.class.getClassLoader().getResource("test-data-labelled-1.trig");
+
+    private final static URL DATA2_URL = TestLabelsQuery.class.getClassLoader().getResource("test-data-labelled-2.trig");
 
     private final static String JSON_HEADER = "application/json";
+
+    private final static String DATASET1_NAME = "securedDataset1";
+
+    private final static String DATASET2_NAME = "securedDataset2";
+
 
     @BeforeAll
     public static void beforeAll() throws Exception {
@@ -48,7 +55,8 @@ public class TestLabelsQuery {
         ENV.set("ENABLE_LABELS_QUERY", true);
         SERVER = MainSmartCacheGraph.buildAndRun("--config", BACKUP_URL.getPath());
         BASE_URI = "http://localhost:" + SERVER.getHttpPort();
-        uploadData();
+        uploadData(DATA1_URL, DATASET1_NAME);
+        uploadData(DATA2_URL, DATASET2_NAME);
     }
 
     @Test
@@ -74,7 +82,7 @@ public class TestLabelsQuery {
                     "labels" : [ "everyone" ]
                   } ]
                 }""";
-        callAndAssert(jsonRequestBody, expectedJsonResponse);
+        callAndAssert(jsonRequestBody, expectedJsonResponse, DATASET1_NAME);
     }
 
     @Test
@@ -101,7 +109,7 @@ public class TestLabelsQuery {
                     "labels" : [ "census", "admin" ]
                   } ]
                 }""";
-        callAndAssert(jsonRequestBody, expectedJsonResponse);
+        callAndAssert(jsonRequestBody, expectedJsonResponse, DATASET1_NAME);
     }
 
     @Test
@@ -127,7 +135,7 @@ public class TestLabelsQuery {
                     "labels" : [ ]
                   } ]
                 }""";
-        callAndAssert(jsonRequestBody, expectedJsonResponse);
+        callAndAssert(jsonRequestBody, expectedJsonResponse, DATASET1_NAME);
     }
 
     @Test
@@ -165,7 +173,7 @@ public class TestLabelsQuery {
                     "labels" : [ "everyone" ]
                   } ]
                 }""";
-        callAndAssert(jsonRequestBody, expectedJsonResponse);
+        callAndAssert(jsonRequestBody, expectedJsonResponse, DATASET1_NAME);
     }
 
     @Test
@@ -180,7 +188,7 @@ public class TestLabelsQuery {
                 {
                   "error" : "Unable to interpret JSON request"
                 }""";
-        callAndAssert(jsonRequestBody, expectedJsonResponse);
+        callAndAssert(jsonRequestBody, expectedJsonResponse, DATASET1_NAME);
     }
 
     @Test
@@ -192,7 +200,7 @@ public class TestLabelsQuery {
                 {
                   "error" : "Unable to interpret JSON request"
                 }""";
-        callAndAssert(jsonRequestBody, expectedJsonResponse);
+        callAndAssert(jsonRequestBody, expectedJsonResponse, DATASET1_NAME);
     }
 
     @Test
@@ -229,6 +237,32 @@ public class TestLabelsQuery {
     }
 
     @Test
+    public void test_alternateDataset() throws Exception {
+        final String jsonRequestBody = """
+                {
+                    "triples": [
+                    {
+                        "subject": "http://dbpedia.org/resource/Birmingham",
+                        "predicate": "http://dbpedia.org/ontology/country",
+                        "object": {
+                          "value" : "http://dbpedia.org/resource/United_Kingdom"
+                        }
+                    }
+                  ]
+                }""";
+        final String expectedJsonResponse = """
+                {
+                  "results" : [ {
+                    "subject" : "http://dbpedia.org/resource/Birmingham",
+                    "predicate" : "http://dbpedia.org/ontology/country",
+                    "object" : "http://dbpedia.org/resource/United_Kingdom",
+                    "labels" : [ "everyone" ]
+                  } ]
+                }""";
+        callAndAssert(jsonRequestBody, expectedJsonResponse, DATASET2_NAME);
+    }
+
+    @Test
     public void test_name() {
         // given
         FMod_LabelsQuery fModLabelsQuery = new FMod_LabelsQuery();
@@ -236,8 +270,8 @@ public class TestLabelsQuery {
         assertNotNull(fModLabelsQuery.name());
     }
 
-    private static void callAndAssert(String jsonRequestBody, String expectedJsonResponse) throws Exception {
-        final HttpRequest request = HttpRequest.newBuilder(new URI(BASE_URI + "/$/labels/query"))
+    private static void callAndAssert(String jsonRequestBody, String expectedJsonResponse, String datasetName) throws Exception {
+        final HttpRequest request = HttpRequest.newBuilder(new URI(BASE_URI + "/$/labels/" + datasetName))
                 .headers("accept", JSON_HEADER, "Content-Type", JSON_HEADER)
                 .POST(HttpRequest.BodyPublishers.ofString(jsonRequestBody)).build();
         try (HttpClient client = HttpClient.newHttpClient()) {
@@ -246,10 +280,10 @@ public class TestLabelsQuery {
         }
     }
 
-    private static void uploadData() throws Exception {
-        final HttpRequest request = HttpRequest.newBuilder(new URI(BASE_URI + "/securedDataset/upload"))
+    private static void uploadData(URL dataUrl, String datasetName) throws Exception {
+        final HttpRequest request = HttpRequest.newBuilder(new URI(BASE_URI + "/" + datasetName + "/upload"))
                 .headers("Security-Label", "!", "Content-Type", "application/trig")
-                .POST(HttpRequest.BodyPublishers.ofFile(Paths.get(DATA_URL.toURI()))).build();
+                .POST(HttpRequest.BodyPublishers.ofFile(Paths.get(dataUrl.toURI()))).build();
         try (final HttpClient client = HttpClient.newHttpClient()) {
             final HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
             assertEquals(200, response.statusCode());

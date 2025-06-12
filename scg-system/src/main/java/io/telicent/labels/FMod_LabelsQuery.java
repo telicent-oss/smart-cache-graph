@@ -12,6 +12,9 @@ import org.apache.jena.fuseki.server.DataAccessPointRegistry;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.sparql.core.DatasetGraph;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class FMod_LabelsQuery implements FusekiAutoModule {
 
     /**
@@ -19,16 +22,17 @@ public class FMod_LabelsQuery implements FusekiAutoModule {
      */
     public static final String ENABLE_LABELS_QUERY = "ENABLE_LABELS_QUERY";
 
-    private LabelsQueryService getLabelsQueryService(DataAccessPointRegistry dapRegistry) {
-        LabelsQueryService labelsQueryService = null;
+    private List<LabelsQueryService> getLabelsQueryService(DataAccessPointRegistry dapRegistry) {
+        List<LabelsQueryService> labelsQueryServices = new ArrayList<>();
         for (DataAccessPoint dap : dapRegistry.accessPoints()) {
             final DatasetGraph dsg = dap.getDataService().getDataset();
+            final String datasetName = dap.getName();
             if (dsg instanceof DatasetGraphABAC abac) {
                 final LabelsStore labelsStore = abac.labelsStore();
-                labelsQueryService = new LabelsQueryService(labelsStore, abac);
+                labelsQueryServices.add(new LabelsQueryService(labelsStore, abac, datasetName));
             }
         }
-        return labelsQueryService;
+        return labelsQueryServices;
     }
 
     @Override
@@ -39,9 +43,9 @@ public class FMod_LabelsQuery implements FusekiAutoModule {
     @Override
     public void configured(FusekiServer.Builder serverBuilder, DataAccessPointRegistry dapRegistry, Model configModel) {
         if (isLabelsQueryEnabled()) {
-            final LabelsQueryService queryService = getLabelsQueryService(dapRegistry);
-            if(queryService != null) {
-                serverBuilder.addServlet("/$/labels/query", new LabelsQueryServlet(queryService));
+            final List<LabelsQueryService> queryServices = getLabelsQueryService(dapRegistry);
+            for(LabelsQueryService queryService : queryServices) {
+                serverBuilder.addServlet("/$/labels" + queryService.getDatasetName(), new LabelsQueryServlet(queryService));
             }
         }
     }

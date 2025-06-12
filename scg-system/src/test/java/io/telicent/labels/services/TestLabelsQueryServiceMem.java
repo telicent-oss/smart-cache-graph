@@ -19,7 +19,9 @@ import java.util.List;
 
 public class TestLabelsQueryServiceMem {
 
-    private static File dbDir;
+    private static final String DATASET_NAME = "test";
+
+    private File dbDir;
 
     @BeforeEach
     public void setUp() throws IOException {
@@ -36,7 +38,7 @@ public class TestLabelsQueryServiceMem {
         final LabelsStore labelsStoreMem = Labels.createLabelsStoreMem();
         labelsStoreMem.add(triple, Label.fromText("example"));
         final DatasetGraph emptyDsg = DatasetGraphFactory.create();
-        final LabelsQueryService queryService = new LabelsQueryService(labelsStoreMem, emptyDsg);
+        final LabelsQueryService queryService = new LabelsQueryService(labelsStoreMem, emptyDsg, DATASET_NAME);
         final List<TripleLabels> labels = queryService.queryOnlyLabelStore(triple);
         Assertions.assertEquals(1, labels.size());
         Assertions.assertEquals(1, labels.getFirst().labels.size());
@@ -53,7 +55,7 @@ public class TestLabelsQueryServiceMem {
         final LabelsStore labelsStoreMem = Labels.createLabelsStoreMem();
         labelsStoreMem.add(triple, Label.fromText("example"));
         final DatasetGraph emptyDsg = DatasetGraphFactory.create();
-        final LabelsQueryService queryService = new LabelsQueryService(labelsStoreMem, emptyDsg);
+        final LabelsQueryService queryService = new LabelsQueryService(labelsStoreMem, emptyDsg, DATASET_NAME);
         final List<TripleLabels> labels = queryService.queryOnlyLabelStore(triple);
         Assertions.assertEquals(1, labels.size());
         Assertions.assertEquals(1, labels.getFirst().labels.size());

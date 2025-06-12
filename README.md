@@ -41,7 +41,7 @@ The value "disabled" turns off token verification.
 
 ### `ENABLE_LABELS_QUERY`
 
-Setting this to `true` will enable the security label query endpoint at `http://{hostname}/$/labels/query`. More information
+Setting this to `true` will enable the security label query endpoint at `http://{hostname}/$/labels/{datasetName}`. More information
 about this endpoint can be found in the [API docs](docs/labels-api.yaml). You can also run a Docker container with the
 endpoint enabled which can be accessed from the API docs by running:
 ```commandline
@@ -49,7 +49,74 @@ scg-docker/docker-run.sh --config config/config-labels-query-test.ttl
 ```
 To populate this instance with sample security labelled data you can run:
 ```commandline
-curl --location 'http://localhost:3030/securedDataset/upload' --header 'Security-Label: !' --header 'Content-Type: application/trig' --data-binary '@scg-system/src/test/files/sample-data-labelled.trig'
+curl --location 'http://localhost:3030/securedDataset1/upload' --header 'Security-Label: !' --header 'Content-Type: application/trig' --data-binary '@scg-system/src/test/files/sample-data-labelled-1.trig'
+curl --location 'http://localhost:3030/securedDataset2/upload' --header 'Security-Label: !' --header 'Content-Type: application/trig' --data-binary '@scg-system/src/test/files/sample-data-labelled-2.trig'
+```
+You can then query these endpoints for label data, e.g. for `securedDataset1`:
+```commandline
+curl --location 'http://localhost:3030/$/labels/securedDataset1' \
+--header 'Content-Type: application/json' \
+--header 'Authorization: ••••••' \
+--data '{
+    "triples":[
+        {
+            "subject": "http://dbpedia.org/resource/London",
+            "predicate": "http://dbpedia.org/ontology/country",
+            "object": {
+                "value": "http://dbpedia.org/resource/United_Kingdom"
+            }
+        }
+    ]
+}'
+```
+Which should return the following:
+```json
+{
+    "results": [
+        {
+            "subject": "http://dbpedia.org/resource/London",
+            "predicate": "http://dbpedia.org/ontology/country",
+            "object": "http://dbpedia.org/resource/United_Kingdom",
+            "labels": [
+                "everyone"
+            ]
+        }
+    ]
+}
+```
+Or to query `securedDataset2`:
+```commandline
+curl --location 'http://localhost:3030/$/labels/securedDataset2' \
+--header 'Content-Type: application/json' \
+--header 'Authorization: ••••••' \
+--data '{
+    "triples":[
+        {
+            "subject": "http://dbpedia.org/resource/Birmingham",
+            "predicate": "http://dbpedia.org/ontology/populationTotal",
+            "object": {
+                "value": 2919600,
+                "dataType": "xsd:nonNegativeInteger"
+            }
+        }
+    ]
+}'
+```
+Which should return the following:
+```json
+{
+    "results": [
+        {
+            "subject": "http://dbpedia.org/resource/Birmingham",
+            "predicate": "http://dbpedia.org/ontology/populationTotal",
+            "object": "\"2919600\"",
+            "labels": [
+                "census",
+                "admin"
+            ]
+        }
+    ]
+}
 ```
 ## Build
 
