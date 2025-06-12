@@ -109,13 +109,7 @@ public class BackupUtils extends ServletUtils {
         return dirBackupStr;
     }
 
-    /**
-     * For the given directory find the highest numbered directory or zip
-     *
-     * @param directoryPath the directory to check
-     * @return the highest number (or -1 if unavailable)
-     */
-    public static int getNextDirectoryNumberAndCreate(String directoryPath) {
+    public static int getHighestDirectoryNumber(String directoryPath) {
         if (!checkPathExistsAndIsDir(directoryPath)) {
             FmtLog.error(LOG, "Base dir does not exist properly : " + directoryPath);
             return -1;
@@ -134,8 +128,23 @@ public class BackupUtils extends ServletUtils {
                     .max()
                     .orElse(0);
         }
+        return maxNumber;
+    }
 
-        int nextNumber = maxNumber + 1;
+    /**
+     * For the given directory find the highest numbered directory or zip
+     *
+     * @param directoryPath the directory to check
+     * @return the highest number (or -1 if unavailable)
+     */
+    public static int getNextDirectoryNumberAndCreate(String directoryPath) {
+        if (!checkPathExistsAndIsDir(directoryPath)) {
+            FmtLog.error(LOG, "Base dir does not exist properly : " + directoryPath);
+            return -1;
+        }
+        File baseDir = new File(directoryPath);
+
+        int nextNumber = getHighestDirectoryNumber(directoryPath) + 1;
         String newDirectoryName = String.valueOf(nextNumber);
         File newDirectory = new File(baseDir, newDirectoryName);
 

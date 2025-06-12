@@ -98,14 +98,7 @@ public class DatasetBackupService {
             processResponse(response, resultNode);
         } else {
             try {
-                //TODO
-                // maybe change it here? If missing get the highest
-                // is backup path and restore path the same thing?
                 String id = request.getPathInfo();
-                /*if (id == null) {
-                    // how do I get the backup ids?
-                    id = getBackUpDir() + getNextDirectoryNumberAndCreate(getBackUpDir());
-                }*/
                 resultNode.put("id", id);
                 resultNode.put("date", DateTimeUtils.nowAsString(DATE_FORMAT));
                 resultNode.put("user", request.getRemoteUser());
@@ -266,36 +259,12 @@ public class DatasetBackupService {
      * @return a node of the results
      */
     public ObjectNode restoreDatasets(String restoreId) {
-        //TODO
-        // maybe change it here? If missing get all ids?
-        // does it even do what it says?
-        // restoreId is just restore, what about the datasetName, it's not an argument. Neither is the backupId
-//        if (restoreId == null) {
-////            //--------------------
-////            // TestBackupData.test_restoreBackup_emptyGraph:176 expected: <200> but was: <500>
-//              // gets restore2
-////            int highestDirNumber = getHighestExistingDirectoryNumber(getBackUpDir());
-////            System.out.println("Highest Directory Number: " + highestDirNumber);
-////            System.out.println("BackupDir: " + getBackUpDir());
-//////            if (highestDirNumber < 0) {
-//////                throw new IllegalStateException("No valid backup directories found in " + getBackUpDir());
-//////            } else if (highestDirNumber == 0) {
-//////                restoreId = getSubdirectoryNames(getBackUpDir()).getFirst();
-//////            } else {
-//////                restoreId = getSubdirectoryNames(getBackUpDir()).get(1);
-//////            }
-////            //-----------------
-////            // gets restore2 or 3, they actualy are the first ones, but they aren't in order
-////            //restoreId = getSubdirectoryNames(getBackUpDir()).getLast();
-////            restoreId = String.valueOf(highestDirNumber);
-////            System.out.println("Last snapshot: " + restoreId + "************************************");
-//        }
+        if (restoreId == null) {
+            int highestDirNumber = getHighestDirectoryNumber(getBackUpDir());
+            restoreId = String.valueOf(highestDirNumber);
+       }
         ObjectNode response = OBJECT_MAPPER.createObjectNode();
         String restorePath = getBackUpDir() + "/" + restoreId;
-//        if (restoreId == null) {
-//            //System.out.println("new restore path:" + getBackUpDir());
-//            restorePath = getBackUpDir();
-//        }
         response.put("restorePath", restorePath);
 
         boolean decompressDir = false;
@@ -424,8 +393,6 @@ public class DatasetBackupService {
         }
     }
 
-    //TODO
-    // add the same thing in restoring the label store???
     /**
      * Restore the underlying label store of the dataset
      *
