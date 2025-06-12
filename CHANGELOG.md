@@ -1,5 +1,15 @@
 # Smart Cache Graph
 
+## 0.83.13
+- Build improvements:
+  - dependency patches
+  - consolidating backups into zip files
+  - CVE fixes
+  - update RDF ABAC v1.0.2
+- Fixes:
+  - fix next number logic for backups
+  - correcting documentation/api mismatch
+
 ## 0.83.12
 - Compress back-ups.
 - Build improvements:
