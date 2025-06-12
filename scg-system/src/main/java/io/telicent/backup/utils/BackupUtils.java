@@ -111,8 +111,9 @@ public class BackupUtils extends ServletUtils {
 
     public static int getHighestDirectoryNumber(String directoryPath) {
         if (!checkPathExistsAndIsDir(directoryPath)) {
-            FmtLog.error(LOG, "Base dir does not exist properly : " + directoryPath);
-            return -1;
+            String errorMsg = "Base dir does not exist properly: " + directoryPath;
+            FmtLog.error(LOG, errorMsg);
+            throw new BackupException(errorMsg);
         }
         File baseDir = new File(directoryPath);
 
@@ -139,8 +140,9 @@ public class BackupUtils extends ServletUtils {
      */
     public static int getNextDirectoryNumberAndCreate(String directoryPath) {
         if (!checkPathExistsAndIsDir(directoryPath)) {
-            FmtLog.error(LOG, "Base dir does not exist properly : " + directoryPath);
-            return -1;
+            String errorMsg = "Base dir does not exist properly: " + directoryPath;
+            FmtLog.error(LOG, errorMsg);
+            throw new BackupException(errorMsg);
         }
         File baseDir = new File(directoryPath);
 
@@ -149,8 +151,9 @@ public class BackupUtils extends ServletUtils {
         File newDirectory = new File(baseDir, newDirectoryName);
 
         if (!newDirectory.mkdir()) {
-            FmtLog.error(LOG,"Failed to create new directory: " + newDirectory.getAbsolutePath());
-            return -1;
+            String errorMsg = "Failed to create new directory: " + newDirectory.getAbsolutePath();
+            FmtLog.error(LOG, errorMsg);
+            throw new BackupException(errorMsg);
         }
 
         LOG.info("Created new directory: {}", newDirectory.getAbsolutePath());
