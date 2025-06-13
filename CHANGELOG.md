@@ -1,5 +1,9 @@
 # Smart Cache Graph
 
+## 0.83.14
+- Build improvements:
+  - Label Query Service error handling
+
 ## 0.83.13
 - Build improvements:
   - dependency patches
