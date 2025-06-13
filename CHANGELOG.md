@@ -1,5 +1,10 @@
 # Smart Cache Graph
 
+## 0.83.15
+- Build improvements
+  - Correct label query service per data-set
+  - Add default restore functionality
+
 ## 0.83.14
 - Build improvements:
   - Label Query Service error handling
