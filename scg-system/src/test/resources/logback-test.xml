@@ -11,8 +11,7 @@
             <pattern>%date{ISO8601} [%X{Request-ID:-Server}] [%X{JwtUser:-&lt;anon>}] %-5level %logger{0} - %msg%n</pattern>
         </encoder>
     </appender>
-    <!--"OFF-->
-    <root level="INFO">
+    <root level="OFF">
         <appender-ref ref="OUT" />
     </root>
 </configuration>
