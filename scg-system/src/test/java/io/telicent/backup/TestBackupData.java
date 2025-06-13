@@ -141,6 +141,7 @@ public class TestBackupData {
 //        debug(createBackupResponse);
     }
 
+
     @Test
     public void test_listBackups_emptyGraph() {
         // given
@@ -163,6 +164,19 @@ public class TestBackupData {
         assertEquals(200, createBackupResponse.statusCode());
     }
 
+    @Test
+    public void test_restoreBackup_emptyGraph_no_arg() {
+        // given
+        server = buildServer("--port=0", "--empty");
+        // when
+        HttpResponse<InputStream> createBackupResponse = makeAuthPOSTCallWithPath(server, "$/backups/create/", "test");
+        HttpResponse<InputStream> createRestoreResponse = makeAuthPOSTCallWithPath(server, "$/backups/restore", "test");
+        // then
+        //debug(createBackupResponse);
+        //debug(createRestoreResponse);
+        assertEquals(200, createBackupResponse.statusCode());
+        assertEquals(200, createRestoreResponse.statusCode());
+    }
 
     @Test
     public void test_restoreBackup_emptyGraph() {
@@ -171,7 +185,7 @@ public class TestBackupData {
         // when
         HttpResponse<InputStream> createBackupResponse = makeAuthPOSTCallWithPath(server, "$/backups/restore/1", "test");
         // then
-//        debug(createBackupResponse);
+        //debug(createBackupResponse);
         assertEquals(200, createBackupResponse.statusCode());
     }
 

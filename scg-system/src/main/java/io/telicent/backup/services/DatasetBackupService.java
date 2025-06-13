@@ -43,6 +43,7 @@ import org.apache.jena.system.Txn;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -258,6 +259,10 @@ public class DatasetBackupService {
      * @return a node of the results
      */
     public ObjectNode restoreDatasets(String restoreId) {
+        if (restoreId == null || restoreId.isEmpty()) {
+            int highestDirNumber = getHighestDirectoryNumber(getBackUpDir());
+            restoreId = String.valueOf(highestDirNumber);
+       }
         ObjectNode response = OBJECT_MAPPER.createObjectNode();
         String restorePath = getBackUpDir() + "/" + restoreId;
         response.put("restorePath", restorePath);
