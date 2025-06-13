@@ -259,7 +259,7 @@ public class DatasetBackupService {
      * @return a node of the results
      */
     public ObjectNode restoreDatasets(String restoreId) {
-        if (restoreId == null) {
+        if (restoreId == null || restoreId.isEmpty()) {
             int highestDirNumber = getHighestDirectoryNumber(getBackUpDir());
             restoreId = String.valueOf(highestDirNumber);
        }
