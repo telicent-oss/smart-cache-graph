@@ -184,7 +184,7 @@ public class TestBackupData {
         // when
         HttpResponse<InputStream> createBackupResponse = makeAuthPOSTCallWithPath(server, "$/backups/restore/1", "test");
         // then
-        debug(createBackupResponse);
+        //debug(createBackupResponse);
         assertEquals(200, createBackupResponse.statusCode());
     }
 
