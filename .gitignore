@@ -48,6 +48,9 @@ gradle-app.setting
 *.tar.gz
 *.rar
 
+# PGP key files
+*.pgp
+
 # virtual machine crash logs
 hs_err_pid*
 

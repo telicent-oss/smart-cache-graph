@@ -18,6 +18,7 @@ package io.telicent.backup.services;
 
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.telicent.backup.utils.EncryptionUtils;
 import io.telicent.jena.abac.core.DatasetGraphABAC;
 import io.telicent.jena.abac.labels.LabelsStore;
 import io.telicent.jena.abac.labels.LabelsStoreRocksDB;
@@ -40,10 +41,15 @@ import org.apache.jena.shacl.Shapes;
 import org.apache.jena.shacl.ValidationReport;
 import org.apache.jena.sparql.core.DatasetGraph;
 import org.apache.jena.system.Txn;
+import org.bouncycastle.openpgp.PGPException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -66,20 +72,43 @@ import static org.apache.jena.riot.Lang.NQUADS;
 
 public class DatasetBackupService {
 
+    public static final Logger LOG = LoggerFactory.getLogger("DatasetBackupService");
+
     private final static String BACKUP_SUFFIX = "_backup";
 
     private final ReentrantLock lock;
 
     private final DataAccessPointRegistry dapRegistry;
 
+    private final EncryptionUtils encryptionUtils;
+
+    private final URL publicKeyUrl;
+
     final static ConcurrentHashMap<String, TriConsumer<DataAccessPoint, String, ObjectNode>> backupConsumerMap = new ConcurrentHashMap<>();
     final static ConcurrentHashMap<String, TriConsumer<DataAccessPoint, String, ObjectNode>> restoreConsumerMap = new ConcurrentHashMap<>();
+
+    public DatasetBackupService(DataAccessPointRegistry dapRegistry, String privateKeyLocation, String publicKeyLocation, String passkey) throws URISyntaxException, IOException, PGPException {
+        this.dapRegistry = dapRegistry;
+        registerMethods("tdb", this::backupTDB, this::restoreTDB);
+        registerMethods("labels", this::backupLabelStore, this::restoreLabelStore);
+        lock = new ReentrantLock();
+        if (!privateKeyLocation.isEmpty() && !publicKeyLocation.isEmpty() && !passkey.isEmpty()) {
+            this.publicKeyUrl = new URI(publicKeyLocation).toURL();
+            final URL privateKeyUrl = new URI(privateKeyLocation).toURL();
+            encryptionUtils = new EncryptionUtils(privateKeyUrl.openStream(), passkey);
+        } else {
+            this.publicKeyUrl = null;
+            encryptionUtils = null;
+        }
+    }
 
     public DatasetBackupService(DataAccessPointRegistry dapRegistry) {
         this.dapRegistry = dapRegistry;
         registerMethods("tdb", this::backupTDB, this::restoreTDB);
         registerMethods("labels", this::backupLabelStore, this::restoreLabelStore);
         lock = new ReentrantLock();
+        this.publicKeyUrl = null;
+        this.encryptionUtils = null;
     }
 
     /**
@@ -91,14 +120,15 @@ public class DatasetBackupService {
      */
     public void process(HttpServletRequest request, HttpServletResponse response, boolean backup) {
         // Try to acquire the lock without blocking
-        ObjectNode resultNode = OBJECT_MAPPER.createObjectNode();
+        final ObjectNode resultNode = OBJECT_MAPPER.createObjectNode();
         if (!lock.tryLock()) {
             response.setStatus(HttpServletResponse.SC_CONFLICT);
             resultNode.put("error", "Another conflicting operation is already in progress. Please try again later.");
             processResponse(response, resultNode);
         } else {
             try {
-                String id = request.getPathInfo();
+                final String pathInfo = request.getPathInfo();
+                final String id = pathInfo.substring(1);
                 resultNode.put("id", id);
                 resultNode.put("date", DateTimeUtils.nowAsString(DATE_FORMAT));
                 resultNode.put("user", request.getRemoteUser());
@@ -258,11 +288,11 @@ public class DatasetBackupService {
      * @param restoreId the subdirectory to use
      * @return a node of the results
      */
-    public ObjectNode restoreDatasets(String restoreId) {
+    public ObjectNode restoreDatasets(String restoreId) throws PGPException, IOException {
         if (restoreId == null || restoreId.isEmpty()) {
             int highestDirNumber = getHighestDirectoryNumber(getBackUpDir());
             restoreId = String.valueOf(highestDirNumber);
-       }
+        }
         ObjectNode response = OBJECT_MAPPER.createObjectNode();
         String restorePath = getBackUpDir() + "/" + restoreId;
         response.put("restorePath", restorePath);
@@ -270,7 +300,14 @@ public class DatasetBackupService {
         boolean decompressDir = false;
         if (checkPathExistsAndIsFile(restorePath + ZIP_SUFFIX)) {
             unzipDirectory(restorePath + ZIP_SUFFIX, restorePath);
-            decompressDir=true;
+            decompressDir = true;
+        } else if (checkPathExistsAndIsFile(restorePath + ZIP_SUFFIX + ENCRYPTION_SUFFIX)) {
+            final Path encZipFilePath = Path.of(restorePath + ZIP_SUFFIX + ENCRYPTION_SUFFIX);
+            final Path decryptedZipPath = encryptionUtils.decryptFile(encZipFilePath, Path.of(restorePath + ZIP_SUFFIX));
+            LOG.debug("Successfully decrypted file: {} as {}", encZipFilePath, decryptedZipPath);
+            unzipDirectory(decryptedZipPath, Path.of(restorePath));
+            Files.delete(decryptedZipPath);
+            decompressDir = true;
         }
         if (!checkPathExistsAndIsDir(restorePath)) {
             response.put("reason", "Restore path unsuitable: " + restorePath);
@@ -287,8 +324,9 @@ public class DatasetBackupService {
             }
         }
 
-        if(DELETE_GENERATED_FILES && decompressDir) {
+        if (DELETE_GENERATED_FILES && decompressDir) {
             cleanupDirectory(restorePath);
+
         }
         return response;
     }
@@ -450,13 +488,13 @@ public class DatasetBackupService {
         response.put("delete-id", deleteID);
         response.put("date", DateTimeUtils.nowAsString(DATE_FORMAT));
         response.put("deletePath", deletePath);
-        if (!checkPathExistsAndIsDir(deletePath) && !checkPathExistsAndIsFile(deletePath + JSON_INFO_SUFFIX)&& !checkPathExistsAndIsFile(deletePath + ZIP_SUFFIX)) {
+        if (!checkPathExistsAndIsDir(deletePath) && !checkPathExistsAndIsFile(deletePath + JSON_INFO_SUFFIX) && !checkPathExistsAndIsFile(deletePath + ZIP_SUFFIX)) {
             response.put("reason", "Backup path unsuitable: " + deletePath);
             response.put("success", false);
         } else {
             executeDeleteBackup(deletePath);
-            executeDeleteBackup(deletePath+ JSON_INFO_SUFFIX);
-            executeDeleteBackup(deletePath+ ZIP_SUFFIX);
+            executeDeleteBackup(deletePath + JSON_INFO_SUFFIX);
+            executeDeleteBackup(deletePath + ZIP_SUFFIX);
             deleteFilesRegEx(getBackUpDir(), deleteID + WILDCARD_REPORT_SUFFIX);
             response.put("success", true);
         }
@@ -480,7 +518,7 @@ public class DatasetBackupService {
         boolean decompressDir = false;
         if (checkPathExistsAndIsFile(validatePath + ZIP_SUFFIX)) {
             unzipDirectory(validatePath + ZIP_SUFFIX, validatePath);
-            decompressDir=true;
+            decompressDir = true;
         }
         if (!checkPathExistsAndIsDir(validatePath + datasetName)) {
             response.setStatus(HttpServletResponse.SC_NOT_FOUND);
@@ -497,7 +535,7 @@ public class DatasetBackupService {
             }
             resultNode.set("results", datasetResult);
         }
-        if(decompressDir) {
+        if (decompressDir) {
             cleanupDirectory(validatePath);
         }
         return resultNode;
@@ -554,6 +592,7 @@ public class DatasetBackupService {
 
     /**
      * Strip out any prefix forward slashes and any other dangerous characters.
+     *
      * @param name the dataset name
      * @return a cleaned up version or null if null.
      */
@@ -563,7 +602,7 @@ public class DatasetBackupService {
         }
         String cleanName = name;
         if (name.startsWith("/"))
-            cleanName=name.substring(1);
+            cleanName = name.substring(1);
         return fixupName(cleanName);
     }
 
@@ -625,6 +664,7 @@ public class DatasetBackupService {
      * Obtain the access point from the registry.
      * We do two passes - a straight check and one
      * using the sanitised name
+     *
      * @param datasetName name
      * @return the access point
      */
@@ -644,12 +684,26 @@ public class DatasetBackupService {
     /**
      * Compress the files generated into a single zipped file and
      * write a complimentary metadata file.
+     *
      * @param response JSON object returned to client calls (and used to write metadata)
-     * @param dirPath location of files to compress
+     * @param dirPath  location of files to compress
      */
     private void compressAndStoreBackupMetadata(ObjectNode response, String dirPath) {
-        zipDirectory(dirPath, dirPath + ZIP_SUFFIX, DELETE_GENERATED_FILES);
-        writeObjectNodeToFile(response, dirPath + JSON_INFO_SUFFIX);
+        final Path zipFilePath = zipDirectory(dirPath, dirPath + ZIP_SUFFIX, DELETE_GENERATED_FILES);
+        final Path jsonFilePath = writeObjectNodeToFile(response, dirPath + JSON_INFO_SUFFIX);
+        if (encryptionUtils != null) {
+            try {
+                final Path encZipFilePath = Path.of(dirPath + ZIP_SUFFIX + ENCRYPTION_SUFFIX);
+                //final Path encJsonFilePath = Path.of(dirPath + "_json" + ENCRYPTION_SUFFIX);
+                final Path encZipPath = encryptionUtils.encryptFile(zipFilePath, encZipFilePath, publicKeyUrl);
+                LOG.debug("Successfully encrypted file: {} as {}", zipFilePath, encZipPath.toString());
+                Files.delete(zipFilePath);
+                //final Path encJsonPath = encryptionUtils.encryptFile(jsonFilePath, encJsonFilePath, publicKeyUrl);
+                //LOG.debug("Successfully encrypted file: {} as {}", jsonFilePath, encJsonPath.toString());
+            } catch (IOException | PGPException ex) {
+                LOG.error("Failed to encrypt backup files due to {}", ex.getMessage(), ex);
+            }
+        }
     }
 
 }

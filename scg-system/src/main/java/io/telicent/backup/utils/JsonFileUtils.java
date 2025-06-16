@@ -48,7 +48,9 @@ public class JsonFileUtils {
      * @param objectNode The ObjectNode to write.
      * @param filePath   The String path to the file where the JSON will be written.
      */
-    public static void writeObjectNodeToFile(ObjectNode objectNode, String filePath){
-        writeObjectNodeToFile(objectNode, Path.of(filePath));
+    public static Path writeObjectNodeToFile(ObjectNode objectNode, String filePath){
+        final Path jsonFilePath = Path.of(filePath);
+        writeObjectNodeToFile(objectNode, jsonFilePath);
+        return jsonFilePath;
     }
 }

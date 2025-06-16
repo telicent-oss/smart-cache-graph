@@ -92,6 +92,7 @@
 
     <!-- External dependencies -->
     <dependency.jackson>2.19.1</dependency.jackson>
+    <dependency.bouncycastle>1.78</dependency.bouncycastle>
     <dependency.kafka>3.9.1</dependency.kafka>
     <dependency.kotlin>2.2.0</dependency.kotlin>
     <dependency.otel>1.33.0</dependency.otel> <!-- These two must be in-step. -->
