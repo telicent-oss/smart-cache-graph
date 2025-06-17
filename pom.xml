@@ -108,7 +108,7 @@
     <dependency.junit5-platform>1.13.1</dependency.junit5-platform>
     <dependency.mockito>5.18.0</dependency.mockito>
     <dependency.testcontainers>1.21.1</dependency.testcontainers>
-    <dependency.yaml-config>1.0.7</dependency.yaml-config>
+    <dependency.yaml-config>2.0.0</dependency.yaml-config>
 
     <!-- CVE Patches -->
     <dependency.commons-beanutils>1.11.0</dependency.commons-beanutils>
