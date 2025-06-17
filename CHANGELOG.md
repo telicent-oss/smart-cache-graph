@@ -1,7 +1,11 @@
 # Smart Cache Graph
 
+## 0.83.16
+- Build improvements:
+  - CVE patches
+
 ## 0.83.15
-- Build improvements
+- Build improvements:
   - Correct label query service per data-set
   - Add default restore functionality
 
