@@ -15,17 +15,18 @@
  */
 package io.telicent.backup.utils;
 
+import io.telicent.smart.cache.configuration.Configurator;
+
 public final class BackupConstants {
 
     private BackupConstants() {
     }
-
+    public static final String ENV_BACKUP_DELETE_GENERATED_FILES = "BACKUP_DELETE_GENERATED_FILES";
     public static final String ZIP_SUFFIX = ".zip";
     public static final String JSON_INFO_SUFFIX = "_info.json";
     public static final String REPORT_SUFFIX = "-validation-report.ttl";
     public static final String WILDCARD_REPORT_SUFFIX = "-*-validation-report.ttl";
     public static final String RDF_BACKUP_SUFFIX = ".nq.gz";
-    // this could become configurable?
-    public static final boolean DELETE_GENERATED_FILES = true;
+    public static final boolean DELETE_GENERATED_FILES = Configurator.get(ENV_BACKUP_DELETE_GENERATED_FILES,Boolean::valueOf, true);
     public static final String DATE_FORMAT = "yyyy-MM-dd_HH-mm-ss";
 }
