@@ -287,7 +287,7 @@ public class DatasetBackupService {
             }
         }
 
-        if(decompressDir) {
+        if(DELETE_GENERATED_FILES && decompressDir) {
             cleanupDirectory(restorePath);
         }
         return response;
