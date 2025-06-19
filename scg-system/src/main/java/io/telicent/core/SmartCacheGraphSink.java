@@ -11,7 +11,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.jena.graph.Graph;
 import org.apache.jena.kafka.common.FusekiSink;
 import org.apache.jena.rdfpatch.RDFChanges;
-import org.apache.jena.sparql.core.DatasetGraph;
 import org.apache.kafka.common.utils.Bytes;
 
 /**

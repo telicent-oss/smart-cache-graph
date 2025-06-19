@@ -16,8 +16,6 @@
 
 package io.telicent.core;
 
-import static java.lang.String.format;
-
 import java.util.List;
 
 import org.apache.jena.fuseki.Fuseki;

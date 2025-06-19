@@ -24,7 +24,6 @@ import org.apache.jena.fuseki.system.FusekiLogging;
 import org.apache.jena.http.HttpOp;
 import org.apache.jena.riot.RiotException;
 import org.apache.jena.riot.SysRIOT;
-import org.apache.jena.sparql.ARQException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
