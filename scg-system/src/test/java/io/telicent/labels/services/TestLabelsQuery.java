@@ -294,6 +294,8 @@ public class TestLabelsQuery {
     public static void afterAll() throws IOException {
         SERVER.stop();
         FileUtils.deleteDirectory(new File("labels"));
+        FileUtils.deleteDirectory(new File("labels1"));
+        FileUtils.deleteDirectory(new File("labels2"));
     }
 
 }
