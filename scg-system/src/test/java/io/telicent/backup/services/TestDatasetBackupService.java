@@ -168,7 +168,7 @@ public class TestDatasetBackupService {
         when(mockRegistry.accessPoints()).thenReturn(List.of(dap));
 
         // when
-        ObjectNode result = cut.backupDataset(datasetName);
+        ObjectNode result = cut.backupDataset(datasetName, null);
 
         // then
         assertTrue(result.has("backup-id"));
@@ -188,7 +188,7 @@ public class TestDatasetBackupService {
         when(mockRegistry.accessPoints()).thenReturn(emptyList());
 
         // when
-        ObjectNode result = cut.backupDataset(datasetName);
+        ObjectNode result = cut.backupDataset(datasetName, null);
 
         // then
         assertTrue(result.has("backup-id"));
@@ -216,7 +216,7 @@ public class TestDatasetBackupService {
         when(mockRegistry.accessPoints()).thenReturn(List.of(dap, dap2));
 
         // when
-        ObjectNode result = cut.backupDataset(datasetName);
+        ObjectNode result = cut.backupDataset(datasetName, null);
 
         // then
         assertTrue(result.has("backup-id"));
@@ -270,7 +270,7 @@ public class TestDatasetBackupService {
         when(mockRegistry.accessPoints()).thenReturn(List.of(dap, dap2));
 
         // when
-        ObjectNode result = cut.backupDataset(datasetName);
+        ObjectNode result = cut.backupDataset(datasetName, null);
 
         // then
         assertTrue(result.has("backup-id"));
@@ -314,7 +314,7 @@ public class TestDatasetBackupService {
         when(mockRegistry.accessPoints()).thenReturn(List.of(dap, dap2));
 
         // when
-        ObjectNode result = cut.backupDataset(null);
+        ObjectNode result = cut.backupDataset(null, null);
 
         // then
         assertTrue(result.has("backup-id"));
@@ -367,7 +367,7 @@ public class TestDatasetBackupService {
         when(mockRegistry.accessPoints()).thenReturn(List.of(dap));
 
         // when
-        ObjectNode result = cut.backupDataset(datasetName);
+        ObjectNode result = cut.backupDataset(datasetName, null);
 
         // then
         assertTrue(result.has("backup-id"));
@@ -409,7 +409,7 @@ public class TestDatasetBackupService {
         when(mockRegistry.accessPoints()).thenReturn(List.of(dap));
 
         // when
-        ObjectNode result = cut.backupDataset(datasetName);
+        ObjectNode result = cut.backupDataset(datasetName, null);
 
         // then
         assertTrue(result.has("backup-id"));
@@ -449,7 +449,7 @@ public class TestDatasetBackupService {
         DatasetBackupService_Test.setupExceptionForMethod(BACKUP_TDB, "Test Jena Failure");
 
         // when
-        ObjectNode result = cut.backupDataset(datasetName);
+        ObjectNode result = cut.backupDataset(datasetName, null);
 
         // then
         assertTrue(result.has("backup-id"));
@@ -495,7 +495,7 @@ public class TestDatasetBackupService {
         DatasetBackupService_Test.setupExceptionForMethod(BACKUP_LABELS, "Test Rocks DB Failure");
 
         // when
-        ObjectNode result = cut.backupDataset(datasetName);
+        ObjectNode result = cut.backupDataset(datasetName, null);
 
         // then
         assertTrue(result.has("backup-id"));
@@ -1955,7 +1955,7 @@ public class TestDatasetBackupService {
         when(request.getPathInfo()).thenThrow(new RuntimeException("Some error"));
 
         // when
-        cut.process(request, response, true);
+        cut.process(request, response, true, null);
         // then
         verify(response, times(1)).setStatus(500);
     }
@@ -1980,7 +1980,7 @@ public class TestDatasetBackupService {
             // Submit 5 concurrent tasks simulating individual requests
             for (int i = 0; i < 2; i++) {
                 final boolean flag = (i == 0);
-                executorService.submit(() -> cut.process(request, response, flag));
+                executorService.submit(() -> cut.process(request, response, flag, null));
             }
             // Wait for threads to complete
             executorService.shutdown();
@@ -2000,7 +2000,7 @@ public class TestDatasetBackupService {
         doThrow(new RuntimeException("Test")).when(request).getPathInfo();
 
         // when
-        cut.process(request, response, true);
+        cut.process(request, response, true, null);
 
         // then
         verify(response, times(1)).setStatus(500);

@@ -141,6 +141,20 @@ public class TestBackupData {
 //        debug(createBackupResponse);
     }
 
+    //TODO
+    // is it working?
+    @Test
+    public void test_createBackup_withName_emptyGraph() {
+        // given
+        server = buildServer("--port=0", "--empty");
+        // when
+        HttpResponse<InputStream> createBackupResponse = makeAuthPOSTCallWithPath(server, "$/backups/create?backup-name=new-backup", "test");
+        // then
+        assertEquals(200, createBackupResponse.statusCode());
+        // for debugging
+        debug(createBackupResponse);
+    }
+
 
     @Test
     public void test_listBackups_emptyGraph() {
