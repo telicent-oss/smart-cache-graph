@@ -33,9 +33,9 @@ import org.apache.jena.fuseki.main.sys.FusekiModules;
 import org.apache.jena.rdf.model.Model;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import yamlconfig.ConfigStruct;
-import yamlconfig.RDFConfigGenerator;
-import yamlconfig.YAMLConfigParser;
+import io.telicent.jena.fuseki.config.yaml.ConfigStruct;
+import io.telicent.jena.fuseki.config.yaml.RDFConfigGenerator;
+import io.telicent.jena.fuseki.config.yaml.YAMLConfigParser;
 
 import java.io.File;
 import java.io.FileOutputStream;

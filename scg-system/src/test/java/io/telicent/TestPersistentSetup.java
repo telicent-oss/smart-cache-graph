@@ -23,10 +23,12 @@ import static io.telicent.LibTestsSCG.tokenHeaderValue;
 import static org.apache.jena.atlas.lib.Lib.concatPaths;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Map;
 
-import io.telicent.core.FKProcessorSCG;
 import io.telicent.core.MainSmartCacheGraph;
+import io.telicent.core.SmartCacheGraphSink;
 import io.telicent.jena.abac.AttributeValueSet;
 import io.telicent.jena.abac.SysABAC;
 import io.telicent.jena.abac.attributes.Attribute;
@@ -34,10 +36,13 @@ import io.telicent.jena.abac.attributes.ValueTerm;
 import io.telicent.jena.abac.core.Attributes;
 import io.telicent.jena.abac.core.AttributesStore;
 import io.telicent.jena.abac.core.DatasetGraphABAC;
-import io.telicent.platform.play.FKProcessorSender;
 import io.telicent.smart.cache.configuration.Configurator;
+import io.telicent.smart.cache.payloads.RdfPayload;
+import io.telicent.smart.cache.sources.Event;
+import io.telicent.smart.cache.sources.memory.SimpleEvent;
+import org.apache.jena.atlas.io.IO;
 import org.apache.jena.atlas.lib.FileOps;
-import org.apache.jena.fuseki.kafka.FKProcessor;
+import org.apache.jena.fuseki.kafka.FKLib;
 import org.apache.jena.fuseki.main.FusekiServer;
 import org.apache.jena.fuseki.system.FusekiLogging;
 import org.apache.jena.riot.Lang;
@@ -48,10 +53,9 @@ import org.apache.jena.sparql.exec.RowSet;
 import org.apache.jena.sparql.exec.RowSetOps;
 import org.apache.jena.sparql.exec.RowSetRewindable;
 import org.apache.jena.sparql.exec.http.QueryExecHTTPBuilder;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.apache.jena.system.Txn;
+import org.apache.kafka.common.utils.Bytes;
+import org.junit.jupiter.api.*;
 
 /**
  * Testing of the persistent setup
@@ -60,23 +64,27 @@ public class TestPersistentSetup {
 
     private static String testArea = "target/databases/";
 
-    @BeforeAll public static void beforeAll() throws Exception {
+    @BeforeAll
+    public static void beforeAll() throws Exception {
         LibTestsSCG.setupAuthentication();
         LibTestsSCG.disableInitialCompaction();
         FusekiLogging.setLogging();
         FileOps.ensureDir(testArea);
     }
 
-    @BeforeEach public void beforeEach() {
+    @BeforeEach
+    public void beforeEach() {
         FileOps.clearAll(testArea);
     }
 
-    @AfterAll public static void afterAll() {
+    @AfterAll
+    public static void afterAll() {
         FileOps.clearAll(testArea);
         Configurator.reset();
     }
 
-    @Test public void persistentSetup() {
+    @Test
+    public void persistentSetup() {
 
         //CxtABAC.systemTrace(Track.DEBUG);
         final String DIR = "src/test/files/";
@@ -93,61 +101,72 @@ public class TestPersistentSetup {
         // ---- Internal setup
         // -- DatasetGraphABAC and base dataset
         final DatasetGraph dsg = server.getDataAccessPointRegistry().get("/knowledge").getDataService().getDataset();
-        final DatasetGraphABAC dsgz =(DatasetGraphABAC)dsg;
+        final DatasetGraphABAC dsgz = (DatasetGraphABAC) dsg;
         final DatasetGraph dsgBase = dsgz.getBase();
 
         // Add connectors in such a way we can manually inject requests.
-        FKProcessor fkProcessor = new FKProcessorSCG(dsgz,  "http://knowledge/kafka", server);
+        SmartCacheGraphSink sink = new SmartCacheGraphSink(dsgz);
 
         try {
             server.start();
-            FKProcessorSender procSender = FKProcessorSender.create(dsgz, TOPIC, server);
-            int port = server.getPort();
-            String queryURL = server.datasetURL("/knowledge")+"/sparql";
+            String queryURL = server.datasetURL("/knowledge") + "/sparql";
 
             // Batch ???
 
             // Send files to the FKProcessor
-            procSender
-                .send(concatPaths(FILES, "data-test-1.ttl"),
-                      Map.of(SysABAC.hSecurityLabel, "clearance=ordinary", HttpNames.hContentType, Lang.TTL.getHeaderString()))
-                .send(concatPaths(FILES, "data-test-2.ttl"),
-                      Map.of(SysABAC.hSecurityLabel, "clearance=secret", HttpNames.hContentType, Lang.TTL.getHeaderString()));
+            sendFile(dsgz, sink, concatPaths(FILES, "data-test-1.ttl"),
+                     Map.of(SysABAC.hSecurityLabel, "clearance=ordinary", HttpNames.hContentType,
+                            Lang.TTL.getHeaderString()));
+            sendFile(dsgz, sink, concatPaths(FILES, "data-test-2.ttl"),
+                     Map.of(SysABAC.hSecurityLabel, "clearance=secret", HttpNames.hContentType,
+                            Lang.TTL.getHeaderString()));
 
-            if ( false )
+            if (false) {
                 dump(dsgz);
+            }
 
             // User 'user1' can see "ordinary", "secret"
-            query(queryURL, 2, "user1",  "SELECT * { ?s ?p ?o}", attributeStore);
+            query(queryURL, 2, "user1", "SELECT * { ?s ?p ?o}", attributeStore);
             // User 'public' - "no label" not present.
             query(queryURL, 0, "public", "SELECT * { ?s ?p ?o}", attributeStore);
 
             // Send more files to the FKProcessor
-            procSender
-                .send(concatPaths(FILES, "data-test-3.ttl"),
-                      Map.of(SysABAC.hSecurityLabel, "clearance=top-secret", HttpNames.hContentType, Lang.TTL.getHeaderString()))
-                .send(concatPaths(FILES, "data-test-4.ttl"),
-                      Map.of(SysABAC.hSecurityLabel, "*", HttpNames.hContentType, Lang.TTL.getHeaderString()));
+            sendFile(dsgz, sink, concatPaths(FILES, "data-test-3.ttl"),
+                     Map.of(SysABAC.hSecurityLabel, "clearance=top-secret", HttpNames.hContentType,
+                            Lang.TTL.getHeaderString()));
+            sendFile(dsgz, sink, concatPaths(FILES, "data-test-4.ttl"),
+                     Map.of(SysABAC.hSecurityLabel, "*", HttpNames.hContentType, Lang.TTL.getHeaderString()));
 
             // User 'user1' can see "no label", "ordinary", "secret"
-            query(queryURL, 3, "user1",  "SELECT * { ?s ?p ?o}", attributeStore);
+            query(queryURL, 3, "user1", "SELECT * { ?s ?p ?o}", attributeStore);
             // User 'public' can see "no label".
             query(queryURL, 1, "public", "SELECT * { ?s ?p ?o}", attributeStore);
 
 
-        }
-        catch (Exception ex) {
+        } catch (Exception ex) {
             ex.printStackTrace();
-        }
-        finally {
+            Assertions.fail("Unexpected error: " + ex.getMessage());
+        } finally {
             server.stop();
             server = null;
         }
     }
 
+    private void sendFile(DatasetGraph dsg, SmartCacheGraphSink sink, String path, Map<String, String> headers) throws
+            IOException {
+        byte[] data;
+        try (InputStream input = IO.openFileBuffered(path)) {
+            data = IO.readWholeFile(input);
+        }
+        Event<Bytes, RdfPayload> event = new SimpleEvent<>(TestSmartCacheGraphSink.toHeaders(headers), null,
+                                                           RdfPayload.of(FKLib.ctForFile(path), data));
+        Txn.executeWrite(dsg, () ->
+                sink.send(event));
+    }
+
     private void dump(DatasetGraphABAC dsgz) {
         final DatasetGraph dsgBase = dsgz.getBase();
-        dsgz.executeRead(()->{
+        dsgz.executeRead(() -> {
             System.out.println("== Data");
             RDFWriter.source(dsgBase.getDefaultGraph()).lang(Lang.TTL).output(System.out);
 //          System.out.println("== Labels");
@@ -162,8 +181,9 @@ public class TestPersistentSetup {
         });
     }
 
-    private static void query(String URL, int expectedCount, String user, String queryString, AttributesStore attributeStore) {
-        if ( false ) {
+    private static void query(String URL, int expectedCount, String user, String queryString,
+                              AttributesStore attributeStore) {
+        if (false) {
             System.out.printf("User = %s\n", user);
             printAttrs(user, attributeStore);
         }
@@ -174,9 +194,9 @@ public class TestPersistentSetup {
 
         // == ABAC Query
         RowSet rs1 = QueryExecHTTPBuilder.service(URL)
-                .query(queryString)
-                .httpHeader(tokenHeader(), tokenHeaderValue(bearerToken))
-                .select();
+                                         .query(queryString)
+                                         .httpHeader(tokenHeader(), tokenHeaderValue(bearerToken))
+                                         .select();
 
         RowSetRewindable rs2 = rs1.rewindable();
         //RowSetOps.out(rs2);
@@ -188,11 +208,11 @@ public class TestPersistentSetup {
 
     private static void printAttrs(String user, AttributesStore attributeStore) {
         AttributeValueSet avs = attributeStore.attributes(user);
-        if ( avs == null ) {
+        if (avs == null) {
             System.out.printf("    no such user\n");
             return;
         }
-        if ( avs.isEmpty() ) {
+        if (avs.isEmpty()) {
             System.out.printf("    no attributes\n");
             return;
         }
@@ -201,12 +221,13 @@ public class TestPersistentSetup {
             Attribute a = attributeValue.attribute();
             ValueTerm vt = attributeValue.value();
             System.out.printf("    %s %s", a, vt);
-            if ( attributeStore.hasHierarchy(a) ) {
+            if (attributeStore.hasHierarchy(a)) {
                 System.out.printf(" --");
-                for ( ValueTerm hvt : attributeStore.getHierarchy(a).values() ) {
+                for (ValueTerm hvt : attributeStore.getHierarchy(a).values()) {
                     System.out.printf(" %s", hvt);
-                    if ( hvt.equals(vt) )
+                    if (hvt.equals(vt)) {
                         break;
+                    }
                 }
             }
             System.out.println();

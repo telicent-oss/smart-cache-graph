@@ -19,7 +19,6 @@ package io.telicent.core;
 import static io.telicent.core.CQRS.symKafkaTopic;
 
 import java.util.List;
-import java.util.Properties;
 import java.util.Set;
 
 import org.apache.jena.atlas.lib.Version;
@@ -37,7 +36,6 @@ import org.apache.jena.kafka.KConnectorDesc;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.riot.WebContent;
 import org.apache.jena.sparql.util.Context;
-import org.apache.kafka.clients.producer.ProducerConfig;
 import org.slf4j.Logger;
 
 /** Add CQRS update (writes patches to Kafka). */
@@ -105,7 +103,7 @@ public class FMod_CQRS implements FusekiModule {
                     }
                     if ( topics.size() > 1 ) {
                         FmtLog.error(LOG, "Multiple registered connectors for dataset %s. Set topic name in context to select one.");
-                        throw new FusekiConfigException("Mutliple topic names found");
+                        throw new FusekiConfigException("Multiple topic names found");
                     }
                     topicName = topics.get(0);
                 }
