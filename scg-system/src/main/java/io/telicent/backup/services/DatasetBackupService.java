@@ -89,8 +89,6 @@ public class DatasetBackupService {
      * @param response outgoing response
      * @param backup   flag indicating backup or restore
      */
-    //TODO
-    // make backupName optional somehow (@Nullable?)
     public void process(HttpServletRequest request, HttpServletResponse response, boolean backup, String backupName) {
         // Try to acquire the lock without blocking
         ObjectNode resultNode = OBJECT_MAPPER.createObjectNode();
@@ -102,7 +100,6 @@ public class DatasetBackupService {
             try {
                 String id = request.getPathInfo();
                 resultNode.put("id", id);
-                //resultNode.put("name", backupName);
                 resultNode.put("date", DateTimeUtils.nowAsString(DATE_FORMAT));
                 resultNode.put("user", request.getRemoteUser());
                 String name = request.getParameter("description");
@@ -135,9 +132,6 @@ public class DatasetBackupService {
         int backupID = getNextDirectoryNumberAndCreate(backupPath);
         String backupIDPath = backupPath + "/" + backupID;
         response.put("backup-id", backupID);
-        //TODO
-        //where to get the name from?
-        // another argument to the method, but how to pass it in the api?
         if (backupName != null && !backupName.isEmpty()) {
             response.put("backup-name", backupName);
         }
@@ -150,9 +144,6 @@ public class DatasetBackupService {
             if (requestIsEmpty(sanitizedDatasetName) || sanitizedDataAccessPointName.equals(sanitizedDatasetName)) {
                 ObjectNode datasetJSON = OBJECT_MAPPER.createObjectNode();
                 datasetJSON.put("dataset-id", sanitizedDataAccessPointName);
-                //TODO
-                // Is this enough?
-                datasetJSON.put("backup-name", sanitizedDataAccessPointName);
                 applyBackUpMethods(datasetJSON, dataAccessPoint, backupIDPath + "/" + sanitizedDataAccessPointName);
                 datasetNodes.add(datasetJSON);
             }
@@ -532,9 +523,6 @@ public class DatasetBackupService {
             try (final ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
                 RDFDataMgr.write(baos, model, Lang.RDFJSON);
                 resultNode.put("backup-id", backupId);
-                //TODO
-                // where to get the name from?
-                //resultNode.put("backup-name", backupName);
                 resultNode.put("dataset-name", datasetName);
                 return resultNode.set("result", OBJECT_MAPPER.readValue(baos.toString(StandardCharsets.UTF_8), ObjectNode.class));
             }
