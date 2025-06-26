@@ -33,7 +33,6 @@ public class BackupServlet extends HttpServlet {
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) {
-        //String backupName = request.getParameter("backup-name");
-        backupService.process(request, response, true/*, backupName*/);
+        backupService.process(request, response, true);
     }
 }

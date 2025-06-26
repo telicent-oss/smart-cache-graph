@@ -155,24 +155,6 @@ public class TestDatasetBackupService {
         assertNotEquals("{}", result.toString());
     }
 
-    /*@Test
-    @DisplayName("List backups when directory contains details")
-    public void test_listBackups_contents_backupNames() throws IOException {
-        // given
-        String datasetName = "dataset-name";
-        DataAccessPoint dap = new DataAccessPoint("dataset-name", DataService.newBuilder().build());
-        when(mockRegistry.accessPoints()).thenReturn(List.of(dap));
-
-        // when
-        cut.backupDataset(datasetName, "name1");
-        cut.backupDataset(datasetName, "name2");
-        ObjectNode result = cut.listBackups();
-
-        // then
-        assertNotEquals("{}", result.toString());
-        assertEquals(result.findValuesAsText("backup-name"), List.of("name1", "name2"));
-    }*/
-
     /*
      * BACK UP TESTS
      */
@@ -186,7 +168,7 @@ public class TestDatasetBackupService {
         when(mockRegistry.accessPoints()).thenReturn(List.of(dap));
 
         // when
-        ObjectNode result = cut.backupDataset(datasetName/*, null*/);
+        ObjectNode result = cut.backupDataset(datasetName);
 
         // then
         assertTrue(result.has("backup-id"));
@@ -206,7 +188,7 @@ public class TestDatasetBackupService {
         when(mockRegistry.accessPoints()).thenReturn(emptyList());
 
         // when
-        ObjectNode result = cut.backupDataset(datasetName/*, null*/);
+        ObjectNode result = cut.backupDataset(datasetName);
 
         // then
         assertTrue(result.has("backup-id"));
@@ -234,7 +216,7 @@ public class TestDatasetBackupService {
         when(mockRegistry.accessPoints()).thenReturn(List.of(dap, dap2));
 
         // when
-        ObjectNode result = cut.backupDataset(datasetName/*, null*/);
+        ObjectNode result = cut.backupDataset(datasetName);
 
         // then
         assertTrue(result.has("backup-id"));
@@ -288,7 +270,7 @@ public class TestDatasetBackupService {
         when(mockRegistry.accessPoints()).thenReturn(List.of(dap, dap2));
 
         // when
-        ObjectNode result = cut.backupDataset(datasetName/*, null*/);
+        ObjectNode result = cut.backupDataset(datasetName);
 
         // then
         assertTrue(result.has("backup-id"));
@@ -332,15 +314,13 @@ public class TestDatasetBackupService {
         when(mockRegistry.accessPoints()).thenReturn(List.of(dap, dap2));
 
         // when
-        ObjectNode result = cut.backupDataset(datasetName/*, null*/);
+        ObjectNode result = cut.backupDataset(null);
 
         // then
         assertTrue(result.has("backup-id"));
         assertEquals(1, result.get("backup-id").asInt());
         assertTrue(result.has("datasets"));
         assertTrue(result.get("datasets").isArray());
-        //TODO
-        // why did it stop working?
         assertEquals(2, result.get("datasets").size());
         ArrayNode datasets = (ArrayNode) result.get("datasets");
 
@@ -387,7 +367,7 @@ public class TestDatasetBackupService {
         when(mockRegistry.accessPoints()).thenReturn(List.of(dap));
 
         // when
-        ObjectNode result = cut.backupDataset(datasetName/*, null*/);
+        ObjectNode result = cut.backupDataset(datasetName);
 
         // then
         assertTrue(result.has("backup-id"));
@@ -429,7 +409,7 @@ public class TestDatasetBackupService {
         when(mockRegistry.accessPoints()).thenReturn(List.of(dap));
 
         // when
-        ObjectNode result = cut.backupDataset(datasetName/*, null*/);
+        ObjectNode result = cut.backupDataset(datasetName);
 
         // then
         assertTrue(result.has("backup-id"));
@@ -473,11 +453,9 @@ public class TestDatasetBackupService {
         when(mockRegistry.accessPoints()).thenReturn(List.of(dap));
 
         // when
-        ObjectNode result = cut.backupDataset(datasetName/*, null*/);
+        ObjectNode result = cut.backupDataset(datasetName);
 
         // then
-        //assertTrue(result.has("backup-name"));
-        //assertEquals(backupName, result.get("backup-name").asText());
         assertTrue(result.has("backup-id"));
         assertEquals(1, result.get("backup-id").asInt());
         assertTrue(result.has("datasets"));
@@ -515,7 +493,7 @@ public class TestDatasetBackupService {
         DatasetBackupService_Test.setupExceptionForMethod(BACKUP_TDB, "Test Jena Failure");
 
         // when
-        ObjectNode result = cut.backupDataset(datasetName/*, null*/);
+        ObjectNode result = cut.backupDataset(datasetName);
 
         // then
         assertTrue(result.has("backup-id"));
@@ -561,7 +539,7 @@ public class TestDatasetBackupService {
         DatasetBackupService_Test.setupExceptionForMethod(BACKUP_LABELS, "Test Rocks DB Failure");
 
         // when
-        ObjectNode result = cut.backupDataset(datasetName/*, null*/);
+        ObjectNode result = cut.backupDataset(datasetName);
 
         // then
         assertTrue(result.has("backup-id"));
@@ -689,7 +667,7 @@ public class TestDatasetBackupService {
         newDir.deleteOnExit();
 
         String datasetName = "dataset";
-        File newDataset = new File(newDir.toString() + "/" + datasetName);
+        File newDataset = new File(newDir + "/" + datasetName);
         assertTrue(newDataset.mkdir());
         newDataset.deleteOnExit();
 
@@ -1604,7 +1582,7 @@ public class TestDatasetBackupService {
         newDir.deleteOnExit();
 
         String datasetName = "dataset-name";
-        File newDataset = new File(newDir.toString() + "/" + datasetName);
+        File newDataset = new File(newDir + "/" + datasetName);
         assertTrue(newDataset.mkdir());
         newDataset.deleteOnExit();
 
@@ -1983,7 +1961,7 @@ public class TestDatasetBackupService {
         assertTrue(RESULT_NODE.has("success"));
         assertFalse(RESULT_NODE.get("success").asBoolean());
         assertTrue(RESULT_NODE.has("reason"));
-        assertTrue(RESULT_NODE.get("reason").asText().equals("No Label Store to restore (not RocksDB)"));
+        assertEquals("No Label Store to restore (not RocksDB)", RESULT_NODE.get("reason").asText());
     }
 
     @Test
@@ -2021,7 +1999,7 @@ public class TestDatasetBackupService {
         when(request.getPathInfo()).thenThrow(new RuntimeException("Some error"));
 
         // when
-        cut.process(request, response, true/*, null*/);
+        cut.process(request, response, true);
         // then
         verify(response, times(1)).setStatus(500);
     }
@@ -2046,7 +2024,7 @@ public class TestDatasetBackupService {
             // Submit 5 concurrent tasks simulating individual requests
             for (int i = 0; i < 2; i++) {
                 final boolean flag = (i == 0);
-                executorService.submit(() -> cut.process(request, response, flag/*, null*/));
+                executorService.submit(() -> cut.process(request, response, flag));
             }
             // Wait for threads to complete
             executorService.shutdown();
@@ -2066,7 +2044,7 @@ public class TestDatasetBackupService {
         doThrow(new RuntimeException("Test")).when(request).getPathInfo();
 
         // when
-        cut.process(request, response, true/*, null*/);
+        cut.process(request, response, true);
 
         // then
         verify(response, times(1)).setStatus(500);

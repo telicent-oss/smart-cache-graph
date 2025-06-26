@@ -43,7 +43,6 @@ import org.apache.jena.system.Txn;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -89,7 +88,7 @@ public class DatasetBackupService {
      * @param response outgoing response
      * @param backup   flag indicating backup or restore
      */
-    public void process(HttpServletRequest request, HttpServletResponse response, boolean backup/*, String backupName*/) {
+    public void process(HttpServletRequest request, HttpServletResponse response, boolean backup) {
         // Try to acquire the lock without blocking
         ObjectNode resultNode = OBJECT_MAPPER.createObjectNode();
         if (!lock.tryLock()) {
@@ -107,11 +106,11 @@ public class DatasetBackupService {
                     resultNode.put("description", name);
                 }
                 String backupName = request.getParameter("backup-name");
-                if (name != null) {
+                if (backupName != null) {
                     resultNode.put("backup-name", backupName);
                 }
                 if (backup) {
-                    resultNode.set("backup", backupDataset(id/*, backupName*/));
+                    resultNode.set("backup", backupDataset(id));
                 } else {
                     resultNode.set("restore", restoreDatasets(id));
                 }
@@ -129,16 +128,13 @@ public class DatasetBackupService {
      *
      * @param datasetName the name of the dataset to back up
      */
-    public ObjectNode backupDataset(String datasetName/*, String backupName*/) {
+    public ObjectNode backupDataset(String datasetName) {
         String sanitizedDatasetName = sanitiseName(datasetName);
         ObjectNode response = OBJECT_MAPPER.createObjectNode();
         String backupPath = getBackUpDir();
         int backupID = getNextDirectoryNumberAndCreate(backupPath);
         String backupIDPath = backupPath + "/" + backupID;
         response.put("backup-id", backupID);
-        /*if (backupName != null && !backupName.isEmpty()) {
-            response.put("backup-name", backupName);
-        }*/
         response.put("date", DateTimeUtils.nowAsString(DATE_FORMAT));
 
         ArrayNode datasetNodes = OBJECT_MAPPER.createArrayNode();
