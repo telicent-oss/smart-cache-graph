@@ -46,6 +46,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -528,6 +529,40 @@ public class DatasetBackupService {
             resultNode.put("error", "Invalid path or file: " + reportPathString);
             return resultNode;
         }
+    }
+
+    /** TODO */
+    public ObjectNode getDetails(final String backupId, final HttpServletResponse response) throws Exception {
+        final ObjectNode resultNode = OBJECT_MAPPER.createObjectNode();
+        final String detailsPathString = getBackUpDir() + "/" + backupId + "-" + DETAILS_SUFFIX;
+
+        String stateDir = System.getProperty("java.io.tmpdir") + "/kafka-streams";
+        Path statePath = Paths.get(stateDir);
+        System.out.println("PATH: " + statePath);
+        System.out.println("=====================================");
+        try (DirectoryStream<Path> stream = Files.newDirectoryStream(statePath)) {
+            for (Path file : stream) {
+                System.out.println(file.getFileName());
+            }
+        } catch (RuntimeException ex) {
+            System.out.println(ex.getMessage());
+        }
+        System.out.println("=====================================");
+        return resultNode;
+
+//        if (checkPathExistsAndIsFile(detailsPathString)) {
+//            final Model model = RDFDataMgr.loadModel(detailsPathString);
+//            try (final ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+//                RDFDataMgr.write(baos, model, Lang.RDFJSON);
+//                resultNode.put("backup-id", backupId);
+//                resultNode.put("dataset-name", datasetName);
+//                return resultNode.set("result", OBJECT_MAPPER.readValue(baos.toString(StandardCharsets.UTF_8), ObjectNode.class));
+//            }
+//        } else {
+//            response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+//            resultNode.put("error", "Invalid path or file: " + detailsPathString);
+//            return resultNode;
+//        }
     }
 
     /**

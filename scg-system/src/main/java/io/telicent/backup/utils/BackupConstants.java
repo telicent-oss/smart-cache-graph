@@ -25,6 +25,8 @@ public final class BackupConstants {
     public static final String ZIP_SUFFIX = ".zip";
     public static final String JSON_INFO_SUFFIX = "_info.json";
     public static final String REPORT_SUFFIX = "-validation-report.ttl";
+    //TODO
+    public static final String DETAILS_SUFFIX = "";
     public static final String WILDCARD_REPORT_SUFFIX = "-*-validation-report.ttl";
     public static final String RDF_BACKUP_SUFFIX = ".nq.gz";
     public static final boolean DELETE_GENERATED_FILES = Configurator.get(ENV_BACKUP_DELETE_GENERATED_FILES,Boolean::valueOf, true);

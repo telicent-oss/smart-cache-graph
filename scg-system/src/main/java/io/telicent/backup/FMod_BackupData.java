@@ -53,6 +53,7 @@ public class FMod_BackupData implements FusekiAutoModule {
             serverBuilder.addServlet("/$/backups/delete/*", new DeleteServlet(backupService));
             serverBuilder.addServlet("/$/backups/validate/*", new ValidateServlet(backupService));
             serverBuilder.addServlet("/$/backups/report/*", new ReportServlet(backupService));
+            serverBuilder.addServlet("/$/backups/details/*", new DetailsServlet(backupService));
         }
     }
 

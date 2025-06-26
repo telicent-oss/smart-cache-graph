@@ -154,6 +154,18 @@ public class TestBackupData {
     }
 
     @Test
+    public void test_details_emptyGraph() {
+        // given
+        server = buildServer("--port=0", "--empty");
+        // when
+        makeAuthPOSTCallWithPath(server, "$/backups/create/", "test");
+        HttpResponse<InputStream> createBackupResponse = makeAuthGETCallWithPath(server, "$/backups/details/1", "test");
+        // then
+        debug(createBackupResponse);
+        assertEquals(200, createBackupResponse.statusCode());
+    }
+
+    @Test
     public void test_deleteBackup_emptyGraph() {
         // given
         server = buildServer("--port=0", "--empty");
