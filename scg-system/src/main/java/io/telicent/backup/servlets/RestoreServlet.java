@@ -32,6 +32,6 @@ public class RestoreServlet extends HttpServlet {
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) {
-        backupService.process(request, response,false, null);
+        backupService.process(request, response, false/*, null*/);
     }
 }
