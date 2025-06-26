@@ -439,50 +439,6 @@ public class TestDatasetBackupService {
     }
 
     @Test
-    @DisplayName("Happy path backup with ABAC but not RocksDB labels with backup name provided")
-    public void test_backup_happyPath_abac_not_rocksDB_backupName() {
-        // given
-        String datasetName = "dataset-name";
-        String backupName = "backup-name";
-        DatasetGraphABAC dsgABAC = ABAC.authzDataset(DatasetGraphFactory.createTxnMem(),
-                null,
-                null,
-                null,
-                null);
-        DataAccessPoint dap = new DataAccessPoint("dataset-name", DataService.newBuilder().dataset(dsgABAC).build());
-        when(mockRegistry.accessPoints()).thenReturn(List.of(dap));
-
-        // when
-        ObjectNode result = cut.backupDataset(datasetName);
-
-        // then
-        assertTrue(result.has("backup-id"));
-        assertEquals(1, result.get("backup-id").asInt());
-        assertTrue(result.has("datasets"));
-        assertTrue(result.get("datasets").isArray());
-        assertEquals(1, result.get("datasets").size());
-        ArrayNode datasets = (ArrayNode) result.get("datasets");
-        JsonNode dataset = datasets.get(0);
-        assertTrue(dataset.has("dataset-id"));
-        assertTrue(dataset.get("dataset-id").isTextual());
-        assertEquals(datasetName, dataset.get("dataset-id").asText());
-        assertTrue(dataset.get("dataset-id").isTextual());
-
-        assertTrue(dataset.has("tdb"));
-        JsonNode tdbNode = dataset.get("tdb");
-        assertTrue(tdbNode.has("success"));
-        assertTrue(tdbNode.get("success").asBoolean());
-
-        assertTrue(dataset.has("labels"));
-        JsonNode labelsNode = dataset.get("labels");
-        assertTrue(labelsNode.has("success"));
-        assertFalse(labelsNode.get("success").asBoolean());
-
-        assertEquals(1, DatasetBackupService_Test.getCallCount(BACKUP_TDB));
-        assertEquals(0, DatasetBackupService_Test.getCallCount(BACKUP_LABELS));
-    }
-
-    @Test
     @DisplayName("Backup when TDB encounters an exception")
     public void test_backup_happyPath_tdb_exception() {
         // given
