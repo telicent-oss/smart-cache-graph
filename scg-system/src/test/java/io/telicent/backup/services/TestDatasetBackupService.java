@@ -623,7 +623,7 @@ public class TestDatasetBackupService {
         newDir.deleteOnExit();
 
         String datasetName = "dataset";
-        File newDataset = new File(newDir.toString() + "/" + datasetName);
+        File newDataset = new File(newDir + "/" + datasetName);
         assertTrue(newDataset.mkdir());
         newDataset.deleteOnExit();
 
@@ -1538,7 +1538,7 @@ public class TestDatasetBackupService {
         newDir.deleteOnExit();
 
         String datasetName = "dataset-name";
-        File newDataset = new File(newDir.toString() + "/" + datasetName);
+        File newDataset = new File(newDir + "/" + datasetName);
         assertTrue(newDataset.mkdir());
         newDataset.deleteOnExit();
 
@@ -1917,7 +1917,7 @@ public class TestDatasetBackupService {
         assertTrue(RESULT_NODE.has("success"));
         assertFalse(RESULT_NODE.get("success").asBoolean());
         assertTrue(RESULT_NODE.has("reason"));
-        assertTrue(RESULT_NODE.get("reason").asText().equals("No Label Store to restore (not RocksDB)"));
+        assertEquals("No Label Store to restore (not RocksDB)", RESULT_NODE.get("reason").asText());
     }
 
     @Test

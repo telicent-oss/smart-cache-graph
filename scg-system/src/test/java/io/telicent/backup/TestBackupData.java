@@ -141,6 +141,54 @@ public class TestBackupData {
 //        debug(createBackupResponse);
     }
 
+    @Test
+    public void test_createBackup_withName_emptyGraph() {
+        // given
+        server = buildServer("--port=0", "--empty");
+        // when
+        HttpResponse<InputStream> createBackupResponse = makeAuthPOSTCallWithPath(server, "$/backups/create?backup-name=new-backup", "test");
+        // then
+        assertEquals(200, createBackupResponse.statusCode());
+        // for debugging
+        //debug(createBackupResponse);
+    }
+
+    @Test
+    public void test_createBackup_withDescription_emptyGraph() {
+        // given
+        server = buildServer("--port=0", "--empty");
+        // when
+        HttpResponse<InputStream> createBackupResponse = makeAuthPOSTCallWithPath(server, "$/backups/create?description=abc", "test");
+        // then
+        assertEquals(200, createBackupResponse.statusCode());
+        // for debugging
+        //debug(createBackupResponse);
+    }
+
+    @Test
+    public void test_createBackup_withNameAndDescription_emptyGraph() {
+        // given
+        server = buildServer("--port=0", "--empty");
+        // when
+        HttpResponse<InputStream> createBackupResponse = makeAuthPOSTCallWithPath(server, "$/backups/create?description=abc&backup-name=new-backup", "test");
+        // then
+        assertEquals(200, createBackupResponse.statusCode());
+        // for debugging
+        //debug(createBackupResponse);
+    }
+
+    @Test
+    public void test_createBackup_withName_emptyGraph_provideDataset() {
+        // given
+        server = buildServer("--port=0", "--empty");
+        // when
+        HttpResponse<InputStream> createBackupResponse = makeAuthPOSTCallWithPath(server, "$/backups/create/ds?backup-name=new-backup", "test");
+        // then
+        assertEquals(200, createBackupResponse.statusCode());
+        // for debugging
+        //debug(createBackupResponse);
+    }
+
 
     @Test
     public void test_listBackups_emptyGraph() {

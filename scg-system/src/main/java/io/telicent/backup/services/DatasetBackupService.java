@@ -43,7 +43,6 @@ import org.apache.jena.system.Txn;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -105,6 +104,10 @@ public class DatasetBackupService {
                 String name = request.getParameter("description");
                 if (name != null) {
                     resultNode.put("description", name);
+                }
+                String backupName = request.getParameter("backup-name");
+                if (backupName != null) {
+                    resultNode.put("backup-name", backupName);
                 }
                 if (backup) {
                     resultNode.set("backup", backupDataset(id));
