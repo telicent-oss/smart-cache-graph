@@ -627,6 +627,7 @@
             </execution>
           </executions>
           <configuration>
+            <skipNotDeployed>false</skipNotDeployed> <!-- Forces SBOM generation -->
             <outputName>${project.artifactId}-${project.version}-bom</outputName>
           </configuration>
         </plugin>
