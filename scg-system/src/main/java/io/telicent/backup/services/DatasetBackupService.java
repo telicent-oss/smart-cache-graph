@@ -16,6 +16,9 @@
 
 package io.telicent.backup.services;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.telicent.jena.abac.core.DatasetGraphABAC;
@@ -24,6 +27,7 @@ import io.telicent.jena.abac.labels.LabelsStoreRocksDB;
 import io.telicent.jena.abac.labels.node.LabelToNodeGenerator;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.apache.commons.io.FileUtils;
 import org.apache.jena.atlas.lib.DateTimeUtils;
 import org.apache.jena.fuseki.mgt.Backup;
 import org.apache.jena.fuseki.server.DataAccessPoint;
@@ -47,6 +51,8 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -56,9 +62,11 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.zip.GZIPInputStream;
+import java.util.zip.ZipFile;
 
 import static io.telicent.backup.utils.BackupConstants.*;
 import static io.telicent.backup.utils.BackupUtils.*;
+import static io.telicent.backup.utils.BackupUtils.checkPathExistsAndIsDir;
 import static io.telicent.backup.utils.CompressionUtils.*;
 import static io.telicent.backup.utils.JsonFileUtils.OBJECT_MAPPER;
 import static io.telicent.backup.utils.JsonFileUtils.writeObjectNodeToFile;
@@ -144,9 +152,12 @@ public class DatasetBackupService {
                 datasetJSON.put("dataset-id", sanitizedDataAccessPointName);
                 applyBackUpMethods(datasetJSON, dataAccessPoint, backupIDPath + "/" + sanitizedDataAccessPointName);
                 datasetNodes.add(datasetJSON);
+                response.put("size", datasetNodes.size());
             }
         }
         response.set("datasets", datasetNodes);
+        //TODO
+        // maybe add size etc. to backup metadata?
         compressAndStoreBackupMetadata(response, backupIDPath);
         return response;
     }
@@ -531,38 +542,87 @@ public class DatasetBackupService {
         }
     }
 
-    /** TODO */
-    public ObjectNode getDetails(final String backupId, final HttpServletResponse response) throws Exception {
+    /** TODO
+     * return start-stop time
+     * backup size
+     * kafka state file*/
+    public ObjectNode getDetails(final String backupId) {
         final ObjectNode resultNode = OBJECT_MAPPER.createObjectNode();
-        final String detailsPathString = getBackUpDir() + "/" + backupId + "-" + DETAILS_SUFFIX;
+        final String detailsPathString = getBackUpDir() + "/" + backupId;
+        resultNode.put("backup-id", backupId);
+        resultNode.put("date", DateTimeUtils.nowAsString(DATE_FORMAT));
+        resultNode.put("details-path", detailsPathString);
 
-        String stateDir = System.getProperty("java.io.tmpdir") + "/kafka-streams";
-        Path statePath = Paths.get(stateDir);
-        System.out.println("PATH: " + statePath);
-        System.out.println("=====================================");
-        try (DirectoryStream<Path> stream = Files.newDirectoryStream(statePath)) {
-            for (Path file : stream) {
-                System.out.println(file.getFileName());
-            }
-        } catch (RuntimeException ex) {
-            System.out.println(ex.getMessage());
-        }
-        System.out.println("=====================================");
-        return resultNode;
-
-//        if (checkPathExistsAndIsFile(detailsPathString)) {
-//            final Model model = RDFDataMgr.loadModel(detailsPathString);
-//            try (final ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
-//                RDFDataMgr.write(baos, model, Lang.RDFJSON);
-//                resultNode.put("backup-id", backupId);
-//                resultNode.put("dataset-name", datasetName);
-//                return resultNode.set("result", OBJECT_MAPPER.readValue(baos.toString(StandardCharsets.UTF_8), ObjectNode.class));
+//        if (checkPathExistsAndIsDir(detailsPathString)) {
+//            resultNode.put("is-dir", true);
+//            try {
+//                File directory = new File(detailsPathString);
+//                ArrayNode filesArray = OBJECT_MAPPER.createArrayNode();
+//                ArrayNode subdirectoriesArray = OBJECT_MAPPER.createArrayNode();
+//
+//                File[] files = directory.listFiles();
+//                if (files != null) {
+//                    for (File file : files) {
+//                        if (file.isFile()) {
+//                            ObjectNode fileNode = OBJECT_MAPPER.createObjectNode();
+//                            fileNode.put("name", file.getName());
+//                            fileNode.put("size", file.length());
+//                            fileNode.put("lastModified", file.lastModified());
+//                            filesArray.add(fileNode);
+//                        } else if (file.isDirectory()) {
+//                            ObjectNode dirNode = OBJECT_MAPPER.createObjectNode();
+//                            dirNode.put("name", file.getName());
+//                            dirNode.put("lastModified", file.lastModified());
+//                            subdirectoriesArray.add(dirNode);
+//                        }
+//                    }
+//                }
+//
+//                resultNode.set("files", filesArray);
+//                resultNode.set("subdirectories", subdirectoriesArray);
+//
+//                resultNode.put("size", FileUtils.sizeOfDirectory(new File(detailsPathString)));
+//                long size = Files.walk(Paths.get("backups/1"))
+//                        .filter(p -> p.toFile().isFile())
+//                        .mapToLong(p -> p.toFile().length())
+//                        .sum();
+//                resultNode.put("size-manual", size);
+//                resultNode.put("size-method", getBackupSize(new File(detailsPathString)));
+//            } catch (Exception e) {
+//                resultNode.put("directory-structure-error", "Could not read directory contents");
 //            }
-//        } else {
-//            response.setStatus(HttpServletResponse.SC_NOT_FOUND);
-//            resultNode.put("error", "Invalid path or file: " + detailsPathString);
-//            return resultNode;
 //        }
+        //REMOVE
+//        if (checkPathExistsAndIsFile(detailsPathString + JSON_INFO_SUFFIX)) {
+//            resultNode.put("is-json", true);
+//            try {
+//                resultNode.put("size-json", Files.size(Path.of(detailsPathString + JSON_INFO_SUFFIX)));
+//            } catch (IOException e) {
+//                throw new RuntimeException(e);
+//            }
+//        }
+        if (checkPathExistsAndIsFile(detailsPathString + ZIP_SUFFIX)) {
+            //resultNode.put("is-zip", true);
+            try {
+                resultNode.put("zip-size", Files.size(Path.of(detailsPathString + ZIP_SUFFIX)));
+                String unzipDir = detailsPathString + "unzip";
+                unzipDirectory(detailsPathString + ZIP_SUFFIX, unzipDir);
+
+                resultNode.put("unzip-size", FileUtils.sizeOfDirectory(new File(unzipDir)));
+                cleanUp(List.of(Path.of(unzipDir)));
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+//        if (checkPathExistsAndIsFile(detailsPathString + RDF_BACKUP_SUFFIX)) {
+//            resultNode.put("is-rdf", true);
+//            try {
+//                resultNode.put("size-rdf", Files.size(Path.of(detailsPathString + RDF_BACKUP_SUFFIX)));
+//            } catch (IOException e) {
+//                throw new RuntimeException(e);
+//            }
+//        }
+        return resultNode;
     }
 
     /**

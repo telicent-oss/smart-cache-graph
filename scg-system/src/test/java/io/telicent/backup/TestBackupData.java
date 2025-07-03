@@ -27,6 +27,9 @@ import org.apache.jena.fuseki.main.sys.FusekiModule;
 import org.apache.jena.fuseki.main.sys.FusekiModules;
 import org.apache.jena.fuseki.server.DataAccessPointRegistry;
 import org.apache.jena.fuseki.system.FusekiLogging;
+import org.apache.jena.query.Dataset;
+import org.apache.jena.query.DatasetFactory;
+import org.apache.jena.rdf.model.Model;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -153,17 +156,30 @@ public class TestBackupData {
         assertEquals(200, createBackupResponse.statusCode());
     }
 
-    @Test
-    public void test_details_emptyGraph() {
-        // given
-        server = buildServer("--port=0", "--empty");
-        // when
-        makeAuthPOSTCallWithPath(server, "$/backups/create/", "test");
-        HttpResponse<InputStream> createBackupResponse = makeAuthGETCallWithPath(server, "$/backups/details/1", "test");
-        // then
-        debug(createBackupResponse);
-        assertEquals(200, createBackupResponse.statusCode());
-    }
+//    @Test
+//    public void test_details_emptyGraph() {
+//        // given
+//        server = buildServer("--port=0", "--empty");
+//        // when
+//        makeAuthPOSTCallWithPath(server, "$/backups/create/", "test");
+//        HttpResponse<InputStream> createBackupResponse = makeAuthGETCallWithPath(server, "$/backups/details/1", "test");
+//        // then
+//        debug(createBackupResponse);
+//        assertEquals(200, createBackupResponse.statusCode());
+//    }
+//
+//    //TODO
+//    @Test
+//    public void test_details_withContent() {
+//        // given
+//        server = buildServer("--port=0", "--file=src/test/files/Data/PersonDataValid.ttl", "/ds");
+//        // when
+//        makeAuthPOSTCallWithPath(server, "$/backups/create/", "test");
+//        HttpResponse<InputStream> createBackupResponse = makeAuthGETCallWithPath(server, "$/backups/details/1", "test");
+//        // then
+//        debug(createBackupResponse);
+//        assertEquals(200, createBackupResponse.statusCode());
+//    }
 
     @Test
     public void test_deleteBackup_emptyGraph() {

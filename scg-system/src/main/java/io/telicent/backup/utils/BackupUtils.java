@@ -539,4 +539,19 @@ public class BackupUtils extends ServletUtils {
             FileUtils.deleteQuietly(path.toFile());
         }
     }
+//TODO
+// remove
+    public static long getBackupSize(File dir) {
+        long length = 0;
+        File[] files = dir.listFiles();
+        if (files == null) return 0;
+        for (File file : files) {
+            if (file.isFile()) {
+                length += file.length();
+            } else {
+                length += getBackupSize(dir);
+            }
+        }
+        return length;
+    }
 }

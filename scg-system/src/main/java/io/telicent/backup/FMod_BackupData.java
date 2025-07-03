@@ -58,6 +58,6 @@ public class FMod_BackupData implements FusekiAutoModule {
     }
 
     private static boolean isBackupEnabled() {
-        return Configurator.get(FMod_BackupData.ENABLE_BACKUPS, Boolean::parseBoolean, false);
+        return Configurator.get(FMod_BackupData.ENABLE_BACKUPS, Boolean::parseBoolean, true);
     }
 }

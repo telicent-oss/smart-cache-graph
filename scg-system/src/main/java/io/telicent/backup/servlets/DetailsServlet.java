@@ -21,7 +21,9 @@ import io.telicent.backup.services.DatasetBackupService;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.apache.jena.atlas.lib.DateTimeUtils;
 
+import static io.telicent.backup.utils.BackupConstants.DATE_FORMAT;
 import static io.telicent.backup.utils.BackupUtils.handleError;
 import static io.telicent.backup.utils.JsonFileUtils.OBJECT_MAPPER;
 import static io.telicent.utils.ServletUtils.processResponse;
@@ -37,13 +39,14 @@ public class DetailsServlet extends HttpServlet {
 
     @Override
     protected void doGet(final HttpServletRequest request, final HttpServletResponse response) {
+        ObjectNode resultNode = OBJECT_MAPPER.createObjectNode();
         try {
-            final String pathInfo = request.getPathInfo();
-            final String[] pathElems = pathInfo.substring(1).split("/");
-            final ObjectNode details = backupService.getDetails(pathElems[0], response);
-            processResponse(response, details);
+            String backupId = request.getPathInfo();
+            resultNode.put("details-id", backupId);
+            resultNode.put("date", DateTimeUtils.nowAsString(DATE_FORMAT));
+            resultNode.set("details", backupService.getDetails(backupId));
+            processResponse(response, resultNode);
         } catch (Exception exception) {
-            final ObjectNode resultNode = OBJECT_MAPPER.createObjectNode();
             handleError(response, resultNode, exception);
         }
     }
