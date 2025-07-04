@@ -23,6 +23,7 @@ public final class BackupConstants {
     }
     public static final String ENV_BACKUP_DELETE_GENERATED_FILES = "BACKUP_DELETE_GENERATED_FILES";
     public static final String ZIP_SUFFIX = ".zip";
+    public static final String ENCRYPTION_SUFFIX = ".enc";
     public static final String JSON_INFO_SUFFIX = "_info.json";
     public static final String REPORT_SUFFIX = "-validation-report.ttl";
     public static final String WILDCARD_REPORT_SUFFIX = "-*-validation-report.ttl";
