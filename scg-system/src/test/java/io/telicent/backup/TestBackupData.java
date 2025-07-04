@@ -206,7 +206,7 @@ public class TestBackupData {
         assertEquals("test", responseMap.get("user"));
         assertEquals("abc", responseMap.get("description"));
         // for debugging
-        debug(createBackupResponse);
+        //debug(createBackupResponse);
     }
 
     @Test
