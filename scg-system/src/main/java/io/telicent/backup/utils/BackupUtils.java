@@ -412,7 +412,6 @@ public class BackupUtils extends ServletUtils {
 
                 try {
                     JsonNode fileContent = OBJECT_MAPPER.readTree(Files.readString(filePath));
-                    System.out.println(fileContent.toPrettyString());
                     targetNode.set(numericKey, fileContent);
                 } catch (IOException e) {
                     FmtLog.error(LOG, "Error reading or parsing JSON from file %s: %s", filePath, e.getMessage());

@@ -99,20 +99,21 @@ public class DatasetBackupService {
             try {
                 String id = request.getPathInfo();
                 resultNode.put("id", id);
+                if (id != null) {
+                    resultNode.put("backup-name", id);
+                } else {
+                    resultNode.put("backup-name", "FULL");
+                }
                 resultNode.put("date", DateTimeUtils.nowAsString(DATE_FORMAT));
                 resultNode.put("user", request.getRemoteUser());
                 String name = request.getParameter("description");
                 if (name != null) {
                     resultNode.put("description", name);
                 }
-                String backupName = request.getParameter("backup-name");
-                if (backupName != null) {
-                    resultNode.put("backup-name", backupName);
-                }
                 if (backup) {
-                    resultNode.set("backup", backupDataset(id));
+                    backupDataset(id, resultNode);
                 } else {
-                    resultNode.set("restore", restoreDatasets(id));
+                    restoreDatasets(id, resultNode);
                 }
                 processResponse(response, resultNode);
             } catch (Exception exception) {
@@ -127,10 +128,10 @@ public class DatasetBackupService {
      * Perform a backup of all datasets or a specific dataset if a name is provided.
      *
      * @param datasetName the name of the dataset to back up
+     * @param response the node to add metadata of process to
      */
-    public ObjectNode backupDataset(String datasetName) {
+    public void backupDataset(String datasetName, ObjectNode response) {
         String sanitizedDatasetName = sanitiseName(datasetName);
-        ObjectNode response = OBJECT_MAPPER.createObjectNode();
         String backupPath = getBackUpDir();
         int backupID = getNextDirectoryNumberAndCreate(backupPath);
         String backupIDPath = backupPath + "/" + backupID;
@@ -143,14 +144,13 @@ public class DatasetBackupService {
             String sanitizedDataAccessPointName = sanitiseName(dataAccessPointName);
             if (requestIsEmpty(sanitizedDatasetName) || sanitizedDataAccessPointName.equals(sanitizedDatasetName)) {
                 ObjectNode datasetJSON = OBJECT_MAPPER.createObjectNode();
-                datasetJSON.put("dataset-id", sanitizedDataAccessPointName);
+                datasetJSON.put("dataset-name", sanitizedDataAccessPointName);
                 applyBackUpMethods(datasetJSON, dataAccessPoint, backupIDPath + "/" + sanitizedDataAccessPointName);
                 datasetNodes.add(datasetJSON);
             }
         }
         response.set("datasets", datasetNodes);
         compressAndStoreBackupMetadata(response, backupIDPath);
-        return response;
     }
 
     /**
@@ -171,7 +171,6 @@ public class DatasetBackupService {
             } else {
                 try {
                     entry.getValue().accept(dataAccessPoint, modBackupPath, node);
-                    node.set("files", populateNodeFromDir(modBackupPath));
                 } catch (RuntimeException e) {
                     node.put("reason", e.getMessage());
                     node.put("success", false);
@@ -259,14 +258,13 @@ public class DatasetBackupService {
      * Restore the system with the files located by the ID
      *
      * @param restoreId the subdirectory to use
-     * @return a node of the results
+     * @param response a node of the results
      */
-    public ObjectNode restoreDatasets(String restoreId) {
+    public void restoreDatasets(String restoreId, ObjectNode response) {
         if (restoreId == null || restoreId.isEmpty()) {
             int highestDirNumber = getHighestDirectoryNumber(getBackUpDir());
             restoreId = String.valueOf(highestDirNumber);
        }
-        ObjectNode response = OBJECT_MAPPER.createObjectNode();
         String restorePath = getBackUpDir() + "/" + restoreId;
         response.put("restorePath", restorePath);
 
@@ -289,11 +287,9 @@ public class DatasetBackupService {
                 }
             }
         }
-
         if(DELETE_GENERATED_FILES && decompressDir) {
             cleanupDirectory(restorePath);
         }
-        return response;
     }
 
     /**
@@ -305,7 +301,7 @@ public class DatasetBackupService {
      */
     ObjectNode restoreDataset(String restorePath, String datasetName) {
         ObjectNode response = OBJECT_MAPPER.createObjectNode();
-        response.put("dataset-id", datasetName);
+        response.put("dataset-name", datasetName);
         DataAccessPoint dataAccessPoint = getDataAccessPoint(datasetName);
         if (dataAccessPoint == null || dataAccessPoint.getDataService() == null) {
             response.put("reason", datasetName + " does not exist");
@@ -365,7 +361,6 @@ public class DatasetBackupService {
             } else {
                 try {
                     entry.getValue().accept(dataAccessPoint, modRestorePath, node);
-                    node.set("files", populateNodeFromDir(modRestorePath));
                 } catch (RuntimeException e) {
                     node.put("reason", e.getMessage());
                     node.put("success", false);

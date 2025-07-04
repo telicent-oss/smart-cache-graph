@@ -105,14 +105,14 @@ public class SPARQL_Update_CQRS extends SPARQL_Update {
             ActionLib.consumeBody(action);
             abortSilent(action);
             String msg = messageForParseException(ex);
-            action.log.warn(format("[%d] Parse error: %s", action.id, msg));
+            action.log.warn("[{}] Parse error: {}", action.id, msg);
             ServletOps.errorBadRequest(messageForException(ex));
         } catch (QueryBuildException|QueryExceptionHTTP ex) {
             ActionLib.consumeBody(action);
             abortSilent(action);
             // Counter inc'ed further out.
             String msg = messageForException(ex);
-            action.log.warn(format("[%d] Bad request: %s", action.id, msg));
+            action.log.warn("[{}] Bad request: {}", action.id, msg);
             ServletOps.errorBadRequest(messageForException(ex));
         } catch (OperationDeniedException ex) {
             ActionLib.consumeBody(action);

@@ -314,7 +314,7 @@ public class TestBackupData {
      * Extension of the Backup Module for testing purposes.
      * Uses a test instance of actual back up service.
      */
-    public class FMod_BackupData_Test extends FMod_BackupData {
+    public static class FMod_BackupData_Test extends FMod_BackupData {
 
         @Override
         DatasetBackupService getBackupService(DataAccessPointRegistry dapRegistry) {
@@ -326,7 +326,7 @@ public class TestBackupData {
      * Extension of the Backup Module for testing purposes.
      * Causes a null pointer exception to be thrown.
      */
-    public class FMod_BackupData_Null extends FMod_BackupData {
+    public static class FMod_BackupData_Null extends FMod_BackupData {
 
         @Override
         DatasetBackupService getBackupService(DataAccessPointRegistry dapRegistry) {

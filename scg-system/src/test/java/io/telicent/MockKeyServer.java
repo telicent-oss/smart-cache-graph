@@ -87,7 +87,7 @@ public class MockKeyServer {
         return this.privateKeys.getKeys()
                                .stream()
                                .filter(k -> Objects.equals(k.getId(), keyId))
-                               .map(k -> k.toKey())
+                               .map(Jwk::toKey)
                                .findFirst()
                                .orElse(null);
     }
