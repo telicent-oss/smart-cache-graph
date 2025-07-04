@@ -20,6 +20,8 @@ import ch.qos.logback.classic.Level;
 
 public class CtlLogback {
 
+    private CtlLogback() {}
+
     public static void withLevel(org.slf4j.Logger logger, String execLevel, Runnable action) {
         String currentLevel = setLevel(logger, execLevel);
         try {

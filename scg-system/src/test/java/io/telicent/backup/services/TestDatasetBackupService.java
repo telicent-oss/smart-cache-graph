@@ -168,7 +168,8 @@ public class TestDatasetBackupService {
         when(mockRegistry.accessPoints()).thenReturn(List.of(dap));
 
         // when
-        ObjectNode result = cut.backupDataset(datasetName);
+        ObjectNode result = OBJECT_MAPPER.createObjectNode();
+        cut.backupDataset(datasetName, result);
 
         // then
         assertTrue(result.has("backup-id"));
@@ -188,7 +189,8 @@ public class TestDatasetBackupService {
         when(mockRegistry.accessPoints()).thenReturn(emptyList());
 
         // when
-        ObjectNode result = cut.backupDataset(datasetName);
+        ObjectNode result = OBJECT_MAPPER.createObjectNode();
+        cut.backupDataset(datasetName, result);
 
         // then
         assertTrue(result.has("backup-id"));
@@ -216,7 +218,8 @@ public class TestDatasetBackupService {
         when(mockRegistry.accessPoints()).thenReturn(List.of(dap, dap2));
 
         // when
-        ObjectNode result = cut.backupDataset(datasetName);
+        ObjectNode result = OBJECT_MAPPER.createObjectNode();
+        cut.backupDataset(datasetName, result);
 
         // then
         assertTrue(result.has("backup-id"));
@@ -226,9 +229,9 @@ public class TestDatasetBackupService {
         assertEquals(1, result.get("datasets").size());
         ArrayNode datasets = (ArrayNode) result.get("datasets");
         JsonNode dataset = datasets.get(0);
-        assertTrue(dataset.has("dataset-id"));
-        assertTrue(dataset.get("dataset-id").isTextual());
-        assertEquals(datasetName, dataset.get("dataset-id").asText());
+        assertTrue(dataset.has("dataset-name"));
+        assertTrue(dataset.get("dataset-name").isTextual());
+        assertEquals(datasetName, dataset.get("dataset-name").asText());
 
         assertTrue(dataset.has("tdb"));
         JsonNode tdbNode = dataset.get("tdb");
@@ -270,7 +273,8 @@ public class TestDatasetBackupService {
         when(mockRegistry.accessPoints()).thenReturn(List.of(dap, dap2));
 
         // when
-        ObjectNode result = cut.backupDataset(datasetName);
+        ObjectNode result = OBJECT_MAPPER.createObjectNode();
+        cut.backupDataset(datasetName, result);
 
         // then
         assertTrue(result.has("backup-id"));
@@ -280,9 +284,9 @@ public class TestDatasetBackupService {
         assertEquals(1, result.get("datasets").size());
         ArrayNode datasets = (ArrayNode) result.get("datasets");
         JsonNode dataset = datasets.get(0);
-        assertTrue(dataset.has("dataset-id"));
-        assertTrue(dataset.get("dataset-id").isTextual());
-        assertEquals(datasetName, dataset.get("dataset-id").asText());
+        assertTrue(dataset.has("dataset-name"));
+        assertTrue(dataset.get("dataset-name").isTextual());
+        assertEquals(datasetName, dataset.get("dataset-name").asText());
 
         assertTrue(dataset.has("tdb"));
         JsonNode tdbNode = dataset.get("tdb");
@@ -314,7 +318,8 @@ public class TestDatasetBackupService {
         when(mockRegistry.accessPoints()).thenReturn(List.of(dap, dap2));
 
         // when
-        ObjectNode result = cut.backupDataset(null);
+        ObjectNode result = OBJECT_MAPPER.createObjectNode();
+        cut.backupDataset(null, result);
 
         // then
         assertTrue(result.has("backup-id"));
@@ -325,9 +330,9 @@ public class TestDatasetBackupService {
         ArrayNode datasets = (ArrayNode) result.get("datasets");
 
         JsonNode dataset = datasets.get(0);
-        assertTrue(dataset.has("dataset-id"));
-        assertTrue(dataset.get("dataset-id").isTextual());
-        assertEquals(datasetName, dataset.get("dataset-id").asText());
+        assertTrue(dataset.has("dataset-name"));
+        assertTrue(dataset.get("dataset-name").isTextual());
+        assertEquals(datasetName, dataset.get("dataset-name").asText());
 
         assertTrue(dataset.has("tdb"));
         JsonNode tdbNode = dataset.get("tdb");
@@ -340,9 +345,9 @@ public class TestDatasetBackupService {
         assertTrue(labelsNode.get("success").asBoolean());
 
         dataset = datasets.get(1);
-        assertTrue(dataset.has("dataset-id"));
-        assertTrue(dataset.get("dataset-id").isTextual());
-        assertEquals(datasetName2, dataset.get("dataset-id").asText());
+        assertTrue(dataset.has("dataset-name"));
+        assertTrue(dataset.get("dataset-name").isTextual());
+        assertEquals(datasetName2, dataset.get("dataset-name").asText());
 
         assertTrue(dataset.has("tdb"));
         tdbNode = dataset.get("tdb");
@@ -367,7 +372,8 @@ public class TestDatasetBackupService {
         when(mockRegistry.accessPoints()).thenReturn(List.of(dap));
 
         // when
-        ObjectNode result = cut.backupDataset(datasetName);
+        ObjectNode result = OBJECT_MAPPER.createObjectNode();
+        cut.backupDataset(datasetName, result);
 
         // then
         assertTrue(result.has("backup-id"));
@@ -377,9 +383,9 @@ public class TestDatasetBackupService {
         assertEquals(1, result.get("datasets").size());
         ArrayNode datasets = (ArrayNode) result.get("datasets");
         JsonNode dataset = datasets.get(0);
-        assertTrue(dataset.has("dataset-id"));
-        assertTrue(dataset.get("dataset-id").isTextual());
-        assertEquals(datasetName, dataset.get("dataset-id").asText());
+        assertTrue(dataset.has("dataset-name"));
+        assertTrue(dataset.get("dataset-name").isTextual());
+        assertEquals(datasetName, dataset.get("dataset-name").asText());
 
         assertTrue(dataset.has("tdb"));
         JsonNode tdbNode = dataset.get("tdb");
@@ -409,7 +415,8 @@ public class TestDatasetBackupService {
         when(mockRegistry.accessPoints()).thenReturn(List.of(dap));
 
         // when
-        ObjectNode result = cut.backupDataset(datasetName);
+        ObjectNode result = OBJECT_MAPPER.createObjectNode();
+        cut.backupDataset(datasetName, result);
 
         // then
         assertTrue(result.has("backup-id"));
@@ -419,10 +426,10 @@ public class TestDatasetBackupService {
         assertEquals(1, result.get("datasets").size());
         ArrayNode datasets = (ArrayNode) result.get("datasets");
         JsonNode dataset = datasets.get(0);
-        assertTrue(dataset.has("dataset-id"));
-        assertTrue(dataset.get("dataset-id").isTextual());
-        assertEquals(datasetName, dataset.get("dataset-id").asText());
-        assertTrue(dataset.get("dataset-id").isTextual());
+        assertTrue(dataset.has("dataset-name"));
+        assertTrue(dataset.get("dataset-name").isTextual());
+        assertEquals(datasetName, dataset.get("dataset-name").asText());
+        assertTrue(dataset.get("dataset-name").isTextual());
 
         assertTrue(dataset.has("tdb"));
         JsonNode tdbNode = dataset.get("tdb");
@@ -449,7 +456,8 @@ public class TestDatasetBackupService {
         DatasetBackupService_Test.setupExceptionForMethod(BACKUP_TDB, "Test Jena Failure");
 
         // when
-        ObjectNode result = cut.backupDataset(datasetName);
+        ObjectNode result = OBJECT_MAPPER.createObjectNode();
+        cut.backupDataset(datasetName, result);
 
         // then
         assertTrue(result.has("backup-id"));
@@ -459,9 +467,9 @@ public class TestDatasetBackupService {
         assertEquals(1, result.get("datasets").size());
         ArrayNode datasets = (ArrayNode) result.get("datasets");
         JsonNode dataset = datasets.get(0);
-        assertTrue(dataset.has("dataset-id"));
-        assertTrue(dataset.get("dataset-id").isTextual());
-        assertEquals(datasetName, dataset.get("dataset-id").asText());
+        assertTrue(dataset.has("dataset-name"));
+        assertTrue(dataset.get("dataset-name").isTextual());
+        assertEquals(datasetName, dataset.get("dataset-name").asText());
 
         assertTrue(dataset.has("tdb"));
         JsonNode tdbNode = dataset.get("tdb");
@@ -495,7 +503,8 @@ public class TestDatasetBackupService {
         DatasetBackupService_Test.setupExceptionForMethod(BACKUP_LABELS, "Test Rocks DB Failure");
 
         // when
-        ObjectNode result = cut.backupDataset(datasetName);
+        ObjectNode result = OBJECT_MAPPER.createObjectNode();
+        cut.backupDataset(datasetName, result);
 
         // then
         assertTrue(result.has("backup-id"));
@@ -505,9 +514,9 @@ public class TestDatasetBackupService {
         assertEquals(1, result.get("datasets").size());
         ArrayNode datasets = (ArrayNode) result.get("datasets");
         JsonNode dataset = datasets.get(0);
-        assertTrue(dataset.has("dataset-id"));
-        assertTrue(dataset.get("dataset-id").isTextual());
-        assertEquals(datasetName, dataset.get("dataset-id").asText());
+        assertTrue(dataset.has("dataset-name"));
+        assertTrue(dataset.get("dataset-name").isTextual());
+        assertEquals(datasetName, dataset.get("dataset-name").asText());
 
         assertTrue(dataset.has("tdb"));
         JsonNode tdbNode = dataset.get("tdb");
@@ -578,7 +587,8 @@ public class TestDatasetBackupService {
         // given
         String missingID = "does_not_exist";
         // when
-        ObjectNode result = cut.restoreDatasets(missingID);
+        ObjectNode result = OBJECT_MAPPER.createObjectNode();
+        cut.restoreDatasets(missingID, result);
         // then
         assertTrue(result.has("restorePath"));
         assertTrue(result.has("success"));
@@ -600,7 +610,8 @@ public class TestDatasetBackupService {
         newDir.deleteOnExit();
 
         // when
-        ObjectNode result = cut.restoreDatasets(emptyID);
+        ObjectNode result = OBJECT_MAPPER.createObjectNode();
+        cut.restoreDatasets(emptyID, result);
         // then
         assertTrue(result.has("restorePath"));
         assertTrue(result.has("success"));
@@ -630,7 +641,9 @@ public class TestDatasetBackupService {
         when(mockRegistry.get(anyString())).thenReturn(null);
 
         // when
-        ObjectNode result = cut.restoreDatasets(restoreID);
+        ObjectNode result = OBJECT_MAPPER.createObjectNode();
+        cut.restoreDatasets(restoreID, result);
+
         // then
         assertTrue(result.has("restorePath"));
         assertFalse(result.has("success"));
@@ -683,15 +696,16 @@ public class TestDatasetBackupService {
         when(mockRegistry.get("dataset-name")).thenReturn(dap);
 
         // when
-        ObjectNode result = cut.restoreDatasets(restoreID);
+        ObjectNode result = OBJECT_MAPPER.createObjectNode();
+        cut.restoreDatasets(restoreID, result);
 
         // then
         assertTrue(result.has("restorePath"));
         assertFalse(result.has("success"));
         assertTrue(result.has(datasetName));
         JsonNode dataset = result.get(datasetName);
-        assertTrue(dataset.has("dataset-id"));
-        assertEquals(dataset.get("dataset-id").asText(), datasetName);
+        assertTrue(dataset.has("dataset-name"));
+        assertEquals(dataset.get("dataset-name").asText(), datasetName);
 
         assertTrue(dataset.has("tdb"));
         JsonNode tdb = dataset.get("tdb");
@@ -747,15 +761,16 @@ public class TestDatasetBackupService {
         when(mockRegistry.get("dataset-name")).thenReturn(dap);
 
         // when
-        ObjectNode result = cut.restoreDatasets(null);
+        ObjectNode result = OBJECT_MAPPER.createObjectNode();
+        cut.restoreDatasets(null, result);
 
         // then
         assertTrue(result.has("restorePath"));
         assertFalse(result.has("success"));
         assertTrue(result.has(datasetName));
         JsonNode dataset = result.get(datasetName);
-        assertTrue(dataset.has("dataset-id"));
-        assertEquals(dataset.get("dataset-id").asText(), datasetName);
+        assertTrue(dataset.has("dataset-name"));
+        assertEquals(dataset.get("dataset-name").asText(), datasetName);
 
         assertTrue(dataset.has("tdb"));
         JsonNode tdb = dataset.get("tdb");
@@ -838,18 +853,18 @@ public class TestDatasetBackupService {
         when(mockRegistry.get("dataset-name")).thenReturn(dap);
         when(mockRegistry.get("second-dataset-name")).thenReturn(dap2);
 
-        ObjectNode result = cut.restoreDatasets(null);
-        System.out.println(result);
+        ObjectNode result = OBJECT_MAPPER.createObjectNode();
+        cut.restoreDatasets(null, result);
 
         // then
         assertTrue(result.has("restorePath"));
         String restorePath = result.get("restorePath").asText();
-        System.out.println(restorePath);
+
         assertFalse(result.has("success"));
         assertTrue(result.has(datasetName));
         JsonNode dataset = result.get(datasetName);
-        assertTrue(dataset.has("dataset-id"));
-        assertEquals(dataset.get("dataset-id").asText(), datasetName);
+        assertTrue(dataset.has("dataset-name"));
+        assertEquals(dataset.get("dataset-name").asText(), datasetName);
 
         assertTrue(dataset.has("tdb"));
         JsonNode tdb = dataset.get("tdb");
@@ -916,15 +931,17 @@ public class TestDatasetBackupService {
         when(mockRegistry.get("dataset-name")).thenReturn(dap);
 
         // when
-        ObjectNode result = cut.restoreDatasets(restoreID);
+        ObjectNode result = OBJECT_MAPPER.createObjectNode();
+        cut.restoreDatasets(restoreID, result);
+
 
         // then
         assertTrue(result.has("restorePath"));
         assertFalse(result.has("success"));
         assertTrue(result.has(datasetName));
         JsonNode dataset = result.get(datasetName);
-        assertTrue(dataset.has("dataset-id"));
-        assertEquals(dataset.get("dataset-id").asText(), datasetName);
+        assertTrue(dataset.has("dataset-name"));
+        assertEquals(dataset.get("dataset-name").asText(), datasetName);
 
         assertTrue(dataset.has("tdb"));
         JsonNode tdb = dataset.get("tdb");
@@ -967,15 +984,16 @@ public class TestDatasetBackupService {
         when(mockRegistry.get("dataset-name")).thenReturn(dap);
 
         // when
-        ObjectNode result = cut.restoreDatasets(restoreID);
+        ObjectNode result = OBJECT_MAPPER.createObjectNode();
+        cut.restoreDatasets(restoreID, result);
 
         // then
         assertTrue(result.has("restorePath"));
         assertFalse(result.has("success"));
         assertTrue(result.has(datasetName));
         JsonNode dataset = result.get(datasetName);
-        assertTrue(dataset.has("dataset-id"));
-        assertEquals(dataset.get("dataset-id").asText(), datasetName);
+        assertTrue(dataset.has("dataset-name"));
+        assertEquals(dataset.get("dataset-name").asText(), datasetName);
 
         assertTrue(dataset.has("tdb"));
         JsonNode tdb = dataset.get("tdb");
@@ -1021,15 +1039,16 @@ public class TestDatasetBackupService {
         when(mockRegistry.get("dataset-name")).thenReturn(dap);
 
         // when
-        ObjectNode result = cut.restoreDatasets(null);
+        ObjectNode result = OBJECT_MAPPER.createObjectNode();
+        cut.restoreDatasets(null, result);
 
         // then
         assertTrue(result.has("restorePath"));
         assertFalse(result.has("success"));
         assertTrue(result.has(datasetName));
         JsonNode dataset = result.get(datasetName);
-        assertTrue(dataset.has("dataset-id"));
-        assertEquals(dataset.get("dataset-id").asText(), datasetName);
+        assertTrue(dataset.has("dataset-name"));
+        assertEquals(dataset.get("dataset-name").asText(), datasetName);
 
         assertTrue(dataset.has("tdb"));
         JsonNode tdb = dataset.get("tdb");
@@ -1087,15 +1106,17 @@ public class TestDatasetBackupService {
         when(mockRegistry.get("dataset-name")).thenReturn(dap);
 
         // when
-        ObjectNode result = cut.restoreDatasets(null);
+        ObjectNode result = OBJECT_MAPPER.createObjectNode();
+        cut.restoreDatasets(null, result);
+
 
         // then
         assertTrue(result.has("restorePath"));
         assertFalse(result.has("success"));
         assertTrue(result.has(datasetName));
         JsonNode dataset = result.get(datasetName);
-        assertTrue(dataset.has("dataset-id"));
-        assertEquals(dataset.get("dataset-id").asText(), datasetName);
+        assertTrue(dataset.has("dataset-name"));
+        assertEquals(dataset.get("dataset-name").asText(), datasetName);
 
         assertTrue(dataset.has("tdb"));
         JsonNode tdb = dataset.get("tdb");
@@ -1157,15 +1178,16 @@ public class TestDatasetBackupService {
         DatasetBackupService_Test.setupExceptionForMethod(RESTORE_LABELS, "Failure");
 
         // when
-        ObjectNode result = cut.restoreDatasets(restoreID);
+        ObjectNode result = OBJECT_MAPPER.createObjectNode();
+        cut.restoreDatasets(restoreID, result);
 
         // then
         assertTrue(result.has("restorePath"));
         assertFalse(result.has("success"));
         assertTrue(result.has(datasetName));
         JsonNode dataset = result.get(datasetName);
-        assertTrue(dataset.has("dataset-id"));
-        assertEquals(dataset.get("dataset-id").asText(), datasetName);
+        assertTrue(dataset.has("dataset-name"));
+        assertEquals(dataset.get("dataset-name").asText(), datasetName);
 
         assertEquals(0, DatasetBackupService_Test.getCallCount(RESTORE_TDB));
         assertEquals(0, DatasetBackupService_Test.getCallCount(RESTORE_LABELS));
@@ -1208,15 +1230,16 @@ public class TestDatasetBackupService {
         DatasetBackupService_Test.setupExceptionForMethod(RESTORE_LABELS, "Failure");
 
         // when
-        ObjectNode result = cut.restoreDatasets(restoreID);
+        ObjectNode result = OBJECT_MAPPER.createObjectNode();
+        cut.restoreDatasets(restoreID, result);
 
         // then
         assertTrue(result.has("restorePath"));
         assertFalse(result.has("success"));
         assertTrue(result.has(datasetName));
         JsonNode dataset = result.get(datasetName);
-        assertTrue(dataset.has("dataset-id"));
-        assertEquals(dataset.get("dataset-id").asText(), datasetName);
+        assertTrue(dataset.has("dataset-name"));
+        assertEquals(dataset.get("dataset-name").asText(), datasetName);
 
         assertEquals(0, DatasetBackupService_Test.getCallCount(RESTORE_TDB));
         assertEquals(0, DatasetBackupService_Test.getCallCount(RESTORE_LABELS));
@@ -1254,15 +1277,16 @@ public class TestDatasetBackupService {
         when(mockRegistry.get("dataset-name")).thenReturn(dap);
 
         // when
-        ObjectNode result = cut.restoreDatasets(restoreID);
+        ObjectNode result = OBJECT_MAPPER.createObjectNode();
+        cut.restoreDatasets(restoreID, result);
 
         // then
         assertTrue(result.has("restorePath"));
         assertFalse(result.has("success"));
         assertTrue(result.has(datasetName));
         JsonNode dataset = result.get(datasetName);
-        assertTrue(dataset.has("dataset-id"));
-        assertEquals(dataset.get("dataset-id").asText(), datasetName);
+        assertTrue(dataset.has("dataset-name"));
+        assertEquals(dataset.get("dataset-name").asText(), datasetName);
 
         assertTrue(dataset.has("tdb"));
         JsonNode tdb = dataset.get("tdb");
@@ -1313,15 +1337,17 @@ public class TestDatasetBackupService {
         when(mockRegistry.get("dataset-name")).thenReturn(dap);
 
         // when
-        ObjectNode result = cut.restoreDatasets(null);
+        ObjectNode result = OBJECT_MAPPER.createObjectNode();
+        cut.restoreDatasets(null, result);
+
 
         // then
         assertTrue(result.has("restorePath"));
         assertFalse(result.has("success"));
         assertTrue(result.has(datasetName));
         JsonNode dataset = result.get(datasetName);
-        assertTrue(dataset.has("dataset-id"));
-        assertEquals(dataset.get("dataset-id").asText(), datasetName);
+        assertTrue(dataset.has("dataset-name"));
+        assertEquals(dataset.get("dataset-name").asText(), datasetName);
 
         assertTrue(dataset.has("tdb"));
         JsonNode tdb = dataset.get("tdb");
@@ -1380,15 +1406,16 @@ public class TestDatasetBackupService {
         when(mockRegistry.get("dataset-name")).thenReturn(dap);
 
         // when
-        ObjectNode result = cut.restoreDatasets(null);
+        ObjectNode result = OBJECT_MAPPER.createObjectNode();
+        cut.restoreDatasets(null, result);
 
         // then
         assertTrue(result.has("restorePath"));
         assertFalse(result.has("success"));
         assertTrue(result.has(datasetName));
         JsonNode dataset = result.get(datasetName);
-        assertTrue(dataset.has("dataset-id"));
-        assertEquals(dataset.get("dataset-id").asText(), datasetName);
+        assertTrue(dataset.has("dataset-name"));
+        assertEquals(dataset.get("dataset-name").asText(), datasetName);
 
         assertTrue(dataset.has("tdb"));
         JsonNode tdb = dataset.get("tdb");
@@ -1449,15 +1476,16 @@ public class TestDatasetBackupService {
         DatasetBackupService_Test.setupExceptionForMethod(RESTORE_LABELS, "Failure");
 
         // when
-        ObjectNode result = cut.restoreDatasets(restoreID);
+        ObjectNode result = OBJECT_MAPPER.createObjectNode();
+        cut.restoreDatasets(restoreID, result);
 
         // then
         assertTrue(result.has("restorePath"));
         assertFalse(result.has("success"));
         assertTrue(result.has(datasetName));
         JsonNode dataset = result.get(datasetName);
-        assertTrue(dataset.has("dataset-id"));
-        assertEquals(dataset.get("dataset-id").asText(), datasetName);
+        assertTrue(dataset.has("dataset-name"));
+        assertEquals(dataset.get("dataset-name").asText(), datasetName);
 
         assertTrue(dataset.has("tdb"));
         JsonNode tdb = dataset.get("tdb");
@@ -1500,15 +1528,16 @@ public class TestDatasetBackupService {
         when(mockRegistry.get("dataset-name")).thenReturn(dap);
 
         // when
-        ObjectNode result = cut.restoreDatasets(restoreID);
+        ObjectNode result = OBJECT_MAPPER.createObjectNode();
+        cut.restoreDatasets(restoreID, result);
 
         // then
         assertTrue(result.has("restorePath"));
         assertFalse(result.has("success"));
         assertTrue(result.has(datasetName));
         JsonNode dataset = result.get(datasetName);
-        assertTrue(dataset.has("dataset-id"));
-        assertEquals(dataset.get("dataset-id").asText(), datasetName);
+        assertTrue(dataset.has("dataset-name"));
+        assertEquals(dataset.get("dataset-name").asText(), datasetName);
 
         assertTrue(dataset.has("tdb"));
         JsonNode tdb = dataset.get("tdb");
@@ -1555,15 +1584,16 @@ public class TestDatasetBackupService {
         when(mockRegistry.get("dataset-name")).thenReturn(dap);
 
         // when
-        ObjectNode result = cut.restoreDatasets(null);
+        ObjectNode result = OBJECT_MAPPER.createObjectNode();
+        cut.restoreDatasets(null, result);
 
         // then
         assertTrue(result.has("restorePath"));
         assertFalse(result.has("success"));
         assertTrue(result.has(datasetName));
         JsonNode dataset = result.get(datasetName);
-        assertTrue(dataset.has("dataset-id"));
-        assertEquals(dataset.get("dataset-id").asText(), datasetName);
+        assertTrue(dataset.has("dataset-name"));
+        assertEquals(dataset.get("dataset-name").asText(), datasetName);
 
         assertTrue(dataset.has("tdb"));
         JsonNode tdb = dataset.get("tdb");
@@ -1894,7 +1924,7 @@ public class TestDatasetBackupService {
         assertTrue(RESULT_NODE.has("success"));
         assertFalse(RESULT_NODE.get("success").asBoolean());
         assertTrue(RESULT_NODE.has("reason"));
-        assertTrue(RESULT_NODE.get("reason").asText().equals("No Label Store to restore (not ABAC)"));
+        assertEquals("No Label Store to restore (not ABAC)", RESULT_NODE.get("reason").asText());
     }
 
 

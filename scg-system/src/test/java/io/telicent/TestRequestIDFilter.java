@@ -8,7 +8,6 @@ import io.telicent.smart.caches.configuration.auth.AuthConstants;
 import org.apache.jena.fuseki.main.FusekiServer;
 import org.apache.jena.http.HttpEnv;
 import org.apache.jena.sparql.core.DatasetGraphFactory;
-import org.junit.Assert;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -149,7 +148,7 @@ public class TestRequestIDFilter {
         // when
         String actual = fModRequestIDFilter.name();
         // then
-        Assert.assertEquals(expected, actual);
+        assertEquals(expected, actual);
     }
 
     @Test

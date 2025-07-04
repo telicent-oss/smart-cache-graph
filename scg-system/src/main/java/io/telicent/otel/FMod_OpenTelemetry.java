@@ -83,7 +83,7 @@ public class FMod_OpenTelemetry implements FusekiModule {
     public void configured(FusekiServer.Builder serverBuilder, DataAccessPointRegistry dapRegistry, Model configModel) {
         if ( ! ENABLED )
             return;
-        dapRegistry.accessPoints().forEach(accessPoint -> buildMetrics(accessPoint));
+        dapRegistry.accessPoints().forEach(FMod_OpenTelemetry::buildMetrics);
     }
 
     public static void buildMetrics(DataAccessPoint dap) {
