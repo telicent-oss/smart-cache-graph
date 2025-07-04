@@ -97,9 +97,8 @@ public class DatasetBackupService {
             processResponse(response, resultNode);
         } else {
             try {
-                String id = request.getPathInfo();
-                resultNode.put("id", id);
-                if (id != null) {
+                String id = sanitiseName(request.getPathInfo());
+                if (id != null && !id.isEmpty()) {
                     resultNode.put("backup-name", id);
                 } else {
                     resultNode.put("backup-name", "FULL");
@@ -559,10 +558,13 @@ public class DatasetBackupService {
         if (null == name) {
             return null;
         }
-        String cleanName = name;
         if (name.startsWith("/"))
-            cleanName=name.substring(1);
-        return fixupName(cleanName);
+            name=name.substring(1);
+
+        if (name.endsWith("/"))
+            name = name.substring(0, name.length() - 1);
+
+        return fixupName(name);
     }
 
     /**
