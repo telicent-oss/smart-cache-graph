@@ -23,6 +23,7 @@ import io.telicent.jena.abac.core.DatasetGraphABAC;
 import io.telicent.jena.abac.labels.LabelsStore;
 import io.telicent.jena.abac.labels.LabelsStoreRocksDB;
 import io.telicent.jena.abac.labels.node.LabelToNodeGenerator;
+import io.telicent.model.KeyPair;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.apache.jena.atlas.lib.DateTimeUtils;
@@ -46,16 +47,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
-import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
@@ -82,35 +78,29 @@ public class DatasetBackupService {
 
     private final EncryptionUtils encryptionUtils;
 
-    private final URL publicKeyUrl;
+    private final KeyPair keyPair;
 
     final static ConcurrentHashMap<String, TriConsumer<DataAccessPoint, String, ObjectNode>> backupConsumerMap = new ConcurrentHashMap<>();
     final static ConcurrentHashMap<String, TriConsumer<DataAccessPoint, String, ObjectNode>> restoreConsumerMap = new ConcurrentHashMap<>();
 
-    public DatasetBackupService(DataAccessPointRegistry dapRegistry, String privateKeyLocation, String publicKeyLocation, String passkey) throws URISyntaxException, IOException, PGPException {
+    public DatasetBackupService(DataAccessPointRegistry dapRegistry, KeyPair keyPair) throws URISyntaxException, IOException, PGPException {
+        LOG.info("Backup encryption is enabled.");
+        this.keyPair = keyPair;
+        this.encryptionUtils = new EncryptionUtils(keyPair.privateKeyUrl().openStream(), keyPair.passphrase());
         this.dapRegistry = dapRegistry;
         registerMethods("tdb", this::backupTDB, this::restoreTDB);
         registerMethods("labels", this::backupLabelStore, this::restoreLabelStore);
         lock = new ReentrantLock();
-        if (!privateKeyLocation.isEmpty() && !publicKeyLocation.isEmpty() && !passkey.isEmpty()) {
-            LOG.info("Backup encryption is enabled.");
-            this.publicKeyUrl = new URI(publicKeyLocation).toURL();
-            final URL privateKeyUrl = new URI(privateKeyLocation).toURL();
-            encryptionUtils = new EncryptionUtils(privateKeyUrl.openStream(), passkey);
-        } else {
-            LOG.warn("Backup encryption is not enabled.");
-            this.publicKeyUrl = null;
-            encryptionUtils = null;
-        }
     }
 
     public DatasetBackupService(DataAccessPointRegistry dapRegistry) {
+        LOG.warn("Backup encryption is not enabled.");
+        this.keyPair = null;
+        this.encryptionUtils = null;
         this.dapRegistry = dapRegistry;
         registerMethods("tdb", this::backupTDB, this::restoreTDB);
         registerMethods("labels", this::backupLabelStore, this::restoreLabelStore);
         lock = new ReentrantLock();
-        this.publicKeyUrl = null;
-        this.encryptionUtils = null;
     }
 
     /**
@@ -699,7 +689,7 @@ public class DatasetBackupService {
         if (encryptionUtils != null) {
             try {
                 final Path encZipFilePath = Path.of(dirPath + ZIP_SUFFIX + ENCRYPTION_SUFFIX);
-                final Path encZipPath = encryptionUtils.encryptFile(zipFilePath, encZipFilePath, publicKeyUrl);
+                final Path encZipPath = encryptionUtils.encryptFile(zipFilePath, encZipFilePath, keyPair.publicKeyUrl());
                 LOG.debug("Successfully encrypted file: {} as {}", zipFilePath, encZipPath.toString());
                 Files.delete(zipFilePath);
             } catch (IOException | PGPException ex) {

@@ -17,6 +17,7 @@ package io.telicent.backup;
 
 import io.telicent.backup.servlets.*;
 import io.telicent.backup.services.DatasetBackupService;
+import io.telicent.model.KeyPair;
 import io.telicent.smart.cache.configuration.Configurator;
 import io.telicent.utils.SmartCacheGraphException;
 import org.apache.jena.fuseki.main.FusekiServer;
@@ -31,8 +32,10 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
+import java.security.Key;
 import java.security.Security;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * Fuseki module responsible for the creating, restoring and administration of backup-data from the server.
@@ -64,7 +67,13 @@ public class FMod_BackupData implements FusekiAutoModule {
 
     DatasetBackupService getBackupService(DataAccessPointRegistry dapRegistry) throws SmartCacheGraphException {
         try {
-            return new DatasetBackupService(dapRegistry, getPrivateKeyUrl(), getPublicKeyUrl(), getPasskey());
+            final Optional<KeyPair> keyPairOption = getKeyPairOption();
+            if(keyPairOption.isPresent()) {
+                return new DatasetBackupService(dapRegistry, keyPairOption.get());
+            } else {
+                return new DatasetBackupService(dapRegistry);
+            }
+
         } catch (IOException | PGPException | URISyntaxException ex) {
             throw new SmartCacheGraphException("Unable to initialise DatabaseBackupService due to " + ex.getMessage());
         }
@@ -102,4 +111,13 @@ public class FMod_BackupData implements FusekiAutoModule {
     private static String getPasskey() {
         return Configurator.get(new String[]{FMod_BackupData.PASSKEY}, "");
     }
+
+    private Optional<KeyPair> getKeyPairOption() throws MalformedURLException, URISyntaxException {
+        if (!getPublicKeyUrl().isEmpty() && !getPrivateKeyUrl().isEmpty() && !getPasskey().isEmpty()) {
+            return Optional.of(KeyPair.fromValues(getPrivateKeyUrl(), getPublicKeyUrl(), getPasskey()));
+        } else {
+            return Optional.empty();
+        }
+    }
+
 }
