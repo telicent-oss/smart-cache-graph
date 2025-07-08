@@ -18,10 +18,12 @@ package io.telicent.backup.services;
 
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.telicent.backup.utils.EncryptionUtils;
 import io.telicent.jena.abac.core.DatasetGraphABAC;
 import io.telicent.jena.abac.labels.LabelsStore;
 import io.telicent.jena.abac.labels.LabelsStoreRocksDB;
 import io.telicent.jena.abac.labels.node.LabelToNodeGenerator;
+import io.telicent.model.KeyPair;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.apache.jena.atlas.lib.DateTimeUtils;
@@ -40,15 +42,16 @@ import org.apache.jena.shacl.Shapes;
 import org.apache.jena.shacl.ValidationReport;
 import org.apache.jena.sparql.core.DatasetGraph;
 import org.apache.jena.system.Txn;
+import org.bouncycastle.openpgp.PGPException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
@@ -65,16 +68,35 @@ import static org.apache.jena.riot.Lang.NQUADS;
 
 public class DatasetBackupService {
 
+    public static final Logger LOG = LoggerFactory.getLogger("DatasetBackupService");
+
     private final static String BACKUP_SUFFIX = "_backup";
 
     private final ReentrantLock lock;
 
     private final DataAccessPointRegistry dapRegistry;
 
+    private final EncryptionUtils encryptionUtils;
+
+    private final KeyPair keyPair;
+
     final static ConcurrentHashMap<String, TriConsumer<DataAccessPoint, String, ObjectNode>> backupConsumerMap = new ConcurrentHashMap<>();
     final static ConcurrentHashMap<String, TriConsumer<DataAccessPoint, String, ObjectNode>> restoreConsumerMap = new ConcurrentHashMap<>();
 
+    public DatasetBackupService(DataAccessPointRegistry dapRegistry, KeyPair keyPair) throws URISyntaxException, IOException, PGPException {
+        LOG.info("Backup encryption is enabled.");
+        this.keyPair = keyPair;
+        this.encryptionUtils = new EncryptionUtils(keyPair.privateKeyUrl().openStream(), keyPair.passphrase());
+        this.dapRegistry = dapRegistry;
+        registerMethods("tdb", this::backupTDB, this::restoreTDB);
+        registerMethods("labels", this::backupLabelStore, this::restoreLabelStore);
+        lock = new ReentrantLock();
+    }
+
     public DatasetBackupService(DataAccessPointRegistry dapRegistry) {
+        LOG.warn("Backup encryption is not enabled.");
+        this.keyPair = null;
+        this.encryptionUtils = null;
         this.dapRegistry = dapRegistry;
         registerMethods("tdb", this::backupTDB, this::restoreTDB);
         registerMethods("labels", this::backupLabelStore, this::restoreLabelStore);
@@ -90,7 +112,7 @@ public class DatasetBackupService {
      */
     public void process(HttpServletRequest request, HttpServletResponse response, boolean backup) {
         // Try to acquire the lock without blocking
-        ObjectNode resultNode = OBJECT_MAPPER.createObjectNode();
+        final ObjectNode resultNode = OBJECT_MAPPER.createObjectNode();
         if (!lock.tryLock()) {
             response.setStatus(HttpServletResponse.SC_CONFLICT);
             resultNode.put("error", "Another conflicting operation is already in progress. Please try again later.");
@@ -259,18 +281,25 @@ public class DatasetBackupService {
      * @param restoreId the subdirectory to use
      * @param response a node of the results
      */
-    public void restoreDatasets(String restoreId, ObjectNode response) {
+    public void restoreDatasets(String restoreId, ObjectNode response) throws PGPException, IOException {
         if (restoreId == null || restoreId.isEmpty()) {
             int highestDirNumber = getHighestDirectoryNumber(getBackUpDir());
             restoreId = String.valueOf(highestDirNumber);
-       }
+        }
         String restorePath = getBackUpDir() + "/" + restoreId;
         response.put("restorePath", restorePath);
 
         boolean decompressDir = false;
         if (checkPathExistsAndIsFile(restorePath + ZIP_SUFFIX)) {
             unzipDirectory(restorePath + ZIP_SUFFIX, restorePath);
-            decompressDir=true;
+            decompressDir = true;
+        } else if (checkPathExistsAndIsFile(restorePath + ZIP_SUFFIX + ENCRYPTION_SUFFIX)) {
+            final Path encZipFilePath = Path.of(restorePath + ZIP_SUFFIX + ENCRYPTION_SUFFIX);
+            final Path decryptedZipPath = encryptionUtils.decryptFile(encZipFilePath, Path.of(restorePath + ZIP_SUFFIX));
+            LOG.debug("Successfully decrypted file: {} as {}", encZipFilePath, decryptedZipPath);
+            unzipDirectory(decryptedZipPath, Path.of(restorePath));
+            Files.delete(decryptedZipPath);
+            decompressDir = true;
         }
         if (!checkPathExistsAndIsDir(restorePath)) {
             response.put("reason", "Restore path unsuitable: " + restorePath);
@@ -447,13 +476,13 @@ public class DatasetBackupService {
         response.put("delete-id", deleteID);
         response.put("date", DateTimeUtils.nowAsString(DATE_FORMAT));
         response.put("deletePath", deletePath);
-        if (!checkPathExistsAndIsDir(deletePath) && !checkPathExistsAndIsFile(deletePath + JSON_INFO_SUFFIX)&& !checkPathExistsAndIsFile(deletePath + ZIP_SUFFIX)) {
+        if (!checkPathExistsAndIsDir(deletePath) && !checkPathExistsAndIsFile(deletePath + JSON_INFO_SUFFIX) && !checkPathExistsAndIsFile(deletePath + ZIP_SUFFIX)) {
             response.put("reason", "Backup path unsuitable: " + deletePath);
             response.put("success", false);
         } else {
             executeDeleteBackup(deletePath);
-            executeDeleteBackup(deletePath+ JSON_INFO_SUFFIX);
-            executeDeleteBackup(deletePath+ ZIP_SUFFIX);
+            executeDeleteBackup(deletePath + JSON_INFO_SUFFIX);
+            executeDeleteBackup(deletePath + ZIP_SUFFIX);
             deleteFilesRegEx(getBackUpDir(), deleteID + WILDCARD_REPORT_SUFFIX);
             response.put("success", true);
         }
@@ -477,7 +506,7 @@ public class DatasetBackupService {
         boolean decompressDir = false;
         if (checkPathExistsAndIsFile(validatePath + ZIP_SUFFIX)) {
             unzipDirectory(validatePath + ZIP_SUFFIX, validatePath);
-            decompressDir=true;
+            decompressDir = true;
         }
         if (!checkPathExistsAndIsDir(validatePath + datasetName)) {
             response.setStatus(HttpServletResponse.SC_NOT_FOUND);
@@ -494,7 +523,7 @@ public class DatasetBackupService {
             }
             resultNode.set("results", datasetResult);
         }
-        if(decompressDir) {
+        if (decompressDir) {
             cleanupDirectory(validatePath);
         }
         return resultNode;
@@ -551,6 +580,7 @@ public class DatasetBackupService {
 
     /**
      * Strip out any prefix forward slashes and any other dangerous characters.
+     *
      * @param name the dataset name
      * @return a cleaned up version or null if null.
      */
@@ -625,6 +655,7 @@ public class DatasetBackupService {
      * Obtain the access point from the registry.
      * We do two passes - a straight check and one
      * using the sanitised name
+     *
      * @param datasetName name
      * @return the access point
      */
@@ -642,14 +673,25 @@ public class DatasetBackupService {
     }
 
     /**
-     * Compress the files generated into a single zipped file and
-     * write a complimentary metadata file.
+     * Compress the files generated into a single zipped file and write a complimentary metadata file.
+     * If encryption is being used then also encrypt the zipped file.
+     *
      * @param response JSON object returned to client calls (and used to write metadata)
-     * @param dirPath location of files to compress
+     * @param dirPath  location of files to compress
      */
     private void compressAndStoreBackupMetadata(ObjectNode response, String dirPath) {
-        zipDirectory(dirPath, dirPath + ZIP_SUFFIX, DELETE_GENERATED_FILES);
+        final Path zipFilePath = zipDirectory(dirPath, dirPath + ZIP_SUFFIX, DELETE_GENERATED_FILES);
         writeObjectNodeToFile(response, dirPath + JSON_INFO_SUFFIX);
+        if (encryptionUtils != null) {
+            try {
+                final Path encZipFilePath = Path.of(dirPath + ZIP_SUFFIX + ENCRYPTION_SUFFIX);
+                final Path encZipPath = encryptionUtils.encryptFile(zipFilePath, encZipFilePath, keyPair.publicKeyUrl());
+                LOG.debug("Successfully encrypted file: {} as {}", zipFilePath, encZipPath.toString());
+                Files.delete(zipFilePath);
+            } catch (IOException | PGPException ex) {
+                LOG.error("Failed to encrypt backup files due to {}", ex.getMessage(), ex);
+            }
+        }
     }
 
 }

@@ -332,6 +332,7 @@ public class TestBackupData {
 
     /**
      * Debugging method for outputting response to std:out
+     *
      * @param response generated response
      */
     private void debug(HttpResponse<InputStream> response) {
@@ -340,6 +341,7 @@ public class TestBackupData {
 
     /**
      * Obtain the JSON String from the HTTP Response
+     *
      * @param response the response returned
      * @return a JSON string
      */
@@ -349,7 +351,7 @@ public class TestBackupData {
             InputStreamReader reader = new InputStreamReader(inputStream);
             Object jsonObject = OBJECT_MAPPER.readValue(reader, Object.class);
             return OBJECT_MAPPER.writeValueAsString(jsonObject);
-        }catch (IOException e) {
+        } catch (IOException e) {
             return e.getMessage();
         }
     }

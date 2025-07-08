@@ -49,18 +49,20 @@ public class CompressionUtils {
      * Zips a directory and its contents into a single ZIP file.
      * @param sourceDirPath The path to the directory to be zipped.
      * @param zipFilePath   The path where the resulting ZIP file will be created.
+     * @return the Path of the ZIP file
      */
-    public static void zipDirectory(String sourceDirPath, String zipFilePath)  {
-        zipDirectory(Path.of(sourceDirPath), Path.of(zipFilePath), false);
+    public static Path zipDirectory(String sourceDirPath, String zipFilePath)  {
+        return zipDirectory(Path.of(sourceDirPath), Path.of(zipFilePath), false);
     }
 
     /**
      * Zips a directory and its contents into a single ZIP file.
      * @param sourceDirPath The path to the directory to be zipped.
      * @param zipFilePath   The path where the resulting ZIP file will be created.
+     * @return the Path of the ZIP file
      */
-    public static void zipDirectory(String sourceDirPath, String zipFilePath, boolean deleteSource)  {
-        zipDirectory(Path.of(sourceDirPath), Path.of(zipFilePath), deleteSource);
+    public static Path zipDirectory(String sourceDirPath, String zipFilePath, boolean deleteSource)  {
+        return zipDirectory(Path.of(sourceDirPath), Path.of(zipFilePath), deleteSource);
     }
 
     /**
@@ -68,8 +70,9 @@ public class CompressionUtils {
      * @param sourceDirPath The path to the directory to be zipped.
      * @param zipFilePath   The path where the resulting ZIP file will be created.
      * @param deleteSource  If true, the source directory will be deleted upon successful zipping.
+     * @return the Path of the ZIP file
      */
-    public static void zipDirectory(Path sourceDirPath, Path zipFilePath, boolean deleteSource)  {
+    public static Path zipDirectory(Path sourceDirPath, Path zipFilePath, boolean deleteSource)  {
         Objects.requireNonNull(sourceDirPath, "Source directory path cannot be null");
         Objects.requireNonNull(zipFilePath, "ZIP file path cannot be null");
 
@@ -83,6 +86,7 @@ public class CompressionUtils {
 
             addDirToZip(sourceDirPath, sourceDirPath.toString(), zos);
             zipSuccessful = true;
+            return zipFilePath;
 
         } catch (IOException e) {
             LOG.error("Error zipping directory {}: {}", sourceDirPath, e.getMessage());

@@ -31,12 +31,14 @@ import org.apache.jena.fuseki.server.DataAccessPointRegistry;
 import org.apache.jena.fuseki.server.DataService;
 import org.apache.jena.sparql.core.DatasetGraph;
 import org.apache.jena.sparql.core.DatasetGraphFactory;
+import org.bouncycastle.openpgp.PGPException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.io.*;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
@@ -57,10 +59,7 @@ import static org.mockito.Mockito.*;
 public class TestDatasetBackupService {
 
     public final DataAccessPointRegistry mockRegistry = mock(DataAccessPointRegistry.class);
-
-
     private final DatasetBackupService cut = new DatasetBackupService_Test(mockRegistry);
-
     private final ObjectNode RESULT_NODE = OBJECT_MAPPER.createObjectNode();
     private Path baseDir;
 
@@ -253,7 +252,7 @@ public class TestDatasetBackupService {
         // given
 
         // This only needs to be a zip file (no contents required)
-        File altZip = new File(baseDir.toString() + "/1.zip");
+        File altZip = new File(baseDir.toString() + "/backup.zip");
         assertTrue(altZip.createNewFile());
         altZip.deleteOnExit();
 
@@ -553,7 +552,7 @@ public class TestDatasetBackupService {
 
     @Test
     @DisplayName("Happy path for executing backup of Label Store")
-    public void test_executeBackupLabelStore_happyPath() {
+    public void test_executeBackupLabelStore_happyPath() throws Exception {
         // given
         LabelsStoreRocksDB mockRocksDB = mock(LabelsStoreRocksDB.class);
         DatasetBackupService datasetBackupService = new DatasetBackupService(null);
@@ -583,7 +582,7 @@ public class TestDatasetBackupService {
 
     @Test
     @DisplayName("Restore datasets when the directory is wrong/missing")
-    public void test_restoreDatasets_wrongDir() {
+    public void test_restoreDatasets_wrongDir() throws Exception {
         // given
         String missingID = "does_not_exist";
         // when
@@ -602,7 +601,7 @@ public class TestDatasetBackupService {
 
     @Test
     @DisplayName("Restore datasets when there are no backups in the directory")
-    public void test_restoreDatasets_NoBackups() {
+    public void test_restoreDatasets_NoBackups() throws Exception {
         // given
         String emptyID = "empty_dir";
         File newDir = new File(baseDir.toString() + "/" + emptyID);
@@ -626,7 +625,7 @@ public class TestDatasetBackupService {
 
     @Test
     @DisplayName("Restore datasets when no matching dataset is found")
-    public void test_restoreDatasets_NoMatch() {
+    public void test_restoreDatasets_NoMatch() throws Exception {
         // given
         String restoreID = "1";
         File newDir = new File(baseDir.toString() + "/" + restoreID);
@@ -658,7 +657,7 @@ public class TestDatasetBackupService {
 
     @Test
     @DisplayName("Restore datasets with ABAC and RocksDB labels (happy path)")
-    public void test_restoreDatasets_abac_rocksDB() throws IOException {
+    public void test_restoreDatasets_abac_rocksDB() throws Exception {
         // given
         String restoreID = "1";
         File newDir = new File(baseDir.toString() + "/" + restoreID);
@@ -723,7 +722,7 @@ public class TestDatasetBackupService {
 
     @Test
     @DisplayName("Restore datasets with ABAC and RocksDB labels without passing the backupID to the restore method")
-    public void test_restoreDatasets_abac_rocksDB_no_arg() throws IOException {
+    public void test_restoreDatasets_abac_rocksDB_no_arg() throws Exception {
         // given
         String restoreID = "1";
         File newDir = new File(baseDir.toString() + "/" + restoreID);
@@ -788,7 +787,7 @@ public class TestDatasetBackupService {
 
     @Test
     @DisplayName("Restore datasets with ABAC and RocksDB labels without passing the backupID to the restore method (multiple entries)")
-    public void test_backupRestoreDatasets_abac_rocksDB_no_arg_multiple_entries() throws IOException {
+    public void test_backupRestoreDatasets_abac_rocksDB_no_arg_multiple_entries() throws Exception {
         // given
         File altDir = new File(baseDir.toString() + "/1");
         assertTrue(altDir.mkdir());
@@ -882,7 +881,7 @@ public class TestDatasetBackupService {
 
     @Test
     @DisplayName("Restore datasets with ABAC and RocksDB labels (multiple entries)")
-    public void test_restoreDatasets_abac_rocksDB_multiple_entries() throws IOException {
+    public void test_restoreDatasets_abac_rocksDB_multiple_entries() throws Exception {
         // given
 
         // This only needs to be a directory (no contents required)
@@ -959,7 +958,7 @@ public class TestDatasetBackupService {
 
     @Test
     @DisplayName("Restore datasets when the dataset is not ABAC DSG")
-    public void test_restoreDatasets_not_abac_dsg() throws IOException {
+    public void test_restoreDatasets_not_abac_dsg() throws Exception {
         // given
         String restoreID = "1";
         File newDir = new File(baseDir.toString() + "/" + restoreID);
@@ -1014,7 +1013,7 @@ public class TestDatasetBackupService {
 
     @Test
     @DisplayName("Restore datasets without ABAC DSG without passing the backupID to the restore method")
-    public void test_restoreDatasets_not_abac_dsg_no_arg() throws IOException {
+    public void test_restoreDatasets_not_abac_dsg_no_arg() throws Exception {
         // given
         String restoreID = "1";
         File newDir = new File(baseDir.toString() + "/" + restoreID);
@@ -1069,7 +1068,7 @@ public class TestDatasetBackupService {
 
     @Test
     @DisplayName("Restore datasets without ABAC DSG without passing the backupID to the restore method (multiple entries)")
-    public void test_restoreDatasets_not_abac_dsg_no_arg_multiple_entries() throws IOException {
+    public void test_restoreDatasets_not_abac_dsg_no_arg_multiple_entries() throws Exception {
         // given
         File altDir = new File(baseDir.toString() + "/1");
         assertTrue(altDir.mkdir());
@@ -1138,7 +1137,7 @@ public class TestDatasetBackupService {
 
     @Test
     @DisplayName("Restore datasets when an exception occurs during restore process")
-    public void test_restoreDatasets_exception() throws IOException {
+    public void test_restoreDatasets_exception() throws Exception {
         // given
         String restoreID = "1";
         File newDir = new File(baseDir.toString() + "/" + restoreID);
@@ -1195,7 +1194,7 @@ public class TestDatasetBackupService {
 
     @Test
     @DisplayName("Restore datasets when DataAccessPoint is invalid")
-    public void test_restoreDatasets_invalidDataAccessPoint() throws IOException {
+    public void test_restoreDatasets_invalidDataAccessPoint() throws Exception {
         // given
         String restoreID = "1";
         File newDir = new File(baseDir.toString() + "/" + restoreID);
@@ -1247,7 +1246,7 @@ public class TestDatasetBackupService {
 
     @Test
     @DisplayName("Restore datasets with ABAC DSG but not RocksDB")
-    public void test_restoreDatasets_abac_dsg_not_rocksdb() throws IOException {
+    public void test_restoreDatasets_abac_dsg_not_rocksdb() throws Exception {
         // given
         String restoreID = "1";
         File newDir = new File(baseDir.toString() + "/" + restoreID);
@@ -1307,7 +1306,7 @@ public class TestDatasetBackupService {
 
     @Test
     @DisplayName("Restore datasets with ABAC but not RocksDB without passing the backupID to the restore method")
-    public void test_restoreDatasets_abac_dsg_not_rocksdb_no_arg() throws IOException {
+    public void test_restoreDatasets_abac_dsg_not_rocksdb_no_arg() throws Exception {
         // given
         String restoreID = "1";
         File newDir = new File(baseDir.toString() + "/" + restoreID);
@@ -1368,7 +1367,7 @@ public class TestDatasetBackupService {
 
     @Test
     @DisplayName("Restore datasets with ABAC but not RocksDB without passing the backupID to the restore method (multiple entries)")
-    public void test_restoreDatasets_abac_dsg_not_rocksdb_no_arg_multiple_entries() throws IOException {
+    public void test_restoreDatasets_abac_dsg_not_rocksdb_no_arg_multiple_entries() throws Exception {
         // given
         File altDir = new File(baseDir.toString() + "/1");
         assertTrue(altDir.mkdir());
@@ -1436,7 +1435,7 @@ public class TestDatasetBackupService {
 
     @Test
     @DisplayName("Restore datasets with ABAC and RocksDB labels when exceptions occur")
-    public void test_restoreDatasets_abac_rocksDB_exceptions() throws IOException {
+    public void test_restoreDatasets_abac_rocksDB_exceptions() throws Exception {
         // given
         String restoreID = "1";
         File newDir = new File(baseDir.toString() + "/" + restoreID);
@@ -1503,7 +1502,7 @@ public class TestDatasetBackupService {
 
     @Test
     @DisplayName("Restore datasets with ABAC and RocksDB labels when no backup files are found")
-    public void test_restoreDatasets_abac_rocksDB_noFiles() {
+    public void test_restoreDatasets_abac_rocksDB_noFiles() throws Exception {
         // given
         String restoreID = "1";
         File newDir = new File(baseDir.toString() + "/" + restoreID);
@@ -1559,7 +1558,7 @@ public class TestDatasetBackupService {
 
     @Test
     @DisplayName("Restore datasets with ABAC and RocksDB labels when no backup files are found and without passing the backupID to the restore method")
-    public void test_restoreDatasets_abac_rocksDB_noFiles_no_arg() {
+    public void test_restoreDatasets_abac_rocksDB_noFiles_no_arg() throws Exception {
         // given
         String restoreID = "1";
         File newDir = new File(baseDir.toString() + "/" + restoreID);
