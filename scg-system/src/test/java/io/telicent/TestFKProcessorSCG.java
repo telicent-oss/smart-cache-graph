@@ -344,11 +344,9 @@ class TestFKProcessorSCG {
             checkDatasetSize(dsgBase, 0);
 
             // Warning - not an error.
-            LibTestsSCG.withLevel(FusekiKafka.LOG, "ERROR", ()->{
-                processorRequest(proc, """
-                        A <http://ex/s2> <http://ex/p> "triple2" <http://ex/namedGraph> .
-                        """, WebContent.contentTypePatch, attrPermit);
-            });
+            LibTestsSCG.withLevel(FusekiKafka.LOG, "ERROR", ()-> processorRequest(proc, """
+                    A <http://ex/s2> <http://ex/p> "triple2" <http://ex/namedGraph> .
+                    """, WebContent.contentTypePatch, attrPermit));
             checkDatasetSize(dsgBase, 1);
             long c1 = count(URLauthz, queryAll, userPermit);
             assertEquals(0L, c1);
@@ -365,9 +363,7 @@ class TestFKProcessorSCG {
         TestAction action = (FKProcessor proc, FusekiServer server, DatasetGraph dsgBase) -> {
             String URLauthz = server.datasetURL(dsName);
             checkDatasetSize(dsgBase, 0);
-            LibTestsSCG.withLevel(FusekiKafka.LOG, "FATAL", ()->{
-                processorRequest(proc, "A JUNK .", WebContent.contentTypePatch, null);
-            });
+            LibTestsSCG.withLevel(FusekiKafka.LOG, "FATAL", ()-> processorRequest(proc, "A JUNK .", WebContent.contentTypePatch, null));
             checkDatasetSize(dsgBase, 0);
 
             long c1 = count(URLauthz, queryAll, userPermit);
@@ -498,15 +494,13 @@ class TestFKProcessorSCG {
             String URLbase = server.datasetURL(dsBase);
             checkDatasetSize(dsgBase, 0);
 
-            LibTestsSCG.withLevel(FusekiKafka.LOG, "FATAL", ()->{
-                processorRequest(proc, """
-                        TX .
-                        PA "ex" <http://ex/> .
-                        A <http://ex/s1> <http://ex/p> "triple1" .
-                        A <http://ex/s2> <http://ex/p> "triple2" .
-                        TC .
-                        """, WebContent.contentTypePatch, attrPermit);
-            });
+            LibTestsSCG.withLevel(FusekiKafka.LOG, "FATAL", ()-> processorRequest(proc, """
+                    TX .
+                    PA "ex" <http://ex/> .
+                    A <http://ex/s1> <http://ex/p> "triple1" .
+                    A <http://ex/s2> <http://ex/p> "triple2" .
+                    TC .
+                    """, WebContent.contentTypePatch, attrPermit));
 
             long c1 = count(URL, queryAll, userPermit);
             assertEquals(0L, c1);
