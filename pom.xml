@@ -67,7 +67,7 @@
     <plugin.dependency>3.8.1</plugin.dependency>
     <plugin.deploy>3.1.4</plugin.deploy>
     <plugin.enforcer>3.4.1</plugin.enforcer>
-    <plugin.gpg>3.2.7</plugin.gpg>
+    <plugin.gpg>3.2.8</plugin.gpg>
     <plugin.install>3.1.1</plugin.install>
     <plugin.jar>3.4.2</plugin.jar>
     <plugin.jacoco>0.8.13</plugin.jacoco>
@@ -87,12 +87,12 @@
     <dependency.jena>5.4.0</dependency.jena>
     <dependency.fuseki-server>${dependency.jena}</dependency.fuseki-server>
     <dependency.graphql>0.10.4</dependency.graphql>
-    <dependency.jwt-servlet-auth>1.0.1</dependency.jwt-servlet-auth>
+    <dependency.jwt-servlet-auth>1.0.2</dependency.jwt-servlet-auth>
     <dependency.smart-caches-core>0.29.1</dependency.smart-caches-core>
 
     <!-- External dependencies -->
     <dependency.jackson>2.19.1</dependency.jackson>
-    <dependency.bouncycastle>1.78</dependency.bouncycastle>
+    <dependency.bouncycastle>1.81</dependency.bouncycastle>
     <dependency.kafka>3.9.1</dependency.kafka>
     <dependency.kotlin>2.2.0</dependency.kotlin>
     <dependency.otel>1.33.0</dependency.otel> <!-- These two must be in-step. -->
@@ -105,8 +105,8 @@
 
     <!-- Test dependencies -->
     <dependency.jmh>1.37</dependency.jmh>
-    <dependency.junit5>5.13.2</dependency.junit5>
-    <dependency.junit5-platform>1.13.2</dependency.junit5-platform>
+    <dependency.junit5>5.13.3</dependency.junit5>
+    <dependency.junit5-platform>1.13.3</dependency.junit5-platform>
     <dependency.mockito>5.18.0</dependency.mockito>
     <dependency.testcontainers>1.21.3</dependency.testcontainers>
     <dependency.yaml-config>1.0.7</dependency.yaml-config>
