@@ -529,6 +529,7 @@
           </configuration>
           <executions>
             <execution>
+              <id>build-test-jar</id>
               <goals>
                 <goal>test-jar</goal>
               </goals>
