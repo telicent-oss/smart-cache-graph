@@ -79,6 +79,7 @@
             -->
             <excludes>
               <exclude>io.opentelemetry.javaagent:*</exclude>
+              <exclude>commons-logging:commons-logging</exclude>
             </excludes>
           </artifactSet>
 
