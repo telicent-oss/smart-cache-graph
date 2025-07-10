@@ -178,7 +178,7 @@ paths:
   /$/backups/restore/{restoreId}/${datasetName}:
     post:
       summary: Restore a backup of specific dataset
-      description: Restores a dataset from a specified backup.
+      description: Restores a dataset from a specified backup (ignoring the others in the backuo).
       parameters:
         - name: restoreId
           in: path
@@ -188,8 +188,8 @@ paths:
             type: string
         - name: datasetName
           in: path
-          required: false
-          description: The name of the specific
+          required: true
+          description: The name of the specific dataset to restore.
           schema:
             type: string
       responses:
