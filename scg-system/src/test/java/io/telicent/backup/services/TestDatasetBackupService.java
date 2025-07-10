@@ -1796,14 +1796,14 @@ public class TestDatasetBackupService {
                 mockRocksDbLabelStore,
                 null,
                 null);
-        DataAccessPoint dap = new DataAccessPoint("DATASET-NAME", DataService.newBuilder().dataset(dsgABAC).build());
+        DataAccessPoint dap = new DataAccessPoint("dataset-name", DataService.newBuilder().dataset(dsgABAC).build());
 
-        when(mockRegistry.get("dataset-name")).thenReturn(null);
+        when(mockRegistry.get("DATASET-NAME")).thenReturn(null);
         when(mockRegistry.accessPoints()).thenReturn(List.of(dap));
 
         // when
         ObjectNode result = OBJECT_MAPPER.createObjectNode();
-        cut.restoreDatasets(restoreID + "/" + datasetName, result);
+        cut.restoreDatasets(restoreID + "/" + "DATASET-NAME", result);
 
         // then
         assertTrue(result.has("restorePath"));
@@ -1817,8 +1817,6 @@ public class TestDatasetBackupService {
         assertTrue(dataset.has("tdb"));
         JsonNode tdb = dataset.get("tdb");
         assertTrue(tdb.has("success"));
-        System.out.println(result);
-        System.out.println(tdb);
         assertTrue(tdb.get("success").asBoolean());
 
         assertTrue(dataset.has("labels"));
