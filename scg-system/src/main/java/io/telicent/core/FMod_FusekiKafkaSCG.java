@@ -154,7 +154,7 @@ public class FMod_FusekiKafkaSCG extends FMod_FusekiKafka {
 
     private ObjectNode backupKafkaConnection(KConnectorDesc conn, String path) {
         ObjectNode resultNode = OBJECT_MAPPER.createObjectNode();
-        String sanitizedDataset = sanitiseName(conn.getLocalDispatchPath());
+        String sanitizedDataset = fixupName(sanitiseName(conn.getLocalDispatchPath()));
         resultNode.put("name", sanitizedDataset);
         String filename = path + "/" + sanitizedDataset + ".json";
         IOX.copy(conn.getStateFile(), filename);
