@@ -1765,7 +1765,7 @@ public class TestDatasetBackupService {
     @DisplayName("Restore partial dataset with ABAC and RocksDB labels (happy path - differing case)")
     public void test_restoreDatasets_abac_rocksDB_partialDataSet_differingCase() throws Exception {
         // given
-        String restoreID = "1";
+        String restoreID = "7";
         File newDir = new File(baseDir.toString() + "/" + restoreID);
         assertTrue(newDir.mkdir());
         newDir.deleteOnExit();
@@ -1817,6 +1817,8 @@ public class TestDatasetBackupService {
         assertTrue(dataset.has("tdb"));
         JsonNode tdb = dataset.get("tdb");
         assertTrue(tdb.has("success"));
+        System.out.println(result);
+        System.out.println(tdb);
         assertTrue(tdb.get("success").asBoolean());
 
         assertTrue(dataset.has("labels"));
