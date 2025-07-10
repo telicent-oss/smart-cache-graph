@@ -175,6 +175,62 @@ paths:
                     type: string
                     description: Error message.
 
+  /$/backups/restore/{restoreId}/{datasetName}:
+    post:
+      summary: Restore a backup of specific dataset
+      description: Restores a dataset from a specified backup (ignoring the others in the backuo).
+      parameters:
+        - name: restoreId
+          in: path
+          required: true
+          description: ID of the backup to restore.
+          schema:
+            type: string
+        - name: datasetName
+          in: path
+          required: true
+          description: The name of the specific dataset to restore.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Dataset restored successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  restore-id:
+                    type: string
+                    description: ID of the restored backup.
+                  date:
+                    type: string
+                    format: date-time
+                    description: Timestamp of the restore operation.
+                  restore:
+                    type: object
+                    description: Details of the restore operation.
+        '404':
+          description: Backup not found.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Error message.
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Error message.
+
   /$/backups/delete/{deleteId}:
     post:
       summary: Delete a backup
