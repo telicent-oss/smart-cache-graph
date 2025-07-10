@@ -175,7 +175,7 @@ paths:
                     type: string
                     description: Error message.
 
-  /$/backups/restore/{restoreId}/${datasetName}:
+  /$/backups/restore/{restoreId}/{datasetName}:
     post:
       summary: Restore a backup of specific dataset
       description: Restores a dataset from a specified backup (ignoring the others in the backuo).
