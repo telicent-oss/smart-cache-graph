@@ -120,7 +120,7 @@ public class DatasetBackupService {
         } else {
             try {
                 String id = sanitiseName(request.getPathInfo());
-                if (id != null && !id.isEmpty()) {
+                if (!id.isEmpty()) {
                     resultNode.put("backup-name", id);
                 } else {
                     resultNode.put("backup-name", "FULL");
@@ -152,7 +152,6 @@ public class DatasetBackupService {
      * @param response the node to add metadata of process to
      */
     public void backupDataset(String datasetName, ObjectNode response) {
-        String sanitizedDatasetName = sanitiseName(datasetName);
         String backupPath = getBackUpDir();
         int backupID = getNextDirectoryNumberAndCreate(backupPath);
         String backupIDPath = backupPath + "/" + backupID;
@@ -163,7 +162,7 @@ public class DatasetBackupService {
         for (DataAccessPoint dataAccessPoint : dapRegistry.accessPoints()) {
             String dataAccessPointName = dataAccessPoint.getName();
             String sanitizedDataAccessPointName = sanitiseName(dataAccessPointName);
-            if (requestIsEmpty(sanitizedDatasetName) || sanitizedDataAccessPointName.equals(sanitizedDatasetName)) {
+            if (requestIsEmpty(datasetName) || sanitizedDataAccessPointName.equalsIgnoreCase(datasetName)) {
                 ObjectNode datasetJSON = OBJECT_MAPPER.createObjectNode();
                 datasetJSON.put("dataset-name", sanitizedDataAccessPointName);
                 applyBackUpMethods(datasetJSON, dataAccessPoint, backupIDPath + "/" + sanitizedDataAccessPointName);
@@ -282,7 +281,15 @@ public class DatasetBackupService {
      * @param response a node of the results
      */
     public void restoreDatasets(String restoreId, ObjectNode response) throws PGPException, IOException {
-        if (restoreId == null || restoreId.isEmpty()) {
+        String specificDatasetIfAny = "";
+        if(restoreId.contains("/")) {
+            // obtain specific dataset and strip it out.
+            int slashIndex = restoreId.indexOf('/');
+            specificDatasetIfAny = restoreId.substring(slashIndex+1);
+            restoreId = restoreId.substring(0, slashIndex);
+        }
+
+        if (restoreId.isEmpty()) {
             int highestDirNumber = getHighestDirectoryNumber(getBackUpDir());
             restoreId = String.valueOf(highestDirNumber);
         }
@@ -310,8 +317,19 @@ public class DatasetBackupService {
                 response.put("reason", "Restore path unsuitable: " + restorePath);
                 response.put("success", false);
             } else {
+                boolean noMatches = true;
+                boolean successSoFar = true;
                 for (String datasetName : datasets) {
-                    response.set(datasetName, restoreDataset(restorePath, datasetName));
+                    if (specificDatasetIfAny.isEmpty() || specificDatasetIfAny.equalsIgnoreCase(datasetName)) {
+                        noMatches = false;
+                        successSoFar = successSoFar && restoreDataset(restorePath, datasetName, response);
+                    }
+                }
+                if(noMatches) {
+                    response.put("reason", "No matches for dataset.");
+                    response.put("success", false);
+                } else {
+                    response.put("success", successSoFar);
                 }
             }
         }
@@ -325,16 +343,18 @@ public class DatasetBackupService {
      *
      * @param restorePath the location of the back-up files
      * @param datasetName the dataset to apply the changes too.
-     * @return a node with the results of the operation
+     * @param responseNode the results of the operation
+     * @return the success of the operation
      */
-    ObjectNode restoreDataset(String restorePath, String datasetName) {
+    boolean restoreDataset(String restorePath, String datasetName, ObjectNode responseNode) {
         ObjectNode response = OBJECT_MAPPER.createObjectNode();
         response.put("dataset-name", datasetName);
+        responseNode.put(datasetName, response);
         DataAccessPoint dataAccessPoint = getDataAccessPoint(datasetName);
         if (dataAccessPoint == null || dataAccessPoint.getDataService() == null) {
             response.put("reason", datasetName + " does not exist");
             response.put("success", false);
-            return response;
+            return false;
         }
         DatasetGraph dsg = dataAccessPoint.getDataService().getDataset();
         try {
@@ -343,7 +363,7 @@ public class DatasetBackupService {
             response.put("reason", ex.getMessage());
             response.put("success", false);
         }
-        return response;
+        return true;
     }
 
     /**
@@ -586,7 +606,7 @@ public class DatasetBackupService {
      */
     public static String sanitiseName(String name) {
         if (null == name) {
-            return null;
+            return "";
         }
         if (name.startsWith("/"))
             name=name.substring(1);
@@ -594,7 +614,7 @@ public class DatasetBackupService {
         if (name.endsWith("/"))
             name = name.substring(0, name.length() - 1);
 
-        return fixupName(name);
+        return name;
     }
 
     /**
@@ -665,7 +685,7 @@ public class DatasetBackupService {
             return accessPoint;
         }
         for (DataAccessPoint accessPointToCheck : dapRegistry.accessPoints()) {
-            if (sanitiseName(accessPointToCheck.getName()).equals(datasetName)) {
+            if (sanitiseName(accessPointToCheck.getName()).equalsIgnoreCase(datasetName)) {
                 return accessPointToCheck;
             }
         }
