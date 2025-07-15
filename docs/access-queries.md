@@ -71,22 +71,18 @@ Example request body:
     {
       "subject": "http://dbpedia.org/resource/London",
       "predicate": "http://dbpedia.org/ontology/populationTotal",
-      "object": [
-        {
-          "dataType": "xsd:integer",
-          "value": "8799800"
-        }
-      ]
+      "object": {
+        "dataType": "xsd:integer",
+        "value": "8799800"
+      }
     },
     {
       "subject": "http://dbpedia.org/resource/London",
       "predicate": "http://dbpedia.org/ontology/country",
-      "object": [
-        {
-          "dataType": "xsd:anyURI",
-          "value": "http://dbpedia.org/resource/United_Kingdom"
-        }
-      ]
+      "object": {
+        "dataType": "xsd:anyURI",
+        "value": "http://dbpedia.org/resource/United_Kingdom"
+      }
     }
   ]
 }

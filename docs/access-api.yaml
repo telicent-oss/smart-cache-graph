@@ -150,8 +150,8 @@ paths:
                     - subject: http://dbpedia.org/resource/London
                       predicate: http://dbpedia.org/ontology/populationTotal
                       object:
-                        - dataType: xsd:integer
-                          value: "8799800"
+                        dataType: xsd:integer
+                        value: "8799800"
                     - subject: http://dbpedia.org/resource/London
                       predicate: http://dbpedia.org/ontology/country
                       object:
@@ -159,13 +159,13 @@ paths:
                     - subject: http://dbpedia.org/resource/London
                       predicate: http://xmlns.com/foaf/0.1/homepage
                       object:
-                        - dataType: xsd:anyURI
-                          value: "https://www.london.gov.uk/"
+                        dataType: xsd:anyURI
+                        value: "https://www.london.gov.uk/"
                     - subject: http://dbpedia.org/resource/London
                       predicate: http://dbpedia.org/ontology/name
                       object:
-                        - value: "London"
-                          language: "en"
+                        value: "London"
+                        language: "en"
       responses:
         '200':
           description: Request processed successfully.
@@ -201,8 +201,8 @@ paths:
                       - subject: http://dbpedia.org/resource/London
                         predicate: http://dbpedia.org/ontology/populationTotal
                         object:
-                          - dataType: xsd:integer
-                            value: "8799800"
+                          dataType: xsd:integer
+                          value: "8799800"
                       - subject: http://dbpedia.org/resource/London
                         predicate: http://dbpedia.org/ontology/country
                         object:
@@ -210,13 +210,13 @@ paths:
                       - subject: http://dbpedia.org/resource/London
                         predicate: http://xmlns.com/foaf/0.1/homepage
                         object:
-                          - dataType: xsd:anyURI
-                            value: "https://www.london.gov.uk/"
+                          dataType: xsd:anyURI
+                          value: "https://www.london.gov.uk/"
                       - subject: http://dbpedia.org/resource/London
                         predicate: http://dbpedia.org/ontology/name
                         object:
-                          - value: "London"
-                            language: "en"
+                          value: "London"
+                          language: "en"
                     visible: true
         '400':
           description: Bad Request.

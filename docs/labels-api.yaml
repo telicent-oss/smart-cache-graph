@@ -26,10 +26,17 @@ security:
   - BearerAuth: []
   - AwsBearerAuth: []
 paths:
-  /$/labels/query:
+  /$/labels/{datasetName}:
     post:
       summary: Find security labels for a given triple
       description: Retrieves a list of the security labels for a given triple.
+      parameters:
+        - name: datasetName
+          in: path
+          required: true
+          description: The name of the dataset to look in.
+          schema:
+            type: string
       requestBody:
         description: The subject, predicate and object of the triple to retrieve security labels for.
         required: true
