@@ -87,8 +87,8 @@
     <dependency.jena>5.4.0</dependency.jena>
     <dependency.fuseki-server>${dependency.jena}</dependency.fuseki-server>
     <dependency.graphql>0.10.4</dependency.graphql>
-    <dependency.jwt-servlet-auth>1.0.2</dependency.jwt-servlet-auth>
-    <dependency.smart-caches-core>0.29.1</dependency.smart-caches-core>
+    <dependency.jwt-servlet-auth>1.0.3</dependency.jwt-servlet-auth>
+    <dependency.smart-caches-core>0.29.2</dependency.smart-caches-core>
 
     <!-- External dependencies -->
     <dependency.jackson>2.19.1</dependency.jackson>
@@ -99,7 +99,7 @@
     <dependency.otel-semconv>1.30.1-alpha</dependency.otel-semconv> <!-- These two must be in-step. -->
 
     <!-- Logging dependencies -->
-    <dependency.log4j2>2.25.0</dependency.log4j2>
+    <dependency.log4j2>2.25.1</dependency.log4j2>
     <dependency.logback>1.5.18</dependency.logback>
     <dependency.slf4j>2.0.17</dependency.slf4j>
 
