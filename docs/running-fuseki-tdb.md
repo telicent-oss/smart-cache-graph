@@ -90,9 +90,9 @@ This facility can be turned on by setting the environment variable `ENABLE_BACKU
 
 ### Encryption
 It is also possible to encrypt backup files using [PGP](https://en.wikipedia.org/wiki/Pretty_Good_Privacy) for more secure storage or transportation. In order to do this you need to provide a PGP key pair and passphrase using the following enviroment variables:
-- `PRIVATE_KEY_URL` - the URL of the private key file, for example `file:///tmp/private.asc`
-- `PUBLIC_KEY_URL` - the URL of the public key file, for example `file:///tmp/public.asc`
-- `PASSKEY` - the passphrase used when creating the key
+- `BACKUPS_PRIVATE_KEY_URL` - the URL of the private key file, for example `file:///tmp/private.asc`
+- `BACKUPS_PUBLIC_KEY_URL` - the URL of the public key file, for example `file:///tmp/public.asc`
+- `BACKUPS_PASSKEY` - the passphrase used when creating the key
 
 If these environment variables are not set, or one of them is missing, encryption will not be applied. A warning message is shown in the application log files if encryption is not enabled.
 
@@ -100,7 +100,7 @@ If you need to create a PGP key pair this can be done as follows:
 ```shell
 gpg --full-generate-key
 ``` 
-Select the default or other appropriate options and choose a passphrase - this will need to be set as the value of the `PASSKEY` environment variable. Then list the public keys:
+Select the default or other appropriate options and choose a passphrase - this will need to be set as the value of the `BACKUPS_PASSKEY` environment variable. Then list the public keys:
 ```shell
 gpg --list-keys --keyid-format=long
 ```
