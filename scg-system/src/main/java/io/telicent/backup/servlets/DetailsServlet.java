@@ -42,7 +42,9 @@ public class DetailsServlet extends HttpServlet {
         ObjectNode resultNode = OBJECT_MAPPER.createObjectNode();
         try {
             String backupId = request.getPathInfo();
-            resultNode.put("details-id", backupId);
+            //TODO
+            // do I need those here?
+            resultNode.put("backup-id", backupId);
             resultNode.put("date", DateTimeUtils.nowAsString(DATE_FORMAT));
             resultNode.set("details", backupService.getDetails(backupId));
             processResponse(response, resultNode);

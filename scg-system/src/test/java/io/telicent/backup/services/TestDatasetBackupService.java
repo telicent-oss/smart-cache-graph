@@ -155,6 +155,36 @@ public class TestDatasetBackupService {
         assertNotEquals("{}", result.toString());
     }
 
+    //TODO
+    // refine
+    @Test
+    @DisplayName("Return the details of a backup")
+    public void test_backupDetails_contents() throws IOException {
+        // given
+        Path parent = baseDir.getParent();
+        BackupUtils.dirBackups = parent.toAbsolutePath().toString();
+        String backupId = "1";
+
+        String datasetName = "dataset-name";
+        DatasetGraphABAC dsgABAC = ABAC.authzDataset(DatasetGraphFactory.createTxnMem(),
+                null,
+                mock(LabelsStoreRocksDB.class),
+                null,
+                null);
+        DataAccessPoint dap = new DataAccessPoint("dataset-name", DataService.newBuilder().dataset(dsgABAC).build());
+        when(mockRegistry.accessPoints()).thenReturn(List.of(dap));
+        cut.backupDataset(datasetName);
+
+        // when
+        ObjectNode result = cut.getDetails(backupId);
+
+        // then
+        String[] requiredFields = {"backup-id", "date", "details-path", "zip-size", "unzip-size"};
+        for (String field : requiredFields) {
+            assertTrue(result.has(field));
+        }
+    }
+
     /*
      * BACK UP TESTS
      */

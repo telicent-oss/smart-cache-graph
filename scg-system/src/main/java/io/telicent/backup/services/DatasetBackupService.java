@@ -16,9 +16,6 @@
 
 package io.telicent.backup.services;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.telicent.jena.abac.core.DatasetGraphABAC;
@@ -47,22 +44,15 @@ import org.apache.jena.system.Txn;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.zip.GZIPInputStream;
-import java.util.zip.ZipFile;
 
 import static io.telicent.backup.utils.BackupConstants.*;
 import static io.telicent.backup.utils.BackupUtils.*;
@@ -116,7 +106,13 @@ public class DatasetBackupService {
                     resultNode.put("description", name);
                 }
                 if (backup) {
+                    //TODO
+                    // timings stuff
+                    //ZonedDateTime startTime = ZonedDateTime.now();
                     resultNode.set("backup", backupDataset(id));
+//                    ZonedDateTime endTime = ZonedDateTime.now();
+//                    resultNode.put("start-time", startTime.toString());
+//                    resultNode.put("end-time", endTime.toString());
                 } else {
                     resultNode.set("restore", restoreDatasets(id));
                 }
@@ -152,12 +148,16 @@ public class DatasetBackupService {
                 datasetJSON.put("dataset-id", sanitizedDataAccessPointName);
                 applyBackUpMethods(datasetJSON, dataAccessPoint, backupIDPath + "/" + sanitizedDataAccessPointName);
                 datasetNodes.add(datasetJSON);
-                response.put("size", datasetNodes.size());
             }
         }
         response.set("datasets", datasetNodes);
         //TODO
         // maybe add size etc. to backup metadata?
+        // response.put("size", WHAT HERE?);
+        // is the kafka state file written somewhere here as well?
+        // timings as well
+        ZonedDateTime startTime = ZonedDateTime.now();
+        response.put("start-time", startTime.toString());
         compressAndStoreBackupMetadata(response, backupIDPath);
         return response;
     }
@@ -187,6 +187,8 @@ public class DatasetBackupService {
                 }
             }
             moduleJSON.set(entry.getKey(), node);
+            //TODO
+            // maybe in this method?
         }
     }
 
@@ -602,26 +604,34 @@ public class DatasetBackupService {
 //            }
 //        }
         if (checkPathExistsAndIsFile(detailsPathString + ZIP_SUFFIX)) {
-            //resultNode.put("is-zip", true);
             try {
+                // SIZE ------------------------
+                //TODO
+                // try without decompressing
                 resultNode.put("zip-size", Files.size(Path.of(detailsPathString + ZIP_SUFFIX)));
                 String unzipDir = detailsPathString + "unzip";
                 unzipDirectory(detailsPathString + ZIP_SUFFIX, unzipDir);
-
                 resultNode.put("unzip-size", FileUtils.sizeOfDirectory(new File(unzipDir)));
+                // KAFKA STATE -----------------
+                //TODO
+                // how to make the offset NOT -1?
+                // how to treat missing files, directories, multiple files (possible at all?), the negative offset?
+                // once figured out how to make offset not negative, more general test
+                String kafkaPath = detailsPathString + "/kafka";
+                Optional<Integer> kafkaState = readKafkaStateOffset(kafkaPath);
+                kafkaState.ifPresent(integer -> resultNode.put("kafka-state", integer));
+                // TIMES ------------------------
+                //TODO
+                // start and end tim of WHAT? Creating the backup?
+                ZonedDateTime startTime;
+                ZonedDateTime endTime;
+
+                // ------------------------------
                 cleanUp(List.of(Path.of(unzipDir)));
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
         }
-//        if (checkPathExistsAndIsFile(detailsPathString + RDF_BACKUP_SUFFIX)) {
-//            resultNode.put("is-rdf", true);
-//            try {
-//                resultNode.put("size-rdf", Files.size(Path.of(detailsPathString + RDF_BACKUP_SUFFIX)));
-//            } catch (IOException e) {
-//                throw new RuntimeException(e);
-//            }
-//        }
         return resultNode;
     }
 
@@ -744,6 +754,10 @@ public class DatasetBackupService {
      */
     private void compressAndStoreBackupMetadata(ObjectNode response, String dirPath) {
         zipDirectory(dirPath, dirPath + ZIP_SUFFIX, DELETE_GENERATED_FILES);
+        //TODO
+        // timings: here or not?
+        ZonedDateTime endTime = ZonedDateTime.now();
+        response.put("end-time", endTime.toString());
         writeObjectNodeToFile(response, dirPath + JSON_INFO_SUFFIX);
     }
 

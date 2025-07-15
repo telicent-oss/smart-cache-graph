@@ -17,6 +17,7 @@
 package io.telicent.backup.utils;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.telicent.smart.cache.configuration.Configurator;
@@ -30,10 +31,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.PathMatcher;
+import java.nio.file.*;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -323,7 +321,7 @@ public class BackupUtils extends ServletUtils {
     }
 
     /**
-     * Iterate recursively over given files adding details ot node
+     * Iterate recursively over given files adding details to node
      *
      * @param files list of files
      * @param node  node to add details too
@@ -412,7 +410,6 @@ public class BackupUtils extends ServletUtils {
 
                 try {
                     JsonNode fileContent = OBJECT_MAPPER.readTree(Files.readString(filePath));
-                    System.out.println(fileContent.toPrettyString());
                     targetNode.set(numericKey, fileContent);
                 } catch (IOException e) {
                     FmtLog.error(LOG, "Error reading or parsing JSON from file %s: %s", filePath, e.getMessage());
@@ -539,19 +536,69 @@ public class BackupUtils extends ServletUtils {
             FileUtils.deleteQuietly(path.toFile());
         }
     }
-//TODO
-// remove
-    public static long getBackupSize(File dir) {
-        long length = 0;
-        File[] files = dir.listFiles();
-        if (files == null) return 0;
-        for (File file : files) {
-            if (file.isFile()) {
-                length += file.length();
-            } else {
-                length += getBackupSize(dir);
+
+    /**
+     *
+     * @param directoryPath the path to the kafka directory in the backup
+     * @return kafka state
+     */
+    //TODO
+    // what is allowed and what isn't?
+    // should there be an error when the kafka directory or file isn't present? What if the offset is missing?
+    // can there be more than one kafka state file?
+    public static Optional<Integer> readKafkaStateOffset(String directoryPath) {
+        try {
+            Path dir = Paths.get(directoryPath);
+            if (!Files.isDirectory(dir)) {
+                //throw new IOException("File " + directoryPath + " does not exist ");
+                return Optional.empty();
             }
+            if ( !Files.isReadable(dir)) {
+                throw new IOException("File " + directoryPath + " is not readable");
+            }
+
+            try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir, Files::isRegularFile)) {
+                int fileCount = 0;
+                Path targetFile = null;
+                for (Path file : stream) {
+                    fileCount++;
+                    if (fileCount > 1) {
+                        throw new IllegalArgumentException("More than one kafka state file in " + directoryPath);
+                    }
+                    targetFile = file;
+                }
+
+                if (targetFile == null) {
+                    return Optional.empty();
+                    //throw new IllegalArgumentException("Target file is empty.");
+                }
+                String content = Files.readString(targetFile).trim();
+                if (content.isEmpty()) {
+                    return Optional.empty();
+                    //throw new IllegalArgumentException("Target file is empty.");
+                }
+
+                ObjectMapper mapper = new ObjectMapper();
+                Map state = mapper.readValue(content, Map.class);
+                System.out.println("File content: " + content);
+                Object offsetObj = state.get("offset");
+                if (offsetObj instanceof Number) {
+                    return Optional.of(((Number) offsetObj).intValue());
+                } else if (offsetObj != null) {
+                    try {
+                        return Optional.of(Integer.parseInt(offsetObj.toString()));
+                    }
+                    catch (NumberFormatException e) {
+                        return Optional.empty();
+                    }
+                }
+                return Optional.empty();
+
+            }
+        } catch (IOException e) {
+            return Optional.empty();
+            //throw new RuntimeException(e.getMessage());
         }
-        return length;
     }
+
 }

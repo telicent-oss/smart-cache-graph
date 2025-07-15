@@ -155,7 +155,9 @@ public class TestBackupData {
 //        debug(createBackupResponse);
         assertEquals(200, createBackupResponse.statusCode());
     }
-
+    //TODO
+    // when the test is ran, the backup is not yet compressed, so the method doesn't work.
+    // can the backup not get compressed in any real use case?
 //    @Test
 //    public void test_details_emptyGraph() {
 //        // given
@@ -168,7 +170,7 @@ public class TestBackupData {
 //        assertEquals(200, createBackupResponse.statusCode());
 //    }
 //
-//    //TODO
+//
 //    @Test
 //    public void test_details_withContent() {
 //        // given

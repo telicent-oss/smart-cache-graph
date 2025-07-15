@@ -33,6 +33,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 
 import static io.telicent.backup.utils.BackupUtils.*;
@@ -1065,5 +1066,47 @@ public class TestBackupUtils {
         // when
         // then
         cleanUp(paths);
+    }
+
+    @Test
+    @DisplayName("Tests readKafkaStateOffset with a valid offset")
+    public void test_readKafkaStateOffset_withValidOffset() {
+        String path = "src/test/files/kafka";
+        Optional<Integer> offset = readKafkaStateOffset(path);
+        assertTrue(offset.isPresent());
+        assertEquals(5, offset.get().intValue());
+    }
+
+    @Test
+    @DisplayName("Tests readKafkaStateOffset with the offset being -1")
+    public void test_readKafkaStateOffset_withNegativeOffset() {
+        String path = "src/test/files/kafka2";
+        Optional<Integer> offset = readKafkaStateOffset(path);
+        assertTrue(offset.isPresent());
+        assertEquals(-1, offset.get().intValue());
+    }
+
+    @Test
+    @DisplayName("Tests readKafkaStateOffset with an invalid offset")
+    public void test_readKafkaStateOffset_withInvalidOffset() {
+        String path = "src/test/files/kafka3";
+        Optional<Integer> offset = readKafkaStateOffset(path);
+        assertFalse(offset.isPresent());
+    }
+
+    @Test
+    @DisplayName("Tests readKafkaStateOffset with a missing offset")
+    public void test_readKafkaStateOffset_withMissingOffset() {
+        String path = "src/test/files/kafka4";
+        Optional<Integer> offset = readKafkaStateOffset(path);
+        assertFalse(offset.isPresent());
+    }
+
+    @Test
+    @DisplayName("Tests readKafkaStateOffset with a nonexistent directory")
+    public void test_readKafkaStateOffset_withMissingDirectory() {
+        String path = "src/test/files/kafka5";
+        Optional<Integer> offset = readKafkaStateOffset(path);
+        assertFalse(offset.isPresent());
     }
 }
