@@ -86,8 +86,36 @@ In order to improve the resiliency of the Smart Cache Graph the facility to back
 At present only the underlying Fuseki-TDB will be saved. This will be extended to include backing up the security label, and Kafka offsets too.
 An obvious follow-up will be the ability to restore from backup.
 
-This facility can be turned on by setting the environment variable `DISABLE_BACKUP` to false. 
+This facility can be turned on by setting the environment variable `ENABLE_BACKUPS` to true.
 
+### Encryption
+It is also possible to encrypt backup files using [PGP](https://en.wikipedia.org/wiki/Pretty_Good_Privacy) for more secure storage or transportation. In order to do this you need to provide a PGP key pair and passphrase using the following enviroment variables:
+- `PRIVATE_KEY_URL` - the URL of the private key file, for example `file:///tmp/private.asc`
+- `PUBLIC_KEY_URL` - the URL of the public key file, for example `file:///tmp/public.asc`
+- `PASSKEY` - the passphrase used when creating the key
+
+If these environment variables are not set, or one of them is missing, encryption will not be applied. A warning message is shown in the application log files if encryption is not enabled.
+
+If you need to create a PGP key pair this can be done as follows:
+```shell
+gpg --full-generate-key
+``` 
+Select the default or other appropriate options and choose a passphrase - this will need to be set as the value of the `PASSKEY` environment variable. Then list the public keys:
+```shell
+gpg --list-keys --keyid-format=long
+```
+Copy the key ID for the public key you just created, e.g. `F2C0B93297F09448`, then export the key to a file:
+```shell
+gpg --armor --export F2C0B93297F09448 > public.asc
+```
+Do the same for the private key, first obtaining the private key ID: 
+```shell
+gpg --list-secret-keys --keyid-format=long
+```
+Then write this to a file as well:
+```shell
+gpg --armor --export-secret-keys F2C0B93297F09448 > private.asc
+```
 ## Exclusions
 
 There is an additional Fuseki module `JWT Servlet Auth` that applies authentication to all the endpoints offered by the server.

@@ -43,6 +43,7 @@ import java.io.InputStreamReader;
 import java.net.http.HttpResponse;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static io.telicent.TestJwtServletAuth.makeAuthGETCallWithPath;
 import static io.telicent.TestJwtServletAuth.makeAuthPOSTCallWithPath;
@@ -142,7 +143,98 @@ public class TestBackupData {
         // given
         server = buildServer("--port=0", "--empty");
         // when
+        HttpResponse<InputStream> createBackupResponse = makeAuthPOSTCallWithPath(server, "$/backups/create", "test");
+        // then
+        assertEquals(200, createBackupResponse.statusCode());
+        Map responseMap = convertToMap(createBackupResponse);
+        assertEquals("FULL", responseMap.get("backup-name") );
+        assertEquals("test", responseMap.get("user"));
+        // for debugging
+        //debug(createBackupResponse);
+    }
+
+    @Test
+    public void test_createBackup_emptyGraph_withSlash() {
+        // given
+        server = buildServer("--port=0", "--empty");
+        // when
         HttpResponse<InputStream> createBackupResponse = makeAuthPOSTCallWithPath(server, "$/backups/create/", "test");
+        // then
+        assertEquals(200, createBackupResponse.statusCode());
+        Map responseMap = convertToMap(createBackupResponse);
+        assertEquals("FULL", responseMap.get("backup-name") );
+        assertEquals("test", responseMap.get("user"));
+        // for debugging
+        //debug(createBackupResponse);
+    }
+
+
+    @Test
+    public void test_createBackup_withName_emptyGraph() {
+        // given
+        server = buildServer("--port=0", "--empty");
+        // when
+        HttpResponse<InputStream> createBackupResponse = makeAuthPOSTCallWithPath(server, "$/backups/create/new-backup", "test");
+        // then
+        assertEquals(200, createBackupResponse.statusCode());
+        Map responseMap = convertToMap(createBackupResponse);
+        assertEquals("new-backup", responseMap.get("backup-name") );
+        assertEquals("test", responseMap.get("user"));
+        // for debugging
+        //debug(createBackupResponse);
+    }
+
+    @Test
+    public void test_createBackup_withName_emptyGraph_extraSlash() {
+        // given
+        server = buildServer("--port=0", "--empty");
+        // when
+        HttpResponse<InputStream> createBackupResponse = makeAuthPOSTCallWithPath(server, "$/backups/create/new-backup/", "test");
+        // then
+        assertEquals(200, createBackupResponse.statusCode());
+        Map responseMap = convertToMap(createBackupResponse);
+        assertEquals("new-backup", responseMap.get("backup-name") );
+        assertEquals("test", responseMap.get("user"));
+        assertFalse(responseMap.containsKey("description"));
+        // for debugging
+//        debug(createBackupResponse);
+    }
+
+
+    @Test
+    public void test_createBackup_withDescription_emptyGraph() {
+        // given
+        server = buildServer("--port=0", "--empty");
+        // when
+        HttpResponse<InputStream> createBackupResponse = makeAuthPOSTCallWithPath(server, "$/backups/create?description=abc", "test");
+        // then
+        assertEquals(200, createBackupResponse.statusCode());
+        Map responseMap = convertToMap(createBackupResponse);
+        assertEquals("FULL", responseMap.get("backup-name") );
+        assertEquals("test", responseMap.get("user"));
+        assertEquals("abc", responseMap.get("description"));
+        // for debugging
+        //debug(createBackupResponse);
+    }
+
+    @Test
+    public void test_createBackup_withNameAndDescription_emptyGraph() {
+        // given
+        server = buildServer("--port=0", "--empty");
+        // when
+        HttpResponse<InputStream> createBackupResponse = makeAuthPOSTCallWithPath(server, "$/backups/create?description=abc&backup-name=new-backup", "test");
+        // then
+        assertEquals(200, createBackupResponse.statusCode());
+        // for debugging
+        //debug(createBackupResponse);
+    }
+
+    @Test
+    public void test_createBackup_withName_emptyGraph_provideDataset() {
+        // given
+        server = buildServer("--port=0", "--empty");
+        // when
+        HttpResponse<InputStream> createBackupResponse = makeAuthPOSTCallWithPath(server, "$/backups/create/ds?backup-name=new-backup", "test");
         // then
         assertEquals(200, createBackupResponse.statusCode());
         // for debugging
@@ -167,10 +259,11 @@ public class TestBackupData {
         server = buildServer("--port=0", "--empty");
         // when
         HttpResponse<InputStream> createResponse = makeAuthPOSTCallWithPath(server, "$/backups/create/", "test");
+        //debug(createResponse);
         try {
             ObjectMapper objectMapper = new ObjectMapper();
             JsonNode rootNode = objectMapper.readTree(createResponse.body());
-            String backupIdString = rootNode.path("backup").path("backup-id").asText();
+            String backupIdString = rootNode.path("backup-id").asText();
             HttpResponse<InputStream> createBackupResponse = makeAuthGETCallWithPath(server, "$/backups/details/" + backupIdString, "test");
             // then
             //debug(createBackupResponse);
@@ -196,7 +289,7 @@ public class TestBackupData {
 //        try {
 //            ObjectMapper objectMapper = new ObjectMapper();
 //            JsonNode rootNode = objectMapper.readTree(createResponse.body());
-//            String backupIdString = rootNode.path("backup").path("backup-id").asText();
+//            String backupIdString = rootNode.path("backup-id").asText();
 //            HttpResponse<InputStream> createBackupResponse = makeAuthGETCallWithPath(server, "$/backups/details/" + backupIdString, "test");
 //            // then
 //            //debug(createBackupResponse);
@@ -299,6 +392,7 @@ public class TestBackupData {
 
     /**
      * Debugging method for outputting response to std:out
+     *
      * @param response generated response
      */
     private void debug(HttpResponse<InputStream> response) {
@@ -307,6 +401,7 @@ public class TestBackupData {
 
     /**
      * Obtain the JSON String from the HTTP Response
+     *
      * @param response the response returned
      * @return a JSON string
      */
@@ -316,16 +411,33 @@ public class TestBackupData {
             InputStreamReader reader = new InputStreamReader(inputStream);
             Object jsonObject = OBJECT_MAPPER.readValue(reader, Object.class);
             return OBJECT_MAPPER.writeValueAsString(jsonObject);
-        }catch (IOException e) {
+        } catch (IOException e) {
             return e.getMessage();
         }
     }
 
     /**
+     * Obtain the JSON String from the HTTP Response
+     *
+     * @param response the response returned
+     * @return a JSON string
+     */
+    private Map convertToMap(HttpResponse<InputStream> response) {
+        try {
+            InputStream inputStream = response.body();
+            InputStreamReader reader = new InputStreamReader(inputStream);
+            return OBJECT_MAPPER.readValue(reader, Map.class);
+        }catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+
+    /**
      * Extension of the Backup Module for testing purposes.
      * Uses a test instance of actual back up service.
      */
-    public class FMod_BackupData_Test extends FMod_BackupData {
+    public static class FMod_BackupData_Test extends FMod_BackupData {
 
         @Override
         DatasetBackupService getBackupService(DataAccessPointRegistry dapRegistry) {
@@ -337,7 +449,7 @@ public class TestBackupData {
      * Extension of the Backup Module for testing purposes.
      * Causes a null pointer exception to be thrown.
      */
-    public class FMod_BackupData_Null extends FMod_BackupData {
+    public static class FMod_BackupData_Null extends FMod_BackupData {
 
         @Override
         DatasetBackupService getBackupService(DataAccessPointRegistry dapRegistry) {

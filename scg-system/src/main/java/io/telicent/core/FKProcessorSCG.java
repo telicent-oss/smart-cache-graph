@@ -377,13 +377,10 @@ public class FKProcessorSCG extends FKProcessorBaseAction /*implements FKProcess
             parse(id, countingDest, data, lang, base);
             String details = UploadDetails.detailsStr(countingDest.count(), countingDest.countTriples(), countingDest.countQuads());
             if ( LOG.isDebugEnabled() )
-                LOG.debug(format("[%s] Body: Content-Length=%d, Content-Type=%s => %s : %s",
-                                id, request.getByteCount(), request.getContentType(), lang.getName(),
-                                details));
+                LOG.debug("[{}] Body: Content-Length={}, Content-Type={} => {} : {}", id, request.getByteCount(), request.getContentType(), lang.getName(), details);
             return countingDest.count();
         } catch (RiotException ex) {
-            LOG.warn(format("[%s] Failed attempt to load: Content-Length=%d, Content-Type=%s => %s",
-                            id, request.getByteCount(), request.getContentType(), ex.getMessage()));
+            LOG.warn("[{}] Failed attempt to load: Content-Length={}, Content-Type={} => {}", id, request.getByteCount(), request.getContentType(), ex.getMessage());
             // Exhaust input.
             IO.skipToEnd(data);
             //throw ex;

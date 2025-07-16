@@ -55,7 +55,6 @@ import org.apache.jena.fuseki.system.FusekiLogging;
 import org.apache.jena.http.HttpEnv;
 import org.apache.jena.sparql.core.DatasetGraphFactory;
 import org.apache.jena.sys.JenaSystem;
-import org.junit.Assert;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -243,9 +242,7 @@ class TestJenaMetrics {
 
     @Test
     void time_02() {
-        verifyTimingMetrics(() -> {
-            return 12345;
-        }, null);
+        verifyTimingMetrics(() -> 12345, null);
     }
 
     @Test
@@ -346,6 +343,6 @@ class TestJenaMetrics {
         // when
         String actual = fModOpenTelemetry.name();
         // then
-        Assert.assertEquals(expected, actual);
+        assertEquals(expected, actual);
     }
 }
