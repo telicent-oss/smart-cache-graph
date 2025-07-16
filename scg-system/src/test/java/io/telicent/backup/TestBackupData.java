@@ -15,6 +15,8 @@
  */
 package io.telicent.backup;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.telicent.LibTestsSCG;
 import io.telicent.backup.services.DatasetBackupService;
 import io.telicent.backup.services.DatasetBackupService_Test;
@@ -31,6 +33,7 @@ import org.apache.jena.query.Dataset;
 import org.apache.jena.query.DatasetFactory;
 import org.apache.jena.rdf.model.Model;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -45,6 +48,8 @@ import static io.telicent.TestJwtServletAuth.makeAuthGETCallWithPath;
 import static io.telicent.TestJwtServletAuth.makeAuthPOSTCallWithPath;
 import static io.telicent.backup.utils.JsonFileUtils.OBJECT_MAPPER;
 import static org.apache.jena.graph.Graph.emptyGraph;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.mock;
@@ -141,7 +146,7 @@ public class TestBackupData {
         // then
         assertEquals(200, createBackupResponse.statusCode());
         // for debugging
-//        debug(createBackupResponse);
+        //debug(createBackupResponse);
     }
 
 
@@ -155,32 +160,56 @@ public class TestBackupData {
 //        debug(createBackupResponse);
         assertEquals(200, createBackupResponse.statusCode());
     }
+
+    @Test
+    public void test_details_emptyGraph() {
+        // given
+        server = buildServer("--port=0", "--empty");
+        // when
+        HttpResponse<InputStream> createResponse = makeAuthPOSTCallWithPath(server, "$/backups/create/", "test");
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            JsonNode rootNode = objectMapper.readTree(createResponse.body());
+            String backupIdString = rootNode.path("backup").path("backup-id").asText();
+            HttpResponse<InputStream> createBackupResponse = makeAuthGETCallWithPath(server, "$/backups/details/" + backupIdString, "test");
+            // then
+            //debug(createBackupResponse);
+            assertEquals(200, createBackupResponse.statusCode());
+            JsonNode rootBackupNode = objectMapper.readTree(createBackupResponse.body());
+            String zipSize = rootBackupNode.path("details").path("zip-size").asText();
+            assertFalse(zipSize.isEmpty());
+        }
+        catch (IOException ex) {
+            Assertions.fail("Unexpected exception: " + ex.getMessage());
+        }
+    }
+
+
     //TODO
-    // when the test is ran, the backup is not yet compressed, so the method doesn't work.
-    // can the backup not get compressed in any real use case?
-//    @Test
-//    public void test_details_emptyGraph() {
-//        // given
-//        server = buildServer("--port=0", "--empty");
-//        // when
-//        makeAuthPOSTCallWithPath(server, "$/backups/create/", "test");
-//        HttpResponse<InputStream> createBackupResponse = makeAuthGETCallWithPath(server, "$/backups/details/1", "test");
-//        // then
-//        debug(createBackupResponse);
-//        assertEquals(200, createBackupResponse.statusCode());
-//    }
-//
-//
+    // unzip size 0 --> wrong!
 //    @Test
 //    public void test_details_withContent() {
 //        // given
 //        server = buildServer("--port=0", "--file=src/test/files/Data/PersonDataValid.ttl", "/ds");
 //        // when
-//        makeAuthPOSTCallWithPath(server, "$/backups/create/", "test");
-//        HttpResponse<InputStream> createBackupResponse = makeAuthGETCallWithPath(server, "$/backups/details/1", "test");
-//        // then
-//        debug(createBackupResponse);
-//        assertEquals(200, createBackupResponse.statusCode());
+//        HttpResponse<InputStream> createResponse = makeAuthPOSTCallWithPath(server, "$/backups/create/", "test");
+//        try {
+//            ObjectMapper objectMapper = new ObjectMapper();
+//            JsonNode rootNode = objectMapper.readTree(createResponse.body());
+//            String backupIdString = rootNode.path("backup").path("backup-id").asText();
+//            HttpResponse<InputStream> createBackupResponse = makeAuthGETCallWithPath(server, "$/backups/details/" + backupIdString, "test");
+//            // then
+//            //debug(createBackupResponse);
+//            assertEquals(200, createBackupResponse.statusCode());
+//            JsonNode rootBackupNode = objectMapper.readTree(createBackupResponse.body());
+//            String zipSize = rootBackupNode.path("details").path("zip-size").asText();
+//            int unzipSize = rootBackupNode.path("details").path("unzip-size").asInt();
+//            assertFalse(zipSize.isEmpty());
+//            Assertions.assertTrue(unzipSize > 0);
+//        }
+//        catch (IOException ex) {
+//            Assertions.fail("Unexpected exception: " + ex.getMessage());
+//        }
 //    }
 
     @Test
