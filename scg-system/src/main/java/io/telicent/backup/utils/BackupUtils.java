@@ -540,11 +540,9 @@ public class BackupUtils extends ServletUtils {
     }
 
     /**
-     *
+     * Reads the kafka offset from backup file
      * @param directoryPath the path to the kafka directory in the backup
-     * @return kafka state
      */
-
     public static Optional<Integer> readKafkaStateOffset(String directoryPath) {
         try {
             Path dir = Paths.get(directoryPath);
@@ -601,6 +599,11 @@ public class BackupUtils extends ServletUtils {
         }
     }
 
+    /**
+     * Reads the ZoneDateTime time from a JSON file
+     * @param filePath path to the info file
+     * @param fieldName name of the time field (start-time, end-time)
+     */
     public static Optional<ZonedDateTime> readTime(String filePath, String fieldName) {
         try {
             String content = Files.readString(Path.of(filePath));

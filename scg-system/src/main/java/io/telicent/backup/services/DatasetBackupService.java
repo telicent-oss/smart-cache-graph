@@ -26,7 +26,6 @@ import io.telicent.jena.abac.labels.node.LabelToNodeGenerator;
 import io.telicent.model.KeyPair;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.apache.commons.io.FileUtils;
 import org.apache.jena.atlas.lib.DateTimeUtils;
 import org.apache.jena.fuseki.mgt.Backup;
 import org.apache.jena.fuseki.server.DataAccessPoint;
@@ -582,10 +581,11 @@ public class DatasetBackupService {
         }
     }
 
-    /** TODO
-     * return start-stop time
-     * backup size
-     * kafka state file*/
+    /**
+     * Display detailed information about a backup
+     *
+     * @param backupId the back-up identifier
+     */
     public ObjectNode getDetails(final String backupId) {
         final ObjectNode resultNode = OBJECT_MAPPER.createObjectNode();
         final String detailsPathString = getBackUpDir() + "/" + backupId;
@@ -594,16 +594,13 @@ public class DatasetBackupService {
 
         if (checkPathExistsAndIsFile(detailsPathString + ZIP_SUFFIX)) {
             try {
-                // SIZE ------------------------
+                // size
                 resultNode.put("zip-size", Files.size(Path.of(detailsPathString + ZIP_SUFFIX)));
-//                String unzipDir = detailsPathString + "unzip";
-//                unzipDirectory(detailsPathString + ZIP_SUFFIX, unzipDir);
-//                resultNode.put("unzip-size", FileUtils.sizeOfDirectory(new File(unzipDir)));
-                // KAFKA STATE -----------------
+                // kafka state
                 String kafkaPath = detailsPathString + "/kafka";
                 Optional<Integer> kafkaState = readKafkaStateOffset(kafkaPath);
                 kafkaState.ifPresent(integer -> resultNode.put("kafka-state", integer));
-                // TIMES ------------------------
+                // times
                 String jsonPath = getBackUpDir() + "/" + backupId + JSON_INFO_SUFFIX;
                 Optional<ZonedDateTime> startTime = readTime(jsonPath, "start-time");
                 Optional<ZonedDateTime> endTime = readTime(jsonPath, "end-time");
@@ -613,7 +610,6 @@ public class DatasetBackupService {
                     Duration duration = Duration.between(startTime.get(), endTime.get());
                     resultNode.put("backup-time", duration.toMillis() + "ms");
                 }
-//                cleanUp(List.of(Path.of(unzipDir)));
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }

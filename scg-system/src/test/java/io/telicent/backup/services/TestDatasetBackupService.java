@@ -154,10 +154,8 @@ public class TestDatasetBackupService {
         assertNotEquals("{}", result.toString());
     }
 
-    //TODO
-    // make a missing backup more apparent
     @Test
-    @DisplayName("Return the details of a backup")
+    @DisplayName("Return the details for a backup of an empty database")
     public void test_backupDetails_emptyDir() throws IOException {
         // given
         Path parent = baseDir.getParent();
@@ -171,7 +169,7 @@ public class TestDatasetBackupService {
                 mock(LabelsStoreRocksDB.class),
                 null,
                 null);
-        DataAccessPoint dap = new DataAccessPoint("dataset-name", DataService.newBuilder().dataset(dsgABAC).build());
+        DataAccessPoint dap = new DataAccessPoint(datasetName, DataService.newBuilder().dataset(dsgABAC).build());
         when(mockRegistry.accessPoints()).thenReturn(List.of(dap));
 
         Pattern numericZipPattern = Pattern.compile("^(\\d+)\\.zip$", Pattern.CASE_INSENSITIVE);
@@ -207,7 +205,7 @@ public class TestDatasetBackupService {
     }
 
     @Test
-    @DisplayName("Return the details of a backup")
+    @DisplayName("Return the details for a backup of a non-empty database")
     public void test_backupDetails_contents() {
         // given
         Path parent = baseDir.getParent();
