@@ -171,6 +171,10 @@ public class TestDatasetBackupService {
         DataAccessPoint dap = new DataAccessPoint(datasetName, DataService.newBuilder().dataset(dsgABAC).build());
         when(mockRegistry.accessPoints()).thenReturn(List.of(dap));
 
+        ObjectNode backupResult = OBJECT_MAPPER.createObjectNode();
+        cut.backupDataset(datasetName, backupResult);
+
+
         Pattern numericZipPattern = Pattern.compile("^(\\d+)\\.zip$", Pattern.CASE_INSENSITIVE);
         Optional<Integer> maxId = Files.list(parent)
                 .filter(Files::isRegularFile)
