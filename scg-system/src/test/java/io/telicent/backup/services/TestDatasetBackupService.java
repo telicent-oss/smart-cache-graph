@@ -180,7 +180,6 @@ public class TestDatasetBackupService {
                 .max(Comparator.naturalOrder());
 
         if (maxId.isPresent()) {
-            System.out.println(maxId.get());
             int backupId = maxId.get() + 1;
 
             // when
@@ -197,7 +196,7 @@ public class TestDatasetBackupService {
             }
         }
         else {
-            fail();
+            fail("No backups at " + parent);
         }
 
     }
