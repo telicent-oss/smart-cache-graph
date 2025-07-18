@@ -49,6 +49,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import static io.telicent.backup.services.DatasetBackupService_Test.*;
 import static io.telicent.backup.utils.JsonFileUtils.OBJECT_MAPPER;
@@ -196,7 +197,10 @@ public class TestDatasetBackupService {
             }
         }
         else {
-            fail("No backups at " + parent);
+            String files = Files.list(parent)
+                    .map(Path::toString)
+                    .collect(Collectors.joining(", "));
+            fail("No backups at " + parent + ": " + files);
         }
 
     }
