@@ -160,8 +160,6 @@ public class TestDatasetBackupService {
         // given
         Path parent = baseDir.getParent();
         BackupUtils.dirBackups = parent.toAbsolutePath().toString();
-        System.out.println(BackupUtils.dirBackups);
-        System.out.println(baseDir.toAbsolutePath());
 
         String datasetName = "dataset-name";
         DatasetGraphABAC dsgABAC = ABAC.authzDataset(DatasetGraphFactory.createTxnMem(),
