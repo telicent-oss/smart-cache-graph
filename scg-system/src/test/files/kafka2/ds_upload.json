@@ -1,0 +1,7 @@
+{ 
+  "dataset" : "/ds/upload" ,
+  "endpoint" : "" ,
+  "topic" : "RDF" ,
+  "offset" : -1
+}
+

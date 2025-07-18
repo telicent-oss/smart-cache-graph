@@ -1,0 +1,5 @@
+H id <637d1307-1e81-4746-9fbf-535f9179263e> .
+TX .
+A <http://example/person4321> <http://example/phone> "0400 111 555" .
+A <http://example/person4321> <http://example/phone> "0400 111 665" .
+TC .

@@ -1,7 +1,7 @@
-#!/usr/bin/bash
+#!/bin/bash
 
 URL="http://localhost:3030/ds"
 
-curl -XPOST --data-binary @patch.rdfp \
+curl -XPOST --data-binary @patch1.rdfp \
      --header 'Content-type: application/rdf-patch' \
      $URL/upload

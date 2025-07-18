@@ -1,0 +1,26 @@
+PREFIX rdf:     <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs:    <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX ies:     <http://ies.data.gov.uk/ontology/ies4#>
+PREFIX authz:  <http://telicent.io/security#>
+PREFIX :        <http://example/> 
+
+:person4321 rdf:type ies:Person;
+    :phone "0400 111 222" ;
+    :phone "0400 111 333" ;
+    :empId  4321 ;
+    rdfs:label "Jones" ;
+    .
+
+:person9876 rdf:type ies:Person;
+   :phone "0777 11 11 11" ;
+   :phone "0777 22 22 22" ;
+   :empId 9876 ;
+   rdfs:label "Smith" ;
+   .
+
+GRAPH authz:labels {
+    [ authz:pattern ':person4321 :phone "0400 111 333"' ;  authz:label "*" ] .
+    [ authz:pattern ':person4321 :phone "0400 111 444"' ;  authz:label "employee | contractor" ] .
+    [ authz:pattern ':person9876 :empId 9876' ;  authz:label "employee" ] .
+    [ authz:pattern ':person4321 :empId 321' ;  authz:label "employee" ] .
+}

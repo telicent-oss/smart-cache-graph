@@ -180,7 +180,7 @@ and configuration files go into host `mnt/config/`.
 
 The provided script, [docker-run.sh](scg-docker/docker-run.sh), runs SCG in a docker container, with the contents of the
 local [mnt/config](scg-docker/mnt/config) directory mounted into the newly generated docker image for ease of use.
-Similarly, the [mnt/databases](scg-docker/mnt/databases) and [mnt/logs](scg-docker/mnt/logs) are moutned for easier
+Similarly, the [mnt/databases](scg-docker/mnt/databases) and [mnt/logs](scg-docker/mnt/logs) are mounted for easier
 analysis.
 
 #### Example configuration - *Default*

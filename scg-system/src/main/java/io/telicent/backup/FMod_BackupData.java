@@ -32,7 +32,6 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
-import java.security.Key;
 import java.security.Security;
 import java.util.Objects;
 import java.util.Optional;
@@ -90,6 +89,7 @@ public class FMod_BackupData implements FusekiAutoModule {
                 serverBuilder.addServlet("/$/backups/delete/*", new DeleteServlet(backupService));
                 serverBuilder.addServlet("/$/backups/validate/*", new ValidateServlet(backupService));
                 serverBuilder.addServlet("/$/backups/report/*", new ReportServlet(backupService));
+                serverBuilder.addServlet("/$/backups/details/*", new DetailsServlet(backupService));
             } catch (SmartCacheGraphException ex) {
                 LOG.warn("Database backups are not enabled due to {}", ex.getMessage());
             }

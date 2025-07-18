@@ -1,0 +1,19 @@
+PREFIX rdf:     <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs:    <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX ies:     <http://ies.data.gov.uk/ontology/ies4#>
+PREFIX authz:   <http://telicent.io/security#>
+PREFIX :        <http://example/>
+
+INSERT DATA {
+  :person5555 rdf:type ies:Person ;
+      :phone "5555 555 555" ;
+      :phone "0400 111 335" ;
+      :empId 5555 ;
+      rdfs:label "Cook" .
+
+  GRAPH authz:labels {
+      [ authz:pattern ':person5555 :phone "0400 111 335"' ; authz:label "*" ] .
+      [ authz:pattern ':person5555 :phone "555 555 555"' ; authz:label "employee | contractor" ] .
+      [ authz:pattern ':person5555 :empId 5555' ; authz:label "employee" ] .
+  }
+}

@@ -707,4 +707,15 @@
     </snapshotRepository>
   </distributionManagement>
 
+  <profiles>
+    <profile>
+      <id>docker</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+        <os>
+          <family>!Windows</family>
+        </os>
+      </activation>
+    </profile>
+  </profiles>
 </project>
