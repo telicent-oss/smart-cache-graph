@@ -32,6 +32,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.*;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -542,19 +544,17 @@ public class BackupUtils extends ServletUtils {
      * @param directoryPath the path to the kafka directory in the backup
      * @return kafka state
      */
-    //TODO
-    // what is allowed and what isn't?
-    // should there be an error when the kafka directory or file isn't present? What if the offset is missing?
-    // can there be more than one kafka state file?
+
     public static Optional<Integer> readKafkaStateOffset(String directoryPath) {
         try {
             Path dir = Paths.get(directoryPath);
             if (!Files.isDirectory(dir)) {
-                //throw new IOException("File " + directoryPath + " does not exist ");
+                LOG.warn("Directory {} is not readable", directoryPath);
                 return Optional.empty();
             }
             if ( !Files.isReadable(dir)) {
-                throw new IOException("File " + directoryPath + " is not readable");
+                LOG.warn("Directory {} is not readable", directoryPath);
+                return Optional.empty();
             }
 
             try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir, Files::isRegularFile)) {
@@ -569,18 +569,18 @@ public class BackupUtils extends ServletUtils {
                 }
 
                 if (targetFile == null) {
+                    LOG.warn("No kafka state file found in {}", directoryPath);
                     return Optional.empty();
-                    //throw new IllegalArgumentException("Target file is empty.");
                 }
                 String content = Files.readString(targetFile).trim();
                 if (content.isEmpty()) {
+                    LOG.warn("Kafka state file {} is empty", targetFile);
                     return Optional.empty();
-                    //throw new IllegalArgumentException("Target file is empty.");
                 }
 
                 ObjectMapper mapper = new ObjectMapper();
                 Map state = mapper.readValue(content, Map.class);
-                System.out.println("File content: " + content);
+                LOG.info("File content: {}", content);
                 Object offsetObj = state.get("offset");
                 if (offsetObj instanceof Number) {
                     return Optional.of(((Number) offsetObj).intValue());
@@ -595,9 +595,30 @@ public class BackupUtils extends ServletUtils {
                 return Optional.empty();
 
             }
-        } catch (IOException e) {
+        } catch (IOException ex) {
+            LOG.error(ex.getMessage());
             return Optional.empty();
-            //throw new RuntimeException(e.getMessage());
+        }
+    }
+
+    public static Optional<ZonedDateTime> readTime(String filePath, String fieldName) {
+        try {
+            String content = Files.readString(Path.of(filePath));
+            JsonNode rootNode = OBJECT_MAPPER.readTree(content);
+            if (!rootNode.has(fieldName)) {
+                return Optional.empty();
+            }
+            String dateTimeString = rootNode.get(fieldName).asText();
+            return Optional.of(ZonedDateTime.parse(dateTimeString));
+        } catch (IOException ex) {
+            LOG.warn("Error reading file: {}", ex.getMessage());
+            return Optional.empty();
+        } catch (DateTimeParseException ex) {
+            LOG.warn("Invalid date format in field '{}': {}", fieldName, ex.getMessage());
+            return Optional.empty();
+        } catch (Exception ex) {
+            LOG.warn("Unexpected error: {}", ex.getMessage());
+            return Optional.empty();
         }
     }
 

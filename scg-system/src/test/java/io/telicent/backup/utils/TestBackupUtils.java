@@ -34,6 +34,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.ZonedDateTime;
 import java.util.*;
 
 import static io.telicent.backup.utils.BackupUtils.*;
@@ -1108,5 +1109,30 @@ public class TestBackupUtils {
         String path = "src/test/files/kafka5";
         Optional<Integer> offset = readKafkaStateOffset(path);
         assertFalse(offset.isPresent());
+    }
+
+    @Test
+    @DisplayName("Tests readTime with a valid time")
+    public void test_readTime_withValidStartTime() {
+        String path = "src/test/files/1_info.json";
+        Optional<ZonedDateTime> time = readTime(path, "start-time");
+        assertTrue(time.isPresent());
+        assertEquals("2025-07-16T14:28:29.366868471Z[GMT]", time.get().toString());
+    }
+
+    @Test
+    @DisplayName("Tests readTime with time missing")
+    public void test_readTime_withMissingTime() {
+        String path = "src/test/files/2_info.json";
+        Optional<ZonedDateTime> time = readTime(path, "end-time");
+        assertFalse(time.isPresent());
+    }
+
+    @Test
+    @DisplayName("Tests readTime with invalid time")
+    public void test_readTime_withInvalidTime() {
+        String path = "src/test/files/3_info.json";
+        Optional<ZonedDateTime> time = readTime(path, "end-time");
+        assertFalse(time.isPresent());
     }
 }

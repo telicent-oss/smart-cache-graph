@@ -22,6 +22,7 @@ import io.telicent.backup.services.DatasetBackupService;
 import io.telicent.backup.services.DatasetBackupService_Test;
 import io.telicent.core.SmartCacheGraph;
 import io.telicent.jena.abac.core.Attributes;
+import io.telicent.servlet.auth.jwt.verifier.aws.AwsConstants;
 import io.telicent.smart.cache.configuration.Configurator;
 import org.apache.jena.fuseki.main.FusekiServer;
 import org.apache.jena.fuseki.main.cmds.FusekiMain;
@@ -29,9 +30,8 @@ import org.apache.jena.fuseki.main.sys.FusekiModule;
 import org.apache.jena.fuseki.main.sys.FusekiModules;
 import org.apache.jena.fuseki.server.DataAccessPointRegistry;
 import org.apache.jena.fuseki.system.FusekiLogging;
-import org.apache.jena.query.Dataset;
-import org.apache.jena.query.DatasetFactory;
-import org.apache.jena.rdf.model.Model;
+import org.apache.jena.http.HttpEnv;
+import org.apache.jena.http.HttpLib;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,7 +40,9 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -49,8 +51,8 @@ import static io.telicent.TestJwtServletAuth.makeAuthGETCallWithPath;
 import static io.telicent.TestJwtServletAuth.makeAuthPOSTCallWithPath;
 import static io.telicent.backup.utils.JsonFileUtils.OBJECT_MAPPER;
 import static org.apache.jena.graph.Graph.emptyGraph;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.apache.jena.http.HttpLib.execute;
+import static org.apache.jena.http.HttpLib.toRequestURI;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.mock;
@@ -280,11 +282,35 @@ public class TestBackupData {
 
     //TODO
     // unzip size 0 --> wrong!
+    // uploading data
+    // debug what's inside the backup zip
 //    @Test
-//    public void test_details_withContent() {
+//    public void test_details_withContent() throws IOException, InterruptedException {
 //        // given
 //        server = buildServer("--port=0", "--file=src/test/files/Data/PersonDataValid.ttl", "/ds");
+//
 //        // when
+//        String URL = server.serverURL() + "/ds" + "/upload";
+////        DSP.service(URL)
+////                .httpHeader(tokenHeader(), tokenHeaderValue(tokenForUser("test")))
+////                .httpHeader("Content-Type", "application/rdf-patch")
+////                .POST("src/test/files/Data/PersonDataValid.ttl");
+////        HttpRequest request = HttpRequest.newBuilder()
+////                .uri(URI.create(URL))
+////                .header(tokenHeader(), tokenHeaderValue(tokenForUser("test")))
+////                .header("Content-Type", "application/rdf-patch")
+////                .POST(HttpRequest.BodyPublishers.ofFile(Path.of("src/test/files/patch.rdfp")))
+////                .build();
+////        HttpResponse<String> response = HttpClient.newHttpClient()
+////                .send(request, HttpResponse.BodyHandlers.ofString());
+//
+//        HttpRequest.Builder builder =
+//                HttpLib.requestBuilderFor(server.serverURL())
+//                        .uri(toRequestURI(server.serverURL() + "/upload"))
+//                        .headers(AwsConstants.HEADER_DATA, LibTestsSCG.tokenForUser("test"))
+//                        .method("POST", HttpRequest.BodyPublishers.ofFile(Path.of("src/test/files/patch.rdfp")));
+//        execute(HttpEnv.getDftHttpClient(), builder.build());
+//
 //        HttpResponse<InputStream> createResponse = makeAuthPOSTCallWithPath(server, "$/backups/create/", "test");
 //        try {
 //            ObjectMapper objectMapper = new ObjectMapper();
@@ -298,6 +324,9 @@ public class TestBackupData {
 //            String zipSize = rootBackupNode.path("details").path("zip-size").asText();
 //            int unzipSize = rootBackupNode.path("details").path("unzip-size").asInt();
 //            assertFalse(zipSize.isEmpty());
+//
+//            String backupPath = rootBackupNode.path("details").path("details-path").asText();
+//            System.out.println("BACKUP PATH: " + backupPath);
 //            Assertions.assertTrue(unzipSize > 0);
 //        }
 //        catch (IOException ex) {

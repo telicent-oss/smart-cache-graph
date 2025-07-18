@@ -50,9 +50,9 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -136,13 +136,7 @@ public class DatasetBackupService {
                     resultNode.put("description", name);
                 }
                 if (backup) {
-                    //TODO
-                    // timings stuff
-                    //ZonedDateTime startTime = ZonedDateTime.now();
                     backupDataset(id, resultNode);
-                    //ZonedDateTime endTime = ZonedDateTime.now();
-//                    resultNode.put("start-time", startTime.toString());
-//                    resultNode.put("end-time", endTime.toString());
                 } else {
                     restoreDatasets(id, resultNode);
                 }
@@ -162,6 +156,7 @@ public class DatasetBackupService {
      * @param response the node to add metadata of process to
      */
     public void backupDataset(String datasetName, ObjectNode response) {
+        ZonedDateTime startTime = ZonedDateTime.now();
         String backupPath = getBackUpDir();
         int backupID = getNextDirectoryNumberAndCreate(backupPath);
         String backupIDPath = backupPath + "/" + backupID;
@@ -180,12 +175,6 @@ public class DatasetBackupService {
             }
         }
         response.set("datasets", datasetNodes);
-        //TODO
-        // maybe add size etc. to backup metadata?
-        // response.put("size", WHAT HERE?);
-        // is the kafka state file written somewhere here as well?
-        // timings as well
-        ZonedDateTime startTime = ZonedDateTime.now();
         response.put("start-time", startTime.toString());
         compressAndStoreBackupMetadata(response, backupIDPath);
     }
@@ -214,8 +203,6 @@ public class DatasetBackupService {
                 }
             }
             moduleJSON.set(entry.getKey(), node);
-            //TODO
-            // maybe in this method?
         }
     }
 
@@ -603,82 +590,30 @@ public class DatasetBackupService {
         final ObjectNode resultNode = OBJECT_MAPPER.createObjectNode();
         final String detailsPathString = getBackUpDir() + "/" + backupId;
         resultNode.put("backup-id", backupId);
-        resultNode.put("date", DateTimeUtils.nowAsString(DATE_FORMAT));
         resultNode.put("details-path", detailsPathString);
 
-//        if (checkPathExistsAndIsDir(detailsPathString)) {
-//            resultNode.put("is-dir", true);
-//            try {
-//                File directory = new File(detailsPathString);
-//                ArrayNode filesArray = OBJECT_MAPPER.createArrayNode();
-//                ArrayNode subdirectoriesArray = OBJECT_MAPPER.createArrayNode();
-//
-//                File[] files = directory.listFiles();
-//                if (files != null) {
-//                    for (File file : files) {
-//                        if (file.isFile()) {
-//                            ObjectNode fileNode = OBJECT_MAPPER.createObjectNode();
-//                            fileNode.put("name", file.getName());
-//                            fileNode.put("size", file.length());
-//                            fileNode.put("lastModified", file.lastModified());
-//                            filesArray.add(fileNode);
-//                        } else if (file.isDirectory()) {
-//                            ObjectNode dirNode = OBJECT_MAPPER.createObjectNode();
-//                            dirNode.put("name", file.getName());
-//                            dirNode.put("lastModified", file.lastModified());
-//                            subdirectoriesArray.add(dirNode);
-//                        }
-//                    }
-//                }
-//
-//                resultNode.set("files", filesArray);
-//                resultNode.set("subdirectories", subdirectoriesArray);
-//
-//                resultNode.put("size", FileUtils.sizeOfDirectory(new File(detailsPathString)));
-//                long size = Files.walk(Paths.get("backups/1"))
-//                        .filter(p -> p.toFile().isFile())
-//                        .mapToLong(p -> p.toFile().length())
-//                        .sum();
-//                resultNode.put("size-manual", size);
-//                resultNode.put("size-method", getBackupSize(new File(detailsPathString)));
-//            } catch (Exception e) {
-//                resultNode.put("directory-structure-error", "Could not read directory contents");
-//            }
-//        }
-        //REMOVE
-//        if (checkPathExistsAndIsFile(detailsPathString + JSON_INFO_SUFFIX)) {
-//            resultNode.put("is-json", true);
-//            try {
-//                resultNode.put("size-json", Files.size(Path.of(detailsPathString + JSON_INFO_SUFFIX)));
-//            } catch (IOException e) {
-//                throw new RuntimeException(e);
-//            }
-//        }
         if (checkPathExistsAndIsFile(detailsPathString + ZIP_SUFFIX)) {
             try {
                 // SIZE ------------------------
-                //TODO
-                // try without decompressing
                 resultNode.put("zip-size", Files.size(Path.of(detailsPathString + ZIP_SUFFIX)));
-                String unzipDir = detailsPathString + "unzip";
-                unzipDirectory(detailsPathString + ZIP_SUFFIX, unzipDir);
-                resultNode.put("unzip-size", FileUtils.sizeOfDirectory(new File(unzipDir)));
+//                String unzipDir = detailsPathString + "unzip";
+//                unzipDirectory(detailsPathString + ZIP_SUFFIX, unzipDir);
+//                resultNode.put("unzip-size", FileUtils.sizeOfDirectory(new File(unzipDir)));
                 // KAFKA STATE -----------------
-                //TODO
-                // how to make the offset NOT -1?
-                // how to treat missing files, directories, multiple files (possible at all?), the negative offset?
-                // once figured out how to make offset not negative, more general test
                 String kafkaPath = detailsPathString + "/kafka";
                 Optional<Integer> kafkaState = readKafkaStateOffset(kafkaPath);
                 kafkaState.ifPresent(integer -> resultNode.put("kafka-state", integer));
                 // TIMES ------------------------
-                //TODO
-                // start and end tim of WHAT? Creating the backup?
-                ZonedDateTime startTime;
-                ZonedDateTime endTime;
-
-                // ------------------------------
-                cleanUp(List.of(Path.of(unzipDir)));
+                String jsonPath = getBackUpDir() + "/" + backupId + JSON_INFO_SUFFIX;
+                Optional<ZonedDateTime> startTime = readTime(jsonPath, "start-time");
+                Optional<ZonedDateTime> endTime = readTime(jsonPath, "end-time");
+                startTime.ifPresent(time -> resultNode.put("start-time", time.toString()));
+                endTime.ifPresent(time -> resultNode.put("end-time", time.toString()));
+                if (startTime.isPresent() && endTime.isPresent()) {
+                    Duration duration = Duration.between(startTime.get(), endTime.get());
+                    resultNode.put("backup-time", duration.toMillis() + "ms");
+                }
+//                cleanUp(List.of(Path.of(unzipDir)));
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -811,21 +746,20 @@ public class DatasetBackupService {
      */
     private void compressAndStoreBackupMetadata(ObjectNode response, String dirPath) {
         final Path zipFilePath = zipDirectory(dirPath, dirPath + ZIP_SUFFIX, DELETE_GENERATED_FILES);
-        writeObjectNodeToFile(response, dirPath + JSON_INFO_SUFFIX);
+        //writeObjectNodeToFile(response, dirPath + JSON_INFO_SUFFIX);
         if (encryptionUtils != null) {
             try {
                 final Path encZipFilePath = Path.of(dirPath + ZIP_SUFFIX + ENCRYPTION_SUFFIX);
                 final Path encZipPath = encryptionUtils.encryptFile(zipFilePath, encZipFilePath, keyPair.publicKeyUrl());
                 LOG.debug("Successfully encrypted file: {} as {}", zipFilePath, encZipPath.toString());
                 Files.delete(zipFilePath);
-                //TODO
-                // timings: here or not?
-                ZonedDateTime endTime = ZonedDateTime.now();
-                response.put("end-time", endTime.toString());
             } catch (IOException | PGPException ex) {
                 LOG.error("Failed to encrypt backup files due to {}", ex.getMessage(), ex);
             }
         }
+        ZonedDateTime endTime = ZonedDateTime.now();
+        response.put("end-time", endTime.toString());
+        writeObjectNodeToFile(response, dirPath + JSON_INFO_SUFFIX);
     }
 
 }
