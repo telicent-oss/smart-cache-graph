@@ -42,6 +42,9 @@ public class DetailsServlet extends HttpServlet {
         ObjectNode resultNode = OBJECT_MAPPER.createObjectNode();
         try {
             String backupId = request.getPathInfo();
+            if (backupId.startsWith("/")) {
+                backupId = backupId.substring(1);
+            }
             resultNode.put("backup-id", backupId);
             resultNode.put("date", DateTimeUtils.nowAsString(DATE_FORMAT));
             resultNode.set("details", backupService.getDetails(backupId));

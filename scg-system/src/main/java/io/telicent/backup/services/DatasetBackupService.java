@@ -597,8 +597,7 @@ public class DatasetBackupService {
                 // size
                 resultNode.put("zip-size", Files.size(Path.of(detailsPathString + ZIP_SUFFIX)));
                 // kafka state
-                String kafkaPath = detailsPathString + "/kafka";
-                Optional<Integer> kafkaState = readKafkaStateOffset(kafkaPath);
+                Optional<Integer> kafkaState = readKafkaStateOffsetZip(detailsPathString + ZIP_SUFFIX);
                 kafkaState.ifPresent(integer -> resultNode.put("kafka-state", integer));
                 // times
                 String jsonPath = getBackUpDir() + "/" + backupId + JSON_INFO_SUFFIX;

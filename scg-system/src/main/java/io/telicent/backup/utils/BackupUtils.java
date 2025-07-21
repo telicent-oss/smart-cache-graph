@@ -30,7 +30,9 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeParseException;
@@ -38,6 +40,8 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 
 import static io.telicent.backup.utils.JsonFileUtils.OBJECT_MAPPER;
 
@@ -541,62 +545,49 @@ public class BackupUtils extends ServletUtils {
 
     /**
      * Reads the kafka offset from backup file
-     * @param directoryPath the path to the kafka directory in the backup
+     * @param zipFilePath the path to the backup zip file
      */
-    public static Optional<Integer> readKafkaStateOffset(String directoryPath) {
-        try {
-            Path dir = Paths.get(directoryPath);
-            if (!Files.isDirectory(dir)) {
-                LOG.warn("Directory {} is not readable", directoryPath);
-                return Optional.empty();
-            }
-            if ( !Files.isReadable(dir)) {
-                LOG.warn("Directory {} is not readable", directoryPath);
-                return Optional.empty();
-            }
+    public static Optional<Integer> readKafkaStateOffsetZip(String zipFilePath) {
+        String kafkaSubdir = "/kafka";
+        try (ZipFile zipFile = new ZipFile(zipFilePath)) {
+            LOG.info("File {} opened successfully", zipFilePath);
+            Enumeration<? extends ZipEntry> entries = zipFile.entries();
+            while (entries.hasMoreElements()) {
+                ZipEntry entry = entries.nextElement();
+                if (!entry.isDirectory() && entry.getName().contains(kafkaSubdir)) {
+                    try (InputStream is = zipFile.getInputStream(entry)) {
+                        String content = new String(is.readAllBytes(), StandardCharsets.UTF_8).trim();
 
-            try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir, Files::isRegularFile)) {
-                int fileCount = 0;
-                Path targetFile = null;
-                for (Path file : stream) {
-                    fileCount++;
-                    if (fileCount > 1) {
-                        throw new IllegalArgumentException("More than one kafka state file in " + directoryPath);
-                    }
-                    targetFile = file;
-                }
+                        if (content.isEmpty()) {
+                            LOG.warn("Kafka state file {} is empty", entry.getName());
+                            return Optional.empty();
+                        }
 
-                if (targetFile == null) {
-                    LOG.warn("No kafka state file found in {}", directoryPath);
-                    return Optional.empty();
-                }
-                String content = Files.readString(targetFile).trim();
-                if (content.isEmpty()) {
-                    LOG.warn("Kafka state file {} is empty", targetFile);
-                    return Optional.empty();
-                }
+                        ObjectMapper mapper = new ObjectMapper();
+                        Map<String, Object> state = mapper.readValue(content, Map.class);
+                        LOG.info("File content: {}", content);
 
-                ObjectMapper mapper = new ObjectMapper();
-                Map state = mapper.readValue(content, Map.class);
-                LOG.info("File content: {}", content);
-                Object offsetObj = state.get("offset");
-                if (offsetObj instanceof Number) {
-                    return Optional.of(((Number) offsetObj).intValue());
-                } else if (offsetObj != null) {
-                    try {
-                        return Optional.of(Integer.parseInt(offsetObj.toString()));
-                    }
-                    catch (NumberFormatException e) {
+                        Object offsetObj = state.get("offset");
+                        if (offsetObj instanceof Number) {
+                            return Optional.of(((Number) offsetObj).intValue());
+                        } else if (offsetObj != null) {
+                            try {
+                                return Optional.of(Integer.parseInt(offsetObj.toString()));
+                            } catch (NumberFormatException e) {
+                                LOG.warn("Offset value is not a valid number: {}", offsetObj);
+                                return Optional.empty();
+                            }
+                        }
                         return Optional.empty();
                     }
                 }
-                return Optional.empty();
-
             }
-        } catch (IOException ex) {
-            LOG.error(ex.getMessage());
+        }
+        catch (IOException e) {
+            LOG.error("Error reading zip file {}: {}", zipFilePath, e.getMessage());
             return Optional.empty();
         }
+        return Optional.empty();
     }
 
     /**

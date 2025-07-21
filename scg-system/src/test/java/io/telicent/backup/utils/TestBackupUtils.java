@@ -1070,44 +1070,44 @@ public class TestBackupUtils {
     }
 
     @Test
-    @DisplayName("Tests readKafkaStateOffset with a valid offset")
-    public void test_readKafkaStateOffset_withValidOffset() {
-        String path = "src/test/files/kafka";
-        Optional<Integer> offset = readKafkaStateOffset(path);
+    @DisplayName("Tests readKafkaStateOffsetZip with a valid offset")
+    public void test_readKafkaStateOffsetZip_withValidOffset() {
+        String path = "src/test/files/1.zip";
+        Optional<Integer> offset = readKafkaStateOffsetZip(path);
         assertTrue(offset.isPresent());
         assertEquals(5, offset.get().intValue());
     }
 
     @Test
-    @DisplayName("Tests readKafkaStateOffset with the offset being -1")
-    public void test_readKafkaStateOffset_withNegativeOffset() {
-        String path = "src/test/files/kafka2";
-        Optional<Integer> offset = readKafkaStateOffset(path);
+    @DisplayName("Tests readKafkaStateOffsetZip with the offset being -1")
+    public void test_readKafkaStateOffsetZip_withNegativeOffset() {
+        String path = "src/test/files/2.zip";
+        Optional<Integer> offset = readKafkaStateOffsetZip(path);
         assertTrue(offset.isPresent());
         assertEquals(-1, offset.get().intValue());
     }
 
     @Test
-    @DisplayName("Tests readKafkaStateOffset with an invalid offset")
-    public void test_readKafkaStateOffset_withInvalidOffset() {
-        String path = "src/test/files/kafka3";
-        Optional<Integer> offset = readKafkaStateOffset(path);
+    @DisplayName("Tests readKafkaStateOffsetZip with an invalid offset")
+    public void test_readKafkaStateOffsetZip_withInvalidOffset() {
+        String path = "src/test/files/3.zip";
+        Optional<Integer> offset = readKafkaStateOffsetZip(path);
         assertFalse(offset.isPresent());
     }
 
     @Test
-    @DisplayName("Tests readKafkaStateOffset with a missing offset")
-    public void test_readKafkaStateOffset_withMissingOffset() {
-        String path = "src/test/files/kafka4";
-        Optional<Integer> offset = readKafkaStateOffset(path);
+    @DisplayName("Tests readKafkaStateOffsetZip with a missing offset")
+    public void test_readKafkaStateOffsetZip_withMissingOffset() {
+        String path = "src/test/files/4.zip";
+        Optional<Integer> offset = readKafkaStateOffsetZip(path);
         assertFalse(offset.isPresent());
     }
 
     @Test
-    @DisplayName("Tests readKafkaStateOffset with a nonexistent directory")
-    public void test_readKafkaStateOffset_withMissingDirectory() {
-        String path = "src/test/files/kafka5";
-        Optional<Integer> offset = readKafkaStateOffset(path);
+    @DisplayName("Tests readKafkaStateOffsetZip with a nonexistent file")
+    public void test_readKafkaStateOffsetZip_withMissingFile() {
+        String path = "src/test/files/5.zip";
+        Optional<Integer> offset = readKafkaStateOffsetZip(path);
         assertFalse(offset.isPresent());
     }
 
