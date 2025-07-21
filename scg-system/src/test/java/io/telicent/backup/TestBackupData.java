@@ -15,6 +15,8 @@
  */
 package io.telicent.backup;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.telicent.LibTestsSCG;
 import io.telicent.backup.services.DatasetBackupService;
 import io.telicent.backup.services.DatasetBackupService_Test;
@@ -28,6 +30,7 @@ import org.apache.jena.fuseki.main.sys.FusekiModules;
 import org.apache.jena.fuseki.server.DataAccessPointRegistry;
 import org.apache.jena.fuseki.system.FusekiLogging;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -173,7 +176,7 @@ public class TestBackupData {
         assertEquals("new-backup", responseMap.get("backup-name") );
         assertEquals("test", responseMap.get("user"));
         // for debugging
-//        debug(createBackupResponse);
+        //debug(createBackupResponse);
     }
 
     @Test
@@ -243,6 +246,30 @@ public class TestBackupData {
         // then
 //        debug(createBackupResponse);
         assertEquals(200, createBackupResponse.statusCode());
+    }
+
+    @Test
+    public void test_details_emptyGraph() {
+        // given
+        server = buildServer("--port=0", "--empty");
+        // when
+        HttpResponse<InputStream> createResponse = makeAuthPOSTCallWithPath(server, "$/backups/create/", "test");
+        //debug(createResponse);
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            JsonNode rootNode = objectMapper.readTree(createResponse.body());
+            String backupIdString = rootNode.path("backup-id").asText();
+            HttpResponse<InputStream> createBackupResponse = makeAuthGETCallWithPath(server, "$/backups/details/" + backupIdString, "test");
+            // then
+            //debug(createBackupResponse);
+            assertEquals(200, createBackupResponse.statusCode());
+            JsonNode rootBackupNode = objectMapper.readTree(createBackupResponse.body());
+            String zipSize = rootBackupNode.path("details").path("zip-size").asText();
+            assertFalse(zipSize.isEmpty());
+        }
+        catch (IOException ex) {
+            Assertions.fail("Unexpected exception: " + ex.getMessage());
+        }
     }
 
     @Test

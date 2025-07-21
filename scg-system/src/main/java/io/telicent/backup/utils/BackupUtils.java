@@ -17,6 +17,7 @@
 package io.telicent.backup.utils;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.telicent.smart.cache.configuration.Configurator;
@@ -29,15 +30,18 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UncheckedIOException;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.PathMatcher;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.*;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 
 import static io.telicent.backup.utils.JsonFileUtils.OBJECT_MAPPER;
 
@@ -323,7 +327,7 @@ public class BackupUtils extends ServletUtils {
     }
 
     /**
-     * Iterate recursively over given files adding details ot node
+     * Iterate recursively over given files adding details to node
      *
      * @param files list of files
      * @param node  node to add details too
@@ -538,4 +542,78 @@ public class BackupUtils extends ServletUtils {
             FileUtils.deleteQuietly(path.toFile());
         }
     }
+
+    /**
+     * Reads the kafka offset from backup file
+     * @param zipFilePath the path to the backup zip file
+     */
+    public static Optional<Integer> readKafkaStateOffsetZip(String zipFilePath) {
+        String kafkaSubdir = "/kafka";
+        try (ZipFile zipFile = new ZipFile(zipFilePath)) {
+            LOG.info("File {} opened successfully", zipFilePath);
+            Enumeration<? extends ZipEntry> entries = zipFile.entries();
+            while (entries.hasMoreElements()) {
+                ZipEntry entry = entries.nextElement();
+                if (!entry.isDirectory() && entry.getName().contains(kafkaSubdir)) {
+                    try (InputStream is = zipFile.getInputStream(entry)) {
+                        String content = new String(is.readAllBytes(), StandardCharsets.UTF_8).trim();
+
+                        if (content.isEmpty()) {
+                            LOG.warn("Kafka state file {} is empty", entry.getName());
+                            return Optional.empty();
+                        }
+
+                        ObjectMapper mapper = new ObjectMapper();
+                        Map<String, Object> state = mapper.readValue(content, Map.class);
+                        LOG.info("File content: {}", content);
+
+                        Object offsetObj = state.get("offset");
+                        if (offsetObj instanceof Number) {
+                            return Optional.of(((Number) offsetObj).intValue());
+                        } else if (offsetObj != null) {
+                            try {
+                                return Optional.of(Integer.parseInt(offsetObj.toString()));
+                            } catch (NumberFormatException e) {
+                                LOG.warn("Offset value is not a valid number: {}", offsetObj);
+                                return Optional.empty();
+                            }
+                        }
+                        return Optional.empty();
+                    }
+                }
+            }
+        }
+        catch (IOException e) {
+            LOG.error("Error reading zip file {}: {}", zipFilePath, e.getMessage());
+            return Optional.empty();
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * Reads the ZoneDateTime time from a JSON file
+     * @param filePath path to the info file
+     * @param fieldName name of the time field (start-time, end-time)
+     */
+    public static Optional<ZonedDateTime> readTime(String filePath, String fieldName) {
+        try {
+            String content = Files.readString(Path.of(filePath));
+            JsonNode rootNode = OBJECT_MAPPER.readTree(content);
+            if (!rootNode.has(fieldName)) {
+                return Optional.empty();
+            }
+            String dateTimeString = rootNode.get(fieldName).asText();
+            return Optional.of(ZonedDateTime.parse(dateTimeString));
+        } catch (IOException ex) {
+            LOG.warn("Error reading file: {}", ex.getMessage());
+            return Optional.empty();
+        } catch (DateTimeParseException ex) {
+            LOG.warn("Invalid date format in field '{}': {}", fieldName, ex.getMessage());
+            return Optional.empty();
+        } catch (Exception ex) {
+            LOG.warn("Unexpected error: {}", ex.getMessage());
+            return Optional.empty();
+        }
+    }
+
 }

@@ -51,6 +51,8 @@ import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
+import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
@@ -60,6 +62,7 @@ import java.util.zip.GZIPInputStream;
 
 import static io.telicent.backup.utils.BackupConstants.*;
 import static io.telicent.backup.utils.BackupUtils.*;
+import static io.telicent.backup.utils.BackupUtils.checkPathExistsAndIsDir;
 import static io.telicent.backup.utils.CompressionUtils.*;
 import static io.telicent.backup.utils.JsonFileUtils.OBJECT_MAPPER;
 import static io.telicent.backup.utils.JsonFileUtils.writeObjectNodeToFile;
@@ -152,6 +155,7 @@ public class DatasetBackupService {
      * @param response the node to add metadata of process to
      */
     public void backupDataset(String datasetName, ObjectNode response) {
+        ZonedDateTime startTime = ZonedDateTime.now();
         String backupPath = getBackUpDir();
         int backupID = getNextDirectoryNumberAndCreate(backupPath);
         String backupIDPath = backupPath + "/" + backupID;
@@ -170,6 +174,7 @@ public class DatasetBackupService {
             }
         }
         response.set("datasets", datasetNodes);
+        response.put("start-time", startTime.toString());
         compressAndStoreBackupMetadata(response, backupIDPath);
     }
 
@@ -577,6 +582,41 @@ public class DatasetBackupService {
     }
 
     /**
+     * Display detailed information about a backup
+     *
+     * @param backupId the back-up identifier
+     */
+    public ObjectNode getDetails(final String backupId) {
+        final ObjectNode resultNode = OBJECT_MAPPER.createObjectNode();
+        final String detailsPathString = getBackUpDir() + "/" + backupId;
+        resultNode.put("backup-id", backupId);
+        resultNode.put("details-path", detailsPathString);
+
+        if (checkPathExistsAndIsFile(detailsPathString + ZIP_SUFFIX)) {
+            try {
+                // size
+                resultNode.put("zip-size", Files.size(Path.of(detailsPathString + ZIP_SUFFIX)));
+                // kafka state
+                Optional<Integer> kafkaState = readKafkaStateOffsetZip(detailsPathString + ZIP_SUFFIX);
+                kafkaState.ifPresent(integer -> resultNode.put("kafka-state", integer));
+                // times
+                String jsonPath = getBackUpDir() + "/" + backupId + JSON_INFO_SUFFIX;
+                Optional<ZonedDateTime> startTime = readTime(jsonPath, "start-time");
+                Optional<ZonedDateTime> endTime = readTime(jsonPath, "end-time");
+                startTime.ifPresent(time -> resultNode.put("start-time", time.toString()));
+                endTime.ifPresent(time -> resultNode.put("end-time", time.toString()));
+                if (startTime.isPresent() && endTime.isPresent()) {
+                    Duration duration = Duration.between(startTime.get(), endTime.get());
+                    resultNode.put("backup-time", duration.toMillis() + "ms");
+                }
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        return resultNode;
+    }
+
+    /**
      * Delete everything within the give directory
      *
      * @param deletePath path to delete
@@ -701,7 +741,6 @@ public class DatasetBackupService {
      */
     private void compressAndStoreBackupMetadata(ObjectNode response, String dirPath) {
         final Path zipFilePath = zipDirectory(dirPath, dirPath + ZIP_SUFFIX, DELETE_GENERATED_FILES);
-        writeObjectNodeToFile(response, dirPath + JSON_INFO_SUFFIX);
         if (encryptionUtils != null) {
             try {
                 final Path encZipFilePath = Path.of(dirPath + ZIP_SUFFIX + ENCRYPTION_SUFFIX);
@@ -712,6 +751,9 @@ public class DatasetBackupService {
                 LOG.error("Failed to encrypt backup files due to {}", ex.getMessage(), ex);
             }
         }
+        ZonedDateTime endTime = ZonedDateTime.now();
+        response.put("end-time", endTime.toString());
+        writeObjectNodeToFile(response, dirPath + JSON_INFO_SUFFIX);
     }
 
 }
