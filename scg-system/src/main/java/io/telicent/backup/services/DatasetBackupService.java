@@ -741,7 +741,6 @@ public class DatasetBackupService {
      */
     private void compressAndStoreBackupMetadata(ObjectNode response, String dirPath) {
         final Path zipFilePath = zipDirectory(dirPath, dirPath + ZIP_SUFFIX, DELETE_GENERATED_FILES);
-        //writeObjectNodeToFile(response, dirPath + JSON_INFO_SUFFIX);
         if (encryptionUtils != null) {
             try {
                 final Path encZipFilePath = Path.of(dirPath + ZIP_SUFFIX + ENCRYPTION_SUFFIX);
