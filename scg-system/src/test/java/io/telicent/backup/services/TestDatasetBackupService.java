@@ -44,9 +44,12 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import static io.telicent.backup.services.DatasetBackupService_Test.*;
 import static io.telicent.backup.utils.JsonFileUtils.OBJECT_MAPPER;
@@ -57,10 +60,7 @@ import static org.mockito.Mockito.*;
 public class TestDatasetBackupService {
 
     public final DataAccessPointRegistry mockRegistry = mock(DataAccessPointRegistry.class);
-
-
     private final DatasetBackupService cut = new DatasetBackupService_Test(mockRegistry);
-
     private final ObjectNode RESULT_NODE = OBJECT_MAPPER.createObjectNode();
     private Path baseDir;
 
@@ -155,6 +155,89 @@ public class TestDatasetBackupService {
         assertNotEquals("{}", result.toString());
     }
 
+    @Test
+    @DisplayName("Return the details for a backup of an empty database")
+    public void test_backupDetails_emptyDir() throws IOException {
+        // given
+        Path parent = baseDir.getParent();
+        BackupUtils.dirBackups = parent.toAbsolutePath().toString();
+
+        String datasetName = "dataset-name";
+        DatasetGraphABAC dsgABAC = ABAC.authzDataset(DatasetGraphFactory.createTxnMem(),
+                null,
+                mock(LabelsStoreRocksDB.class),
+                null,
+                null);
+        DataAccessPoint dap = new DataAccessPoint(datasetName, DataService.newBuilder().dataset(dsgABAC).build());
+        when(mockRegistry.accessPoints()).thenReturn(List.of(dap));
+
+        ObjectNode backupResult = OBJECT_MAPPER.createObjectNode();
+        cut.backupDataset(datasetName, backupResult);
+
+
+        Pattern numericZipPattern = Pattern.compile("^(\\d+)\\.zip$", Pattern.CASE_INSENSITIVE);
+        Optional<Integer> maxId = Files.list(parent)
+                .filter(Files::isRegularFile)
+                .map(Path::getFileName)
+                .map(Path::toString)
+                .filter(name -> numericZipPattern.matcher(name).matches())
+                .map(name -> Integer.parseInt(name.replace(".zip", "")))
+                .max(Comparator.naturalOrder());
+
+        if (maxId.isPresent()) {
+            int backupId = maxId.get() + 1;
+
+            // when
+            ObjectNode result = cut.getDetails(Integer.toString(backupId));
+
+            // then
+            String[] existingFields = {"backup-id", "details-path"};
+            for (String field : existingFields) {
+                assertTrue(result.has(field));
+            }
+            String[] missingFields = {"zip-size", "start-time", "end-time", "backup-time"};
+            for (String field : missingFields) {
+                assertFalse(result.has(field), field);
+            }
+        }
+        else {
+            String files = Files.list(parent)
+                    .map(Path::toString)
+                    .collect(Collectors.joining(", "));
+            fail("No backups at " + parent + ": " + files);
+        }
+
+    }
+
+    @Test
+    @DisplayName("Return the details for a backup of a non-empty database")
+    public void test_backupDetails_contents() {
+        // given
+        Path parent = baseDir.getParent();
+        BackupUtils.dirBackups = parent.toAbsolutePath().toString();
+
+        String datasetName = "dataset-name";
+        DatasetGraphABAC dsgABAC = ABAC.authzDataset(DatasetGraphFactory.createTxnMem(),
+                null,
+                mock(LabelsStoreRocksDB.class),
+                null,
+                null);
+        DataAccessPoint dap = new DataAccessPoint("dataset-name", DataService.newBuilder().dataset(dsgABAC).build());
+        when(mockRegistry.accessPoints()).thenReturn(List.of(dap));
+        ObjectNode backupResponse = OBJECT_MAPPER.createObjectNode();
+        cut.backupDataset(datasetName, backupResponse);
+        String backupId = String.valueOf(backupResponse.get("backup-id"));
+
+        // when
+        ObjectNode result = cut.getDetails(backupId);
+
+        // then
+        String[] requiredFields = {"backup-id", "details-path", "zip-size", "start-time", "end-time", "backup-time"};
+        for (String field : requiredFields) {
+            assertTrue(result.has(field));
+        }
+    }
+
     /*
      * BACK UP TESTS
      */
@@ -168,7 +251,8 @@ public class TestDatasetBackupService {
         when(mockRegistry.accessPoints()).thenReturn(List.of(dap));
 
         // when
-        ObjectNode result = cut.backupDataset(datasetName);
+        ObjectNode result = OBJECT_MAPPER.createObjectNode();
+        cut.backupDataset(datasetName, result);
 
         // then
         assertTrue(result.has("backup-id"));
@@ -188,7 +272,8 @@ public class TestDatasetBackupService {
         when(mockRegistry.accessPoints()).thenReturn(emptyList());
 
         // when
-        ObjectNode result = cut.backupDataset(datasetName);
+        ObjectNode result = OBJECT_MAPPER.createObjectNode();
+        cut.backupDataset(datasetName, result);
 
         // then
         assertTrue(result.has("backup-id"));
@@ -216,7 +301,8 @@ public class TestDatasetBackupService {
         when(mockRegistry.accessPoints()).thenReturn(List.of(dap, dap2));
 
         // when
-        ObjectNode result = cut.backupDataset(datasetName);
+        ObjectNode result = OBJECT_MAPPER.createObjectNode();
+        cut.backupDataset(datasetName, result);
 
         // then
         assertTrue(result.has("backup-id"));
@@ -226,9 +312,9 @@ public class TestDatasetBackupService {
         assertEquals(1, result.get("datasets").size());
         ArrayNode datasets = (ArrayNode) result.get("datasets");
         JsonNode dataset = datasets.get(0);
-        assertTrue(dataset.has("dataset-id"));
-        assertTrue(dataset.get("dataset-id").isTextual());
-        assertEquals(datasetName, dataset.get("dataset-id").asText());
+        assertTrue(dataset.has("dataset-name"));
+        assertTrue(dataset.get("dataset-name").isTextual());
+        assertEquals(datasetName, dataset.get("dataset-name").asText());
 
         assertTrue(dataset.has("tdb"));
         JsonNode tdbNode = dataset.get("tdb");
@@ -250,7 +336,7 @@ public class TestDatasetBackupService {
         // given
 
         // This only needs to be a zip file (no contents required)
-        File altZip = new File(baseDir.toString() + "/1.zip");
+        File altZip = new File(baseDir.toString() + "/backup.zip");
         assertTrue(altZip.createNewFile());
         altZip.deleteOnExit();
 
@@ -270,7 +356,8 @@ public class TestDatasetBackupService {
         when(mockRegistry.accessPoints()).thenReturn(List.of(dap, dap2));
 
         // when
-        ObjectNode result = cut.backupDataset(datasetName);
+        ObjectNode result = OBJECT_MAPPER.createObjectNode();
+        cut.backupDataset(datasetName, result);
 
         // then
         assertTrue(result.has("backup-id"));
@@ -280,9 +367,9 @@ public class TestDatasetBackupService {
         assertEquals(1, result.get("datasets").size());
         ArrayNode datasets = (ArrayNode) result.get("datasets");
         JsonNode dataset = datasets.get(0);
-        assertTrue(dataset.has("dataset-id"));
-        assertTrue(dataset.get("dataset-id").isTextual());
-        assertEquals(datasetName, dataset.get("dataset-id").asText());
+        assertTrue(dataset.has("dataset-name"));
+        assertTrue(dataset.get("dataset-name").isTextual());
+        assertEquals(datasetName, dataset.get("dataset-name").asText());
 
         assertTrue(dataset.has("tdb"));
         JsonNode tdbNode = dataset.get("tdb");
@@ -314,7 +401,8 @@ public class TestDatasetBackupService {
         when(mockRegistry.accessPoints()).thenReturn(List.of(dap, dap2));
 
         // when
-        ObjectNode result = cut.backupDataset(null);
+        ObjectNode result = OBJECT_MAPPER.createObjectNode();
+        cut.backupDataset(null, result);
 
         // then
         assertTrue(result.has("backup-id"));
@@ -325,9 +413,9 @@ public class TestDatasetBackupService {
         ArrayNode datasets = (ArrayNode) result.get("datasets");
 
         JsonNode dataset = datasets.get(0);
-        assertTrue(dataset.has("dataset-id"));
-        assertTrue(dataset.get("dataset-id").isTextual());
-        assertEquals(datasetName, dataset.get("dataset-id").asText());
+        assertTrue(dataset.has("dataset-name"));
+        assertTrue(dataset.get("dataset-name").isTextual());
+        assertEquals(datasetName, dataset.get("dataset-name").asText());
 
         assertTrue(dataset.has("tdb"));
         JsonNode tdbNode = dataset.get("tdb");
@@ -340,9 +428,9 @@ public class TestDatasetBackupService {
         assertTrue(labelsNode.get("success").asBoolean());
 
         dataset = datasets.get(1);
-        assertTrue(dataset.has("dataset-id"));
-        assertTrue(dataset.get("dataset-id").isTextual());
-        assertEquals(datasetName2, dataset.get("dataset-id").asText());
+        assertTrue(dataset.has("dataset-name"));
+        assertTrue(dataset.get("dataset-name").isTextual());
+        assertEquals(datasetName2, dataset.get("dataset-name").asText());
 
         assertTrue(dataset.has("tdb"));
         tdbNode = dataset.get("tdb");
@@ -367,7 +455,8 @@ public class TestDatasetBackupService {
         when(mockRegistry.accessPoints()).thenReturn(List.of(dap));
 
         // when
-        ObjectNode result = cut.backupDataset(datasetName);
+        ObjectNode result = OBJECT_MAPPER.createObjectNode();
+        cut.backupDataset(datasetName, result);
 
         // then
         assertTrue(result.has("backup-id"));
@@ -377,9 +466,9 @@ public class TestDatasetBackupService {
         assertEquals(1, result.get("datasets").size());
         ArrayNode datasets = (ArrayNode) result.get("datasets");
         JsonNode dataset = datasets.get(0);
-        assertTrue(dataset.has("dataset-id"));
-        assertTrue(dataset.get("dataset-id").isTextual());
-        assertEquals(datasetName, dataset.get("dataset-id").asText());
+        assertTrue(dataset.has("dataset-name"));
+        assertTrue(dataset.get("dataset-name").isTextual());
+        assertEquals(datasetName, dataset.get("dataset-name").asText());
 
         assertTrue(dataset.has("tdb"));
         JsonNode tdbNode = dataset.get("tdb");
@@ -409,7 +498,8 @@ public class TestDatasetBackupService {
         when(mockRegistry.accessPoints()).thenReturn(List.of(dap));
 
         // when
-        ObjectNode result = cut.backupDataset(datasetName);
+        ObjectNode result = OBJECT_MAPPER.createObjectNode();
+        cut.backupDataset(datasetName, result);
 
         // then
         assertTrue(result.has("backup-id"));
@@ -419,10 +509,10 @@ public class TestDatasetBackupService {
         assertEquals(1, result.get("datasets").size());
         ArrayNode datasets = (ArrayNode) result.get("datasets");
         JsonNode dataset = datasets.get(0);
-        assertTrue(dataset.has("dataset-id"));
-        assertTrue(dataset.get("dataset-id").isTextual());
-        assertEquals(datasetName, dataset.get("dataset-id").asText());
-        assertTrue(dataset.get("dataset-id").isTextual());
+        assertTrue(dataset.has("dataset-name"));
+        assertTrue(dataset.get("dataset-name").isTextual());
+        assertEquals(datasetName, dataset.get("dataset-name").asText());
+        assertTrue(dataset.get("dataset-name").isTextual());
 
         assertTrue(dataset.has("tdb"));
         JsonNode tdbNode = dataset.get("tdb");
@@ -449,7 +539,8 @@ public class TestDatasetBackupService {
         DatasetBackupService_Test.setupExceptionForMethod(BACKUP_TDB, "Test Jena Failure");
 
         // when
-        ObjectNode result = cut.backupDataset(datasetName);
+        ObjectNode result = OBJECT_MAPPER.createObjectNode();
+        cut.backupDataset(datasetName, result);
 
         // then
         assertTrue(result.has("backup-id"));
@@ -459,9 +550,9 @@ public class TestDatasetBackupService {
         assertEquals(1, result.get("datasets").size());
         ArrayNode datasets = (ArrayNode) result.get("datasets");
         JsonNode dataset = datasets.get(0);
-        assertTrue(dataset.has("dataset-id"));
-        assertTrue(dataset.get("dataset-id").isTextual());
-        assertEquals(datasetName, dataset.get("dataset-id").asText());
+        assertTrue(dataset.has("dataset-name"));
+        assertTrue(dataset.get("dataset-name").isTextual());
+        assertEquals(datasetName, dataset.get("dataset-name").asText());
 
         assertTrue(dataset.has("tdb"));
         JsonNode tdbNode = dataset.get("tdb");
@@ -495,7 +586,8 @@ public class TestDatasetBackupService {
         DatasetBackupService_Test.setupExceptionForMethod(BACKUP_LABELS, "Test Rocks DB Failure");
 
         // when
-        ObjectNode result = cut.backupDataset(datasetName);
+        ObjectNode result = OBJECT_MAPPER.createObjectNode();
+        cut.backupDataset(datasetName, result);
 
         // then
         assertTrue(result.has("backup-id"));
@@ -505,9 +597,9 @@ public class TestDatasetBackupService {
         assertEquals(1, result.get("datasets").size());
         ArrayNode datasets = (ArrayNode) result.get("datasets");
         JsonNode dataset = datasets.get(0);
-        assertTrue(dataset.has("dataset-id"));
-        assertTrue(dataset.get("dataset-id").isTextual());
-        assertEquals(datasetName, dataset.get("dataset-id").asText());
+        assertTrue(dataset.has("dataset-name"));
+        assertTrue(dataset.get("dataset-name").isTextual());
+        assertEquals(datasetName, dataset.get("dataset-name").asText());
 
         assertTrue(dataset.has("tdb"));
         JsonNode tdbNode = dataset.get("tdb");
@@ -544,7 +636,7 @@ public class TestDatasetBackupService {
 
     @Test
     @DisplayName("Happy path for executing backup of Label Store")
-    public void test_executeBackupLabelStore_happyPath() {
+    public void test_executeBackupLabelStore_happyPath() throws Exception {
         // given
         LabelsStoreRocksDB mockRocksDB = mock(LabelsStoreRocksDB.class);
         DatasetBackupService datasetBackupService = new DatasetBackupService(null);
@@ -574,11 +666,12 @@ public class TestDatasetBackupService {
 
     @Test
     @DisplayName("Restore datasets when the directory is wrong/missing")
-    public void test_restoreDatasets_wrongDir() {
+    public void test_restoreDatasets_wrongDir() throws Exception {
         // given
         String missingID = "does_not_exist";
         // when
-        ObjectNode result = cut.restoreDatasets(missingID);
+        ObjectNode result = OBJECT_MAPPER.createObjectNode();
+        cut.restoreDatasets(missingID, result);
         // then
         assertTrue(result.has("restorePath"));
         assertTrue(result.has("success"));
@@ -592,7 +685,7 @@ public class TestDatasetBackupService {
 
     @Test
     @DisplayName("Restore datasets when there are no backups in the directory")
-    public void test_restoreDatasets_NoBackups() {
+    public void test_restoreDatasets_NoBackups() throws Exception {
         // given
         String emptyID = "empty_dir";
         File newDir = new File(baseDir.toString() + "/" + emptyID);
@@ -600,7 +693,8 @@ public class TestDatasetBackupService {
         newDir.deleteOnExit();
 
         // when
-        ObjectNode result = cut.restoreDatasets(emptyID);
+        ObjectNode result = OBJECT_MAPPER.createObjectNode();
+        cut.restoreDatasets(emptyID, result);
         // then
         assertTrue(result.has("restorePath"));
         assertTrue(result.has("success"));
@@ -615,7 +709,7 @@ public class TestDatasetBackupService {
 
     @Test
     @DisplayName("Restore datasets when no matching dataset is found")
-    public void test_restoreDatasets_NoMatch() {
+    public void test_restoreDatasets_NoMatch() throws Exception {
         // given
         String restoreID = "1";
         File newDir = new File(baseDir.toString() + "/" + restoreID);
@@ -623,17 +717,20 @@ public class TestDatasetBackupService {
         newDir.deleteOnExit();
 
         String datasetName = "dataset";
-        File newDataset = new File(newDir.toString() + "/" + datasetName);
+        File newDataset = new File(newDir + "/" + datasetName);
         assertTrue(newDataset.mkdir());
         newDataset.deleteOnExit();
 
         when(mockRegistry.get(anyString())).thenReturn(null);
 
         // when
-        ObjectNode result = cut.restoreDatasets(restoreID);
+        ObjectNode result = OBJECT_MAPPER.createObjectNode();
+        cut.restoreDatasets(restoreID, result);
+
         // then
         assertTrue(result.has("restorePath"));
-        assertFalse(result.has("success"));
+        assertTrue(result.has("success"));
+        assertFalse(result.get("success").asBoolean());
         assertTrue(result.has(datasetName));
         JsonNode dataset = result.get("dataset");
         assertTrue(dataset.has("success"));
@@ -645,7 +742,7 @@ public class TestDatasetBackupService {
 
     @Test
     @DisplayName("Restore datasets with ABAC and RocksDB labels (happy path)")
-    public void test_restoreDatasets_abac_rocksDB() throws IOException {
+    public void test_restoreDatasets_abac_rocksDB() throws Exception {
         // given
         String restoreID = "1";
         File newDir = new File(baseDir.toString() + "/" + restoreID);
@@ -683,15 +780,18 @@ public class TestDatasetBackupService {
         when(mockRegistry.get("dataset-name")).thenReturn(dap);
 
         // when
-        ObjectNode result = cut.restoreDatasets(restoreID);
+        ObjectNode result = OBJECT_MAPPER.createObjectNode();
+        cut.restoreDatasets(restoreID, result);
 
         // then
         assertTrue(result.has("restorePath"));
-        assertFalse(result.has("success"));
+        assertTrue(result.has("success"));
+        assertTrue(result.get("success").asBoolean());
         assertTrue(result.has(datasetName));
+
         JsonNode dataset = result.get(datasetName);
-        assertTrue(dataset.has("dataset-id"));
-        assertEquals(dataset.get("dataset-id").asText(), datasetName);
+        assertTrue(dataset.has("dataset-name"));
+        assertEquals(dataset.get("dataset-name").asText(), datasetName);
 
         assertTrue(dataset.has("tdb"));
         JsonNode tdb = dataset.get("tdb");
@@ -709,7 +809,7 @@ public class TestDatasetBackupService {
 
     @Test
     @DisplayName("Restore datasets with ABAC and RocksDB labels without passing the backupID to the restore method")
-    public void test_restoreDatasets_abac_rocksDB_no_arg() throws IOException {
+    public void test_restoreDatasets_abac_rocksDB_no_arg() throws Exception {
         // given
         String restoreID = "1";
         File newDir = new File(baseDir.toString() + "/" + restoreID);
@@ -747,15 +847,17 @@ public class TestDatasetBackupService {
         when(mockRegistry.get("dataset-name")).thenReturn(dap);
 
         // when
-        ObjectNode result = cut.restoreDatasets(null);
+        ObjectNode result = OBJECT_MAPPER.createObjectNode();
+        cut.restoreDatasets("", result);
 
         // then
         assertTrue(result.has("restorePath"));
-        assertFalse(result.has("success"));
+        assertTrue(result.has("success"));
+        assertTrue(result.get("success").asBoolean());
         assertTrue(result.has(datasetName));
         JsonNode dataset = result.get(datasetName);
-        assertTrue(dataset.has("dataset-id"));
-        assertEquals(dataset.get("dataset-id").asText(), datasetName);
+        assertTrue(dataset.has("dataset-name"));
+        assertEquals(dataset.get("dataset-name").asText(), datasetName);
 
         assertTrue(dataset.has("tdb"));
         JsonNode tdb = dataset.get("tdb");
@@ -773,7 +875,7 @@ public class TestDatasetBackupService {
 
     @Test
     @DisplayName("Restore datasets with ABAC and RocksDB labels without passing the backupID to the restore method (multiple entries)")
-    public void test_backupRestoreDatasets_abac_rocksDB_no_arg_multiple_entries() throws IOException {
+    public void test_backupRestoreDatasets_abac_rocksDB_no_arg_multiple_entries() throws Exception {
         // given
         File altDir = new File(baseDir.toString() + "/1");
         assertTrue(altDir.mkdir());
@@ -838,18 +940,17 @@ public class TestDatasetBackupService {
         when(mockRegistry.get("dataset-name")).thenReturn(dap);
         when(mockRegistry.get("second-dataset-name")).thenReturn(dap2);
 
-        ObjectNode result = cut.restoreDatasets(null);
-        System.out.println(result);
+        ObjectNode result = OBJECT_MAPPER.createObjectNode();
+        cut.restoreDatasets("", result);
 
         // then
         assertTrue(result.has("restorePath"));
-        String restorePath = result.get("restorePath").asText();
-        System.out.println(restorePath);
-        assertFalse(result.has("success"));
+        assertTrue(result.has("success"));
+        assertTrue(result.get("success").asBoolean());
         assertTrue(result.has(datasetName));
         JsonNode dataset = result.get(datasetName);
-        assertTrue(dataset.has("dataset-id"));
-        assertEquals(dataset.get("dataset-id").asText(), datasetName);
+        assertTrue(dataset.has("dataset-name"));
+        assertEquals(dataset.get("dataset-name").asText(), datasetName);
 
         assertTrue(dataset.has("tdb"));
         JsonNode tdb = dataset.get("tdb");
@@ -867,7 +968,7 @@ public class TestDatasetBackupService {
 
     @Test
     @DisplayName("Restore datasets with ABAC and RocksDB labels (multiple entries)")
-    public void test_restoreDatasets_abac_rocksDB_multiple_entries() throws IOException {
+    public void test_restoreDatasets_abac_rocksDB_multiple_entries() throws Exception {
         // given
 
         // This only needs to be a directory (no contents required)
@@ -916,15 +1017,19 @@ public class TestDatasetBackupService {
         when(mockRegistry.get("dataset-name")).thenReturn(dap);
 
         // when
-        ObjectNode result = cut.restoreDatasets(restoreID);
+        ObjectNode result = OBJECT_MAPPER.createObjectNode();
+        cut.restoreDatasets(restoreID, result);
+
 
         // then
         assertTrue(result.has("restorePath"));
-        assertFalse(result.has("success"));
+        assertTrue(result.has("success"));
+        assertTrue(result.get("success").asBoolean());
+
         assertTrue(result.has(datasetName));
         JsonNode dataset = result.get(datasetName);
-        assertTrue(dataset.has("dataset-id"));
-        assertEquals(dataset.get("dataset-id").asText(), datasetName);
+        assertTrue(dataset.has("dataset-name"));
+        assertEquals(dataset.get("dataset-name").asText(), datasetName);
 
         assertTrue(dataset.has("tdb"));
         JsonNode tdb = dataset.get("tdb");
@@ -942,7 +1047,7 @@ public class TestDatasetBackupService {
 
     @Test
     @DisplayName("Restore datasets when the dataset is not ABAC DSG")
-    public void test_restoreDatasets_not_abac_dsg() throws IOException {
+    public void test_restoreDatasets_not_abac_dsg() throws Exception {
         // given
         String restoreID = "1";
         File newDir = new File(baseDir.toString() + "/" + restoreID);
@@ -967,15 +1072,18 @@ public class TestDatasetBackupService {
         when(mockRegistry.get("dataset-name")).thenReturn(dap);
 
         // when
-        ObjectNode result = cut.restoreDatasets(restoreID);
+        ObjectNode result = OBJECT_MAPPER.createObjectNode();
+        cut.restoreDatasets(restoreID, result);
 
         // then
         assertTrue(result.has("restorePath"));
-        assertFalse(result.has("success"));
+        assertTrue(result.has("success"));
+        assertTrue(result.get("success").asBoolean());
+
         assertTrue(result.has(datasetName));
         JsonNode dataset = result.get(datasetName);
-        assertTrue(dataset.has("dataset-id"));
-        assertEquals(dataset.get("dataset-id").asText(), datasetName);
+        assertTrue(dataset.has("dataset-name"));
+        assertEquals(dataset.get("dataset-name").asText(), datasetName);
 
         assertTrue(dataset.has("tdb"));
         JsonNode tdb = dataset.get("tdb");
@@ -996,7 +1104,7 @@ public class TestDatasetBackupService {
 
     @Test
     @DisplayName("Restore datasets without ABAC DSG without passing the backupID to the restore method")
-    public void test_restoreDatasets_not_abac_dsg_no_arg() throws IOException {
+    public void test_restoreDatasets_not_abac_dsg_no_arg() throws Exception {
         // given
         String restoreID = "1";
         File newDir = new File(baseDir.toString() + "/" + restoreID);
@@ -1021,15 +1129,18 @@ public class TestDatasetBackupService {
         when(mockRegistry.get("dataset-name")).thenReturn(dap);
 
         // when
-        ObjectNode result = cut.restoreDatasets(null);
+        ObjectNode result = OBJECT_MAPPER.createObjectNode();
+        cut.restoreDatasets("", result);
 
         // then
         assertTrue(result.has("restorePath"));
-        assertFalse(result.has("success"));
+        assertTrue(result.has("success"));
+        assertTrue(result.get("success").asBoolean());
+
         assertTrue(result.has(datasetName));
         JsonNode dataset = result.get(datasetName);
-        assertTrue(dataset.has("dataset-id"));
-        assertEquals(dataset.get("dataset-id").asText(), datasetName);
+        assertTrue(dataset.has("dataset-name"));
+        assertEquals(dataset.get("dataset-name").asText(), datasetName);
 
         assertTrue(dataset.has("tdb"));
         JsonNode tdb = dataset.get("tdb");
@@ -1050,7 +1161,7 @@ public class TestDatasetBackupService {
 
     @Test
     @DisplayName("Restore datasets without ABAC DSG without passing the backupID to the restore method (multiple entries)")
-    public void test_restoreDatasets_not_abac_dsg_no_arg_multiple_entries() throws IOException {
+    public void test_restoreDatasets_not_abac_dsg_no_arg_multiple_entries() throws Exception {
         // given
         File altDir = new File(baseDir.toString() + "/1");
         assertTrue(altDir.mkdir());
@@ -1087,15 +1198,19 @@ public class TestDatasetBackupService {
         when(mockRegistry.get("dataset-name")).thenReturn(dap);
 
         // when
-        ObjectNode result = cut.restoreDatasets(null);
+        ObjectNode result = OBJECT_MAPPER.createObjectNode();
+        cut.restoreDatasets("", result);
+
 
         // then
         assertTrue(result.has("restorePath"));
-        assertFalse(result.has("success"));
+        assertTrue(result.has("success"));
+        assertTrue(result.get("success").asBoolean());
+
         assertTrue(result.has(datasetName));
         JsonNode dataset = result.get(datasetName);
-        assertTrue(dataset.has("dataset-id"));
-        assertEquals(dataset.get("dataset-id").asText(), datasetName);
+        assertTrue(dataset.has("dataset-name"));
+        assertEquals(dataset.get("dataset-name").asText(), datasetName);
 
         assertTrue(dataset.has("tdb"));
         JsonNode tdb = dataset.get("tdb");
@@ -1117,7 +1232,7 @@ public class TestDatasetBackupService {
 
     @Test
     @DisplayName("Restore datasets when an exception occurs during restore process")
-    public void test_restoreDatasets_exception() throws IOException {
+    public void test_restoreDatasets_exception() throws Exception {
         // given
         String restoreID = "1";
         File newDir = new File(baseDir.toString() + "/" + restoreID);
@@ -1157,15 +1272,18 @@ public class TestDatasetBackupService {
         DatasetBackupService_Test.setupExceptionForMethod(RESTORE_LABELS, "Failure");
 
         // when
-        ObjectNode result = cut.restoreDatasets(restoreID);
+        ObjectNode result = OBJECT_MAPPER.createObjectNode();
+        cut.restoreDatasets(restoreID, result);
 
         // then
         assertTrue(result.has("restorePath"));
-        assertFalse(result.has("success"));
+        assertTrue(result.has("success"));
+        assertTrue(result.get("success").asBoolean());
+
         assertTrue(result.has(datasetName));
         JsonNode dataset = result.get(datasetName);
-        assertTrue(dataset.has("dataset-id"));
-        assertEquals(dataset.get("dataset-id").asText(), datasetName);
+        assertTrue(dataset.has("dataset-name"));
+        assertEquals(dataset.get("dataset-name").asText(), datasetName);
 
         assertEquals(0, DatasetBackupService_Test.getCallCount(RESTORE_TDB));
         assertEquals(0, DatasetBackupService_Test.getCallCount(RESTORE_LABELS));
@@ -1173,7 +1291,7 @@ public class TestDatasetBackupService {
 
     @Test
     @DisplayName("Restore datasets when DataAccessPoint is invalid")
-    public void test_restoreDatasets_invalidDataAccessPoint() throws IOException {
+    public void test_restoreDatasets_invalidDataAccessPoint() throws Exception {
         // given
         String restoreID = "1";
         File newDir = new File(baseDir.toString() + "/" + restoreID);
@@ -1208,23 +1326,84 @@ public class TestDatasetBackupService {
         DatasetBackupService_Test.setupExceptionForMethod(RESTORE_LABELS, "Failure");
 
         // when
-        ObjectNode result = cut.restoreDatasets(restoreID);
+        ObjectNode result = OBJECT_MAPPER.createObjectNode();
+        cut.restoreDatasets(restoreID, result);
 
         // then
         assertTrue(result.has("restorePath"));
-        assertFalse(result.has("success"));
+        assertTrue(result.has("success"));
+        assertFalse(result.get("success").asBoolean());
+
         assertTrue(result.has(datasetName));
         JsonNode dataset = result.get(datasetName);
-        assertTrue(dataset.has("dataset-id"));
-        assertEquals(dataset.get("dataset-id").asText(), datasetName);
+        assertTrue(dataset.has("dataset-name"));
+        assertEquals(dataset.get("dataset-name").asText(), datasetName);
 
         assertEquals(0, DatasetBackupService_Test.getCallCount(RESTORE_TDB));
         assertEquals(0, DatasetBackupService_Test.getCallCount(RESTORE_LABELS));
     }
 
     @Test
+    @DisplayName("Restore datasets when DataAccessPoint has no direct match")
+    public void test_restoreDatasets_noDataAccessPointMatch() throws Exception {
+        // given
+        String restoreID = "1";
+        File newDir = new File(baseDir.toString() + "/" + restoreID);
+        assertTrue(newDir.mkdir());
+        newDir.deleteOnExit();
+
+        String datasetName = "dataset-name";
+        File newDataset = new File(newDir + "/" + datasetName);
+        assertTrue(newDataset.mkdir());
+        newDataset.deleteOnExit();
+
+        File tdbDir = new File(newDataset + "/tdb/");
+        assertTrue(tdbDir.mkdir());
+        tdbDir.deleteOnExit();
+
+        File tdbFile = new File(newDataset + "/tdb/" + datasetName + "_backup.nq.gz");
+        assertTrue(tdbFile.createNewFile());
+        tdbFile.deleteOnExit();
+
+        File labelsDir = new File(newDataset + "/labels/");
+        assertTrue(labelsDir.mkdir());
+        labelsDir.deleteOnExit();
+
+        LabelsStoreRocksDB mockRocksDbLabelStore = mock(LabelsStoreRocksDB.class);
+        when(mockRocksDbLabelStore.getTransactional()).thenReturn(DatasetGraphFactory.createTxnMem());
+
+        DataAccessPoint mockDAP = mock(DataAccessPoint.class);
+        when(mockDAP.getName()).thenReturn("nothingThatMatches");
+
+        when(mockRegistry.get("dataset-name")).thenReturn(null);
+        when(mockRegistry.accessPoints()).thenReturn(List.of(mockDAP));
+
+
+        DatasetBackupService_Test.setupExceptionForMethod(RESTORE_TDB, "Failure");
+        DatasetBackupService_Test.setupExceptionForMethod(RESTORE_LABELS, "Failure");
+
+        // when
+        ObjectNode result = OBJECT_MAPPER.createObjectNode();
+        cut.restoreDatasets(restoreID, result);
+
+        // then
+        assertTrue(result.has("restorePath"));
+        assertTrue(result.has("success"));
+        assertFalse(result.get("success").asBoolean());
+
+        assertTrue(result.has(datasetName));
+        JsonNode dataset = result.get(datasetName);
+        assertTrue(dataset.has("dataset-name"));
+        assertEquals(dataset.get("dataset-name").asText(), datasetName);
+
+        assertEquals(0, DatasetBackupService_Test.getCallCount(RESTORE_TDB));
+        assertEquals(0, DatasetBackupService_Test.getCallCount(RESTORE_LABELS));
+    }
+
+
+    @Test
     @DisplayName("Restore datasets with ABAC DSG but not RocksDB")
-    public void test_restoreDatasets_abac_dsg_not_rocksdb() throws IOException {
+    public void test_restoreDatasets_abac_dsg_not_rocksdb() throws Exception {
         // given
         String restoreID = "1";
         File newDir = new File(baseDir.toString() + "/" + restoreID);
@@ -1254,15 +1433,18 @@ public class TestDatasetBackupService {
         when(mockRegistry.get("dataset-name")).thenReturn(dap);
 
         // when
-        ObjectNode result = cut.restoreDatasets(restoreID);
+        ObjectNode result = OBJECT_MAPPER.createObjectNode();
+        cut.restoreDatasets(restoreID, result);
 
         // then
         assertTrue(result.has("restorePath"));
-        assertFalse(result.has("success"));
+        assertTrue(result.has("success"));
+        assertTrue(result.get("success").asBoolean());
+
         assertTrue(result.has(datasetName));
         JsonNode dataset = result.get(datasetName);
-        assertTrue(dataset.has("dataset-id"));
-        assertEquals(dataset.get("dataset-id").asText(), datasetName);
+        assertTrue(dataset.has("dataset-name"));
+        assertEquals(dataset.get("dataset-name").asText(), datasetName);
 
         assertTrue(dataset.has("tdb"));
         JsonNode tdb = dataset.get("tdb");
@@ -1283,7 +1465,7 @@ public class TestDatasetBackupService {
 
     @Test
     @DisplayName("Restore datasets with ABAC but not RocksDB without passing the backupID to the restore method")
-    public void test_restoreDatasets_abac_dsg_not_rocksdb_no_arg() throws IOException {
+    public void test_restoreDatasets_abac_dsg_not_rocksdb_no_arg() throws Exception {
         // given
         String restoreID = "1";
         File newDir = new File(baseDir.toString() + "/" + restoreID);
@@ -1313,15 +1495,19 @@ public class TestDatasetBackupService {
         when(mockRegistry.get("dataset-name")).thenReturn(dap);
 
         // when
-        ObjectNode result = cut.restoreDatasets(null);
+        ObjectNode result = OBJECT_MAPPER.createObjectNode();
+        cut.restoreDatasets("", result);
+
 
         // then
         assertTrue(result.has("restorePath"));
-        assertFalse(result.has("success"));
+        assertTrue(result.has("success"));
+        assertTrue(result.get("success").asBoolean());
+
         assertTrue(result.has(datasetName));
         JsonNode dataset = result.get(datasetName);
-        assertTrue(dataset.has("dataset-id"));
-        assertEquals(dataset.get("dataset-id").asText(), datasetName);
+        assertTrue(dataset.has("dataset-name"));
+        assertEquals(dataset.get("dataset-name").asText(), datasetName);
 
         assertTrue(dataset.has("tdb"));
         JsonNode tdb = dataset.get("tdb");
@@ -1342,7 +1528,7 @@ public class TestDatasetBackupService {
 
     @Test
     @DisplayName("Restore datasets with ABAC but not RocksDB without passing the backupID to the restore method (multiple entries)")
-    public void test_restoreDatasets_abac_dsg_not_rocksdb_no_arg_multiple_entries() throws IOException {
+    public void test_restoreDatasets_abac_dsg_not_rocksdb_no_arg_multiple_entries() throws Exception {
         // given
         File altDir = new File(baseDir.toString() + "/1");
         assertTrue(altDir.mkdir());
@@ -1380,15 +1566,17 @@ public class TestDatasetBackupService {
         when(mockRegistry.get("dataset-name")).thenReturn(dap);
 
         // when
-        ObjectNode result = cut.restoreDatasets(null);
+        ObjectNode result = OBJECT_MAPPER.createObjectNode();
+        cut.restoreDatasets("", result);
 
         // then
         assertTrue(result.has("restorePath"));
-        assertFalse(result.has("success"));
+        assertTrue(result.has("success"));
+        assertTrue(result.get("success").asBoolean());
         assertTrue(result.has(datasetName));
         JsonNode dataset = result.get(datasetName);
-        assertTrue(dataset.has("dataset-id"));
-        assertEquals(dataset.get("dataset-id").asText(), datasetName);
+        assertTrue(dataset.has("dataset-name"));
+        assertEquals(dataset.get("dataset-name").asText(), datasetName);
 
         assertTrue(dataset.has("tdb"));
         JsonNode tdb = dataset.get("tdb");
@@ -1409,7 +1597,7 @@ public class TestDatasetBackupService {
 
     @Test
     @DisplayName("Restore datasets with ABAC and RocksDB labels when exceptions occur")
-    public void test_restoreDatasets_abac_rocksDB_exceptions() throws IOException {
+    public void test_restoreDatasets_abac_rocksDB_exceptions() throws Exception {
         // given
         String restoreID = "1";
         File newDir = new File(baseDir.toString() + "/" + restoreID);
@@ -1449,15 +1637,18 @@ public class TestDatasetBackupService {
         DatasetBackupService_Test.setupExceptionForMethod(RESTORE_LABELS, "Failure");
 
         // when
-        ObjectNode result = cut.restoreDatasets(restoreID);
+        ObjectNode result = OBJECT_MAPPER.createObjectNode();
+        cut.restoreDatasets(restoreID, result);
 
         // then
         assertTrue(result.has("restorePath"));
-        assertFalse(result.has("success"));
+        assertTrue(result.has("success"));
+        assertTrue(result.get("success").asBoolean());
+
         assertTrue(result.has(datasetName));
         JsonNode dataset = result.get(datasetName);
-        assertTrue(dataset.has("dataset-id"));
-        assertEquals(dataset.get("dataset-id").asText(), datasetName);
+        assertTrue(dataset.has("dataset-name"));
+        assertEquals(dataset.get("dataset-name").asText(), datasetName);
 
         assertTrue(dataset.has("tdb"));
         JsonNode tdb = dataset.get("tdb");
@@ -1475,7 +1666,7 @@ public class TestDatasetBackupService {
 
     @Test
     @DisplayName("Restore datasets with ABAC and RocksDB labels when no backup files are found")
-    public void test_restoreDatasets_abac_rocksDB_noFiles() {
+    public void test_restoreDatasets_abac_rocksDB_noFiles() throws Exception {
         // given
         String restoreID = "1";
         File newDir = new File(baseDir.toString() + "/" + restoreID);
@@ -1500,15 +1691,18 @@ public class TestDatasetBackupService {
         when(mockRegistry.get("dataset-name")).thenReturn(dap);
 
         // when
-        ObjectNode result = cut.restoreDatasets(restoreID);
+        ObjectNode result = OBJECT_MAPPER.createObjectNode();
+        cut.restoreDatasets(restoreID, result);
 
         // then
         assertTrue(result.has("restorePath"));
-        assertFalse(result.has("success"));
+        assertTrue(result.has("success"));
+        assertTrue(result.get("success").asBoolean());
+
         assertTrue(result.has(datasetName));
         JsonNode dataset = result.get(datasetName);
-        assertTrue(dataset.has("dataset-id"));
-        assertEquals(dataset.get("dataset-id").asText(), datasetName);
+        assertTrue(dataset.has("dataset-name"));
+        assertEquals(dataset.get("dataset-name").asText(), datasetName);
 
         assertTrue(dataset.has("tdb"));
         JsonNode tdb = dataset.get("tdb");
@@ -1530,7 +1724,7 @@ public class TestDatasetBackupService {
 
     @Test
     @DisplayName("Restore datasets with ABAC and RocksDB labels when no backup files are found and without passing the backupID to the restore method")
-    public void test_restoreDatasets_abac_rocksDB_noFiles_no_arg() {
+    public void test_restoreDatasets_abac_rocksDB_noFiles_no_arg() throws Exception {
         // given
         String restoreID = "1";
         File newDir = new File(baseDir.toString() + "/" + restoreID);
@@ -1538,7 +1732,7 @@ public class TestDatasetBackupService {
         newDir.deleteOnExit();
 
         String datasetName = "dataset-name";
-        File newDataset = new File(newDir.toString() + "/" + datasetName);
+        File newDataset = new File(newDir + "/" + datasetName);
         assertTrue(newDataset.mkdir());
         newDataset.deleteOnExit();
 
@@ -1555,15 +1749,17 @@ public class TestDatasetBackupService {
         when(mockRegistry.get("dataset-name")).thenReturn(dap);
 
         // when
-        ObjectNode result = cut.restoreDatasets(null);
+        ObjectNode result = OBJECT_MAPPER.createObjectNode();
+        cut.restoreDatasets("", result);
 
         // then
         assertTrue(result.has("restorePath"));
-        assertFalse(result.has("success"));
+        assertTrue(result.has("success"));
+        assertTrue(result.get("success").asBoolean());
         assertTrue(result.has(datasetName));
         JsonNode dataset = result.get(datasetName);
-        assertTrue(dataset.has("dataset-id"));
-        assertEquals(dataset.get("dataset-id").asText(), datasetName);
+        assertTrue(dataset.has("dataset-name"));
+        assertEquals(dataset.get("dataset-name").asText(), datasetName);
 
         assertTrue(dataset.has("tdb"));
         JsonNode tdb = dataset.get("tdb");
@@ -1582,6 +1778,315 @@ public class TestDatasetBackupService {
         assertEquals(0, DatasetBackupService_Test.getCallCount(RESTORE_TDB));
         assertEquals(0, DatasetBackupService_Test.getCallCount(RESTORE_LABELS));
     }
+
+    @Test
+    @DisplayName("Restore partial dataset with ABAC and RocksDB labels (happy path)")
+    public void test_restoreDatasets_abac_rocksDB_partialDataSet() throws Exception {
+        // given
+        String restoreID = "1";
+        File newDir = new File(baseDir.toString() + "/" + restoreID);
+        assertTrue(newDir.mkdir());
+        newDir.deleteOnExit();
+
+        String datasetName = "dataset-name";
+        File newDataset = new File(newDir + "/" + datasetName);
+        assertTrue(newDataset.mkdir());
+        newDataset.deleteOnExit();
+
+        File tdbDir = new File(newDataset + "/tdb/");
+        assertTrue(tdbDir.mkdir());
+        tdbDir.deleteOnExit();
+
+        File tdbFile = new File(newDataset + "/tdb/" + datasetName + "_backup.nq.gz");
+        assertTrue(tdbFile.createNewFile());
+        tdbFile.deleteOnExit();
+
+        File labelsDir = new File(newDataset + "/labels/");
+        assertTrue(labelsDir.mkdir());
+        labelsDir.deleteOnExit();
+
+        LabelsStoreRocksDB mockRocksDbLabelStore = mock(LabelsStoreRocksDB.class);
+        when(mockRocksDbLabelStore.getTransactional()).thenReturn(DatasetGraphFactory.createTxnMem());
+
+
+        DatasetGraphABAC dsgABAC = ABAC.authzDataset(DatasetGraphFactory.createTxnMem(),
+                null,
+                mockRocksDbLabelStore,
+                null,
+                null);
+        DataAccessPoint dap = new DataAccessPoint("dataset-name", DataService.newBuilder().dataset(dsgABAC).build());
+
+        when(mockRegistry.get("dataset-name")).thenReturn(dap);
+
+        // when
+        ObjectNode result = OBJECT_MAPPER.createObjectNode();
+        cut.restoreDatasets(restoreID + "/" + datasetName, result);
+
+        // then
+        assertTrue(result.has("restorePath"));
+        assertTrue(result.has("success"));
+        assertTrue(result.get("success").asBoolean());
+        assertTrue(result.has(datasetName));
+        JsonNode dataset = result.get(datasetName);
+        assertTrue(dataset.has("dataset-name"));
+        assertEquals(dataset.get("dataset-name").asText(), datasetName);
+
+        assertTrue(dataset.has("tdb"));
+        JsonNode tdb = dataset.get("tdb");
+        assertTrue(tdb.has("success"));
+        assertTrue(tdb.get("success").asBoolean());
+
+        assertTrue(dataset.has("labels"));
+        JsonNode labels = dataset.get("labels");
+        assertTrue(labels.has("success"));
+        assertTrue(labels.get("success").asBoolean());
+
+        assertEquals(1, DatasetBackupService_Test.getCallCount(RESTORE_TDB));
+        assertEquals(1, DatasetBackupService_Test.getCallCount(RESTORE_LABELS));
+    }
+
+    @Test
+    @DisplayName("Restore partial dataset with ABAC and RocksDB labels (happy path - differing case)")
+    public void test_restoreDatasets_abac_rocksDB_partialDataSet_differingCase() throws Exception {
+        // given
+        String restoreID = "7";
+        File newDir = new File(baseDir.toString() + "/" + restoreID);
+        assertTrue(newDir.mkdir());
+        newDir.deleteOnExit();
+
+        String datasetName = "dataset-name";
+        File newDataset = new File(newDir + "/" + datasetName);
+        assertTrue(newDataset.mkdir());
+        newDataset.deleteOnExit();
+
+        File tdbDir = new File(newDataset + "/tdb/");
+        assertTrue(tdbDir.mkdir());
+        tdbDir.deleteOnExit();
+
+        File tdbFile = new File(newDataset + "/tdb/" + datasetName + "_backup.nq.gz");
+        assertTrue(tdbFile.createNewFile());
+        tdbFile.deleteOnExit();
+
+        File labelsDir = new File(newDataset + "/labels/");
+        assertTrue(labelsDir.mkdir());
+        labelsDir.deleteOnExit();
+
+        LabelsStoreRocksDB mockRocksDbLabelStore = mock(LabelsStoreRocksDB.class);
+        when(mockRocksDbLabelStore.getTransactional()).thenReturn(DatasetGraphFactory.createTxnMem());
+
+
+        DatasetGraphABAC dsgABAC = ABAC.authzDataset(DatasetGraphFactory.createTxnMem(),
+                null,
+                mockRocksDbLabelStore,
+                null,
+                null);
+        DataAccessPoint dap = new DataAccessPoint("dataset-name", DataService.newBuilder().dataset(dsgABAC).build());
+
+        when(mockRegistry.get("DATASET-NAME")).thenReturn(null);
+        when(mockRegistry.accessPoints()).thenReturn(List.of(dap));
+
+        // when
+        ObjectNode result = OBJECT_MAPPER.createObjectNode();
+        cut.restoreDatasets(restoreID + "/" + "DATASET-NAME", result);
+
+        // then
+        assertTrue(result.has("restorePath"));
+        assertTrue(result.has("success"));
+        assertTrue(result.get("success").asBoolean());
+        assertTrue(result.has(datasetName));
+        JsonNode dataset = result.get(datasetName);
+        assertTrue(dataset.has("dataset-name"));
+        assertEquals(dataset.get("dataset-name").asText(), datasetName);
+
+        assertTrue(dataset.has("tdb"));
+        JsonNode tdb = dataset.get("tdb");
+        assertTrue(tdb.has("success"));
+        assertTrue(tdb.get("success").asBoolean());
+
+        assertTrue(dataset.has("labels"));
+        JsonNode labels = dataset.get("labels");
+        assertTrue(labels.has("success"));
+        assertTrue(labels.get("success").asBoolean());
+
+        assertEquals(1, DatasetBackupService_Test.getCallCount(RESTORE_TDB));
+        assertEquals(1, DatasetBackupService_Test.getCallCount(RESTORE_LABELS));
+    }
+
+    @Test
+    @DisplayName("Restore partial dataset for ABAC and RocksDB labels (wrong name)")
+    public void test_restoreDatasets_abac_rocksDB_partialDataSet_wrongName() throws Exception {
+        // given
+        String restoreID = "1";
+        File newDir = new File(baseDir.toString() + "/" + restoreID);
+        assertTrue(newDir.mkdir());
+        newDir.deleteOnExit();
+
+        String datasetName = "dataset-name";
+        File newDataset = new File(newDir + "/" + datasetName);
+        assertTrue(newDataset.mkdir());
+        newDataset.deleteOnExit();
+
+        File tdbDir = new File(newDataset + "/tdb/");
+        assertTrue(tdbDir.mkdir());
+        tdbDir.deleteOnExit();
+
+        File tdbFile = new File(newDataset + "/tdb/" + datasetName + "_backup.nq.gz");
+        assertTrue(tdbFile.createNewFile());
+        tdbFile.deleteOnExit();
+
+        File labelsDir = new File(newDataset + "/labels/");
+        assertTrue(labelsDir.mkdir());
+        labelsDir.deleteOnExit();
+
+        LabelsStoreRocksDB mockRocksDbLabelStore = mock(LabelsStoreRocksDB.class);
+        when(mockRocksDbLabelStore.getTransactional()).thenReturn(DatasetGraphFactory.createTxnMem());
+
+
+        DatasetGraphABAC dsgABAC = ABAC.authzDataset(DatasetGraphFactory.createTxnMem(),
+                null,
+                mockRocksDbLabelStore,
+                null,
+                null);
+        DataAccessPoint dap = new DataAccessPoint("dataset-name", DataService.newBuilder().dataset(dsgABAC).build());
+
+        when(mockRegistry.get("dataset-name")).thenReturn(dap);
+
+        // when
+        ObjectNode result = OBJECT_MAPPER.createObjectNode();
+        cut.restoreDatasets(restoreID + "/" + "something-else", result);
+
+        // then
+        assertTrue(result.has("restorePath"));
+        assertTrue(result.has("success"));
+        assertFalse(result.get("success").asBoolean());
+
+        assertTrue(result.has("reason"));
+        assertEquals("No matches for dataset.", result.get("reason").asText());
+    }
+
+
+    @Test
+    @DisplayName("Restore partial dataset for ABAC and RocksDB labels (wrong name & missing UD)")
+    public void test_restoreDatasets_abac_rocksDB_partialDataSet_wrongNameAndID() throws Exception {
+        // given
+        String restoreID = "1";
+        File newDir = new File(baseDir.toString() + "/" + restoreID);
+        assertTrue(newDir.mkdir());
+        newDir.deleteOnExit();
+
+        String datasetName = "dataset-name";
+        File newDataset = new File(newDir + "/" + datasetName);
+        assertTrue(newDataset.mkdir());
+        newDataset.deleteOnExit();
+
+        File tdbDir = new File(newDataset + "/tdb/");
+        assertTrue(tdbDir.mkdir());
+        tdbDir.deleteOnExit();
+
+        File tdbFile = new File(newDataset + "/tdb/" + datasetName + "_backup.nq.gz");
+        assertTrue(tdbFile.createNewFile());
+        tdbFile.deleteOnExit();
+
+        File labelsDir = new File(newDataset + "/labels/");
+        assertTrue(labelsDir.mkdir());
+        labelsDir.deleteOnExit();
+
+        LabelsStoreRocksDB mockRocksDbLabelStore = mock(LabelsStoreRocksDB.class);
+        when(mockRocksDbLabelStore.getTransactional()).thenReturn(DatasetGraphFactory.createTxnMem());
+
+
+        DatasetGraphABAC dsgABAC = ABAC.authzDataset(DatasetGraphFactory.createTxnMem(),
+                null,
+                mockRocksDbLabelStore,
+                null,
+                null);
+        DataAccessPoint dap = new DataAccessPoint("dataset-name", DataService.newBuilder().dataset(dsgABAC).build());
+
+        when(mockRegistry.get("dataset-name")).thenReturn(dap);
+
+        // when
+        ObjectNode result = OBJECT_MAPPER.createObjectNode();
+        cut.restoreDatasets(2 + "/" + "other-name", result);
+
+        // then
+        assertTrue(result.has("restorePath"));
+        assertTrue(result.has("success"));
+        assertFalse(result.get("success").asBoolean());
+        assertTrue(result.has("reason"));
+        assertTrue(result.get("reason").asText().startsWith("Restore path unsuitable"));
+    }
+
+
+    @Test
+    @DisplayName("Restore dataset with ABAC and RocksDB labels (happy path) just /")
+    public void test_restoreDatasets_abac_rocksDB_DataSet() throws Exception {
+        // given
+        String restoreID = "1";
+        File newDir = new File(baseDir.toString() + "/" + restoreID);
+        assertTrue(newDir.mkdir());
+        newDir.deleteOnExit();
+
+        String datasetName = "dataset-name";
+        File newDataset = new File(newDir + "/" + datasetName);
+        assertTrue(newDataset.mkdir());
+        newDataset.deleteOnExit();
+
+        File tdbDir = new File(newDataset + "/tdb/");
+        assertTrue(tdbDir.mkdir());
+        tdbDir.deleteOnExit();
+
+        File tdbFile = new File(newDataset + "/tdb/" + datasetName + "_backup.nq.gz");
+        assertTrue(tdbFile.createNewFile());
+        tdbFile.deleteOnExit();
+
+        File labelsDir = new File(newDataset + "/labels/");
+        assertTrue(labelsDir.mkdir());
+        labelsDir.deleteOnExit();
+
+        LabelsStoreRocksDB mockRocksDbLabelStore = mock(LabelsStoreRocksDB.class);
+        when(mockRocksDbLabelStore.getTransactional()).thenReturn(DatasetGraphFactory.createTxnMem());
+
+
+        DatasetGraphABAC dsgABAC = ABAC.authzDataset(DatasetGraphFactory.createTxnMem(),
+                null,
+                mockRocksDbLabelStore,
+                null,
+                null);
+        DataAccessPoint dap = new DataAccessPoint("dataset-name", DataService.newBuilder().dataset(dsgABAC).build());
+
+        when(mockRegistry.get("dataset-name")).thenReturn(dap);
+
+        // when
+        ObjectNode result = OBJECT_MAPPER.createObjectNode();
+        cut.restoreDatasets("/" , result);
+
+        // then
+        assertTrue(result.has("restorePath"));
+        assertTrue(result.has("success"));
+        assertTrue(result.get("success").asBoolean());
+
+        assertTrue(result.has(datasetName));
+        JsonNode dataset = result.get(datasetName);
+        assertTrue(dataset.has("dataset-name"));
+        assertEquals(dataset.get("dataset-name").asText(), datasetName);
+
+        assertTrue(dataset.has("tdb"));
+        JsonNode tdb = dataset.get("tdb");
+        assertTrue(tdb.has("success"));
+        assertTrue(tdb.get("success").asBoolean());
+
+        assertTrue(dataset.has("labels"));
+        JsonNode labels = dataset.get("labels");
+        assertTrue(labels.has("success"));
+        assertTrue(labels.get("success").asBoolean());
+
+        assertEquals(1, DatasetBackupService_Test.getCallCount(RESTORE_TDB));
+        assertEquals(1, DatasetBackupService_Test.getCallCount(RESTORE_LABELS));
+    }
+
+    /*
+     * VALIDATE TESTS
+     */
 
     @Test
     @DisplayName("Validate backup when successful for one dataset")
@@ -1894,7 +2399,7 @@ public class TestDatasetBackupService {
         assertTrue(RESULT_NODE.has("success"));
         assertFalse(RESULT_NODE.get("success").asBoolean());
         assertTrue(RESULT_NODE.has("reason"));
-        assertTrue(RESULT_NODE.get("reason").asText().equals("No Label Store to restore (not ABAC)"));
+        assertEquals("No Label Store to restore (not ABAC)", RESULT_NODE.get("reason").asText());
     }
 
 
@@ -1917,7 +2422,7 @@ public class TestDatasetBackupService {
         assertTrue(RESULT_NODE.has("success"));
         assertFalse(RESULT_NODE.get("success").asBoolean());
         assertTrue(RESULT_NODE.has("reason"));
-        assertTrue(RESULT_NODE.get("reason").asText().equals("No Label Store to restore (not RocksDB)"));
+        assertEquals("No Label Store to restore (not RocksDB)", RESULT_NODE.get("reason").asText());
     }
 
     @Test

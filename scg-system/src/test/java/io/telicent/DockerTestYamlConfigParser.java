@@ -284,7 +284,6 @@ class DockerTestYamlConfigParser {
     }
 
     private static RowSetRewindable query(String url, String user, String queryString) {
-        System.out.println("Query: " + user);
         RowSetRewindable rowSet =
                 QueryExecHTTPBuilder.service(url)
                         .query(queryString)
@@ -292,7 +291,6 @@ class DockerTestYamlConfigParser {
                         .select()
                         .rewindable();
         long x = RowSetOps.count(rowSet);
-        System.out.printf("User = %s ; returned %d results\n", user, x);
         rowSet.reset();
         RowSetOps.out(System.out, rowSet);
         return rowSet;

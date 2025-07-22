@@ -8,7 +8,7 @@ servers:
     description: Base path for dataset backup operations.
 
 paths:
-  /backups/create/{datasetName}:
+  /$/backups/create/{datasetName}:
     post:
       summary: Create a backup for a dataset
       description: Initiates a backup operation for the specified dataset.
@@ -20,7 +20,7 @@ paths:
           schema:
             type: string
         - name: description
-          in: path
+          in: query
           required: false
           description: A description of the back-up (i.e. "Daily backup")
           schema:
@@ -53,13 +53,13 @@ paths:
                   error:
                     type: string
                     description: Error message.
-  /backups/create/:
+  /$/backups/create/:
     post:
       summary: Create a backup for all available datasets
       description: Initiates a backup operation for all of datasets .
       parameters:
         - name: description
-          in: path
+          in: query
           required: false
           description: A description of the back-up (i.e. "Daily backup")
           schema:
@@ -93,7 +93,7 @@ paths:
                     type: string
                     description: Error message.
 
-  /backups/list:
+  /$/backups/list:
     get:
       summary: List all backups
       description: Retrieves a list of all backups stored on the server.
@@ -125,7 +125,7 @@ paths:
                     type: string
                     description: Error message.
 
-  /backups/restore/{restoreId}:
+  /$/backups/restore/{restoreId}:
     post:
       summary: Restore a backup
       description: Restores a dataset from a specified backup.
@@ -175,7 +175,63 @@ paths:
                     type: string
                     description: Error message.
 
-  /backups/delete/{deleteId}:
+  /$/backups/restore/{restoreId}/{datasetName}:
+    post:
+      summary: Restore a backup of specific dataset
+      description: Restores a dataset from a specified backup (ignoring the others in the backuo).
+      parameters:
+        - name: restoreId
+          in: path
+          required: true
+          description: ID of the backup to restore.
+          schema:
+            type: string
+        - name: datasetName
+          in: path
+          required: true
+          description: The name of the specific dataset to restore.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Dataset restored successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  restore-id:
+                    type: string
+                    description: ID of the restored backup.
+                  date:
+                    type: string
+                    format: date-time
+                    description: Timestamp of the restore operation.
+                  restore:
+                    type: object
+                    description: Details of the restore operation.
+        '404':
+          description: Backup not found.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Error message.
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Error message.
+
+  /$/backups/delete/{deleteId}:
     post:
       summary: Delete a backup
       description: Deletes a specified backup.
@@ -224,7 +280,7 @@ paths:
                   error:
                     type: string
                     description: Error message.
-  /backups/validate/{backupId}:
+  /$/backups/validate/{backupId}:
     post:
       summary: Validate a backup using SHACL
       description: Validates a given backup using a SHACL shape provided in the request body
@@ -276,7 +332,7 @@ paths:
                   error:
                     type: string
                     description: Error message.
-  /backups/validate/{backupId}/{datasetName}:
+  /$/backups/validate/{backupId}/{datasetName}:
     post:
       summary: Validate a dataset backup using SHACL
       description: Validates a given dataset within a given backup using a SHACL shape provided in the request body
@@ -334,7 +390,7 @@ paths:
                   error:
                     type: string
                     description: Error message.
-  /backups/report/{backupId}/{datasetName}:
+  /$/backups/report/{backupId}/{datasetName}:
     get:
       summary: View a dataset validation report
       description: Retrieves a backup validation report for a specific backup and dataset

@@ -33,6 +33,8 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.ZonedDateTime;
 import java.util.*;
 
 import static io.telicent.backup.utils.BackupUtils.*;
@@ -1065,5 +1067,72 @@ public class TestBackupUtils {
         // when
         // then
         cleanUp(paths);
+    }
+
+    @Test
+    @DisplayName("Tests readKafkaStateOffsetZip with a valid offset")
+    public void test_readKafkaStateOffsetZip_withValidOffset() {
+        String path = "src/test/files/1.zip";
+        Optional<Integer> offset = readKafkaStateOffsetZip(path);
+        assertTrue(offset.isPresent());
+        assertEquals(5, offset.get().intValue());
+    }
+
+    @Test
+    @DisplayName("Tests readKafkaStateOffsetZip with the offset being -1")
+    public void test_readKafkaStateOffsetZip_withNegativeOffset() {
+        String path = "src/test/files/2.zip";
+        Optional<Integer> offset = readKafkaStateOffsetZip(path);
+        assertTrue(offset.isPresent());
+        assertEquals(-1, offset.get().intValue());
+    }
+
+    @Test
+    @DisplayName("Tests readKafkaStateOffsetZip with an invalid offset")
+    public void test_readKafkaStateOffsetZip_withInvalidOffset() {
+        String path = "src/test/files/3.zip";
+        Optional<Integer> offset = readKafkaStateOffsetZip(path);
+        assertFalse(offset.isPresent());
+    }
+
+    @Test
+    @DisplayName("Tests readKafkaStateOffsetZip with a missing offset")
+    public void test_readKafkaStateOffsetZip_withMissingOffset() {
+        String path = "src/test/files/4.zip";
+        Optional<Integer> offset = readKafkaStateOffsetZip(path);
+        assertFalse(offset.isPresent());
+    }
+
+    @Test
+    @DisplayName("Tests readKafkaStateOffsetZip with a nonexistent file")
+    public void test_readKafkaStateOffsetZip_withMissingFile() {
+        String path = "src/test/files/5.zip";
+        Optional<Integer> offset = readKafkaStateOffsetZip(path);
+        assertFalse(offset.isPresent());
+    }
+
+    @Test
+    @DisplayName("Tests readTime with a valid time")
+    public void test_readTime_withValidStartTime() {
+        String path = "src/test/files/1_info.json";
+        Optional<ZonedDateTime> time = readTime(path, "start-time");
+        assertTrue(time.isPresent());
+        assertEquals("2025-07-16T14:28:29.366868471Z[GMT]", time.get().toString());
+    }
+
+    @Test
+    @DisplayName("Tests readTime with time missing")
+    public void test_readTime_withMissingTime() {
+        String path = "src/test/files/2_info.json";
+        Optional<ZonedDateTime> time = readTime(path, "end-time");
+        assertFalse(time.isPresent());
+    }
+
+    @Test
+    @DisplayName("Tests readTime with invalid time")
+    public void test_readTime_withInvalidTime() {
+        String path = "src/test/files/3_info.json";
+        Optional<ZonedDateTime> time = readTime(path, "end-time");
+        assertFalse(time.isPresent());
     }
 }

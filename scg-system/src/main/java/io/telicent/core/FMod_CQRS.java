@@ -105,7 +105,7 @@ public class FMod_CQRS implements FusekiModule {
                         FmtLog.error(LOG, "Multiple registered connectors for dataset %s. Set topic name in context to select one.");
                         throw new FusekiConfigException("Multiple topic names found");
                     }
-                    topicName = topics.get(0);
+                    topicName = topics.getFirst();
                 }
 
                 FmtLog.info(LOG, "Endpoint %s (operation %s) to topic %s", endpointName(dap, endpoint), op.getName(), topicName);

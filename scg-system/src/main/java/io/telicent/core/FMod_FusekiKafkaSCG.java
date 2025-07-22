@@ -45,6 +45,7 @@ import org.apache.kafka.common.utils.Bytes;
 
 import static io.telicent.backup.services.DatasetBackupService.sanitiseName;
 import static io.telicent.backup.utils.JsonFileUtils.OBJECT_MAPPER;
+import static io.telicent.otel.FMod_OpenTelemetry.fixupName;
 import static org.apache.jena.kafka.FusekiKafka.LOG;
 
 /**
@@ -120,7 +121,7 @@ public class FMod_FusekiKafkaSCG extends FMod_FusekiKafka {
 
     private ObjectNode backupKafkaConnection(KConnectorDesc conn, String path) {
         ObjectNode resultNode = OBJECT_MAPPER.createObjectNode();
-        String sanitizedDataset = sanitiseName(conn.getDatasetName());
+        String sanitizedDataset = fixupName(sanitiseName(conn.getDatasetName()));
         resultNode.put("name", sanitizedDataset);
         String filename = path + "/" + sanitizedDataset + ".json";
         IOX.copy(conn.getStateFile(), filename);
@@ -132,7 +133,7 @@ public class FMod_FusekiKafkaSCG extends FMod_FusekiKafka {
 
     private ObjectNode restoreKafkaConnection(KConnectorDesc conn, String dataset, String path) {
         ObjectNode resultNode = OBJECT_MAPPER.createObjectNode();
-        String sanitizedDataset = sanitiseName(conn.getDatasetName());
+        String sanitizedDataset = fixupName(sanitiseName(conn.getDatasetName()));
         resultNode.put("name", sanitizedDataset);
         String filename = path + "/" + sanitizedDataset + ".json";
         File offsetStoreFile = new File(filename);

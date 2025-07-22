@@ -126,6 +126,8 @@
                             <artifactSet>
                                 <excludes>
                                     <exclude>listenablefuture:listenablefuture</exclude>
+                                    <exclude>io.opentelemetry.javaagent:*</exclude>
+                                    <exclude>commons-logging:commons-logging</exclude>
                                 </excludes>
                             </artifactSet>
                         </configuration>
@@ -139,6 +141,17 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>${plugin.jar}</version>
+                <executions>
+                    <execution>
+                        <id>build-test-jar</id>
+                        <phase>none</phase>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

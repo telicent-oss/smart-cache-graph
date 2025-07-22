@@ -1,3 +1,7 @@
+## Test configuration
+##   No Kafka connector
+##   Local attribute store.
+
 PREFIX :        <#>
 PREFIX fuseki:  <http://jena.apache.org/fuseki#>
 PREFIX rdf:     <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
@@ -14,7 +18,7 @@ PREFIX authz:   <http://telicent.io/security#>
     fuseki:name "/ds" ;
 
     fuseki:endpoint [ fuseki:operation fuseki:query ] ;
-    fuseki:endpoint [ fuseki:operation fuseki:gsp-r ] ;
+    ##fuseki:endpoint [ fuseki:operation fusek:gsp-r ] ;
     fuseki:endpoint [ fuseki:operation fuseki:query ; fuseki:name "sparql" ] ;
     fuseki:endpoint [ fuseki:operation authz:upload ; fuseki:name "upload" ] ;
 
@@ -26,27 +30,12 @@ PREFIX authz:   <http://telicent.io/security#>
 ##     authz:tripleDefaultAttributes "!";
    ## Use a local store. Development.
    authz:attributes <file:attribute-store.ttl> ;
-   ## Production.
-##     authz:attributesURL <env:USER_ATTRIBUTES_URL> ;
     .
 
 # Transactional in-memory dataset.
-
-:datasetBase rdf:type ja:MemoryDataset .
-
-# Fuseki-Kafka connector
-PREFIX fk:      <http://jena.apache.org/fuseki/kafka#>
-
-<#connector> rdf:type fk:Connector ;
-##    fk:bootstrapServers    "localhost:9092";
-    fk:bootstrapServers    "host.docker.internal:9092";
-    fk:topic               "RDF";
-    fk:fusekiServiceName   "/ds/upload";
-    
-    ##fk:syncTopic        false;
-    fk:replayTopic      true;
-    
-    fk:stateFile        "databases/Replay-ABAC.state";
-##     fk:config ( "K1" "V1") ;
-##     fk:config ( "K2" "V2") ;
-    .
+:datasetBase rdf:type ja:MemoryDataset ;
+     ja:data <file:data1.trig> .
+#    ja:data [
+#        rdf:type ja:MemoryModel ;
+#        ja:content [ ja:externalContent <file:scg-docker/Test/data1.trig> ] ;
+#    ] .
