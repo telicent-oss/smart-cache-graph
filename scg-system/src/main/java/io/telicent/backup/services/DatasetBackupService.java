@@ -16,6 +16,7 @@
 
 package io.telicent.backup.services;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.telicent.backup.utils.EncryptionUtils;
@@ -63,7 +64,6 @@ import static io.telicent.backup.utils.BackupUtils.*;
 import static io.telicent.backup.utils.CompressionUtils.*;
 import static io.telicent.backup.utils.JsonFileUtils.OBJECT_MAPPER;
 import static io.telicent.backup.utils.JsonFileUtils.writeObjectNodeToFile;
-import static io.telicent.otel.FMod_OpenTelemetry.fixupName;
 import static org.apache.jena.riot.Lang.NQUADS;
 
 public class DatasetBackupService {
@@ -281,6 +281,8 @@ public class DatasetBackupService {
      * @param response a node of the results
      */
     public void restoreDatasets(String restoreId, ObjectNode response) throws PGPException, IOException {
+        //TODO
+        // backup, then get the highest dir -1
         String specificDatasetIfAny = "";
         if(restoreId.contains("/")) {
             // obtain specific dataset and strip it out.
@@ -295,6 +297,22 @@ public class DatasetBackupService {
         }
         String restorePath = getBackUpDir() + "/" + restoreId;
         response.put("restorePath", restorePath);
+
+        ObjectNode result = OBJECT_MAPPER.createObjectNode();
+        result.put("description", "Emergency backup for restore " + restoreId);
+        if (specificDatasetIfAny.isEmpty()) {
+            backupDataset(null, result);
+        }
+        else {
+            backupDataset(specificDatasetIfAny, result);
+        }
+        if (result.has("backup-id")) {
+            response.put("emergency-backup-id", result.get("backup-id").asText());
+        }
+        getBackupSuccessValues(result, response);
+//        if (result.has("success")) {
+//            response.put("backup-success", result.get("datasets").get("success").asText());
+//        }
 
         boolean decompressDir = false;
         if (checkPathExistsAndIsFile(restorePath + ZIP_SUFFIX)) {

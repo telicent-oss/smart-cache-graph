@@ -18,6 +18,7 @@ package io.telicent.backup.utils;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.telicent.smart.cache.configuration.Configurator;
 import io.telicent.utils.ServletUtils;
@@ -537,5 +538,104 @@ public class BackupUtils extends ServletUtils {
         for (Path path : paths) {
             FileUtils.deleteQuietly(path.toFile());
         }
+    }
+
+//    public static void getBackupSuccessValues(ObjectNode result, ObjectNode response) {
+//        ArrayNode datasets = (ArrayNode) result.get("datasets");
+//
+//        if (datasets == null) return;
+//
+//        for (JsonNode datasetNode : datasets) {
+//            if (!(datasetNode instanceof ObjectNode)) continue;
+//
+//            ObjectNode dataset = (ObjectNode) datasetNode;
+//            Iterator<Map.Entry<String, JsonNode>> fields = dataset.fields();
+//
+//            while (fields.hasNext()) {
+//                Map.Entry<String, JsonNode> entry = fields.next();
+//                String fieldName = entry.getKey();
+//                JsonNode value = entry.getValue();
+//
+//                if (!(value instanceof ObjectNode)) continue;
+//
+//                ObjectNode subObj = (ObjectNode) value;
+//
+//                // Direct success field: e.g., tdb.success
+//                if (subObj.has("success")) {
+//                    boolean success = subObj.get("success").asBoolean(false);
+//                    response.put(fieldName + "-success", success);
+//                }
+//
+//                // Look one level deeper: e.g., kafka -> "/ds" -> success
+//                Iterator<Map.Entry<String, JsonNode>> nestedFields = subObj.fields();
+//                while (nestedFields.hasNext()) {
+//                    Map.Entry<String, JsonNode> nestedEntry = nestedFields.next();
+//                    String nestedKey = nestedEntry.getKey();
+//                    JsonNode nestedValue = nestedEntry.getValue();
+//
+//                    if (nestedValue.isArray()) {
+//                        for (JsonNode arrayItem : nestedValue) {
+//                            if (arrayItem instanceof ObjectNode && arrayItem.has("success")) {
+//                                boolean nestedSuccess = arrayItem.get("success").asBoolean(false);
+//                                String composedKey = fieldName + "-" + nestedKey + "-success";
+//                                composedKey = composedKey.replaceAll("[^a-zA-Z0-9_-]", "-");
+//                                response.put(composedKey, nestedSuccess);
+//                            }
+//                        }
+//                    }
+//                }
+//            }
+//        }
+//    }
+
+    public static void getBackupSuccessValues(ObjectNode result, ObjectNode response) {
+        ArrayNode datasets = (ArrayNode) result.get("datasets");
+        if (datasets == null) return;
+
+        ObjectNode backupSuccess = JsonNodeFactory.instance.objectNode();
+
+        for (JsonNode datasetNode : datasets) {
+            if (!(datasetNode instanceof ObjectNode dataset)) continue;
+
+            String datasetName = dataset.path("dataset-name").asText(null);
+            if (datasetName == null) continue;
+
+            Iterator<Map.Entry<String, JsonNode>> fields = dataset.fields();
+            while (fields.hasNext()) {
+                Map.Entry<String, JsonNode> entry = fields.next();
+                String sectionName = entry.getKey();
+                JsonNode sectionValue = entry.getValue();
+
+                if (!(sectionValue instanceof ObjectNode section)) continue;
+
+                if (section.has("success")) {
+                    boolean success = section.get("success").asBoolean(false);
+                    String key = datasetName + "-" + sectionName + "-success";
+                    backupSuccess.put(sanitizeKey(key), success);
+                }
+
+                Iterator<Map.Entry<String, JsonNode>> nestedFields = section.fields();
+                while (nestedFields.hasNext()) {
+                    Map.Entry<String, JsonNode> nestedEntry = nestedFields.next();
+                    String nestedKey = nestedEntry.getKey();
+                    JsonNode nestedValue = nestedEntry.getValue();
+
+                    if (nestedValue.isArray()) {
+                        for (JsonNode arrayItem : nestedValue) {
+                            if (arrayItem instanceof ObjectNode && arrayItem.has("success")) {
+                                boolean nestedSuccess = arrayItem.get("success").asBoolean(false);
+                                String composedKey = datasetName + "-" + sectionName + "-" + nestedKey + "-success";
+                                backupSuccess.put(sanitizeKey(composedKey), nestedSuccess);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        response.set("backup-success", backupSuccess);
+    }
+
+    private static String sanitizeKey(String key) {
+        return key.replaceAll("[^a-zA-Z0-9_-]", "-");
     }
 }
