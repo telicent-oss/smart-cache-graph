@@ -1071,27 +1071,29 @@ public class TestBackupUtils {
 
     @Test
     @DisplayName("Tests readKafkaStateOffsetZip with a valid offset")
-    public void test_readKafkaStateOffsetZip_withValidOffset() {
+    public void test_readKafkaStateOffsetZip_withValidOffsets() {
         String path = "src/test/files/1.zip";
-        Optional<Integer> offset = readKafkaStateOffsetZip(path);
+        Optional<Map<String, Object>> offset = readKafkaStateOffsetZip(path);
         assertTrue(offset.isPresent());
-        assertEquals(5, offset.get().intValue());
+        assertEquals(5, offset.get().get("test-0"));
+        assertEquals(3, offset.get().get("test-1"));
+        assertEquals(1, offset.get().get("test-2"));
     }
 
     @Test
     @DisplayName("Tests readKafkaStateOffsetZip with the offset being -1")
     public void test_readKafkaStateOffsetZip_withNegativeOffset() {
         String path = "src/test/files/2.zip";
-        Optional<Integer> offset = readKafkaStateOffsetZip(path);
+        Optional<Map<String, Object>> offset = readKafkaStateOffsetZip(path);
         assertTrue(offset.isPresent());
-        assertEquals(-1, offset.get().intValue());
+        assertEquals(-1, offset.get().get("test"));
     }
 
     @Test
     @DisplayName("Tests readKafkaStateOffsetZip with an invalid offset")
     public void test_readKafkaStateOffsetZip_withInvalidOffset() {
         String path = "src/test/files/3.zip";
-        Optional<Integer> offset = readKafkaStateOffsetZip(path);
+        Optional<Map<String, Object>> offset = readKafkaStateOffsetZip(path);
         assertFalse(offset.isPresent());
     }
 
@@ -1099,7 +1101,7 @@ public class TestBackupUtils {
     @DisplayName("Tests readKafkaStateOffsetZip with a missing offset")
     public void test_readKafkaStateOffsetZip_withMissingOffset() {
         String path = "src/test/files/4.zip";
-        Optional<Integer> offset = readKafkaStateOffsetZip(path);
+        Optional<Map<String, Object>> offset = readKafkaStateOffsetZip(path);
         assertFalse(offset.isPresent());
     }
 
@@ -1107,7 +1109,7 @@ public class TestBackupUtils {
     @DisplayName("Tests readKafkaStateOffsetZip with a nonexistent file")
     public void test_readKafkaStateOffsetZip_withMissingFile() {
         String path = "src/test/files/5.zip";
-        Optional<Integer> offset = readKafkaStateOffsetZip(path);
+        Optional<Map<String, Object>> offset = readKafkaStateOffsetZip(path);
         assertFalse(offset.isPresent());
     }
 

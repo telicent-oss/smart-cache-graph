@@ -83,8 +83,8 @@ public class TestBackupAndRestoreWithEncryption {
     @AfterAll
     public static void afterAll() throws IOException {
         SERVER.stop();
-        FileUtils.deleteDirectory(new File("labels1"));
-        FileUtils.deleteDirectory(new File("labels2"));
+        FileUtils.deleteDirectory(new File("target/labels1"));
+        FileUtils.deleteDirectory(new File("target/labels2"));
         FileUtils.delete(new File("public.asc"));
         FileUtils.delete(new File("private.asc"));
     }

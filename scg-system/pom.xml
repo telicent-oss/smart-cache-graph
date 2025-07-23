@@ -22,7 +22,7 @@
   <parent>
     <groupId>io.telicent.smart-caches.graph</groupId>
     <artifactId>scg-base</artifactId>
-    <version>0.83.17-SNAPSHOT</version>
+    <version>0.90.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
 
@@ -306,6 +306,14 @@
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.telicent.jena</groupId>
+      <artifactId>jena-fuseki-kafka-module</artifactId>
+      <version>${dependency.fuseki-kafka}</version>
+      <classifier>tests</classifier>
       <scope>test</scope>
     </dependency>
 

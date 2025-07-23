@@ -103,7 +103,7 @@ public class FMod_CQRS implements FusekiModule {
                     }
                     if ( topics.size() > 1 ) {
                         FmtLog.error(LOG, "Multiple registered connectors for dataset %s. Set topic name in context to select one.");
-                        throw new FusekiConfigException("Mutliple topic names found");
+                        throw new FusekiConfigException("Multiple topic names found");
                     }
                     topicName = topics.getFirst();
                 }

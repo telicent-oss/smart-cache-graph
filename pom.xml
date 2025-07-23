@@ -22,7 +22,7 @@
   <groupId>io.telicent.smart-caches.graph</groupId>
   <artifactId>scg-base</artifactId>
   <packaging>pom</packaging>
-  <version>0.83.17-SNAPSHOT</version>
+  <version>0.90.0-SNAPSHOT</version>
 
   <name>Telicent Smart Cache Graph - Parent</name>
   <description>Telicent Smart Cache Graph</description>
@@ -56,7 +56,7 @@
   <properties>
     <!-- Build properties -->
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <project.build.outputTimestamp>2025-06-17T08:15:11Z</project.build.outputTimestamp>
+    <project.build.outputTimestamp>2025-06-17T08:18:48Z</project.build.outputTimestamp>
     <java.version>21</java.version>
 
     <!-- Maven Plugin versions -->
@@ -72,7 +72,6 @@
     <plugin.jar>3.4.2</plugin.jar>
     <plugin.jacoco>0.8.13</plugin.jacoco>
     <plugin.javadoc>3.11.2</plugin.javadoc>
-    <plugin.owasp-dependency-check>12.1.3</plugin.owasp-dependency-check>
     <plugin.resources>3.3.1</plugin.resources>
     <plugin.shade>3.4.1</plugin.shade>
     <plugin.site>3.9.1</plugin.site>
@@ -83,10 +82,10 @@
     <!-- Dependency versions -->
     <!-- Internal dependencies -->
     <dependency.rdf-abac>1.0.2</dependency.rdf-abac>
-    <dependency.fuseki-kafka>1.5.3</dependency.fuseki-kafka>
+    <dependency.fuseki-kafka>2.0.2</dependency.fuseki-kafka>
     <dependency.jena>5.5.0</dependency.jena>
     <dependency.fuseki-server>${dependency.jena}</dependency.fuseki-server>
-    <dependency.graphql>0.10.4</dependency.graphql>
+    <dependency.graphql>0.10.5</dependency.graphql>
     <dependency.jwt-servlet-auth>1.0.4</dependency.jwt-servlet-auth>
     <dependency.smart-caches-core>0.29.2</dependency.smart-caches-core>
 
@@ -109,7 +108,7 @@
     <dependency.junit5-platform>1.13.4</dependency.junit5-platform>
     <dependency.mockito>5.18.0</dependency.mockito>
     <dependency.testcontainers>1.21.3</dependency.testcontainers>
-    <dependency.yaml-config>1.0.7</dependency.yaml-config>
+    <dependency.yaml-config>2.0.1</dependency.yaml-config>
 
     <!-- CVE Patches -->
     <!-- CVE-2025-48734-->
@@ -633,12 +632,6 @@
             <outputName>${project.artifactId}-${project.version}-bom</outputName>
           </configuration>
         </plugin>
-
-        <plugin>
-          <groupId>org.owasp</groupId>
-          <artifactId>dependency-check-maven</artifactId>
-          <version>${plugin.owasp-dependency-check}</version>
-        </plugin>
       </plugins>
     </pluginManagement>
 
@@ -671,6 +664,7 @@
           <publishingServerId>central</publishingServerId>
           <autoPublish>true</autoPublish>
           <waitUntil>published</waitUntil>
+          <waitMaxTime>3600</waitMaxTime>
         </configuration>
       </plugin>
 

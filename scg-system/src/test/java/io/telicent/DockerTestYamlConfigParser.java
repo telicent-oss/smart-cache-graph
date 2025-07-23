@@ -21,7 +21,7 @@ import io.telicent.smart.cache.configuration.Configurator;
 import org.apache.jena.atlas.io.IO;
 import org.apache.jena.atlas.lib.FileOps;
 import org.apache.jena.datatypes.xsd.XSDDatatype;
-import org.apache.jena.fuseki.kafka.lib.FKLib;
+import org.apache.jena.fuseki.kafka.FKLib;
 import org.apache.jena.fuseki.main.FusekiServer;
 import org.apache.jena.fuseki.system.FusekiLogging;
 import org.apache.jena.http.HttpOp;
