@@ -9,6 +9,9 @@
       for more details
     - **BREAKING** State file format changed, legacy state files will be automatically upgraded provided [migration
       advice](#migrating-from-083x-releases) is followed.
+- Compaction Improvements
+    - We now track the size of the database after a compaction operation so that if asked to compact again, and size has
+      not changed, we now avoid unnecessary compaction work
 - Backup/Restore changes
     - Response to a restore operation now has an `offsets` object with all relevant offsets in place of a singular
       `offset` key.  This reflects the ability of Fuseki Kafka connectors to now operate upon multi-partition topics,
