@@ -100,9 +100,9 @@ public class TestFusekiKafkaSCG {
         String jsonString = """
                 {
                   "dataset" : "/matchingdataset" ,
-                  "endpoint" : "" ,
-                  "topic" : "test" ,
-                  "offset" : 18723
+                  "offsets" : {
+                    "test": 18723
+                  }
                 }
                 """;
 
@@ -166,9 +166,9 @@ public class TestFusekiKafkaSCG {
         String jsonString = """
                 {
                   "dataset" : "/matchingdataset" ,
-                  "endpoint" : "" ,
-                  "topic" : "test" ,
-                  "offset" : 18723
+                  "offsets" : {
+                    "test": 18723
+                  }
                 }
                 """;
 

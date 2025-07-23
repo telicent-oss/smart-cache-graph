@@ -2,7 +2,7 @@
 
 ## 0.90.0
 
-- **BREAKING** Upgraded Fuseki Kafka to 2.0.1
+- **BREAKING** Upgraded Fuseki Kafka to 2.0.2
     - This contains many improvements, but also breaking changes to, the Kafka connector support
     - New `SmartCacheGraphSink` replaces `FKProcessor_SCG` and associated code paths
     - Please refer to Fuseki Kafka [release notes](https://github.com/telicent-oss/jena-fuseki-kafka/releases/tag/2.0.0)
@@ -14,13 +14,13 @@
       `offset` key.  This reflects the ability of Fuseki Kafka connectors to now operate upon multi-partition topics,
       and/or multiple topics.
 - Build improvements:
-    - Fuseki Kafka upgraded to 2.0.1
-    - Fuseki YAML Config upgraded to 2.0.0
-    - Jackson upgraded to 2.19.1
-    - Log4j upgraded to 2.25.0
+    - Fuseki Kafka upgraded to 2.0.2
+    - Fuseki YAML Config upgraded to 2.0.1
+    - Jackson upgraded to 2.19.2
+    - Log4j upgraded to 2.25.1
     - RDF ABAC upgraded to 1.0.2
-    - GraphQL Jena upgraded to 0.10.3
-    - Smart Caches Core upgraded to 0.29.1
+    - GraphQL Jena upgraded to 0.10.5
+    - Smart Caches Core upgraded to 0.29.2
 
 ### Migrating from 0.83.x releases
 

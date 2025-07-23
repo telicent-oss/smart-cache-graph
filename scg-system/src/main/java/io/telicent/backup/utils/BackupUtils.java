@@ -544,10 +544,11 @@ public class BackupUtils extends ServletUtils {
     }
 
     /**
-     * Reads the kafka offset from backup file
+     * Reads the kafka offsets from backup file
      * @param zipFilePath the path to the backup zip file
      */
-    public static Optional<Integer> readKafkaStateOffsetZip(String zipFilePath) {
+    @SuppressWarnings("unchecked")
+    public static Optional<Map<String, Object>> readKafkaStateOffsetZip(String zipFilePath) {
         String kafkaSubdir = "/kafka";
         try (ZipFile zipFile = new ZipFile(zipFilePath)) {
             LOG.info("File {} opened successfully", zipFilePath);
@@ -567,16 +568,9 @@ public class BackupUtils extends ServletUtils {
                         Map<String, Object> state = mapper.readValue(content, Map.class);
                         LOG.info("File content: {}", content);
 
-                        Object offsetObj = state.get("offset");
-                        if (offsetObj instanceof Number) {
-                            return Optional.of(((Number) offsetObj).intValue());
-                        } else if (offsetObj != null) {
-                            try {
-                                return Optional.of(Integer.parseInt(offsetObj.toString()));
-                            } catch (NumberFormatException e) {
-                                LOG.warn("Offset value is not a valid number: {}", offsetObj);
-                                return Optional.empty();
-                            }
+                        Object offsetObj = state.get("offsets");
+                        if (offsetObj instanceof Map<?, ?> map) {
+                            return Optional.of((Map<String, Object>) offsetObj);
                         }
                         return Optional.empty();
                     }

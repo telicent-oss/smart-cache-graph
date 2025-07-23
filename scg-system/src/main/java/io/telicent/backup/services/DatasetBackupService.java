@@ -597,8 +597,8 @@ public class DatasetBackupService {
                 // size
                 resultNode.put("zip-size", Files.size(Path.of(detailsPathString + ZIP_SUFFIX)));
                 // kafka state
-                Optional<Integer> kafkaState = readKafkaStateOffsetZip(detailsPathString + ZIP_SUFFIX);
-                kafkaState.ifPresent(integer -> resultNode.put("kafka-state", integer));
+                Optional<Map<String, Object>> kafkaState = readKafkaStateOffsetZip(detailsPathString + ZIP_SUFFIX);
+                kafkaState.ifPresent(offsets -> resultNode.putPOJO("kafka-state", offsets));
                 // times
                 String jsonPath = getBackUpDir() + "/" + backupId + JSON_INFO_SUFFIX;
                 Optional<ZonedDateTime> startTime = readTime(jsonPath, "start-time");
