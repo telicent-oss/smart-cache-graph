@@ -25,24 +25,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class TestDataSetBackupServiceUtils {
 
     @Test
-    void testHumanReadableByteCount_under1k() {
-        assertEquals("999B", DatasetBackupService.humanReadableByteCount(999));
-    }
-
-    @Test
-    void testHumanReadableByteCount_exact1k() {
-        assertEquals("1.0kB", DatasetBackupService.humanReadableByteCount(1000));
-    }
-
-    @Test
-    void testHumanReadableByteCount_multipleUnits() {
-        assertEquals("1.5MB", DatasetBackupService.humanReadableByteCount(1_500_000));
-        assertEquals("2.0GB", DatasetBackupService.humanReadableByteCount(2_000_000_000));
-        assertEquals("3.0TB", DatasetBackupService.humanReadableByteCount(3_000_000_000_000L));
-        assertEquals("4.0PB", DatasetBackupService.humanReadableByteCount(4_000_000_000_000_000L));
-    }
-
-    @Test
     void testHumanReadableDuration_allZero() {
         assertEquals("0ms", DatasetBackupService.humanReadableDuration(Duration.ZERO));
     }

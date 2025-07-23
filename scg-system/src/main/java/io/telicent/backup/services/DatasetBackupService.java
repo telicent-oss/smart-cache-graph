@@ -26,6 +26,7 @@ import io.telicent.jena.abac.labels.node.LabelToNodeGenerator;
 import io.telicent.model.KeyPair;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.apache.commons.io.FileUtils;
 import org.apache.jena.atlas.lib.DateTimeUtils;
 import org.apache.jena.fuseki.mgt.Backup;
 import org.apache.jena.fuseki.server.DataAccessPoint;
@@ -596,7 +597,7 @@ public class DatasetBackupService {
                 // size
                 long sizeInBytes = Files.size(Path.of(detailsPathString + ZIP_SUFFIX));
                 resultNode.put("zip-size-in-bytes", sizeInBytes);
-                resultNode.put("zip-size", humanReadableByteCount(sizeInBytes));
+                resultNode.put("zip-size", FileUtils.byteCountToDisplaySize(sizeInBytes));
 
                 // kafka state
                 Optional<Integer> kafkaState = readKafkaStateOffsetZip(detailsPathString + ZIP_SUFFIX);
@@ -760,20 +761,6 @@ public class DatasetBackupService {
     }
 
     /**
-     * A utility method that takes the size of something in bytes and represents it in
-     * a more easy to grasp format.
-     * @param bytes size of file in question
-     * @return a string representation in KB, MB, GB, TB or PB
-     */
-    public static String humanReadableByteCount(long bytes) {
-        int unit = 1000;
-        if (bytes < unit) return bytes + "B";
-        int exp = (int) (Math.log(bytes) / Math.log(unit));
-        String pre = "kMGTP".charAt(exp - 1) + "";
-        return String.format("%.1f%sB", bytes / Math.pow(unit, exp), pre);
-    }
-
-    /**
      * A utility method that takes the duration and represents it in
      * a more easy to grasp format.
      * @param duration the number of milliseconds in question
@@ -782,7 +769,7 @@ public class DatasetBackupService {
     public static String humanReadableDuration(Duration duration) {
         long hours = duration.toHours();
         long minutes = duration.toMinutes() % 60;
-        long seconds = duration.getSeconds() % 60;
+        long seconds = duration.toSeconds() % 60;
         long millis = duration.toMillis() % 1000;
 
         StringBuilder sb = new StringBuilder();
