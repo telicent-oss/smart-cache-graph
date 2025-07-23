@@ -14,12 +14,15 @@
       `offset` key.  This reflects the ability of Fuseki Kafka connectors to now operate upon multi-partition topics,
       and/or multiple topics.
 - Build improvements:
+    - Migrated to new Central Publishing Process
+    - Apache Jena upgraded to 5.5.0
     - Fuseki Kafka upgraded to 2.0.2
     - Fuseki YAML Config upgraded to 2.0.1
+    - GraphQL Jena upgraded to 0.10.5
     - Jackson upgraded to 2.19.2
+    - JWT Servlet Auth upgraded to 1.0.4
     - Log4j upgraded to 2.25.1
     - RDF ABAC upgraded to 1.0.2
-    - GraphQL Jena upgraded to 0.10.5
     - Smart Caches Core upgraded to 0.29.2
 
 ### Migrating from 0.83.x releases
