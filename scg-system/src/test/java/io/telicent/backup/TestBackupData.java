@@ -266,6 +266,8 @@ public class TestBackupData {
             JsonNode rootBackupNode = objectMapper.readTree(createBackupResponse.body());
             String zipSize = rootBackupNode.path("details").path("zip-size").asText();
             assertFalse(zipSize.isEmpty());
+            String zipSizeInBytes = rootBackupNode.path("details").path("zip-size-in-bytes").asText();
+            assertFalse(zipSizeInBytes.isEmpty());
         }
         catch (IOException ex) {
             Assertions.fail("Unexpected exception: " + ex.getMessage());
