@@ -26,6 +26,7 @@ import io.telicent.jena.abac.labels.node.LabelToNodeGenerator;
 import io.telicent.model.KeyPair;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.apache.commons.io.FileUtils;
 import org.apache.jena.atlas.lib.DateTimeUtils;
 import org.apache.jena.fuseki.mgt.Backup;
 import org.apache.jena.fuseki.server.DataAccessPoint;
@@ -66,7 +67,6 @@ import static io.telicent.backup.utils.BackupUtils.checkPathExistsAndIsDir;
 import static io.telicent.backup.utils.CompressionUtils.*;
 import static io.telicent.backup.utils.JsonFileUtils.OBJECT_MAPPER;
 import static io.telicent.backup.utils.JsonFileUtils.writeObjectNodeToFile;
-import static io.telicent.otel.FMod_OpenTelemetry.fixupName;
 import static org.apache.jena.riot.Lang.NQUADS;
 
 public class DatasetBackupService {
@@ -595,7 +595,10 @@ public class DatasetBackupService {
         if (checkPathExistsAndIsFile(detailsPathString + ZIP_SUFFIX)) {
             try {
                 // size
-                resultNode.put("zip-size", Files.size(Path.of(detailsPathString + ZIP_SUFFIX)));
+                long sizeInBytes = Files.size(Path.of(detailsPathString + ZIP_SUFFIX));
+                resultNode.put("zip-size-in-bytes", sizeInBytes);
+                resultNode.put("zip-size", FileUtils.byteCountToDisplaySize(sizeInBytes));
+
                 // kafka state
                 Optional<Map<String, Object>> kafkaState = readKafkaStateOffsetZip(detailsPathString + ZIP_SUFFIX);
                 kafkaState.ifPresent(offsets -> resultNode.putPOJO("kafka-state", offsets));
@@ -607,7 +610,8 @@ public class DatasetBackupService {
                 endTime.ifPresent(time -> resultNode.put("end-time", time.toString()));
                 if (startTime.isPresent() && endTime.isPresent()) {
                     Duration duration = Duration.between(startTime.get(), endTime.get());
-                    resultNode.put("backup-time", duration.toMillis() + "ms");
+                    resultNode.put("backup-duration", humanReadableDuration(duration));
+                    resultNode.put("backup-duration-in-ms", duration.toMillis() );
                 }
             } catch (IOException e) {
                 throw new RuntimeException(e);
@@ -755,5 +759,27 @@ public class DatasetBackupService {
         response.put("end-time", endTime.toString());
         writeObjectNodeToFile(response, dirPath + JSON_INFO_SUFFIX);
     }
+
+    /**
+     * A utility method that takes the duration and represents it in
+     * a more easy to grasp format.
+     * @param duration the number of milliseconds in question
+     * @return a string representation in hours. minutes, seconds and milliseconds
+     */
+    public static String humanReadableDuration(Duration duration) {
+        long hours = duration.toHours();
+        long minutes = duration.toMinutes() % 60;
+        long seconds = duration.toSeconds() % 60;
+        long millis = duration.toMillis() % 1000;
+
+        StringBuilder sb = new StringBuilder();
+        if (hours > 0) sb.append(hours).append("h ");
+        if (minutes > 0) sb.append(minutes).append("m ");
+        if (seconds > 0) sb.append(seconds).append("s ");
+        if (millis > 0 || sb.isEmpty()) sb.append(millis).append("ms");
+
+        return sb.toString().trim();
+    }
+
 
 }

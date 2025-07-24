@@ -195,7 +195,7 @@ public class TestDatasetBackupService {
             for (String field : existingFields) {
                 assertTrue(result.has(field));
             }
-            String[] missingFields = {"zip-size", "start-time", "end-time", "backup-time"};
+            String[] missingFields = {"zip-size-in-bytes", "zip-size-in-bytes", "start-time", "end-time", "backup-duration-in-ms", "backup-duration-in-ms"};
             for (String field : missingFields) {
                 assertFalse(result.has(field), field);
             }
@@ -232,7 +232,7 @@ public class TestDatasetBackupService {
         ObjectNode result = cut.getDetails(backupId);
 
         // then
-        String[] requiredFields = {"backup-id", "details-path", "zip-size", "start-time", "end-time", "backup-time"};
+        String[] requiredFields = {"backup-id", "details-path", "zip-size", "zip-size-in-bytes", "start-time", "end-time", "backup-duration-in-ms", "backup-duration-in-ms"};
         for (String field : requiredFields) {
             assertTrue(result.has(field));
         }
@@ -1674,7 +1674,7 @@ public class TestDatasetBackupService {
         newDir.deleteOnExit();
 
         String datasetName = "dataset-name";
-        File newDataset = new File(newDir.toString() + "/" + datasetName);
+        File newDataset = new File(newDir + "/" + datasetName);
         assertTrue(newDataset.mkdir());
         newDataset.deleteOnExit();
 
@@ -2429,8 +2429,6 @@ public class TestDatasetBackupService {
     @DisplayName("Restore label store when the path is wrong/missing")
     public void test_restoreLabelStore_wrongPath() {
         // given
-        String datasetName = "/dataset-name";
-
         DatasetGraphABAC dsgABAC = ABAC.authzDataset(DatasetGraphFactory.createTxnMem(),
                 null,
                 mock(LabelsStoreRocksDB.class),
@@ -2489,7 +2487,7 @@ public class TestDatasetBackupService {
             }
             // Wait for threads to complete
             executorService.shutdown();
-            executorService.awaitTermination(1, TimeUnit.SECONDS);
+            boolean ignored = executorService.awaitTermination(1, TimeUnit.SECONDS);
         }
         verify(response, times(1)).setStatus(409);
     }
