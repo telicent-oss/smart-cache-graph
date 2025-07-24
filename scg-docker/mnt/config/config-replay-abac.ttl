@@ -41,7 +41,9 @@ PREFIX fk:      <http://jena.apache.org/fuseki/kafka#>
 ##    fk:bootstrapServers    "localhost:9092";
     fk:bootstrapServers    "host.docker.internal:9092";
     fk:topic               "RDF";
-    fk:fusekiServiceName   "/ds/upload";
+    fk:dlqTopic            "RDF.dlq";
+    fk:groupId             "a-consumer-group";
+    fk:fusekiServiceName   "/ds";
     
     ##fk:syncTopic        false;
     fk:replayTopic      true;

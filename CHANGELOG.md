@@ -16,6 +16,7 @@
     - Response to a restore operation now has an `offsets` object with all relevant offsets in place of a singular
       `offset` key.  This reflects the ability of Fuseki Kafka connectors to now operate upon multi-partition topics,
       and/or multiple topics.
+    - Backup details now include human readable sizes and durations
 - Build improvements:
     - Migrated to new Central Publishing Process
     - Apache Jena upgraded to 5.5.0
@@ -44,8 +45,8 @@ may be needed.
      - If your configuration used this then these values will also have been encoded as part of the data stored in your
        configured `fk:stateFile` files.  If you adjust your configuration then you **MUST** also adjust the
        corresponding state files.  This **SHOULD** be done while the service is not running.
-     - Note that you **MAY** choose to leave the old configurations in place for now if you prefer but please be aware thay we do
-       plan to remove support for deprecated configuration in future, and certainly by the 1.0.0 release.
+     - Note that you **MAY** choose to leave the old configurations in place for now if you prefer but please be aware
+       thay we do plan to remove support for deprecated configuration in future, and certainly by the 1.0.0 release.
 
 ## 0.83.16
 - Build improvements:
