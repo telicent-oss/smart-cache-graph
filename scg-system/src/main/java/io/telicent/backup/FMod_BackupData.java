@@ -114,7 +114,12 @@ public class FMod_BackupData implements FusekiAutoModule {
 
     private Optional<KeyPair> getKeyPairOption() throws MalformedURLException, URISyntaxException {
         if (!getPublicKeyUrl().isEmpty() && !getPrivateKeyUrl().isEmpty() && !getPasskey().isEmpty()) {
-            return Optional.of(KeyPair.fromValues(getPrivateKeyUrl(), getPublicKeyUrl(), getPasskey()));
+            try{
+                return Optional.of(KeyPair.fromValues(getPrivateKeyUrl(), getPublicKeyUrl(), getPasskey()));
+            } catch (IllegalArgumentException | MalformedURLException | URISyntaxException ex){
+                LOG.error("Unable to read backup encryption key pair due to {}",ex.getMessage(),ex);
+                return Optional.empty();
+            }
         } else {
             return Optional.empty();
         }
