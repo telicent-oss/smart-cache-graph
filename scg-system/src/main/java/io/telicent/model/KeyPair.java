@@ -24,9 +24,18 @@ public record KeyPair(URL privateKeyUrl, URL publicKeyUrl, String passphrase) {
      * @throws URISyntaxException    if the location cannot be used to create a URI
      * @throws MalformedURLException if the URI cannot be used to create a URL
      */
-    public static KeyPair fromValues(final String privateKeyLocation, final String publicKeyLocation, final String passphrase) throws URISyntaxException, MalformedURLException {
-        final URL privateKeyUrl = new URI(privateKeyLocation).toURL();
-        final URL publicKeyUrl = new URI(publicKeyLocation).toURL();
+    public static KeyPair fromValues(final String privateKeyLocation, final String publicKeyLocation, final String passphrase) throws URISyntaxException, MalformedURLException, IllegalArgumentException {
+        final URL privateKeyUrl = getKeyUrl(privateKeyLocation);
+        final URL publicKeyUrl = getKeyUrl(publicKeyLocation);
         return new KeyPair(privateKeyUrl, publicKeyUrl, passphrase);
+    }
+
+    private static URL getKeyUrl(String keyLocation) throws URISyntaxException, MalformedURLException, IllegalArgumentException {
+        if(keyLocation.startsWith("/")){
+            // we'll assume it is a plain file path
+            return new URI("file://" + keyLocation).toURL();
+        } else {
+            return new URI(keyLocation).toURL();
+        }
     }
 }
