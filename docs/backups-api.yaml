@@ -6,7 +6,25 @@ info:
 servers:
   - url: http://localhost:3030/
     description: Base path for dataset backup operations.
-
+components:
+  securitySchemes:
+    BearerAuth:
+      description: Generic Bearer Authentication is supported using JWTs
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    AwsBearerAuth:
+      description: |
+        For AWS usage we support JWTs that are injected into requests by the ELB.  
+        Since these come in a non-standard HTTP header we have to declare this as
+        an API Key scheme in OpenAPI spec as it doesn't have a notion of using a
+        HTTP scheme in a non-standard way (yay AWS weirdness!)
+      type: apiKey
+      in: header
+      name: X-Amzn-Oidc-Data
+security:
+  - BearerAuth: []
+  - AwsBearerAuth: []
 paths:
   /$/backups/create/{datasetName}:
     post:
