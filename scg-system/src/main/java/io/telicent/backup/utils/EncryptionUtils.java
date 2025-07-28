@@ -89,11 +89,12 @@ public class EncryptionUtils {
      * @throws PGPException if there is a problem with the encryption
      */
     public Path encryptFile(Path inputFilePath, Path outputFilePath, URL publicKey) throws IOException, PGPException {
-        LOG.info("Encrypting input file {} to output file {}.", inputFilePath.toString(), outputFilePath.toString());
+        LOG.info("Encrypting input file {} to output file {}.", inputFilePath, outputFilePath);
         try (OutputStream fos = Files.newOutputStream(outputFilePath)) {
             encrypt(fos, Files.newInputStream(inputFilePath), inputFilePath.toFile().length(),
                     publicKey.openStream());
         }
+        LOG.info("Successfully encrypted input file {} to {}.", inputFilePath, outputFilePath);
         return outputFilePath;
     }
 
@@ -107,10 +108,11 @@ public class EncryptionUtils {
      * @throws PGPException if there is a problem with the decryption
      */
     public Path decryptFile(Path inputFilePath, Path outputFilePath) throws IOException, PGPException {
-        LOG.info("Decrypting input file {} to output file {}.", inputFilePath.toString(), outputFilePath.toString());
+        LOG.info("Decrypting input file {} to output file {}.", inputFilePath, outputFilePath);
         try (OutputStream fos = Files.newOutputStream(outputFilePath)) {
             decrypt(Files.newInputStream(inputFilePath), fos);
         }
+        LOG.info("Successfully decrypted input file {} to {}.", inputFilePath, outputFilePath);
         return outputFilePath;
     }
 
