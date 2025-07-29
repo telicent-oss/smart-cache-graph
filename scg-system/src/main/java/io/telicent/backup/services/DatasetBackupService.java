@@ -306,7 +306,7 @@ public class DatasetBackupService {
         }
         else {
             ObjectNode result = OBJECT_MAPPER.createObjectNode();
-            result.put("description", "Emergency backup for restore " + restoreId);
+            result.put("description", "Rollback point backup for restore " + restoreId);
             if (specificDatasetIfAny.isEmpty()) {
                 backupDataset(null, result);
             } else {
@@ -316,8 +316,8 @@ public class DatasetBackupService {
                 response.put("backup-success", false);
             }
             else if (result.has("backup-id")) {
-                response.put("emergency-backup-id", result.get("backup-id").asText());
-                LOG.info("Emergency backup {} created", result.get("backup-id").asText());
+                response.put("rollback-point-backup-id", result.get("backup-id").asText());
+                LOG.info("Rollback point backup {} created", result.get("backup-id").asText());
             }
             if (response.get("backup-success") == null) {
                 getBackupSuccessValues(result, response);
