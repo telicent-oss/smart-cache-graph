@@ -301,6 +301,29 @@ public class DatasetBackupService {
         String restorePath = getBackUpDir() + "/" + restoreId;
         response.put("restorePath", restorePath);
 
+        if (!checkPathExistsAndIsDir(restorePath) && !checkPathExistsAndIsFile(restorePath + ZIP_SUFFIX) && !checkPathExistsAndIsFile(restorePath + ZIP_SUFFIX + ENCRYPTION_SUFFIX)) {
+            response.put("backup-success", false);
+        }
+        else {
+            ObjectNode result = OBJECT_MAPPER.createObjectNode();
+            result.put("description", "Rollback point backup for restore " + restoreId);
+            if (specificDatasetIfAny.isEmpty()) {
+                backupDataset(null, result);
+            } else {
+                backupDataset(specificDatasetIfAny, result);
+            }
+            if (result.get("datasets") != null && result.get("datasets").isArray() && result.get("datasets").isEmpty()) {
+                response.put("backup-success", false);
+            }
+            else if (result.has("backup-id")) {
+                response.put("rollback-point-backup-id", result.get("backup-id").asText());
+                LOG.info("Rollback point backup {} created", result.get("backup-id").asText());
+            }
+            if (response.get("backup-success") == null) {
+                getBackupSuccessValues(result, response);
+            }
+        }
+
         boolean decompressDir = false;
         if (checkPathExistsAndIsFile(restorePath + ZIP_SUFFIX)) {
             unzipDirectory(restorePath + ZIP_SUFFIX, restorePath);
@@ -641,6 +664,18 @@ public class DatasetBackupService {
         registerMethod(restoreConsumerMap, key, restoreConsumer);
     }
 
+    /**
+     * Remove a given key from the both backup/restore methods registry.
+     *
+     * @param key             the name of the module being backed up or restored.
+     * @param backupConsumer  method that backs up the modules data
+     * @param restoreConsumer method that recovers the module
+     */
+    public static void deRegisterMethods(String key, TriConsumer<DataAccessPoint, String, ObjectNode> backupConsumer, TriConsumer<DataAccessPoint, String, ObjectNode> restoreConsumer) {
+        deRegisterMethod(backupConsumerMap, key, backupConsumer);
+        deRegisterMethod(restoreConsumerMap, key, restoreConsumer);
+    }
+
 
     /**
      * Strip out any prefix forward slashes and any other dangerous characters.
@@ -670,6 +705,10 @@ public class DatasetBackupService {
      */
     private static void registerMethod(Map<String, TriConsumer<DataAccessPoint, String, ObjectNode>> map, String key, TriConsumer<DataAccessPoint, String, ObjectNode> consumer) {
         map.put(key, consumer);
+    }
+
+    private static void deRegisterMethod(Map<String, TriConsumer<DataAccessPoint, String, ObjectNode>> map, String key, TriConsumer<DataAccessPoint, String, ObjectNode> consumer) {
+        map.remove(key);
     }
 
     private ObjectNode executeValidation(String validatePath, String datasetDir, Graph shapesGraph) {
