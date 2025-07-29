@@ -306,7 +306,6 @@ public class DatasetBackupService {
             } else {
                 backupDataset(specificDatasetIfAny, result);
             }
-            LOG.info("BACKUP: {}", OBJECT_MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(result));
             if (result.get("datasets") != null && result.get("datasets").isArray() && result.get("datasets").isEmpty()) {
                 response.put("backup-success", false);
             }
