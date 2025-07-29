@@ -16,7 +16,6 @@
 
 package io.telicent.backup.services;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.telicent.backup.utils.EncryptionUtils;
@@ -281,8 +280,6 @@ public class DatasetBackupService {
      * @param response a node of the results
      */
     public void restoreDatasets(String restoreId, ObjectNode response) throws PGPException, IOException {
-        //TODO
-        // backup, then get the highest dir -1
         String specificDatasetIfAny = "";
         if(restoreId.contains("/")) {
             // obtain specific dataset and strip it out.
@@ -298,21 +295,29 @@ public class DatasetBackupService {
         String restorePath = getBackUpDir() + "/" + restoreId;
         response.put("restorePath", restorePath);
 
-        ObjectNode result = OBJECT_MAPPER.createObjectNode();
-        result.put("description", "Emergency backup for restore " + restoreId);
-        if (specificDatasetIfAny.isEmpty()) {
-            backupDataset(null, result);
+        if (!checkPathExistsAndIsDir(restorePath) && !checkPathExistsAndIsFile(restorePath + ZIP_SUFFIX) && !checkPathExistsAndIsFile(restorePath + ZIP_SUFFIX + ENCRYPTION_SUFFIX)) {
+            response.put("backup-success", false);
         }
         else {
-            backupDataset(specificDatasetIfAny, result);
+            ObjectNode result = OBJECT_MAPPER.createObjectNode();
+            result.put("description", "Emergency backup for restore " + restoreId);
+            if (specificDatasetIfAny.isEmpty()) {
+                backupDataset(null, result);
+            } else {
+                backupDataset(specificDatasetIfAny, result);
+            }
+            LOG.info("BACKUP: {}", OBJECT_MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(result));
+            if (result.get("datasets") != null && result.get("datasets").isArray() && result.get("datasets").isEmpty()) {
+                response.put("backup-success", false);
+            }
+            else if (result.has("backup-id")) {
+                response.put("emergency-backup-id", result.get("backup-id").asText());
+                LOG.info("Emergency backup {} created", result.get("backup-id").asText());
+            }
+            if (response.get("backup-success") == null) {
+                getBackupSuccessValues(result, response);
+            }
         }
-        if (result.has("backup-id")) {
-            response.put("emergency-backup-id", result.get("backup-id").asText());
-        }
-        getBackupSuccessValues(result, response);
-//        if (result.has("success")) {
-//            response.put("backup-success", result.get("datasets").get("success").asText());
-//        }
 
         boolean decompressDir = false;
         if (checkPathExistsAndIsFile(restorePath + ZIP_SUFFIX)) {
@@ -615,6 +620,13 @@ public class DatasetBackupService {
         registerMethod(restoreConsumerMap, key, restoreConsumer);
     }
 
+    //TODO
+    // make it work
+    public static void deRegisterMethods(String key, TriConsumer<DataAccessPoint, String, ObjectNode> backupConsumer, TriConsumer<DataAccessPoint, String, ObjectNode> restoreConsumer) {
+        deRegisterMethod(backupConsumerMap, key, backupConsumer);
+        deRegisterMethod(restoreConsumerMap, key, restoreConsumer);
+    }
+
 
     /**
      * Strip out any prefix forward slashes and any other dangerous characters.
@@ -644,6 +656,11 @@ public class DatasetBackupService {
      */
     private static void registerMethod(Map<String, TriConsumer<DataAccessPoint, String, ObjectNode>> map, String key, TriConsumer<DataAccessPoint, String, ObjectNode> consumer) {
         map.put(key, consumer);
+    }
+
+    //TODO
+    private static void deRegisterMethod(Map<String, TriConsumer<DataAccessPoint, String, ObjectNode>> map, String key, TriConsumer<DataAccessPoint, String, ObjectNode> consumer) {
+        map.remove(key);
     }
 
     private ObjectNode executeValidation(String validatePath, String datasetDir, Graph shapesGraph) {
