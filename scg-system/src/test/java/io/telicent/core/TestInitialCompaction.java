@@ -20,16 +20,15 @@ import org.apache.jena.tdb1.TDB1Factory;
 import org.apache.jena.tdb1.base.file.Location;
 import org.apache.jena.tdb2.DatabaseMgr;
 import org.apache.jena.tdb2.store.DatasetGraphSwitchable;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.mockito.ArgumentCaptor;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
-import java.io.InputStream;
+import java.io.*;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Set;
 
@@ -49,12 +48,23 @@ public class TestInitialCompaction {
         LibTestsSCG.setupAuthentication();
         FusekiLogging.setLogging();
         Attributes.buildStore(emptyGraph);
+
+        removePreviousCompactionResults();
     }
 
     @AfterEach
     void clearDown() {
        mockDatabaseMgr.clearInvocations();
        mockDatabaseMgr.reset();
+
+        removePreviousCompactionResults();
+    }
+
+    private static void removePreviousCompactionResults() {
+        File previousCompactionSize = Path.of("target", "databases", "knowledge", ".last-compaction").toFile();
+        if (previousCompactionSize.exists()) {
+            previousCompactionSize.delete();
+        }
     }
 
     @AfterAll
@@ -128,7 +138,7 @@ public class TestInitialCompaction {
         assertNotNull(server.serverURL());
         mockDatabaseMgr.verify(() -> DatabaseMgr.compact(any(), anyBoolean()), times(1));
         // when
-        FMod_InitialCompaction.sizes.put("/knowledge", 500L);
+        FMod_InitialCompaction.SIZES.put("/knowledge", 500L);
         HttpResponse<InputStream> compactResponse = makePOSTCallWithPath(server, "$/compactall");
         // then
         assertEquals(200, compactResponse.statusCode());
@@ -231,6 +241,56 @@ public class TestInitialCompaction {
     }
 
     @Test
+    public void givenCompactionResultsFile_whenLoadingPreviousSize_thenCorrect() throws IOException {
+        // Given
+        File tempDir = Files.createTempDirectory("test").toFile();
+        DatasetGraphSwitchable mockDSG = mock(DatasetGraphSwitchable.class);
+        when(mockDSG.getContainerPath()).thenReturn(Path.of(tempDir.getAbsolutePath()));
+        File previousSizeFile = FMod_InitialCompaction.getPreviousCompactionResultFile(mockDSG);
+        try (OutputStream output = new FileOutputStream(previousSizeFile)) {
+            output.write(Long.toString(123456789L).getBytes(StandardCharsets.UTF_8));
+        }
+
+        // When
+        long previousSize = FMod_InitialCompaction.findPreviousCompactionSize(mockDSG);
+
+        // Then
+        Assertions.assertEquals(123456789L, previousSize);
+    }
+
+    @Test
+    public void givenNoCompactionResultsFile_whenLoadingPreviousSize_thenDefaultValueReturned() throws IOException {
+        // Given
+        File tempDir = Files.createTempDirectory("test").toFile();
+        DatasetGraphSwitchable mockDSG = mock(DatasetGraphSwitchable.class);
+        when(mockDSG.getContainerPath()).thenReturn(Path.of(tempDir.getAbsolutePath(), "/Data-0001"));
+
+        // When
+        long previousSize = FMod_InitialCompaction.findPreviousCompactionSize(mockDSG);
+
+        // Then
+        Assertions.assertEquals(-1, previousSize);
+    }
+
+    @Test
+    public void givenMalformedCompactionResultsFile_whenLoadingPreviousSize_thenDefaultValueReturned() throws IOException {
+        // Given
+        File tempDir = Files.createTempDirectory("test").toFile();
+        DatasetGraphSwitchable mockDSG = mock(DatasetGraphSwitchable.class);
+        when(mockDSG.getContainerPath()).thenReturn(Path.of(tempDir.getAbsolutePath()));
+        File previousSizeFile = FMod_InitialCompaction.getPreviousCompactionResultFile(mockDSG);
+        try (OutputStream output = new FileOutputStream(previousSizeFile)) {
+            output.write("bad data".getBytes(StandardCharsets.UTF_8));
+        }
+
+        // When
+        long previousSize = FMod_InitialCompaction.findPreviousCompactionSize(mockDSG);
+
+        // Then
+        Assertions.assertEquals(-1, previousSize);
+    }
+
+    @Test
     public void test_humanReadableSize_handlesInvalidInput() {
         // given
         String expectedSize = "Unknown";
@@ -267,6 +327,24 @@ public class TestInitialCompaction {
         HttpResponse<InputStream> compactResponse = makePOSTCallWithPath(server, "$/compactall");
         // then
         assertEquals(200, compactResponse.statusCode());
+    }
+
+    @Test
+    public void givenServer_whenPreviouslyCompacted_thenAskingToCompactAgainIsANoOp() {
+        // Given
+        mockDatabaseMgr.when(() -> DatabaseMgr.compact(any(), anyBoolean())).thenAnswer(invocationOnMock -> null);
+        String configFile = "config-persistent.ttl";
+        server = launchServer(configFile);
+
+        // When
+        HttpResponse<InputStream> compactResponse = makePOSTCallWithPath(server, "$/compactall");
+        assertEquals(200, compactResponse.statusCode());
+        mockDatabaseMgr.verify(() -> DatabaseMgr.compact(any(), anyBoolean()), times(1));
+
+        // Then
+        assertEquals(200, compactResponse.statusCode());
+        compactResponse = makePOSTCallWithPath(server, "$/compactall");
+        mockDatabaseMgr.verify(() -> DatabaseMgr.compact(any(), anyBoolean()), times(1));
     }
 
     @Test

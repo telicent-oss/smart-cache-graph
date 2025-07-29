@@ -42,6 +42,8 @@ PREFIX fk:      <http://jena.apache.org/fuseki/kafka#>
 <#connector> rdf:type fk:Connector ;
     fk:bootstrapServers    "localhost:9092";
     fk:topic               "RDF";
+    fk:dlqTopic            "RDF.dlq";
+    fk:groupId             "a-consumer-group";
     fk:fusekiServiceName   "/ds";
     
     ##fk:syncTopic        false;

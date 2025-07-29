@@ -10,6 +10,8 @@ import org.bouncycastle.openpgp.*;
 import org.bouncycastle.openpgp.jcajce.JcaPGPObjectFactory;
 import org.bouncycastle.openpgp.operator.PublicKeyDataDecryptorFactory;
 import org.bouncycastle.openpgp.operator.jcajce.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
@@ -28,6 +30,9 @@ import java.util.Objects;
 import java.util.Optional;
 
 public class EncryptionUtils {
+
+    private static final Logger LOG = LoggerFactory.getLogger("EncryptionUtils");
+
 
     private final int compressionAlgorithm;
     private final int symmetricKeyAlgorithm;
@@ -62,7 +67,7 @@ public class EncryptionUtils {
 
     /**
      * Constructor with default values
-     * */
+     */
     public EncryptionUtils(InputStream privateKeyIn, String passkey) throws IOException, PGPException {
         this(privateKeyIn,
                 passkey,
@@ -84,10 +89,12 @@ public class EncryptionUtils {
      * @throws PGPException if there is a problem with the encryption
      */
     public Path encryptFile(Path inputFilePath, Path outputFilePath, URL publicKey) throws IOException, PGPException {
+        LOG.info("Encrypting input file {} to output file {}.", inputFilePath, outputFilePath);
         try (OutputStream fos = Files.newOutputStream(outputFilePath)) {
             encrypt(fos, Files.newInputStream(inputFilePath), inputFilePath.toFile().length(),
                     publicKey.openStream());
         }
+        LOG.info("Successfully encrypted input file {} to {}.", inputFilePath, outputFilePath);
         return outputFilePath;
     }
 
@@ -101,9 +108,11 @@ public class EncryptionUtils {
      * @throws PGPException if there is a problem with the decryption
      */
     public Path decryptFile(Path inputFilePath, Path outputFilePath) throws IOException, PGPException {
+        LOG.info("Decrypting input file {} to output file {}.", inputFilePath, outputFilePath);
         try (OutputStream fos = Files.newOutputStream(outputFilePath)) {
             decrypt(Files.newInputStream(inputFilePath), fos);
         }
+        LOG.info("Successfully decrypted input file {} to {}.", inputFilePath, outputFilePath);
         return outputFilePath;
     }
 

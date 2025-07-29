@@ -26,6 +26,7 @@ import io.telicent.jena.abac.labels.node.LabelToNodeGenerator;
 import io.telicent.model.KeyPair;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.apache.commons.io.FileUtils;
 import org.apache.jena.atlas.lib.DateTimeUtils;
 import org.apache.jena.fuseki.mgt.Backup;
 import org.apache.jena.fuseki.server.DataAccessPoint;
@@ -51,6 +52,8 @@ import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
+import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
@@ -60,6 +63,7 @@ import java.util.zip.GZIPInputStream;
 
 import static io.telicent.backup.utils.BackupConstants.*;
 import static io.telicent.backup.utils.BackupUtils.*;
+import static io.telicent.backup.utils.BackupUtils.checkPathExistsAndIsDir;
 import static io.telicent.backup.utils.CompressionUtils.*;
 import static io.telicent.backup.utils.JsonFileUtils.OBJECT_MAPPER;
 import static io.telicent.backup.utils.JsonFileUtils.writeObjectNodeToFile;
@@ -151,6 +155,7 @@ public class DatasetBackupService {
      * @param response the node to add metadata of process to
      */
     public void backupDataset(String datasetName, ObjectNode response) {
+        ZonedDateTime startTime = ZonedDateTime.now();
         String backupPath = getBackUpDir();
         int backupID = getNextDirectoryNumberAndCreate(backupPath);
         String backupIDPath = backupPath + "/" + backupID;
@@ -169,6 +174,7 @@ public class DatasetBackupService {
             }
         }
         response.set("datasets", datasetNodes);
+        response.put("start-time", startTime.toString());
         compressAndStoreBackupMetadata(response, backupIDPath);
     }
 
@@ -599,6 +605,45 @@ public class DatasetBackupService {
     }
 
     /**
+     * Display detailed information about a backup
+     *
+     * @param backupId the back-up identifier
+     */
+    public ObjectNode getDetails(final String backupId) {
+        final ObjectNode resultNode = OBJECT_MAPPER.createObjectNode();
+        final String detailsPathString = getBackUpDir() + "/" + backupId;
+        resultNode.put("backup-id", backupId);
+        resultNode.put("details-path", detailsPathString);
+
+        if (checkPathExistsAndIsFile(detailsPathString + ZIP_SUFFIX)) {
+            try {
+                // size
+                long sizeInBytes = Files.size(Path.of(detailsPathString + ZIP_SUFFIX));
+                resultNode.put("zip-size-in-bytes", sizeInBytes);
+                resultNode.put("zip-size", FileUtils.byteCountToDisplaySize(sizeInBytes));
+
+                // kafka state
+                Optional<Map<String, Object>> kafkaState = readKafkaStateOffsetZip(detailsPathString + ZIP_SUFFIX);
+                kafkaState.ifPresent(offsets -> resultNode.putPOJO("kafka-state", offsets));
+                // times
+                String jsonPath = getBackUpDir() + "/" + backupId + JSON_INFO_SUFFIX;
+                Optional<ZonedDateTime> startTime = readTime(jsonPath, "start-time");
+                Optional<ZonedDateTime> endTime = readTime(jsonPath, "end-time");
+                startTime.ifPresent(time -> resultNode.put("start-time", time.toString()));
+                endTime.ifPresent(time -> resultNode.put("end-time", time.toString()));
+                if (startTime.isPresent() && endTime.isPresent()) {
+                    Duration duration = Duration.between(startTime.get(), endTime.get());
+                    resultNode.put("backup-duration", humanReadableDuration(duration));
+                    resultNode.put("backup-duration-in-ms", duration.toMillis() );
+                }
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        return resultNode;
+    }
+
+    /**
      * Delete everything within the give directory
      *
      * @param deletePath path to delete
@@ -739,7 +784,6 @@ public class DatasetBackupService {
      */
     private void compressAndStoreBackupMetadata(ObjectNode response, String dirPath) {
         final Path zipFilePath = zipDirectory(dirPath, dirPath + ZIP_SUFFIX, DELETE_GENERATED_FILES);
-        writeObjectNodeToFile(response, dirPath + JSON_INFO_SUFFIX);
         if (encryptionUtils != null) {
             try {
                 final Path encZipFilePath = Path.of(dirPath + ZIP_SUFFIX + ENCRYPTION_SUFFIX);
@@ -750,6 +794,31 @@ public class DatasetBackupService {
                 LOG.error("Failed to encrypt backup files due to {}", ex.getMessage(), ex);
             }
         }
+        ZonedDateTime endTime = ZonedDateTime.now();
+        response.put("end-time", endTime.toString());
+        writeObjectNodeToFile(response, dirPath + JSON_INFO_SUFFIX);
     }
+
+    /**
+     * A utility method that takes the duration and represents it in
+     * a more easy to grasp format.
+     * @param duration the number of milliseconds in question
+     * @return a string representation in hours. minutes, seconds and milliseconds
+     */
+    public static String humanReadableDuration(Duration duration) {
+        long hours = duration.toHours();
+        long minutes = duration.toMinutes() % 60;
+        long seconds = duration.toSeconds() % 60;
+        long millis = duration.toMillis() % 1000;
+
+        StringBuilder sb = new StringBuilder();
+        if (hours > 0) sb.append(hours).append("h ");
+        if (minutes > 0) sb.append(minutes).append("m ");
+        if (seconds > 0) sb.append(seconds).append("s ");
+        if (millis > 0 || sb.isEmpty()) sb.append(millis).append("ms");
+
+        return sb.toString().trim();
+    }
+
 
 }

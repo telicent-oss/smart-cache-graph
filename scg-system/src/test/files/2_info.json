@@ -1,0 +1,28 @@
+{
+  "backup-name" : "FULL",
+  "date" : "2025-07-16_14-28-29",
+  "user" : null,
+  "backup-id" : 1,
+  "datasets" : [ {
+    "dataset-name" : "ds",
+    "tdb" : {
+      "folder" : "/fuseki/backups/1/ds/tdb/",
+      "success" : true
+    },
+    "kafka" : {
+      "folder" : "/fuseki/backups/1/ds/kafka/",
+      "/ds" : [ {
+        "name" : "ds_upload",
+        "source" : "databases/Replay-ABAC.state",
+        "destination" : "/fuseki/backups/1/ds/kafka//ds_upload.json",
+        "success" : true
+      } ]
+    },
+    "labels" : {
+      "folder" : "/fuseki/backups/1/ds/labels/",
+      "reason" : "No Label Store to back up (not RocksDB)",
+      "success" : false
+    }
+  } ],
+  "start-time" : "2025-07-16T14:28:29.366868471Z[GMT]"
+}

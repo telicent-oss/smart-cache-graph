@@ -71,9 +71,9 @@ public class TestBackupAndRestoreWithEncryption {
         }
         ENV.set("ENABLE_BACKUPS",true);
         ENV.set("JWKS_URL", "disabled");
-        ENV.set("PRIVATE_KEY_URL", privateKeyUrl);
-        ENV.set("PUBLIC_KEY_URL", publicKeyUrl);
-        ENV.set("PASSKEY", passkey);
+        ENV.set("BACKUPS_PRIVATE_KEY_URL", privateKeyUrl);
+        ENV.set("BACKUPS_PUBLIC_KEY_URL", publicKeyUrl);
+        ENV.set("BACKUPS_PASSKEY", passkey);
         SERVER = MainSmartCacheGraph.buildAndRun("--config", CONFIG_URL.getPath());
         BASE_URI = "http://localhost:" + SERVER.getHttpPort();
         uploadData(DATA1_URL, DATASET1_NAME);
@@ -83,8 +83,8 @@ public class TestBackupAndRestoreWithEncryption {
     @AfterAll
     public static void afterAll() throws IOException {
         SERVER.stop();
-        FileUtils.deleteDirectory(new File("labels1"));
-        FileUtils.deleteDirectory(new File("labels2"));
+        FileUtils.deleteDirectory(new File("target/labels1"));
+        FileUtils.deleteDirectory(new File("target/labels2"));
         FileUtils.delete(new File("public.asc"));
         FileUtils.delete(new File("private.asc"));
     }

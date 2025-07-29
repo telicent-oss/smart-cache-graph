@@ -1,5 +1,53 @@
 # Smart Cache Graph
 
+## 0.90.0
+
+- **BREAKING** Upgraded Fuseki Kafka to 2.0.2
+    - This contains many improvements, but also breaking changes to, the Kafka connector support
+    - New `SmartCacheGraphSink` replaces `FKProcessor_SCG` and associated code paths
+    - Please refer to Fuseki Kafka [release notes](https://github.com/telicent-oss/jena-fuseki-kafka/releases/tag/2.0.0)
+      for more details
+    - **BREAKING** State file format changed, legacy state files will be automatically upgraded provided [migration
+      advice](#migrating-from-083x-releases) is followed.
+- Compaction Improvements
+    - We now track the size of the database after a compaction operation so that if asked to compact again, and size has
+      not changed, we now avoid unnecessary compaction work
+- Backup/Restore changes
+    - Response to a restore operation now has an `offsets` object with all relevant offsets in place of a singular
+      `offset` key.  This reflects the ability of Fuseki Kafka connectors to now operate upon multi-partition topics,
+      and/or multiple topics.
+    - Backup details now include human readable sizes and durations
+- Build improvements:
+    - Migrated to new Central Publishing Process
+    - Apache Jena upgraded to 5.5.0
+    - Fuseki Kafka upgraded to 2.0.2
+    - Fuseki YAML Config upgraded to 2.0.1
+    - GraphQL Jena upgraded to 0.10.5
+    - Jackson upgraded to 2.19.2
+    - JWT Servlet Auth upgraded to 1.0.4
+    - Log4j upgraded to 2.25.1
+    - RDF ABAC upgraded to 1.0.2
+    - Smart Caches Core upgraded to 0.29.2
+
+### Migrating from 0.83.x releases
+
+For existing deployment some changes are recommended, and depending on existing configuration some manual intervention
+may be needed.
+
+1. If you have more than one Kafka connector defined in your configuration your **MUST** now specify the `fk:groupId`
+   property to a unique value for each connector.
+     - If you only had a single connector but you were using a `fk:stateFile` for persistent state you **MUST** now
+       specify the `fk:groupId` property in order to upgrade your legacy state files to the new state file format
+       succesfully.
+2. Previously the `fk:fusekiServiceName` property permitted additional path components, e.g. `/dataset/upload`, in its
+   value.  While still permitted this is considered deprecated and warnings will be issued about this.  This property
+   should be changed to only contain the base dataset path e.g. `/dataset`
+     - If your configuration used this then these values will also have been encoded as part of the data stored in your
+       configured `fk:stateFile` files.  If you adjust your configuration then you **MUST** also adjust the
+       corresponding state files.  This **SHOULD** be done while the service is not running.
+     - Note that you **MAY** choose to leave the old configurations in place for now if you prefer but please be aware
+       thay we do plan to remove support for deprecated configuration in future, and certainly by the 1.0.0 release.
+
 ## 0.83.16
 - Build improvements:
   - CVE patches

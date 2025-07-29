@@ -45,9 +45,12 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import static io.telicent.backup.services.DatasetBackupService_Test.*;
 import static io.telicent.backup.utils.JsonFileUtils.OBJECT_MAPPER;
@@ -151,6 +154,89 @@ public class TestDatasetBackupService {
 
         // then
         assertNotEquals("{}", result.toString());
+    }
+
+    @Test
+    @DisplayName("Return the details for a backup of an empty database")
+    public void test_backupDetails_emptyDir() throws IOException {
+        // given
+        Path parent = baseDir.getParent();
+        BackupUtils.dirBackups = parent.toAbsolutePath().toString();
+
+        String datasetName = "dataset-name";
+        DatasetGraphABAC dsgABAC = ABAC.authzDataset(DatasetGraphFactory.createTxnMem(),
+                null,
+                mock(LabelsStoreRocksDB.class),
+                null,
+                null);
+        DataAccessPoint dap = new DataAccessPoint(datasetName, DataService.newBuilder().dataset(dsgABAC).build());
+        when(mockRegistry.accessPoints()).thenReturn(List.of(dap));
+
+        ObjectNode backupResult = OBJECT_MAPPER.createObjectNode();
+        cut.backupDataset(datasetName, backupResult);
+
+
+        Pattern numericZipPattern = Pattern.compile("^(\\d+)\\.zip$", Pattern.CASE_INSENSITIVE);
+        Optional<Integer> maxId = Files.list(parent)
+                .filter(Files::isRegularFile)
+                .map(Path::getFileName)
+                .map(Path::toString)
+                .filter(name -> numericZipPattern.matcher(name).matches())
+                .map(name -> Integer.parseInt(name.replace(".zip", "")))
+                .max(Comparator.naturalOrder());
+
+        if (maxId.isPresent()) {
+            int backupId = maxId.get() + 1;
+
+            // when
+            ObjectNode result = cut.getDetails(Integer.toString(backupId));
+
+            // then
+            String[] existingFields = {"backup-id", "details-path"};
+            for (String field : existingFields) {
+                assertTrue(result.has(field));
+            }
+            String[] missingFields = {"zip-size-in-bytes", "zip-size-in-bytes", "start-time", "end-time", "backup-duration-in-ms", "backup-duration-in-ms"};
+            for (String field : missingFields) {
+                assertFalse(result.has(field), field);
+            }
+        }
+        else {
+            String files = Files.list(parent)
+                    .map(Path::toString)
+                    .collect(Collectors.joining(", "));
+            fail("No backups at " + parent + ": " + files);
+        }
+
+    }
+
+    @Test
+    @DisplayName("Return the details for a backup of a non-empty database")
+    public void test_backupDetails_contents() {
+        // given
+        Path parent = baseDir.getParent();
+        BackupUtils.dirBackups = parent.toAbsolutePath().toString();
+
+        String datasetName = "dataset-name";
+        DatasetGraphABAC dsgABAC = ABAC.authzDataset(DatasetGraphFactory.createTxnMem(),
+                null,
+                mock(LabelsStoreRocksDB.class),
+                null,
+                null);
+        DataAccessPoint dap = new DataAccessPoint("dataset-name", DataService.newBuilder().dataset(dsgABAC).build());
+        when(mockRegistry.accessPoints()).thenReturn(List.of(dap));
+        ObjectNode backupResponse = OBJECT_MAPPER.createObjectNode();
+        cut.backupDataset(datasetName, backupResponse);
+        String backupId = String.valueOf(backupResponse.get("backup-id"));
+
+        // when
+        ObjectNode result = cut.getDetails(backupId);
+
+        // then
+        String[] requiredFields = {"backup-id", "details-path", "zip-size", "zip-size-in-bytes", "start-time", "end-time", "backup-duration-in-ms", "backup-duration-in-ms"};
+        for (String field : requiredFields) {
+            assertTrue(result.has(field));
+        }
     }
 
     /*
@@ -1715,7 +1801,7 @@ public class TestDatasetBackupService {
         newDir.deleteOnExit();
 
         String datasetName = "dataset-name";
-        File newDataset = new File(newDir.toString() + "/" + datasetName);
+        File newDataset = new File(newDir + "/" + datasetName);
         assertTrue(newDataset.mkdir());
         newDataset.deleteOnExit();
 
@@ -2569,8 +2655,6 @@ public class TestDatasetBackupService {
     @DisplayName("Restore label store when the path is wrong/missing")
     public void test_restoreLabelStore_wrongPath() {
         // given
-        String datasetName = "/dataset-name";
-
         DatasetGraphABAC dsgABAC = ABAC.authzDataset(DatasetGraphFactory.createTxnMem(),
                 null,
                 mock(LabelsStoreRocksDB.class),
@@ -2629,7 +2713,7 @@ public class TestDatasetBackupService {
             }
             // Wait for threads to complete
             executorService.shutdown();
-            executorService.awaitTermination(1, TimeUnit.SECONDS);
+            boolean ignored = executorService.awaitTermination(1, TimeUnit.SECONDS);
         }
         verify(response, times(1)).setStatus(409);
     }

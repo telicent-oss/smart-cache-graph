@@ -15,8 +15,8 @@
  */
 package io.telicent.backup;
 
-import io.telicent.backup.servlets.*;
 import io.telicent.backup.services.DatasetBackupService;
+import io.telicent.backup.servlets.*;
 import io.telicent.model.KeyPair;
 import io.telicent.smart.cache.configuration.Configurator;
 import io.telicent.utils.SmartCacheGraphException;
@@ -48,9 +48,9 @@ public class FMod_BackupData implements FusekiAutoModule {
      */
     public static final String ENABLE_BACKUPS = "ENABLE_BACKUPS";
 
-    private static final String PUBLIC_KEY_URL = "PUBLIC_KEY_URL";
-    private static final String PRIVATE_KEY_URL = "PRIVATE_KEY_URL";
-    private static final String PASSKEY = "PASSKEY";
+    private static final String BACKUPS_PUBLIC_KEY_URL = "BACKUPS_PUBLIC_KEY_URL";
+    private static final String BACKUPS_PRIVATE_KEY_URL = "BACKUPS_PRIVATE_KEY_URL";
+    private static final String BACKUPS_PASSKEY = "BACKUPS_PASSKEY";
 
     static {
         // Add Bouncy castle to JVM
@@ -67,7 +67,7 @@ public class FMod_BackupData implements FusekiAutoModule {
     DatasetBackupService getBackupService(DataAccessPointRegistry dapRegistry) throws SmartCacheGraphException {
         try {
             final Optional<KeyPair> keyPairOption = getKeyPairOption();
-            if(keyPairOption.isPresent()) {
+            if (keyPairOption.isPresent()) {
                 return new DatasetBackupService(dapRegistry, keyPairOption.get());
             } else {
                 return new DatasetBackupService(dapRegistry);
@@ -89,6 +89,7 @@ public class FMod_BackupData implements FusekiAutoModule {
                 serverBuilder.addServlet("/$/backups/delete/*", new DeleteServlet(backupService));
                 serverBuilder.addServlet("/$/backups/validate/*", new ValidateServlet(backupService));
                 serverBuilder.addServlet("/$/backups/report/*", new ReportServlet(backupService));
+                serverBuilder.addServlet("/$/backups/details/*", new DetailsServlet(backupService));
             } catch (SmartCacheGraphException ex) {
                 LOG.warn("Database backups are not enabled due to {}", ex.getMessage());
             }
@@ -100,20 +101,25 @@ public class FMod_BackupData implements FusekiAutoModule {
     }
 
     private static String getPublicKeyUrl() {
-        return Configurator.get(new String[]{FMod_BackupData.PUBLIC_KEY_URL}, "");
+        return Configurator.get(new String[]{FMod_BackupData.BACKUPS_PUBLIC_KEY_URL}, "");
     }
 
     private static String getPrivateKeyUrl() {
-        return Configurator.get(new String[]{FMod_BackupData.PRIVATE_KEY_URL}, "");
+        return Configurator.get(new String[]{FMod_BackupData.BACKUPS_PRIVATE_KEY_URL}, "");
     }
 
     private static String getPasskey() {
-        return Configurator.get(new String[]{FMod_BackupData.PASSKEY}, "");
+        return Configurator.get(new String[]{FMod_BackupData.BACKUPS_PASSKEY}, "");
     }
 
     private Optional<KeyPair> getKeyPairOption() throws MalformedURLException, URISyntaxException {
         if (!getPublicKeyUrl().isEmpty() && !getPrivateKeyUrl().isEmpty() && !getPasskey().isEmpty()) {
-            return Optional.of(KeyPair.fromValues(getPrivateKeyUrl(), getPublicKeyUrl(), getPasskey()));
+            try{
+                return Optional.of(KeyPair.fromValues(getPrivateKeyUrl(), getPublicKeyUrl(), getPasskey()));
+            } catch (IllegalArgumentException | MalformedURLException | URISyntaxException ex){
+                LOG.error("Unable to read backup encryption key pair due to {}",ex.getMessage(),ex);
+                return Optional.empty();
+            }
         } else {
             return Optional.empty();
         }
