@@ -619,8 +619,13 @@ public class DatasetBackupService {
         registerMethod(restoreConsumerMap, key, restoreConsumer);
     }
 
-    //TODO
-    // make it work
+    /**
+     * Remove a given key from the both backup/restore methods registry.
+     *
+     * @param key             the name of the module being backed up or restored.
+     * @param backupConsumer  method that backs up the modules data
+     * @param restoreConsumer method that recovers the module
+     */
     public static void deRegisterMethods(String key, TriConsumer<DataAccessPoint, String, ObjectNode> backupConsumer, TriConsumer<DataAccessPoint, String, ObjectNode> restoreConsumer) {
         deRegisterMethod(backupConsumerMap, key, backupConsumer);
         deRegisterMethod(restoreConsumerMap, key, restoreConsumer);
@@ -657,7 +662,6 @@ public class DatasetBackupService {
         map.put(key, consumer);
     }
 
-    //TODO
     private static void deRegisterMethod(Map<String, TriConsumer<DataAccessPoint, String, ObjectNode>> map, String key, TriConsumer<DataAccessPoint, String, ObjectNode> consumer) {
         map.remove(key);
     }

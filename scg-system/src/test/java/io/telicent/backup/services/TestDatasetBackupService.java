@@ -532,7 +532,7 @@ public class TestDatasetBackupService {
 
     @Test
     @DisplayName("Restore TDB when the directory is wrong/missing")
-    public void test_restoreTDB_wrongDir() throws JsonProcessingException {
+    public void test_restoreTDB_wrongDir() {
         // given
         String missingPath = "/does_not_exist";
         DataAccessPoint mockDataAccessPoint = mock(DataAccessPoint.class);
@@ -579,7 +579,6 @@ public class TestDatasetBackupService {
      * RESTORE TESTS
      */
 
-
     @Test
     @DisplayName("Restore datasets when the directory is wrong/missing")
     public void test_restoreDatasets_wrongDir() throws Exception {
@@ -588,7 +587,6 @@ public class TestDatasetBackupService {
         // when
         ObjectNode result = OBJECT_MAPPER.createObjectNode();
         cut.restoreDatasets(missingID, result);
-
         // then
         assertTrue(result.has("restorePath"));
         assertTrue(result.has("success"));
@@ -610,11 +608,9 @@ public class TestDatasetBackupService {
         File newDir = new File(baseDir.toString() + "/" + emptyID);
         assertTrue(newDir.mkdir());
         newDir.deleteOnExit();
-
         // when
         ObjectNode result = OBJECT_MAPPER.createObjectNode();
         cut.restoreDatasets(emptyID, result);
-
         // then
         assertTrue(result.has("restorePath"));
         assertTrue(result.has("success"));
@@ -673,7 +669,6 @@ public class TestDatasetBackupService {
         assertTrue(newDir.mkdir());
         newDir.deleteOnExit();
 
-        //String datasetName = "dataset-name";
         String datasetName = "ds";
         File newDataset = new File(newDir + "/" + datasetName);
         assertTrue(newDataset.mkdir());

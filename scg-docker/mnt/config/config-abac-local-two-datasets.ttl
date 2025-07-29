@@ -1,6 +1,7 @@
 ## Test configuration
 ##   No Kafka connector
 ##   Local attribute store.
+##   Two datasets
 
 PREFIX :        <#>
 PREFIX fuseki:  <http://jena.apache.org/fuseki#>
@@ -19,7 +20,6 @@ PREFIX authz:   <http://telicent.io/security#>
     fuseki:name "/ds" ;
 
     fuseki:endpoint [ fuseki:operation fuseki:query ] ;
-    ##fuseki:endpoint [ fuseki:operation fusek:gsp-r ] ;
     fuseki:endpoint [ fuseki:operation fuseki:query ; fuseki:name "sparql" ] ;
     fuseki:endpoint [ fuseki:operation authz:upload ; fuseki:name "upload" ] ;
 
@@ -28,8 +28,6 @@ PREFIX authz:   <http://telicent.io/security#>
 
 :dataset rdf:type authz:DatasetAuthz ;
     authz:dataset :datasetBase;
-##     authz:tripleDefaultAttributes "!";
-   ## Use a local store. Development.
    authz:attributes <file:attribute-store.ttl> ;
     .
 
@@ -40,7 +38,6 @@ PREFIX authz:   <http://telicent.io/security#>
     fuseki:name "/ds2" ;
 
     fuseki:endpoint [ fuseki:operation fuseki:query ] ;
-    ##fuseki:endpoint [ fuseki:operation fusek:gsp-r ] ;
     fuseki:endpoint [ fuseki:operation fuseki:query ; fuseki:name "sparql" ] ;
     fuseki:endpoint [ fuseki:operation authz:upload ; fuseki:name "upload" ] ;
 
