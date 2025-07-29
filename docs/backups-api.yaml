@@ -462,3 +462,92 @@ paths:
                   error:
                     type: string
                     description: Error message.
+#TODO
+  /$/backups/details/{backupId}:
+    get:
+      summary: View detailed information about a backup
+      description: Retrieves the details of a given backup. Those include start and stop times, as well as duration, kafka offset, and size of the compressed backup.
+      parameters:
+        - name: backupId
+          in: path
+          required: true
+          description: ID of the backup details.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Backup details successfully retrieved.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  backup-id:
+                    type: string
+                    description: ID of the backup
+                    example: "2"
+                  date:
+                    type: string
+                    description: Date of the backup in YYYY-MM-DD_HH-MM-SS format
+                    example: "2025-07-29_13-55-22"
+                  details:
+                    type: object
+                    description: Detailed metadata about the backup
+                    properties:
+                      backup-id:
+                        type: string
+                        example: "2"
+                      details-path:
+                        type: string
+                        description: Filesystem path to the backup details
+                        example: "/fuseki/backups/2"
+                      zip-size-in-bytes:
+                        type: integer
+                        description: Size of the backup zip in bytes
+                        example: 604
+                      zip-size:
+                        type: string
+                        description: Human-readable size
+                        example: "604 bytes"
+                      start-time:
+                        type: string
+                        format: date-time
+                        description: Backup start time
+                        example: "2025-07-29T09:21:06.125229292Z[GMT]"
+                      end-time:
+                        type: string
+                        format: date-time
+                        description: Backup end time
+                        example: "2025-07-29T09:21:06.133364125Z[GMT]"
+                      backup-duration:
+                        type: string
+                        description: Backup duration as a human-readable string
+                        example: "8ms"
+                      backup-duration-in-ms:
+                        type: integer
+                        description: Backup duration in milliseconds
+                        example: 8
+                    required:
+                      - backup-id
+                      - details-path
+        '400':
+          description: Bad request.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Error message.
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Error message.
+
