@@ -14,7 +14,7 @@ function get_version() {
 
 # Fetch the project and Fuseki versions
 PROJECT_VERSION=$(get_version project.version)
-FUSEKI_SERVER_VERSION=$(get_version ver.fuseki-server)
+FUSEKI_SERVER_VERSION=$(get_version dependency.fuseki-server)
 
 # Check if versions were successfully extracted
 if [[ -z "$PROJECT_VERSION" || -z "$FUSEKI_SERVER_VERSION" ]]; then

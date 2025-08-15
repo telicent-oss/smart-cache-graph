@@ -21,7 +21,7 @@ It is a container that consists of:
 Smart Cache Graph is configured using a Fuseki configuration file
 ([documentation](docs/configuration-smart-cache-graph.md)). There is an [example config.ttl](docs/config.ttl) file.
 
-You can find further example configurations later under [Try It Out](#try-it-out).
+You can find further example configurations later under [Try It Out](#try-it-out-).
 
 ## System Configuration
 
@@ -30,7 +30,7 @@ The following environment variables can be used to control Smart Cache Graph:
 ### `USER_ATTRIBUTES_URL`
 
 This is the network location of [user attribute server](https://github.com/telicent-oss/telicent-access) which also
-includes the hierarchies management.
+includes the hierarchies' management.
 
 The URL value is a template including `{user}`. Example: `http://some-host/users/lookup/{user}`
 
@@ -178,7 +178,7 @@ and configuration files go into host `mnt/config/`.
 
 ### Try it out! 
 
-The provided script, [docker-run.sh](scg-docker/docker-run.sh), runs SCG in a docker container, with the contents of the
+The provided script, [latest-docker-run.sh](scg-docker/latest-docker-run.sh), runs the latest published image of SCG in a docker container, with the contents of the
 local [mnt/config](scg-docker/mnt/config) directory mounted into the newly generated docker image for ease of use.
 Similarly, the [mnt/databases](scg-docker/mnt/databases) and [mnt/logs](scg-docker/mnt/logs) are mounted for easier
 analysis.
@@ -186,7 +186,7 @@ analysis.
 #### Example configuration - *Default*
 
 ```bash
-   scg-docker/docker-run.sh
+   scg-docker/latest-docker-run.sh
 ```
 Passing no parameters means that it will default to (`"--mem /ds"`)
 
@@ -197,7 +197,7 @@ The Fuseki server is available at `http://localhost:3030/ds`.
 
 #### Example configuration - *ABAC*
 ```bash
-   scg-docker/docker-run.sh --config config/config-local-abac.ttl
+   scg-docker/latest-docker-run.sh --config config/config-local-abac.ttl
 ```
 This runs the server using the configuration file [config-abac-local.ttl](scg-docker/mnt/config/config-abac-local.ttl.
 It specifies an in-memory dataset at `/ds` and that Attribute Based Access Control is enabled.
@@ -208,7 +208,7 @@ It specifies an in-memory dataset at `/ds` and that Attribute Based Access Contr
 #### Example configuration - *Kafka Replay* 
 
 ```bash
-   scg-docker/docker-run.sh --config config/config-replay-abac.ttl
+   scg-docker/latest-docker-run.sh --config config/config-replay-abac.ttl
 ```
 As this suggests, this runs server using the configuration file `config/config-replay-abac.ttl` 
 or [config-replay-abac.ttl](scg-docker/mnt/config/config-replay-abac.ttl) as it's known locally. 
@@ -218,13 +218,20 @@ and running, prior to launch.
 
 The Fuseki server is available at `http://localhost:3030/ds`.
 
-#### More advanced testing - d-run
+#### More advanced testing - docker-run.sh & d-run
+To run the local instance you can use other scripts. You will need `mvn` installed in order to build the code (as described [above](#build)).
+
+You can then run `docker-run.sh` to use the newly built images.
+```bash
+   scg-docker/docker-run.sh
+```
+It uses the same parameters as the latest-docker-run. sh script above.
 
 Alternately, you can use the script `d-run` which will map the relevant config and database directories from the local
 filesystem, pulling down the given image and running it directly (not in `-d` mode). It requires a number of environment
 variables to be set as indicated in the script.   
 
-It can be run with exactly the same configuration as docker-run.sh except with no default configuration if nothing is
+It can be run with exactly the same configuration as latest-docker-run.sh except with no default configuration if nothing is
 provided.
 
 #### Open Telemetry
