@@ -27,9 +27,11 @@ import org.mockito.Mockito;
 
 import java.io.*;
 import java.net.http.HttpResponse;
+import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.Set;
 
 import static io.telicent.TestJwtServletAuth.makePOSTCallWithPath;
@@ -40,7 +42,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 public class TestInitialCompaction {
-    private static final MockedStatic<DatabaseMgr> mockDatabaseMgr  = mockStatic(DatabaseMgr.class, Mockito.CALLS_REAL_METHODS);
+    private static final MockedStatic<DatabaseMgr> mockDatabaseMgr = mockStatic(DatabaseMgr.class, Mockito.CALLS_REAL_METHODS);
     private static FusekiServer server;
 
     @BeforeAll
@@ -54,8 +56,8 @@ public class TestInitialCompaction {
 
     @AfterEach
     void clearDown() {
-       mockDatabaseMgr.clearInvocations();
-       mockDatabaseMgr.reset();
+        mockDatabaseMgr.clearInvocations();
+        mockDatabaseMgr.reset();
         if (server != null) {
             server.stop();
             server = null;
@@ -67,7 +69,15 @@ public class TestInitialCompaction {
     private static void removePreviousCompactionResults() {
         File previousCompactionSize = Path.of("target", "databases", "knowledge", ".last-compaction").toFile();
         if (previousCompactionSize.exists()) {
-            previousCompactionSize.delete();
+            final Path path = previousCompactionSize.toPath();
+            try {
+                Files.delete(path);
+                try (final FileChannel channel = FileChannel.open(path, StandardOpenOption.READ)) {
+                    channel.force(true);
+                }
+            } catch (IOException ex) {
+                System.err.println("Failed to delete last compaction file due to: " + ex.getMessage());
+            }
         }
     }
 
@@ -302,7 +312,7 @@ public class TestInitialCompaction {
     }
 
     @Test
-    public void test_compactWithExistingLock()  {
+    public void test_compactWithExistingLock() {
         // given
         DatasetGraphSwitchable dsgPersists = new DatasetGraphSwitchable(Path.of("./"), null, DatasetGraphFactory.createTxnMem());
         DatasetGraphSwitchable mockedDsg = Mockito.spy(dsgPersists);
@@ -391,6 +401,6 @@ public class TestInitialCompaction {
         when(request.getMethod()).thenReturn("POST");
 
         HttpServletResponse response = mock(HttpServletResponse.class);
-        assertThrows(ActionErrorException.class, () ->capturedServlet.service(request, response));
+        assertThrows(ActionErrorException.class, () -> capturedServlet.service(request, response));
     }
 }
