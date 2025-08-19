@@ -66,6 +66,11 @@ public class TestInitialCompaction {
         removePreviousCompactionResults();
     }
 
+    @BeforeEach
+    void beforeEach() {
+        removePreviousCompactionResults();
+    }
+
     private static void removePreviousCompactionResults() {
         File previousCompactionSize = Path.of("target", "databases", "knowledge", ".last-compaction").toFile();
         if (previousCompactionSize.exists()) {
