@@ -98,6 +98,19 @@ public class TestInitialCompaction {
     }
 
     @Test
+    public void test_persistentDataset() {
+        // given
+        mockDatabaseMgr.when(() -> DatabaseMgr.compact(any(), anyBoolean())).thenAnswer(invocationOnMock -> null);
+        mockDatabaseMgr.clearInvocations();
+        String configFile = "config-persistent.ttl";
+        // when
+        server = launchServer(configFile);
+        // then
+        assertNotNull(server.serverURL());
+        mockDatabaseMgr.verify(() -> DatabaseMgr.compact(any(), anyBoolean()), times(1));
+    }
+
+    @Test
     public void test_persistentDataset_sizeSame_ignoredSecondCall() {
         // given
         mockDatabaseMgr.when(() -> DatabaseMgr.compact(any(), anyBoolean())).thenAnswer(invocationOnMock -> null);
