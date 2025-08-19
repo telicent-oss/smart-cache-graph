@@ -56,6 +56,10 @@ public class TestInitialCompaction {
     void clearDown() {
        mockDatabaseMgr.clearInvocations();
        mockDatabaseMgr.reset();
+        if (server != null) {
+            server.stop();
+            server = null;
+        }
 
         removePreviousCompactionResults();
     }
@@ -69,9 +73,6 @@ public class TestInitialCompaction {
 
     @AfterAll
     static void stopServer() throws Exception {
-        if (server != null) {
-            server.stop();
-        }
         LibTestsSCG.teardownAuthentication();
         mockDatabaseMgr.close();
     }
