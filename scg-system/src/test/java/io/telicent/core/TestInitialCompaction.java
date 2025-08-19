@@ -16,7 +16,7 @@ import org.apache.jena.fuseki.servlets.ActionErrorException;
 import org.apache.jena.fuseki.system.FusekiLogging;
 import org.apache.jena.sparql.core.DatasetGraph;
 import org.apache.jena.sparql.core.DatasetGraphFactory;
-//import org.apache.jena.tdb1.TDB1Factory;
+import org.apache.jena.tdb1.TDB1Factory;
 import org.apache.jena.tdb1.base.file.Location;
 import org.apache.jena.tdb2.DatabaseMgr;
 import org.apache.jena.tdb2.store.DatasetGraphSwitchable;
@@ -166,15 +166,15 @@ public class TestInitialCompaction {
         assertNotNull(name);
     }
 
-//    @Test
-//    public void test_TDB1_DSG() {
-//        // given
-//        DatasetGraph tdb1_DG = TDB1Factory.createDatasetGraph(Location.mem());
-//        // when
-//        DatasetGraph actualDSG = FMod_InitialCompaction.getTDB2(tdb1_DG);
-//        // then
-//        assertNull(actualDSG);
-//    }
+    @Test
+    public void test_TDB1_DSG() {
+        // given
+        DatasetGraph tdb1_DG = TDB1Factory.createDatasetGraph(Location.mem());
+        // when
+        DatasetGraph actualDSG = FMod_InitialCompaction.getTDB2(tdb1_DG);
+        // then
+        assertNull(actualDSG);
+    }
 
     @Test
     public void test_ABACDSG_wrapped_memGraph() {
@@ -358,14 +358,14 @@ public class TestInitialCompaction {
         mockDatabaseMgr.verify(() -> DatabaseMgr.compact(any(), anyBoolean()), times(1));
     }
 
-//    @Test
-//    public void test_compactLabels_notABAC() {
-//        // given
-//        DatasetGraph dsgNotABAC = TDB1Factory.createDatasetGraph(Location.mem());
-//        // when
-//        // then
-//        compactLabels(dsgNotABAC);
-//    }
+    @Test
+    public void test_compactLabels_notABAC() {
+        // given
+        DatasetGraph dsgNotABAC = TDB1Factory.createDatasetGraph(Location.mem());
+        // when
+        // then
+        compactLabels(dsgNotABAC);
+    }
 
     @Test
     public void test_compactLabels_notRocksDB() {
