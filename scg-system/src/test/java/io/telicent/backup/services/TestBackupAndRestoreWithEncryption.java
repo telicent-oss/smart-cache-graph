@@ -8,6 +8,7 @@ import org.apache.jena.fuseki.main.FusekiServer;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.testcontainers.shaded.org.apache.commons.io.FileUtils;
@@ -31,6 +32,7 @@ import java.util.Objects;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @ExtendWith(SystemStubsExtension.class)
+@Disabled // Causes JVM crash on GitHub Actions - possible incompatibility between Temurin JDK and Mockito?
 public class TestBackupAndRestoreWithEncryption {
 
     @SystemStub

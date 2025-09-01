@@ -263,6 +263,34 @@ public class TestLabelsQuery {
     }
 
     @Test
+    public void givenQueryWithNonAsciiCharacters_whenMakingLabelsQuery_thenOk() throws Exception {
+        final String jsonRequestBody = """
+                {
+                  "triples": [
+                     {
+                       "subject": "http://telicent.io/catalog#7efb98c6-708e-4c05-9284-866bf5d33bae_DataHandlingPolicy",
+                       "predicate": "http://purl.org/dc/terms/description",
+                       "object": {
+                         "value": "Please be careful: this data is fragile … ! okoka"
+                       }
+                     }
+                  ]
+                }
+                """;
+        final String expectedJsonResponse = """
+                {
+                  "results" : [ {
+                    "subject" : "http://telicent.io/catalog#7efb98c6-708e-4c05-9284-866bf5d33bae_DataHandlingPolicy",
+                    "predicate" : "http://purl.org/dc/terms/description",
+                    "object" : "\\"Please be careful: this data is fragile … ! okoka\\"",
+                    "labels" : [ ]
+                  } ]
+                }""";
+
+        callAndAssert(jsonRequestBody, expectedJsonResponse, DATASET1_NAME);
+    }
+
+    @Test
     public void test_name() {
         // given
         FMod_LabelsQuery fModLabelsQuery = new FMod_LabelsQuery();
