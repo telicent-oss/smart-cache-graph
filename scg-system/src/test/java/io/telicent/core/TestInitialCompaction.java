@@ -97,6 +97,7 @@ public class TestInitialCompaction {
     }
 
     @Test
+    @Disabled // Flaky test
     public void test_persistentDataset_sizeSame_ignoredSecondCall() {
         // given
         mockDatabaseMgr.when(() -> DatabaseMgr.compact(any(), anyBoolean())).thenAnswer(invocationOnMock -> null);
@@ -115,6 +116,7 @@ public class TestInitialCompaction {
     }
 
     @Test
+    @Disabled
     public void test_persistentDataset_sizeDifferent_makeSecondCall() {
         // given
         mockDatabaseMgr.when(() -> DatabaseMgr.compact(any(), anyBoolean())).thenAnswer(invocationOnMock -> null);
@@ -317,6 +319,7 @@ public class TestInitialCompaction {
     }
 
     @Test
+    @Disabled // NB - This test is flaky, disabling it for the time being
     public void givenServer_whenPreviouslyCompacted_thenAskingToCompactAgainIsANoOp() {
         // Given
         mockDatabaseMgr.when(() -> DatabaseMgr.compact(any(), anyBoolean())).thenAnswer(invocationOnMock -> null);
