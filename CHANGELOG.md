@@ -4,6 +4,11 @@
 
 - Fixed a bug where some services that provided JSON responses could fail if the responses containing Unicode characters
   that required more than one byte to represent in UTF-8 could fail due to incorrectly declared `Content-Length` header
+- Build improvements:
+    - JWT Servlet Auth upgraded to 1.0.5
+    - Smart Caches Core upgraded to 0.29.4
+    - Telicent Base Java Image upgraded to 1.2.23
+    - Various build and test dependencies upgraded to latest available
 
 ## 0.90.0
 
