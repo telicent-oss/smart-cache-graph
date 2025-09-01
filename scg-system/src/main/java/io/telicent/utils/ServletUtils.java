@@ -27,7 +27,10 @@ public class ServletUtils {
         String jsonOutput;
         try (ServletOutputStream out = response.getOutputStream()) {
             jsonOutput = OBJECT_MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(jsonResponse);
-            response.setContentLength(jsonOutput.length());
+            // NB - We can't set Content-Length based on the string length because Java strings are UTF-16 BUT we're
+            //      sending a UTF-8 response so when Jetty encodes the string into UTF-8 anything that requires more
+            //      than one byte to encode would cause the declared Content-Length to be wrong, this leads to Jetty
+            //      aborting the request
             response.setContentType(WebContent.contentTypeJSON);
             response.setCharacterEncoding(WebContent.charsetUTF8);
             out.print(jsonOutput);

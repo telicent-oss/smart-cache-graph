@@ -1,5 +1,10 @@
 # Smart Cache Graph
 
+## 0.90.1
+
+- Fixed a bug where some services that provided JSON responses could fail if the responses containing Unicode characters
+  that required more than one byte to represent in UTF-8 could fail due to incorrectly declared `Content-Length` header
+
 ## 0.90.0
 
 - **BREAKING** Upgraded Fuseki Kafka to 2.0.2
