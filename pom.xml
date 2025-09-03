@@ -86,11 +86,11 @@
     <dependency.jena>5.5.0</dependency.jena>
     <dependency.fuseki-server>${dependency.jena}</dependency.fuseki-server>
     <dependency.graphql>0.10.5</dependency.graphql>
-    <dependency.jwt-servlet-auth>1.0.5</dependency.jwt-servlet-auth>
-    <dependency.smart-caches-core>0.29.4</dependency.smart-caches-core>
+    <dependency.jwt-servlet-auth>1.1.0</dependency.jwt-servlet-auth>
+    <dependency.smart-caches-core>0.29.5</dependency.smart-caches-core>
 
     <!-- External dependencies -->
-    <dependency.jackson>2.19.2</dependency.jackson>
+    <dependency.jackson>2.20.0</dependency.jackson>
     <dependency.bouncycastle>1.81</dependency.bouncycastle>
     <dependency.kafka>3.9.1</dependency.kafka>
     <dependency.kotlin>2.2.10</dependency.kotlin>
