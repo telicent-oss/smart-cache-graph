@@ -77,7 +77,7 @@
     <plugin.site>3.9.1</plugin.site>
     <plugin.source>3.3.1</plugin.source>
     <plugin.surefire>3.5.3</plugin.surefire>
-    <plugin.versions>2.18.0</plugin.versions>
+    <plugin.versions>2.19.0</plugin.versions>
 
     <!-- Dependency versions -->
     <!-- Internal dependencies -->
