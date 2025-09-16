@@ -86,7 +86,7 @@
     <dependency.jena>5.5.0</dependency.jena>
     <dependency.fuseki-server>${dependency.jena}</dependency.fuseki-server>
     <dependency.graphql>0.10.5</dependency.graphql>
-    <dependency.jwt-servlet-auth>1.1.0</dependency.jwt-servlet-auth>
+    <dependency.jwt-servlet-auth>2.0.0</dependency.jwt-servlet-auth>
     <dependency.smart-caches-core>0.29.5</dependency.smart-caches-core>
 
     <!-- External dependencies -->
