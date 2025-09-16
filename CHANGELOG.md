@@ -1,5 +1,16 @@
 # Smart Cache Graph
 
+## 0.90.2
+
+- Picked up updated Fuseki Kafka Connector release that has improvements to event batching behaviour for high lag and
+  low volume scenarios
+- Build improvements:
+    - Fuseki Kafka upgraded to 2.1.0
+    - Jackson upgraded to 2.20.0
+    - JWT Servlet Auth upgraded to 2.0.0
+    - Smart Caches Core upgraded to 0.29.5
+    - Various build and test dependencies upgraded to latest available
+
 ## 0.90.1
 
 - Fixed a bug where some services that provided JSON responses could fail if the responses containing Unicode characters
