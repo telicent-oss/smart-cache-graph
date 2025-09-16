@@ -76,7 +76,7 @@
     <plugin.shade>3.4.1</plugin.shade>
     <plugin.site>3.9.1</plugin.site>
     <plugin.source>3.3.1</plugin.source>
-    <plugin.surefire>3.5.3</plugin.surefire>
+    <plugin.surefire>3.5.4</plugin.surefire>
     <plugin.versions>2.19.0</plugin.versions>
 
     <!-- Dependency versions -->
@@ -93,7 +93,7 @@
     <dependency.jackson>2.20.0</dependency.jackson>
     <dependency.bouncycastle>1.81</dependency.bouncycastle>
     <dependency.kafka>3.9.1</dependency.kafka>
-    <dependency.kotlin>2.2.10</dependency.kotlin>
+    <dependency.kotlin>2.2.20</dependency.kotlin>
     <dependency.otel>1.33.0</dependency.otel> <!-- These two must be in-step. -->
     <dependency.otel-semconv>1.30.1-alpha</dependency.otel-semconv> <!-- These two must be in-step. -->
 
@@ -565,7 +565,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-shade-plugin</artifactId>
-          <version>3.6.0</version>
+          <version>3.6.1</version>
         </plugin>
 
         <plugin>
