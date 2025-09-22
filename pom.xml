@@ -62,7 +62,7 @@
     <!-- Maven Plugin versions -->
     <plugin.central>0.8.0</plugin.central>
     <plugin.clean>3.3.2</plugin.clean>
-    <plugin.compiler>3.14.0</plugin.compiler>
+    <plugin.compiler>3.14.1</plugin.compiler>
     <plugin.cyclonedx>2.9.1</plugin.cyclonedx>
     <plugin.dependency>3.8.1</plugin.dependency>
     <plugin.deploy>3.1.4</plugin.deploy>
@@ -71,13 +71,13 @@
     <plugin.install>3.1.1</plugin.install>
     <plugin.jar>3.4.2</plugin.jar>
     <plugin.jacoco>0.8.13</plugin.jacoco>
-    <plugin.javadoc>3.11.3</plugin.javadoc>
+    <plugin.javadoc>3.12.0</plugin.javadoc>
     <plugin.resources>3.3.1</plugin.resources>
     <plugin.shade>3.4.1</plugin.shade>
     <plugin.site>3.9.1</plugin.site>
     <plugin.source>3.3.1</plugin.source>
     <plugin.surefire>3.5.4</plugin.surefire>
-    <plugin.versions>2.19.0</plugin.versions>
+    <plugin.versions>2.19.1</plugin.versions>
 
     <!-- Dependency versions -->
     <!-- Internal dependencies -->
@@ -85,7 +85,7 @@
     <dependency.fuseki-kafka>2.1.0</dependency.fuseki-kafka>
     <dependency.jena>5.5.0</dependency.jena>
     <dependency.fuseki-server>${dependency.jena}</dependency.fuseki-server>
-    <dependency.graphql>0.10.5</dependency.graphql>
+    <dependency.graphql>0.10.6</dependency.graphql>
     <dependency.jwt-servlet-auth>2.0.0</dependency.jwt-servlet-auth>
     <dependency.smart-caches-core>0.29.5</dependency.smart-caches-core>
 
@@ -98,7 +98,7 @@
     <dependency.otel-semconv>1.30.1-alpha</dependency.otel-semconv> <!-- These two must be in-step. -->
 
     <!-- Logging dependencies -->
-    <dependency.log4j2>2.25.1</dependency.log4j2>
+    <dependency.log4j2>2.25.2</dependency.log4j2>
     <dependency.logback>1.5.18</dependency.logback>
     <dependency.slf4j>2.0.17</dependency.slf4j>
 
@@ -106,7 +106,7 @@
     <dependency.jmh>1.37</dependency.jmh>
     <dependency.junit5>5.13.4</dependency.junit5>
     <dependency.junit5-platform>1.13.4</dependency.junit5-platform>
-    <dependency.mockito>5.19.0</dependency.mockito>
+    <dependency.mockito>5.20.0</dependency.mockito>
     <dependency.testcontainers>1.21.3</dependency.testcontainers>
     <dependency.yaml-config>2.0.1</dependency.yaml-config>
 

@@ -6,8 +6,10 @@
   low volume scenarios
 - Build improvements:
     - Fuseki Kafka upgraded to 2.1.0
+    - GraphQL Jena upgraded to 0.10.6
     - Jackson upgraded to 2.20.0
     - JWT Servlet Auth upgraded to 2.0.0
+    - Log4j upgraded to 2.25.2
     - Smart Caches Core upgraded to 0.29.5
     - Various build and test dependencies upgraded to latest available
 
