@@ -151,7 +151,7 @@ paths:
         - name: restoreId
           in: path
           required: true
-          description: ID of the backup to restore.
+          description: ID of the backup to restore. If no ID is provided, the latest snapshot is restored.
           schema:
             type: string
       responses:
@@ -169,6 +169,9 @@ paths:
                     type: string
                     format: date-time
                     description: Timestamp of the restore operation.
+                  backup-success:
+                    type: string
+                    description: The status of the immediate backup prior to the restore operation.
                   restore:
                     type: object
                     description: Details of the restore operation.
@@ -196,12 +199,12 @@ paths:
   /$/backups/restore/{restoreId}/{datasetName}:
     post:
       summary: Restore a backup of specific dataset
-      description: Restores a dataset from a specified backup (ignoring the others in the backuo).
+      description: Restores a dataset from a specified backup (ignoring the others in the backup).
       parameters:
         - name: restoreId
           in: path
-          required: true
-          description: ID of the backup to restore.
+          required: false
+          description: ID of the backup to restore. If no ID is provided, the latest snapshot is restored.
           schema:
             type: string
         - name: datasetName
@@ -225,6 +228,9 @@ paths:
                     type: string
                     format: date-time
                     description: Timestamp of the restore operation.
+                  backup-success:
+                    type: string
+                    description: The status of the immediate backup prior to the restore operation.
                   restore:
                     type: object
                     description: Details of the restore operation.
@@ -462,7 +468,6 @@ paths:
                   error:
                     type: string
                     description: Error message.
-#TODO
   /$/backups/details/{backupId}:
     get:
       summary: View detailed information about a backup
