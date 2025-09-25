@@ -150,7 +150,7 @@ paths:
       parameters:
         - name: restoreId
           in: path
-          required: true
+          required: false
           description: ID of the backup to restore. If no ID is provided, the latest snapshot is restored.
           schema:
             type: string
