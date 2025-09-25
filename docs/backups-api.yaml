@@ -7,6 +7,41 @@ servers:
   - url: http://localhost:3030/
     description: Base path for dataset backup operations.
 components:
+  responses:
+    RestoreResponse:
+      description: Dataset restored successfully.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              restore-id:
+                type: string
+              date:
+                type: string
+                format: date-time
+              backup-success:
+                type: string
+              restore:
+                type: object
+    NotFoundError:
+      description: Backup not found.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+    InternalServerError:
+      description: Internal server error.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
   securitySchemes:
     BearerAuth:
       description: Generic Bearer Authentication is supported using JWTs
@@ -143,68 +178,65 @@ paths:
                     type: string
                     description: Error message.
 
+  /$/backups/restore:
+    post:
+      summary: Restore the latest backup
+      description: Restores the latest snapshot.
+      responses:
+        '200':
+          $ref: '#/components/responses/RestoreResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
   /$/backups/restore/{restoreId}:
     post:
-      summary: Restore a backup
-      description: Restores a dataset from a specified backup.
+      summary: Restore a specific backup
+      description: Restores a dataset from a specified snapshot.
       parameters:
         - name: restoreId
           in: path
-          required: false
-          description: ID of the backup to restore. If no ID is provided, the latest snapshot is restored.
+          required: true
+          description: ID of the backup to restore.
           schema:
             type: string
       responses:
         '200':
-          description: Dataset restored successfully.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  restore-id:
-                    type: string
-                    description: ID of the restored backup.
-                  date:
-                    type: string
-                    format: date-time
-                    description: Timestamp of the restore operation.
-                  backup-success:
-                    type: string
-                    description: The status of the immediate backup prior to the restore operation.
-                  restore:
-                    type: object
-                    description: Details of the restore operation.
+          $ref: '#/components/responses/RestoreResponse'
         '404':
-          description: Backup not found.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    description: Error message.
+          $ref: '#/components/responses/NotFoundError'
         '500':
-          description: Internal server error.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    description: Error message.
+          $ref: '#/components/responses/InternalServerError'
+
+  /$/backups/restore/{datasetName}:
+    post:
+      summary: Restore the latest backup of specific dataset
+      description: Restores the latest backup, but only for the given dataset.
+      parameters:
+        - name: datasetName
+          in: path
+          required: true
+          description: The dataset to restore.
+          schema:
+            type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/RestoreResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
 
   /$/backups/restore/{restoreId}/{datasetName}:
     post:
-      summary: Restore a backup of specific dataset
+      summary: Restore a specific backup of specific dataset
       description: Restores a dataset from a specified backup (ignoring the others in the backup).
       parameters:
         - name: restoreId
           in: path
-          required: false
-          description: ID of the backup to restore. If no ID is provided, the latest snapshot is restored.
+          required: true
+          description: ID of the backup to restore.
           schema:
             type: string
         - name: datasetName
@@ -214,46 +246,12 @@ paths:
           schema:
             type: string
       responses:
-        '200':
-          description: Dataset restored successfully.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  restore-id:
-                    type: string
-                    description: ID of the restored backup.
-                  date:
-                    type: string
-                    format: date-time
-                    description: Timestamp of the restore operation.
-                  backup-success:
-                    type: string
-                    description: The status of the immediate backup prior to the restore operation.
-                  restore:
-                    type: object
-                    description: Details of the restore operation.
-        '404':
-          description: Backup not found.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    description: Error message.
-        '500':
-          description: Internal server error.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    description: Error message.
+          '200':
+            $ref: '#/components/responses/RestoreResponse'
+          '404':
+            $ref: '#/components/responses/NotFoundError'
+          '500':
+            $ref: '#/components/responses/InternalServerError'
 
   /$/backups/delete/{deleteId}:
     post:
@@ -555,4 +553,3 @@ paths:
                   error:
                     type: string
                     description: Error message.
-
