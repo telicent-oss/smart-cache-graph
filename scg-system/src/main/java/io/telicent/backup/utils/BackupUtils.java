@@ -19,6 +19,7 @@ package io.telicent.backup.utils;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.telicent.smart.cache.configuration.Configurator;
 import io.telicent.utils.ServletUtils;
@@ -36,6 +37,10 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeParseException;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.PathMatcher;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -610,4 +615,71 @@ public class BackupUtils extends ServletUtils {
         }
     }
 
+
+    /**
+     * Appends a section with the outcomes of backup operations to a response
+     * @param result The ObjectNode to get the success information from
+     * @param response The ObjectNode to add the information to
+     */
+    public static void getBackupSuccessValues(ObjectNode result, ObjectNode response) {
+        ArrayNode datasets = (ArrayNode) result.get("datasets");
+        if (datasets == null) return;
+
+        ObjectNode backupSuccess = JsonNodeFactory.instance.objectNode();
+        boolean isAnyTrue = false;
+
+        for (JsonNode datasetNode : datasets) {
+            if (!(datasetNode instanceof ObjectNode dataset)) continue;
+
+            String datasetName = dataset.path("dataset-name").asText(null);
+            if (datasetName == null) continue;
+
+            ObjectNode datasetSuccess = JsonNodeFactory.instance.objectNode();
+
+            Iterator<Map.Entry<String, JsonNode>> fields = dataset.fields();
+            while (fields.hasNext()) {
+                Map.Entry<String, JsonNode> entry = fields.next();
+                String sectionName = entry.getKey();
+                JsonNode sectionValue = entry.getValue();
+
+                if (!(sectionValue instanceof ObjectNode section)) continue;
+
+                if (section.has("success")) {
+                    boolean success = section.get("success").asBoolean(false);
+                    String key = sectionName + "-success";
+                    datasetSuccess.put(sanitizeKey(key), success);
+                    if (success) isAnyTrue = true;
+                }
+
+                Iterator<Map.Entry<String, JsonNode>> nestedFields = section.fields();
+                while (nestedFields.hasNext()) {
+                    Map.Entry<String, JsonNode> nestedEntry = nestedFields.next();
+                    String nestedKey = nestedEntry.getKey();
+                    JsonNode nestedValue = nestedEntry.getValue();
+
+                    if (nestedValue.isArray()) {
+                        for (JsonNode arrayItem : nestedValue) {
+                            if (arrayItem instanceof ObjectNode && arrayItem.has("success")) {
+                                boolean nestedSuccess = arrayItem.get("success").asBoolean(false);
+                                String composedKey = sectionName + "-" + nestedKey + "-success";
+                                datasetSuccess.put(sanitizeKey(composedKey), nestedSuccess);
+                                if (nestedSuccess) isAnyTrue = true;
+                            }
+                        }
+                    }
+                }
+            }
+            backupSuccess.set(datasetName, datasetSuccess);
+        }
+        if (isAnyTrue) {
+            response.set("backup-success", backupSuccess);
+        }
+        else {
+            response.put("backup-success", "false");
+        }
+    }
+
+    private static String sanitizeKey(String key) {
+        return key.replaceAll("[^a-zA-Z0-9_-]", "-").replaceAll("^-+|-+$", "").replaceAll("-{2,}", "-");
+    }
 }

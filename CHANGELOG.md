@@ -1,5 +1,28 @@
 # Smart Cache Graph
 
+## 0.90.2
+
+- Picked up updated Fuseki Kafka Connector release that has improvements to event batching behaviour for high lag and
+  low volume scenarios
+- Build improvements:
+    - Fuseki Kafka upgraded to 2.1.0
+    - GraphQL Jena upgraded to 0.10.6
+    - Jackson upgraded to 2.20.0
+    - JWT Servlet Auth upgraded to 2.0.0
+    - Log4j upgraded to 2.25.2
+    - Smart Caches Core upgraded to 0.29.5
+    - Various build and test dependencies upgraded to latest available
+
+## 0.90.1
+
+- Fixed a bug where some services that provided JSON responses could fail if the responses containing Unicode characters
+  that required more than one byte to represent in UTF-8 could fail due to incorrectly declared `Content-Length` header
+- Build improvements:
+    - JWT Servlet Auth upgraded to 1.0.5
+    - Smart Caches Core upgraded to 0.29.4
+    - Telicent Base Java Image upgraded to 1.2.23
+    - Various build and test dependencies upgraded to latest available
+
 ## 0.90.0
 
 - **BREAKING** Upgraded Fuseki Kafka to 2.0.2
