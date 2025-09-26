@@ -142,7 +142,7 @@ public class TestBackupData {
         // then
         assertEquals(200, createBackupResponse.statusCode());
         Map responseMap = convertToMap(createBackupResponse);
-        assertEquals("FULL", responseMap.get("backup-name") );
+        assertEquals("FULL", responseMap.get("backup-type") );
         assertEquals("test", responseMap.get("user"));
         // for debugging
         //debug(createBackupResponse);
@@ -157,7 +157,7 @@ public class TestBackupData {
         // then
         assertEquals(200, createBackupResponse.statusCode());
         Map responseMap = convertToMap(createBackupResponse);
-        assertEquals("FULL", responseMap.get("backup-name") );
+        assertEquals("FULL", responseMap.get("backup-type") );
         assertEquals("test", responseMap.get("user"));
         // for debugging
         //debug(createBackupResponse);
@@ -173,7 +173,7 @@ public class TestBackupData {
         // then
         assertEquals(200, createBackupResponse.statusCode());
         Map responseMap = convertToMap(createBackupResponse);
-        assertEquals("new-backup", responseMap.get("backup-name") );
+        assertEquals("new-backup", responseMap.get("backup-type") );
         assertEquals("test", responseMap.get("user"));
         // for debugging
         //debug(createBackupResponse);
@@ -188,7 +188,7 @@ public class TestBackupData {
         // then
         assertEquals(200, createBackupResponse.statusCode());
         Map responseMap = convertToMap(createBackupResponse);
-        assertEquals("new-backup", responseMap.get("backup-name") );
+        assertEquals("new-backup", responseMap.get("backup-type") );
         assertEquals("test", responseMap.get("user"));
         assertFalse(responseMap.containsKey("description"));
         // for debugging
@@ -205,7 +205,7 @@ public class TestBackupData {
         // then
         assertEquals(200, createBackupResponse.statusCode());
         Map responseMap = convertToMap(createBackupResponse);
-        assertEquals("FULL", responseMap.get("backup-name") );
+        assertEquals("FULL", responseMap.get("backup-type") );
         assertEquals("test", responseMap.get("user"));
         assertEquals("abc", responseMap.get("description"));
         // for debugging
@@ -220,6 +220,11 @@ public class TestBackupData {
         HttpResponse<InputStream> createBackupResponse = makeAuthPOSTCallWithPath(server, "$/backups/create?description=abc&backup-name=new-backup", "test");
         // then
         assertEquals(200, createBackupResponse.statusCode());
+        Map responseMap = convertToMap(createBackupResponse);
+        assertEquals("FULL", responseMap.get("backup-type") );
+        assertEquals("new-backup", responseMap.get("backup-name"));
+        assertEquals("test", responseMap.get("user"));
+        assertEquals("abc", responseMap.get("description"));
         // for debugging
         //debug(createBackupResponse);
     }
@@ -232,6 +237,10 @@ public class TestBackupData {
         HttpResponse<InputStream> createBackupResponse = makeAuthPOSTCallWithPath(server, "$/backups/create/ds?backup-name=new-backup", "test");
         // then
         assertEquals(200, createBackupResponse.statusCode());
+        Map responseMap = convertToMap(createBackupResponse);
+        assertEquals("ds", responseMap.get("backup-type") );
+        assertEquals("new-backup", responseMap.get("backup-name"));
+        assertEquals("test", responseMap.get("user"));
         // for debugging
         //debug(createBackupResponse);
     }
