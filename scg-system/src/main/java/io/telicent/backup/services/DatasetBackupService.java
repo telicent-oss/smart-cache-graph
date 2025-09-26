@@ -124,15 +124,19 @@ public class DatasetBackupService {
             try {
                 String id = sanitiseName(request.getPathInfo());
                 if (!id.isEmpty()) {
-                    resultNode.put("backup-name", id);
+                    resultNode.put("backup-type", id);
                 } else {
-                    resultNode.put("backup-name", "FULL");
+                    resultNode.put("backup-type", "FULL");
                 }
                 resultNode.put("date", DateTimeUtils.nowAsString(DATE_FORMAT));
                 resultNode.put("user", request.getRemoteUser());
-                String name = request.getParameter("description");
-                if (name != null) {
-                    resultNode.put("description", name);
+                String description = request.getParameter("description");
+                if (description != null) {
+                    resultNode.put("description", description);
+                }
+                String backupName = request.getParameter("backup-name");
+                if (backupName != null) {
+                    resultNode.put("backup-name", backupName);
                 }
                 if (backup) {
                     backupDataset(id, resultNode);
