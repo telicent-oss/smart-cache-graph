@@ -7,6 +7,41 @@ servers:
   - url: http://localhost:3030/
     description: Base path for dataset backup operations.
 components:
+  responses:
+    RestoreResponse:
+      description: Dataset restored successfully.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              restore-id:
+                type: string
+              date:
+                type: string
+                format: date-time
+              backup-success:
+                type: string
+              restore:
+                type: object
+    NotFoundError:
+      description: Backup not found.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+    InternalServerError:
+      description: Internal server error.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
   securitySchemes:
     BearerAuth:
       description: Generic Bearer Authentication is supported using JWTs
@@ -143,10 +178,22 @@ paths:
                     type: string
                     description: Error message.
 
+  /$/backups/restore:
+    post:
+      summary: Restore the latest backup
+      description: Restores the latest snapshot.
+      responses:
+        '200':
+          $ref: '#/components/responses/RestoreResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
   /$/backups/restore/{restoreId}:
     post:
-      summary: Restore a backup
-      description: Restores a dataset from a specified backup.
+      summary: Restore a specific backup
+      description: Restores a dataset from a specified snapshot.
       parameters:
         - name: restoreId
           in: path
@@ -156,47 +203,35 @@ paths:
             type: string
       responses:
         '200':
-          description: Dataset restored successfully.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  restore-id:
-                    type: string
-                    description: ID of the restored backup.
-                  date:
-                    type: string
-                    format: date-time
-                    description: Timestamp of the restore operation.
-                  restore:
-                    type: object
-                    description: Details of the restore operation.
+          $ref: '#/components/responses/RestoreResponse'
         '404':
-          description: Backup not found.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    description: Error message.
+          $ref: '#/components/responses/NotFoundError'
         '500':
-          description: Internal server error.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    description: Error message.
+          $ref: '#/components/responses/InternalServerError'
+
+  /$/backups/restore/{datasetName}:
+    post:
+      summary: Restore the latest backup of specific dataset
+      description: Restores the latest backup, but only for the given dataset.
+      parameters:
+        - name: datasetName
+          in: path
+          required: true
+          description: The dataset to restore.
+          schema:
+            type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/RestoreResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
 
   /$/backups/restore/{restoreId}/{datasetName}:
     post:
-      summary: Restore a backup of specific dataset
-      description: Restores a dataset from a specified backup (ignoring the others in the backuo).
+      summary: Restore a specific backup of specific dataset
+      description: Restores a dataset from a specified backup (ignoring the others in the backup).
       parameters:
         - name: restoreId
           in: path
@@ -211,43 +246,12 @@ paths:
           schema:
             type: string
       responses:
-        '200':
-          description: Dataset restored successfully.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  restore-id:
-                    type: string
-                    description: ID of the restored backup.
-                  date:
-                    type: string
-                    format: date-time
-                    description: Timestamp of the restore operation.
-                  restore:
-                    type: object
-                    description: Details of the restore operation.
-        '404':
-          description: Backup not found.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    description: Error message.
-        '500':
-          description: Internal server error.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    description: Error message.
+          '200':
+            $ref: '#/components/responses/RestoreResponse'
+          '404':
+            $ref: '#/components/responses/NotFoundError'
+          '500':
+            $ref: '#/components/responses/InternalServerError'
 
   /$/backups/delete/{deleteId}:
     post:
@@ -444,6 +448,93 @@ paths:
                     description: The validation report.
         '404':
           description: Backup report not found.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Error message.
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Error message.
+  /$/backups/details/{backupId}:
+    get:
+      summary: View detailed information about a backup
+      description: Retrieves the details of a given backup. Those include start and stop times, as well as duration, kafka offset, and size of the compressed backup.
+      parameters:
+        - name: backupId
+          in: path
+          required: true
+          description: ID of the backup details.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Backup details successfully retrieved.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  backup-id:
+                    type: string
+                    description: ID of the backup
+                    example: "2"
+                  date:
+                    type: string
+                    description: Date of the backup in YYYY-MM-DD_HH-MM-SS format
+                    example: "2025-07-29_13-55-22"
+                  details:
+                    type: object
+                    description: Detailed metadata about the backup
+                    properties:
+                      backup-id:
+                        type: string
+                        example: "2"
+                      details-path:
+                        type: string
+                        description: Filesystem path to the backup details
+                        example: "/fuseki/backups/2"
+                      zip-size-in-bytes:
+                        type: integer
+                        description: Size of the backup zip in bytes
+                        example: 604
+                      zip-size:
+                        type: string
+                        description: Human-readable size
+                        example: "604 bytes"
+                      start-time:
+                        type: string
+                        format: date-time
+                        description: Backup start time
+                        example: "2025-07-29T09:21:06.125229292Z[GMT]"
+                      end-time:
+                        type: string
+                        format: date-time
+                        description: Backup end time
+                        example: "2025-07-29T09:21:06.133364125Z[GMT]"
+                      backup-duration:
+                        type: string
+                        description: Backup duration as a human-readable string
+                        example: "8ms"
+                      backup-duration-in-ms:
+                        type: integer
+                        description: Backup duration in milliseconds
+                        example: 8
+                    required:
+                      - backup-id
+                      - details-path
+        '400':
+          description: Bad request.
           content:
             application/json:
               schema:
