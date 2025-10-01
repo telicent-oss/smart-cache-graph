@@ -18,6 +18,7 @@ package io.telicent.core;
 
 import io.telicent.access.FMod_AccessQuery;
 import io.telicent.backup.FMod_BackupData;
+import io.telicent.core.auth.FMod_JwtServletAuth;
 import io.telicent.graphql.FMod_TelicentGraphQL;
 import io.telicent.jena.abac.fuseki.FMod_ABAC;
 import io.telicent.labels.FMod_LabelsQuery;

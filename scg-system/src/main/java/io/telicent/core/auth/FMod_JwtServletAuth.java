@@ -1,14 +1,12 @@
-package io.telicent.core;
+package io.telicent.core.auth;
 
 import io.telicent.servlet.auth.jwt.JwtServletConstants;
 import io.telicent.servlet.auth.jwt.PathExclusion;
 import io.telicent.servlet.auth.jwt.configuration.AutomatedConfiguration;
-import io.telicent.servlet.auth.jwt.servlet5.JwtAuthFilter;
 import io.telicent.servlet.auth.jwt.verification.JwtVerifier;
 import io.telicent.smart.cache.configuration.Configurator;
-import io.telicent.smart.caches.configuration.auth.AuthConstants;
-import io.telicent.smart.caches.configuration.auth.TelicentConfigurationAdaptor;
-import jakarta.servlet.FilterConfig;
+import io.telicent.smart.caches.configuration.auth.*;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.jena.atlas.lib.Version;
 import org.apache.jena.atlas.logging.FmtLog;
 import org.apache.jena.fuseki.Fuseki;
@@ -40,7 +38,7 @@ public class FMod_JwtServletAuth implements FusekiModule {
         }
 
         // Configure the JWT Verifier
-        FusekiConfigurationAdaptor adaptor = new FusekiConfigurationAdaptor(serverBuilder);
+        FusekiJwtConfigAdaptor adaptor = new FusekiJwtConfigAdaptor(serverBuilder);
         AutomatedConfiguration.configure(adaptor);
         JwtVerifier jwtVerifier = (JwtVerifier) adaptor.getAttribute(JwtServletConstants.ATTRIBUTE_JWT_VERIFIER);
 
@@ -63,34 +61,16 @@ public class FMod_JwtServletAuth implements FusekiModule {
 
         // Register the filter
         serverBuilder.addFilter("/*", new FusekiJwtAuthFilter());
+
+        // Create and register for User Info lookups
+        String userInfoEndpoint = Configurator.get(AuthConstants.ENV_USERINFO_URL);
+        if (StringUtils.isNotBlank(userInfoEndpoint)) {
+            UserInfoLookup userInfoLookup = new RemoteUserInfoLookup(userInfoEndpoint);
+            serverBuilder.addFilter("/*", new UserInfoFilter(userInfoLookup));
+        }
+        // TODO Create AuthZ engine
+        // Register an Authorization filter
     }
 
-    private static final class FusekiJwtAuthFilter extends JwtAuthFilter {
 
-        @Override
-        public void init(FilterConfig filterConfig) {
-            // Do nothing
-            // We explicitly configure the filter at the server setup level so no need to use the default filter
-            // behaviour of trying to automatically configure itself from init parameters
-        }
-    }
-
-    private static final class FusekiConfigurationAdaptor extends TelicentConfigurationAdaptor {
-
-        private final FusekiServer.Builder serverBuilder;
-
-        public FusekiConfigurationAdaptor(FusekiServer.Builder serverBuilder) {
-            this.serverBuilder = serverBuilder;
-        }
-
-        @Override
-        public void setAttribute(String attribute, Object value) {
-            this.serverBuilder.addServletAttribute(attribute, value);
-        }
-
-        @Override
-        public Object getAttribute(String attribute) {
-            return this.serverBuilder.getServletAttribute(attribute);
-        }
-    }
 }

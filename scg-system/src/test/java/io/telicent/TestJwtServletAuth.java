@@ -3,7 +3,7 @@ package io.telicent;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import io.telicent.core.FMod_InitialCompaction;
-import io.telicent.core.FMod_JwtServletAuth;
+import io.telicent.core.auth.FMod_JwtServletAuth;
 import io.telicent.core.SmartCacheGraph;
 import io.telicent.jena.abac.core.Attributes;
 import io.telicent.servlet.auth.jwt.PathExclusion;
