@@ -30,7 +30,7 @@ public class TestSCGAuthPolicyGeneration {
 
     protected static final Operation CUSTOM_OP = Operation.alloc("https.//example.org/custom-op", "custom", "custom");
 
-    private static DataAccessPoint mockDataset(String datasetName) {
+    public static DataAccessPoint mockDataset(String datasetName) {
         DataAccessPoint dap = Mockito.mock(DataAccessPoint.class);
         when(dap.getName()).thenReturn(datasetName);
         List<Endpoint> endpoints = new ArrayList<>();
@@ -133,8 +133,8 @@ public class TestSCGAuthPolicyGeneration {
         SCG_AuthPolicy.addDatasetPermissionsPolicy(perms, catalog);
 
         // Then
-        Assertions.assertEquals(12, roles.size());
-        Assertions.assertEquals(12, perms.size());
+        Assertions.assertEquals(14, roles.size());
+        Assertions.assertEquals(14, perms.size());
         verifyDatasetRoles(roles, "knowledge");
         verifyDatasetPermissions(perms, "knowledge");
         verifyDatasetRoles(roles, "catalog");
@@ -171,9 +171,9 @@ public class TestSCGAuthPolicyGeneration {
         Assertions.assertFalse(perms.isEmpty());
         verifyRoles(roles, "/$/compactall", SCG_AuthPolicy.ADMIN_ROLES.values());
         verifyPermissions(perms, "/$/compactall", SCG_AuthPolicy.COMPACT.values());
-        verifyRoles(roles, "/\\$/backup/*", SCG_AuthPolicy.ADMIN_ROLES.values());
-        verifyPermissions(perms, "/$/backup/create", SCG_AuthPolicy.BACKUP_READ_WRITE.values());
-        verifyPermissions(perms, "/$/backup/restore", SCG_AuthPolicy.BACKUP_READ_WRITE.values());
-        verifyPermissions(perms, "/\\$/backup/*", SCG_AuthPolicy.BACKUP_READ_ONLY.values());
+        verifyRoles(roles, "/\\$/backups/*", SCG_AuthPolicy.ADMIN_ROLES.values());
+        verifyPermissions(perms, "/$/backups/create", SCG_AuthPolicy.BACKUP_READ_WRITE.values());
+        verifyPermissions(perms, "/$/backups/restore", SCG_AuthPolicy.BACKUP_READ_WRITE.values());
+        verifyPermissions(perms, "/\\$/backups/*", SCG_AuthPolicy.BACKUP_READ_ONLY.values());
     }
 }

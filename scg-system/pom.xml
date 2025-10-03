@@ -15,360 +15,367 @@
     limitations under the License.
 -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
-  <modelVersion>4.0.0</modelVersion>
+    <modelVersion>4.0.0</modelVersion>
 
-  <parent>
-    <groupId>io.telicent.smart-caches.graph</groupId>
-    <artifactId>scg-base</artifactId>
-    <version>0.90.3-SNAPSHOT</version>
-    <relativePath>../pom.xml</relativePath>
-  </parent>
+    <parent>
+        <groupId>io.telicent.smart-caches.graph</groupId>
+        <artifactId>scg-base</artifactId>
+        <version>0.90.3-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
 
-  <artifactId>scg-system</artifactId>
-  <packaging>jar</packaging>
+    <artifactId>scg-system</artifactId>
+    <packaging>jar</packaging>
 
-  <name>Telicent Smart Cache Graph - System</name>
-  <description>System code - plugins, extensions, entrypoints etc. - for Smart Cache Graph</description>
+    <name>Telicent Smart Cache Graph - System</name>
+    <description>System code - plugins, extensions, entrypoints etc. - for Smart Cache Graph</description>
 
-  <dependencies>
+    <dependencies>
 
-    <!-- Internal dependencies -->
+        <!-- Internal dependencies -->
 
-    <dependency>
-      <groupId>org.apache.jena</groupId>
-      <artifactId>jena-arq</artifactId>
-    </dependency>
+        <dependency>
+            <groupId>org.apache.jena</groupId>
+            <artifactId>jena-arq</artifactId>
+        </dependency>
 
-    <dependency>
-      <groupId>org.apache.jena</groupId>
-      <artifactId>jena-base</artifactId>
-    </dependency>
+        <dependency>
+            <groupId>org.apache.jena</groupId>
+            <artifactId>jena-base</artifactId>
+        </dependency>
 
-    <dependency>
-      <groupId>org.apache.jena</groupId>
-      <artifactId>jena-cmds</artifactId>
-    </dependency>
+        <dependency>
+            <groupId>org.apache.jena</groupId>
+            <artifactId>jena-cmds</artifactId>
+        </dependency>
 
-    <dependency>
-      <groupId>org.apache.jena</groupId>
-      <artifactId>jena-core</artifactId>
-    </dependency>
+        <dependency>
+            <groupId>org.apache.jena</groupId>
+            <artifactId>jena-core</artifactId>
+        </dependency>
 
-    <dependency>
-      <groupId>org.apache.jena</groupId>
-      <artifactId>jena-dboe-base</artifactId>
-    </dependency>
+        <dependency>
+            <groupId>org.apache.jena</groupId>
+            <artifactId>jena-dboe-base</artifactId>
+        </dependency>
 
-    <dependency>
-      <groupId>org.apache.jena</groupId>
-      <artifactId>jena-fuseki-core</artifactId>
-    </dependency>
+        <dependency>
+            <groupId>org.apache.jena</groupId>
+            <artifactId>jena-fuseki-core</artifactId>
+        </dependency>
 
-    <dependency>
-      <groupId>org.apache.jena</groupId>
-      <artifactId>jena-fuseki-main</artifactId>
-    </dependency>
+        <dependency>
+            <groupId>org.apache.jena</groupId>
+            <artifactId>jena-fuseki-main</artifactId>
+        </dependency>
 
-    <dependency>
-      <groupId>org.apache.jena</groupId>
-      <artifactId>jena-rdfpatch</artifactId>
-    </dependency>
+        <dependency>
+            <groupId>org.apache.jena</groupId>
+            <artifactId>jena-rdfpatch</artifactId>
+        </dependency>
 
-    <dependency>
-      <groupId>org.apache.jena</groupId>
-      <artifactId>jena-shacl</artifactId>
-    </dependency>
+        <dependency>
+            <groupId>org.apache.jena</groupId>
+            <artifactId>jena-shacl</artifactId>
+        </dependency>
 
-    <dependency>
-      <groupId>org.apache.jena</groupId>
-      <artifactId>jena-tdb1</artifactId>
-    </dependency>
+        <dependency>
+            <groupId>org.apache.jena</groupId>
+            <artifactId>jena-tdb1</artifactId>
+        </dependency>
 
-    <dependency>
-      <groupId>org.apache.jena</groupId>
-      <artifactId>jena-tdb2</artifactId>
-    </dependency>
+        <dependency>
+            <groupId>org.apache.jena</groupId>
+            <artifactId>jena-tdb2</artifactId>
+        </dependency>
 
-    <!-- ABAC engine -->
-    <dependency>
-      <groupId>io.telicent.jena</groupId>
-      <artifactId>rdf-abac-core</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.telicent.jena</groupId>
-      <artifactId>rdf-abac-fuseki</artifactId>
-    </dependency>
+        <!-- ABAC engine -->
+        <dependency>
+            <groupId>io.telicent.jena</groupId>
+            <artifactId>rdf-abac-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.telicent.jena</groupId>
+            <artifactId>rdf-abac-fuseki</artifactId>
+        </dependency>
 
-    <!-- Jena Fuseki Kafka -->
-    <dependency>
-      <groupId>io.telicent.jena</groupId>
-      <artifactId>jena-fuseki-kafka-module</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.telicent.jena</groupId>
-      <artifactId>jena-kafka-connector</artifactId>
-    </dependency>
+        <!-- Jena Fuseki Kafka -->
+        <dependency>
+            <groupId>io.telicent.jena</groupId>
+            <artifactId>jena-fuseki-kafka-module</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.telicent.jena</groupId>
+            <artifactId>jena-kafka-connector</artifactId>
+        </dependency>
 
-    <!-- Authentication -->
-    <dependency>
-      <groupId>io.telicent.public</groupId>
-      <artifactId>jwt-servlet-auth-aws</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.telicent.public</groupId>
-      <artifactId>jwt-servlet-auth-core</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.telicent.public</groupId>
-      <artifactId>jwt-servlet-auth-servlet5</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.telicent.smart-caches</groupId>
-      <artifactId>configurator</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.telicent.smart-caches</groupId>
-      <artifactId>jwt-auth-common</artifactId>
-    </dependency>
-    <!-- GraphQL -->
-    <dependency>
-      <groupId>io.telicent.jena.graphql</groupId>
-      <artifactId>graphql-jena-core</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.telicent.jena.graphql</groupId>
-      <artifactId>graphql-fuseki-module</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.telicent.jena.graphql</groupId>
-      <artifactId>telicent-graph-schema</artifactId>
-    </dependency>
+        <!-- Authentication -->
+        <dependency>
+            <groupId>io.telicent.public</groupId>
+            <artifactId>jwt-servlet-auth-aws</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.telicent.public</groupId>
+            <artifactId>jwt-servlet-auth-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.telicent.public</groupId>
+            <artifactId>jwt-servlet-auth-servlet5</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.telicent.smart-caches</groupId>
+            <artifactId>configurator</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.telicent.smart-caches</groupId>
+            <artifactId>jwt-auth-common</artifactId>
+        </dependency>
+        <!-- GraphQL -->
+        <dependency>
+            <groupId>io.telicent.jena.graphql</groupId>
+            <artifactId>graphql-jena-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.telicent.jena.graphql</groupId>
+            <artifactId>graphql-fuseki-module</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.telicent.jena.graphql</groupId>
+            <artifactId>telicent-graph-schema</artifactId>
+        </dependency>
 
-    <!-- External dependencies -->
-    <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-databind</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.bouncycastle</groupId>
-      <artifactId>bcpg-jdk18on</artifactId>
-      <version>${dependency.bouncycastle}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.bouncycastle</groupId>
-      <artifactId>bcpkix-jdk18on</artifactId>
-      <version>${dependency.bouncycastle}</version>
-    </dependency>
-    <!-- Kafka for Event Sourcing -->
-    <dependency>
-      <groupId>org.apache.kafka</groupId>
-      <artifactId>kafka-clients</artifactId>
-    </dependency>
+        <!-- External dependencies -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcpg-jdk18on</artifactId>
+            <version>${dependency.bouncycastle}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcpkix-jdk18on</artifactId>
+            <version>${dependency.bouncycastle}</version>
+        </dependency>
+        <!-- Kafka for Event Sourcing -->
+        <dependency>
+            <groupId>org.apache.kafka</groupId>
+            <artifactId>kafka-clients</artifactId>
+        </dependency>
 
-    <!-- Logging Dependencies -->
-    <dependency>
-      <groupId>ch.qos.logback</groupId>
-      <artifactId>logback-classic</artifactId>
-    </dependency>
+        <!-- Logging Dependencies -->
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+        </dependency>
 
-    <!-- OpenTelemetry dependencies -->
-    <dependency>
-      <groupId>io.opentelemetry</groupId>
-      <artifactId>opentelemetry-api</artifactId>
-    </dependency>
+        <!-- OpenTelemetry dependencies -->
+        <dependency>
+            <groupId>io.opentelemetry</groupId>
+            <artifactId>opentelemetry-api</artifactId>
+        </dependency>
 
-    <dependency>
-      <groupId>io.opentelemetry.javaagent</groupId>
-      <artifactId>opentelemetry-javaagent</artifactId>
-      <scope>runtime</scope>
-    </dependency>
+        <dependency>
+            <groupId>io.opentelemetry.javaagent</groupId>
+            <artifactId>opentelemetry-javaagent</artifactId>
+            <scope>runtime</scope>
+        </dependency>
 
-    <dependency>
-      <groupId>io.opentelemetry</groupId>
-      <artifactId>opentelemetry-semconv</artifactId>
-    </dependency>
+        <dependency>
+            <groupId>io.opentelemetry</groupId>
+            <artifactId>opentelemetry-semconv</artifactId>
+        </dependency>
 
-    <!-- Testing dependencies -->
-    <dependency>
-      <groupId>io.telicent.public</groupId>
-      <artifactId>jwt-servlet-auth-core</artifactId>
-      <version>${dependency.jwt-servlet-auth}</version>
-      <classifier>tests</classifier>
-      <scope>test</scope>
-      <exclusions>
-        <exclusion>
-          <groupId>org.checkerframework</groupId>
-          <artifactId>checker-qual</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-    <dependency>
-      <groupId>uk.org.webcompere</groupId>
-      <artifactId>system-stubs-jupiter</artifactId>
-      <version>2.1.8</version>
-      <scope>test</scope>
-    </dependency>
+        <!-- Testing dependencies -->
+        <dependency>
+            <groupId>io.telicent.public</groupId>
+            <artifactId>jwt-servlet-auth-core</artifactId>
+            <version>${dependency.jwt-servlet-auth}</version>
+            <classifier>tests</classifier>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.checkerframework</groupId>
+                    <artifactId>checker-qual</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>uk.org.webcompere</groupId>
+            <artifactId>system-stubs-jupiter</artifactId>
+            <version>2.1.8</version>
+            <scope>test</scope>
+        </dependency>
 
-    <!-- Open Telemetry - testing -->
-    <dependency>
-      <groupId>io.opentelemetry</groupId>
-      <artifactId>opentelemetry-exporter-logging</artifactId>
-      <scope>test</scope>
-    </dependency>
+        <!-- Open Telemetry - testing -->
+        <dependency>
+            <groupId>io.opentelemetry</groupId>
+            <artifactId>opentelemetry-exporter-logging</artifactId>
+            <scope>test</scope>
+        </dependency>
 
-    <dependency>
-      <groupId>io.opentelemetry</groupId>
-      <artifactId>opentelemetry-sdk</artifactId>
-      <scope>test</scope>
-    </dependency>
+        <dependency>
+            <groupId>io.opentelemetry</groupId>
+            <artifactId>opentelemetry-sdk</artifactId>
+            <scope>test</scope>
+        </dependency>
 
-    <dependency>
-      <groupId>io.opentelemetry</groupId>
-      <artifactId>opentelemetry-sdk-testing</artifactId>
-      <scope>test</scope>
-    </dependency>
+        <dependency>
+            <groupId>io.opentelemetry</groupId>
+            <artifactId>opentelemetry-sdk-testing</artifactId>
+            <scope>test</scope>
+        </dependency>
 
-    <!-- Logging - testing -->
-    <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-api</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-core</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-slf4j2-impl</artifactId>
-      <scope>test</scope>
-    </dependency>
+        <!-- Logging - testing -->
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-api</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-slf4j2-impl</artifactId>
+            <scope>test</scope>
+        </dependency>
 
-    <!-- Kafka - testing -->
-    <dependency>
-      <groupId>org.testcontainers</groupId>
-      <artifactId>junit-jupiter</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.testcontainers</groupId>
-      <artifactId>kafka</artifactId>
-      <scope>test</scope>
-      <exclusions>
-        <exclusion>
-          <groupId>junit</groupId>
-          <artifactId>junit</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.apache.commons</groupId>
-          <artifactId>commons-compress</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-    <dependency>
-      <groupId>org.testcontainers</groupId>
-      <artifactId>testcontainers</artifactId>
-      <scope>test</scope>
-      <exclusions>
-        <exclusion>
-          <groupId>org.apache.commons</groupId>
-          <artifactId>commons-compress</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
+        <!-- Kafka - testing -->
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>kafka</artifactId>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>junit</groupId>
+                    <artifactId>junit</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.commons</groupId>
+                    <artifactId>commons-compress</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers</artifactId>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.commons</groupId>
+                    <artifactId>commons-compress</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
 
-    <!-- JUnit 5 -->
-    <dependency>
-      <groupId>org.junit.jupiter</groupId>
-      <artifactId>junit-jupiter-engine</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.junit.vintage</groupId>
-      <artifactId>junit-vintage-engine</artifactId>
-      <version>${dependency.junit5}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.junit.platform</groupId>
-      <artifactId>junit-platform-suite</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.mockito</groupId>
-      <artifactId>mockito-core</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.mockito</groupId>
-      <artifactId>mockito-junit-jupiter</artifactId>
-      <scope>test</scope>
-    </dependency>
+        <!-- JUnit 5 -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.vintage</groupId>
+            <artifactId>junit-vintage-engine</artifactId>
+            <version>${dependency.junit5}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-suite</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-params</artifactId>
+            <version>${dependency.junit5}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
 
-    <dependency>
-      <groupId>io.telicent.jena</groupId>
-      <artifactId>jena-fuseki-kafka-module</artifactId>
-      <version>${dependency.fuseki-kafka}</version>
-      <classifier>tests</classifier>
-      <scope>test</scope>
-    </dependency>
+        <dependency>
+            <groupId>io.telicent.jena</groupId>
+            <artifactId>jena-fuseki-kafka-module</artifactId>
+            <version>${dependency.fuseki-kafka}</version>
+            <classifier>tests</classifier>
+            <scope>test</scope>
+        </dependency>
 
-    <dependency>
-      <groupId>io.telicent.public</groupId>
-      <artifactId>fuseki-yaml-config</artifactId>
-    </dependency>
+        <dependency>
+            <groupId>io.telicent.public</groupId>
+            <artifactId>fuseki-yaml-config</artifactId>
+        </dependency>
 
-  </dependencies>
+    </dependencies>
 
-  <build>
-    <plugins>
-      <!--
-            Copy OTel Agent into a specific directory under target/ so developers can configure a run configuration that
-            utilises this
-            -->
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-dependency-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>copy-otel-agent</id>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <phase>package</phase>
-            <configuration>
-              <includeGroupIds>io.opentelemetry</includeGroupIds>
-              <includeArtifactIds>opentelemetry-javaagent</includeArtifactIds>
-              <stripVersion>true</stripVersion>
-              <outputDirectory>${project.build.directory}/agents</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>properties</id>
-            <goals>
-              <goal>properties</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-javadoc-plugin</artifactId>
-      </plugin>
+    <build>
+        <plugins>
+            <!--
+                  Copy OTel Agent into a specific directory under target/ so developers can configure a run configuration that
+                  utilises this
+                  -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy-otel-agent</id>
+                        <goals>
+                            <goal>copy-dependencies</goal>
+                        </goals>
+                        <phase>package</phase>
+                        <configuration>
+                            <includeGroupIds>io.opentelemetry</includeGroupIds>
+                            <includeArtifactIds>opentelemetry-javaagent</includeArtifactIds>
+                            <stripVersion>true</stripVersion>
+                            <outputDirectory>${project.build.directory}/agents</outputDirectory>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>properties</id>
+                        <goals>
+                            <goal>properties</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+            </plugin>
 
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-resources-plugin</artifactId>
-      </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+            </plugin>
 
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-source-plugin</artifactId>
-      </plugin>
-    </plugins>
-  </build>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
 </project>
