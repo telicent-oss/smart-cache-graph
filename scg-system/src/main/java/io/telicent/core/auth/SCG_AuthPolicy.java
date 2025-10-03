@@ -5,7 +5,6 @@ import io.telicent.jena.abac.fuseki.ServerABAC;
 import io.telicent.jena.graphql.fuseki.SysGraphQL;
 import io.telicent.servlet.auth.jwt.PathExclusion;
 import io.telicent.smart.caches.configuration.auth.policy.Policy;
-import io.telicent.smart.caches.configuration.auth.policy.PolicyKind;
 import org.apache.commons.lang3.Strings;
 import org.apache.jena.fuseki.Fuseki;
 import org.apache.jena.fuseki.server.DataAccessPoint;
@@ -58,6 +57,9 @@ public class SCG_AuthPolicy {
                    ServerABAC.Vocab.operationUploadABAC);
     //@formatter:on
 
+    /**
+     * Private constructor as class only provides static helper methods
+     */
     private SCG_AuthPolicy() {
     }
 
@@ -73,12 +75,16 @@ public class SCG_AuthPolicy {
         addPolicies(policies, dap, SCG_AuthPolicy::rolesPolicyForOperation);
 
         // Also add policy for the custom /<dataset>/access/* endpoints FMod_AccessQuery adds
-        policies.put(new PathExclusion(getPathPrefix(dap) + "access/*"), DEFAULT_ROLES);
+        addPolicy(policies, getPathPrefix(dap) + "access/*", DEFAULT_ROLES);
 
         // Labels Query - /$/labels/<dataset>
         // Default roles
         String datasetName = Strings.CI.removeStart(dap.getName(), "/");
         addPolicy(policies, "/$/labels/" + datasetName, DEFAULT_ROLES);
+
+        // Fuseki will also capture requests to the root dataset path and try to dynamically route them based on the
+        // request method and body, allow this provided users have the default roles
+        addPolicy(policies, "/" + datasetName, DEFAULT_ROLES);
     }
 
     /**
@@ -95,11 +101,16 @@ public class SCG_AuthPolicy {
         String datasetName = Strings.CI.removeStart(dap.getName(), "/");
 
         // Also add policy for the custom /<dataset>/access/* endpoints FMod_AccessQuery adds
-        policies.put(new PathExclusion(getPathPrefix(dap) + "access/*"), readPermissions(datasetName));
+        addPolicy(policies, getPathPrefix(dap) + "access/*", readPermissions(datasetName));
 
         // Labels Query - /$/labels/<dataset>
         // Dataset read permissions
         addPolicy(policies, "/$/labels/" + datasetName, readPermissions(datasetName));
+
+        // Fuseki will also capture requests to the root dataset path and try to dynamically route them based on the
+        // request method and body, since we won't know what kind of request is arriving in advance have to enforce both
+        // read and write permissions for this
+        addPolicy(policies, "/" + datasetName, readWritePermissions(datasetName));
     }
 
     private static void addPolicies(Map<PathExclusion, Policy> policies, DataAccessPoint dap,
@@ -114,8 +125,7 @@ public class SCG_AuthPolicy {
             }
 
             if (policy != null) {
-                policies.put(new PathExclusion(pathPrefix + epName), policy);
-                Fuseki.configLog.info("Added policy for {}{}: {}", pathPrefix, epName, policy);
+                addPolicy(policies, pathPrefix + epName, policy);
             }
         }
     }
@@ -149,18 +159,26 @@ public class SCG_AuthPolicy {
         addPolicy(roles, "/$/compactall", ADMIN_ROLES);
         addPolicy(perms, "/$/compactall", COMPACT);
 
-        // Backup/Restore - /$/backup/*
+        // Backup/Restore - /$/backups/*
         // All endpoints require an adminstrator role
         // Endpoints require either backup.read and backup.write permissions as appropriate
-        addPolicy(roles, "/\\$/backup/*", ADMIN_ROLES);
-        addPolicy(perms, "/$/backup/create", BACKUP_READ_WRITE);
-        addPolicy(perms, "/$/backup/restore", BACKUP_READ_WRITE);
-        addPolicy(perms, "/\\$/backup/*", BACKUP_READ_ONLY);
+        addPolicy(roles, "/\\$/backups/*", ADMIN_ROLES);
+        addPolicy(perms, "/$/backups/create", BACKUP_READ_WRITE);
+        addPolicy(perms, "/$/backups/restore", BACKUP_READ_WRITE);
+        addPolicy(perms, "/\\$/backups/*", BACKUP_READ_ONLY);
     }
 
-    private static void addPolicy(Map<PathExclusion, Policy> policies, String path, Policy policy) {
-        PathExclusion key = new PathExclusion(path);
+    /**
+     * Adds a policy to the policies map, also logging what was added for debugging purposes
+     *
+     * @param policies    Policies
+     * @param pathPattern Path pattern to which the policy applies
+     * @param policy      Policy
+     */
+    private static void addPolicy(Map<PathExclusion, Policy> policies, String pathPattern, Policy policy) {
+        PathExclusion key = new PathExclusion(pathPattern);
         policies.put(key, policy);
+        Fuseki.configLog.info("Added {} policy for {}: {}", policy.source(), key.getPattern(), policy);
     }
 
     /**

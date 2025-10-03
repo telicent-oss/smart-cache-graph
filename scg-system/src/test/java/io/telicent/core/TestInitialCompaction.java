@@ -32,6 +32,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Set;
 
+import static io.telicent.TestJwtServletAuth.makeAuthCallWithPathForMethod;
 import static io.telicent.TestJwtServletAuth.makePOSTCallWithPath;
 import static io.telicent.TestSmartCacheGraphIntegration.launchServer;
 import static io.telicent.core.FMod_InitialCompaction.compactLabels;
@@ -40,7 +41,8 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 public class TestInitialCompaction {
-    private static final MockedStatic<DatabaseMgr> mockDatabaseMgr  = mockStatic(DatabaseMgr.class, Mockito.CALLS_REAL_METHODS);
+    private static final MockedStatic<DatabaseMgr> mockDatabaseMgr =
+            mockStatic(DatabaseMgr.class, Mockito.CALLS_REAL_METHODS);
     private static FusekiServer server;
 
     @BeforeAll
@@ -54,8 +56,8 @@ public class TestInitialCompaction {
 
     @AfterEach
     void clearDown() {
-       mockDatabaseMgr.clearInvocations();
-       mockDatabaseMgr.reset();
+        mockDatabaseMgr.clearInvocations();
+        mockDatabaseMgr.reset();
 
         removePreviousCompactionResults();
     }
@@ -158,10 +160,10 @@ public class TestInitialCompaction {
     public void test_ABACDSG_wrapped_memGraph() {
         // given
         DatasetGraphABAC dsgABAC = ABAC.authzDataset(DatasetGraphFactory.createTxnMem(),
-                AEX.strALLOW,
-                Labels.createLabelsStoreMem(),
-                SysABAC.denyLabel,
-                new AttributesStoreLocal());
+                                                     AEX.strALLOW,
+                                                     Labels.createLabelsStoreMem(),
+                                                     SysABAC.denyLabel,
+                                                     new AttributesStoreLocal());
         // when
         DatasetGraph actualDSG = FMod_InitialCompaction.getTDB2(dsgABAC);
         // then
@@ -171,12 +173,13 @@ public class TestInitialCompaction {
     @Test
     public void test_ABACDSG_wrapped_persistedGraph() {
         // given
-        DatasetGraphSwitchable dsgPersists = new DatasetGraphSwitchable(Path.of("./"), null, DatasetGraphFactory.createTxnMem());
+        DatasetGraphSwitchable dsgPersists =
+                new DatasetGraphSwitchable(Path.of("./"), null, DatasetGraphFactory.createTxnMem());
         DatasetGraphABAC dsgABAC = ABAC.authzDataset(dsgPersists,
-                AEX.strALLOW,
-                Labels.createLabelsStoreMem(),
-                SysABAC.denyLabel,
-                new AttributesStoreLocal());
+                                                     AEX.strALLOW,
+                                                     Labels.createLabelsStoreMem(),
+                                                     SysABAC.denyLabel,
+                                                     new AttributesStoreLocal());
         // when
         DatasetGraph actualDSG = FMod_InitialCompaction.getTDB2(dsgABAC);
         // then
@@ -262,7 +265,8 @@ public class TestInitialCompaction {
     }
 
     @Test
-    public void givenMalformedCompactionResultsFile_whenLoadingPreviousSize_thenDefaultValueReturned() throws IOException {
+    public void givenMalformedCompactionResultsFile_whenLoadingPreviousSize_thenDefaultValueReturned() throws
+            IOException {
         // Given
         File tempDir = Files.createTempDirectory("test").toFile();
         DatasetGraphSwitchable mockDSG = mock(DatasetGraphSwitchable.class);
@@ -290,9 +294,10 @@ public class TestInitialCompaction {
     }
 
     @Test
-    public void test_compactWithExistingLock()  {
+    public void test_compactWithExistingLock() {
         // given
-        DatasetGraphSwitchable dsgPersists = new DatasetGraphSwitchable(Path.of("./"), null, DatasetGraphFactory.createTxnMem());
+        DatasetGraphSwitchable dsgPersists =
+                new DatasetGraphSwitchable(Path.of("./"), null, DatasetGraphFactory.createTxnMem());
         DatasetGraphSwitchable mockedDsg = Mockito.spy(dsgPersists);
 
         when(mockedDsg.tryExclusiveMode(false)).thenReturn(false);
@@ -300,7 +305,8 @@ public class TestInitialCompaction {
         server = SmartCacheGraph.smartCacheGraphBuilder().add("test", mockedDsg).build().start();
 
         // when
-        HttpResponse<InputStream> compactResponse = makePOSTCallWithPath(server, "$/compactall");
+        HttpResponse<InputStream> compactResponse =
+                makeAuthCallWithPathForMethod(server, "$/compactall", "test", "POST");
         // then
         assertEquals(200, compactResponse.statusCode());
         mockDatabaseMgr.verify(() -> DatabaseMgr.compact(any(), anyBoolean()), times(0));
@@ -313,7 +319,8 @@ public class TestInitialCompaction {
         String configFile = "config-persistent.ttl";
         server = launchServer(configFile);
         // when
-        HttpResponse<InputStream> compactResponse = makePOSTCallWithPath(server, "$/compactall");
+        HttpResponse<InputStream> compactResponse =
+                makeAuthCallWithPathForMethod(server, "$/compactall", "test", "POST");
         // then
         assertEquals(200, compactResponse.statusCode());
     }
@@ -350,10 +357,10 @@ public class TestInitialCompaction {
     public void test_compactLabels_notRocksDB() {
         // given
         DatasetGraphABAC dsgABAC = ABAC.authzDataset(DatasetGraphFactory.createTxnMem(),
-                AEX.strALLOW,
-                Labels.createLabelsStoreMem(),
-                SysABAC.denyLabel,
-                new AttributesStoreLocal());
+                                                     AEX.strALLOW,
+                                                     Labels.createLabelsStoreMem(),
+                                                     SysABAC.denyLabel,
+                                                     new AttributesStoreLocal());
         // when
         // then
         compactLabels(dsgABAC);
@@ -380,6 +387,6 @@ public class TestInitialCompaction {
         when(request.getMethod()).thenReturn("POST");
 
         HttpServletResponse response = mock(HttpServletResponse.class);
-        assertThrows(ActionErrorException.class, () ->capturedServlet.service(request, response));
+        assertThrows(ActionErrorException.class, () -> capturedServlet.service(request, response));
     }
 }

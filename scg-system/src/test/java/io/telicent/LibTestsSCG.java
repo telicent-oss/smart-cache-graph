@@ -16,6 +16,7 @@
 
 package io.telicent;
 
+import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -70,8 +71,9 @@ public class LibTestsSCG {
     }
 
     public static void uploadFile(String URL, String filename) {
+        String dsName = URL.split("/")[3];
         DSP.service(URL)
-           .httpHeader(tokenHeader(), tokenHeaderValue(tokenForUser("admin")))
+           .httpHeader(tokenHeader(), tokenHeaderValue(tokenForUser("admin", dsName)))
            .POST(filename);
     }
 
@@ -98,12 +100,29 @@ public class LibTestsSCG {
      * @return Signed JWT compacted into the Base64 representation per the JWT specifications
      */
     public static String tokenForUser(String user) {
+        return tokenForUser(user, "ds");
+    }
+
+    public static String tokenForUser(String user, String datasetName) {
         String keyId = MOCK_KEY_SERVER.selectKeyId();
+        //@formatter:off
         return Jwts.builder()
                    .header().keyId(keyId).and()
                    .claim("email", user)
+                   // Basic roles and permissions
+                   .claim("roles",
+                          List.of("USER", "ADMIN_SYSTEM")
+                   )
+                   .claim("permissions",
+                          List.of("api." + datasetName + ".read",
+                                  "api." + datasetName + ".write",
+                                  "backup.read",
+                                  "backup.write",
+                                  "compact")
+                   )
                    .signWith(MOCK_KEY_SERVER.getPrivateKey(keyId))
                    .compact();
+        //@formatter:on
     }
 
     public static JwtBuilder tokenBuilder(String user) {
@@ -168,13 +187,17 @@ public class LibTestsSCG {
         } else {
             properties.put(AuthConstants.ENV_JWKS_URL, MOCK_KEY_SERVER.getJwksUrl());
         }
+        // Also register mock /userinfo endpoint
+        properties.put(AuthConstants.ENV_USERINFO_URL, MOCK_KEY_SERVER.getUserInfoUrl());
         return properties;
     }
 
     // Fine-grained logging control.
     // See also LogCtl in jena-base for log4j implementation.
 
-    /** Execute with a given logging level. */
+    /**
+     * Execute with a given logging level.
+     */
     public static void withLevel(Logger logger, String execLevel, Runnable action) {
         CtlLogback.withLevel(logger, execLevel, action);
     }

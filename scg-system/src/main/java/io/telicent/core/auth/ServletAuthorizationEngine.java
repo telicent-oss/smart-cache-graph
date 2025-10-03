@@ -11,6 +11,14 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 
+/**
+ * A Servlet runtime specific implementation of the {@link TelicentAuthorizationEngine}
+ * <p>
+ * The authorization policies <strong>MUST</strong> be predefined when constructing the engine, see
+ * {@link SCG_AuthPolicy} for static helpers for generating policy automatically from Fuseki configuration and known
+ * static Telicent endpoints
+ * </p>
+ */
 class ServletAuthorizationEngine extends TelicentAuthorizationEngine<ServletAuthorizationContext> {
     private final Map<PathExclusion, Policy> rolesPolicies, permissionsPolicies;
     private final Policy rolesFallback, permissionsFallback;
@@ -44,6 +52,8 @@ class ServletAuthorizationEngine extends TelicentAuthorizationEngine<ServletAuth
         // In the context of SCG which is a pure Servlet application that has its own custom request dispatch mechanisms
         // we don't know in advance whether a request is to a valid path or not.  Therefore, just have to assume the
         // path is valid and apply authorization regardless of requested path.
+        // Since our fallback policy is DENY_ALL in real deployments anything that goes to an unexpected path would be
+        // rejected as unauthorized anyway.
         //
         // NB - Anything that was excluded from authentication would not pass the isAuthenticated() check so won't be
         //      checked for authorization regardless

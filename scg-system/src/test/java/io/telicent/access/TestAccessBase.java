@@ -76,7 +76,7 @@ public class TestAccessBase {
 
     protected String callServiceEndpoint(final String requestBody, final String user, final String serviceName, final String endpoint, final String queryParams) throws Exception {
         final String accessQueryUrl = server.serverURL() + serviceName + endpoint + queryParams;
-        final String bearerToken = LibTestsSCG.tokenForUser(user);
+        final String bearerToken = LibTestsSCG.tokenForUser(user, serviceName);
         final HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(accessQueryUrl))
                 .header("Content-type", "application/json")

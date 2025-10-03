@@ -99,8 +99,7 @@ public class TestJwtServletAuth {
         List<PathExclusion> expectedList = List.of(
                 new PathExclusion("/$/ping"),
                 new PathExclusion("/$/metrics"),
-                new PathExclusion("/\\$/stats/*"),
-                new PathExclusion("/$/compactall")
+                new PathExclusion("/\\$/stats/*")
         );
         FMod_JwtServletAuth jwtServletAuth = new FMod_JwtServletAuth();
         FusekiServer.Builder builder = SmartCacheGraph.serverBuilder().addServletAttribute(ATTRIBUTE_JWT_VERIFIER, new TestJwtVerifier());
@@ -134,10 +133,6 @@ public class TestJwtServletAuth {
         // Correct path
         HttpResponse<InputStream> metricsResponse = makePOSTCallWithPath(server, "$/metrics");
         assertEquals(200, metricsResponse.statusCode());
-
-        // Correct path
-        HttpResponse<InputStream> compactResponse = makePOSTCallWithPath(server, "$/compactall");
-        assertEquals(200, compactResponse.statusCode());
 
         // Fails - due to missing path but NOT due to Auth.
         HttpResponse<InputStream> statsResponse = makePOSTCallWithPath(server, "$/stats/unrecognised");
