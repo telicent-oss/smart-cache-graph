@@ -23,6 +23,10 @@ import io.telicent.backup.services.DatasetBackupService_Test;
 import io.telicent.core.SmartCacheGraph;
 import io.telicent.jena.abac.core.Attributes;
 import io.telicent.smart.cache.configuration.Configurator;
+import io.telicent.smart.caches.configuration.auth.policy.TelicentPermissions;
+import io.telicent.smart.caches.configuration.auth.policy.TelicentRoles;
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.Strings;
 import org.apache.jena.fuseki.main.FusekiServer;
 import org.apache.jena.fuseki.main.cmds.FusekiMain;
 import org.apache.jena.fuseki.main.sys.FusekiModule;
@@ -38,19 +42,19 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static io.telicent.TestJwtServletAuth.makeAuthGETCallWithPath;
-import static io.telicent.TestJwtServletAuth.makeAuthPOSTCallWithPath;
+import static io.telicent.TestJwtServletAuth.*;
 import static io.telicent.backup.utils.JsonFileUtils.OBJECT_MAPPER;
 import static org.apache.jena.graph.Graph.emptyGraph;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 
+@SuppressWarnings("rawtypes")
 public class TestBackupData {
 
     private static FusekiServer server;
@@ -100,6 +104,33 @@ public class TestBackupData {
                 .build().start();
     }
 
+    private void verifyUnauthorized(String jwt, String path, String method, String expectedReason) throws IOException {
+        // Given
+        server = buildServer("--port=0", "--empty");
+
+        // When
+        HttpResponse<InputStream> createBackupResponse =
+                makeAuthCallWithCustomToken(server, path, jwt, method);
+        String body = IOUtils.toString(createBackupResponse.body(), StandardCharsets.UTF_8);
+
+        // Then
+        assertEquals(401, createBackupResponse.statusCode());
+        assertTrue(Strings.CI.contains(body, expectedReason));
+    }
+
+    public static String tokenWithUserRoleOnly() {
+        // A token which only has the USER role, not the ADMIN_SYSTEM role required to use the backup endpoints
+        return LibTestsSCG.tokenBuilder("u1").claims(Map.of("roles", List.of(TelicentRoles.USER))).compact();
+    }
+
+    public static String tokenWithBackupReadPermission() {
+        // A token which only has the backup.read permission which is insufficient to perform create/restore actions
+        return LibTestsSCG.tokenBuilder("u1")
+                          .claims(Map.of("roles", List.of(TelicentRoles.ADMIN_SYSTEM), "permissions",
+                                         List.of(TelicentPermissions.Backup.READ)))
+                          .compact();
+    }
+
     @Test
     public void test_name() {
         // given
@@ -115,7 +146,8 @@ public class TestBackupData {
         testModule = new FMod_BackupData();
         server = buildServer("--port=0", "--empty");
         // when
-        HttpResponse<InputStream> createBackupResponse = makeAuthPOSTCallWithPath(server, "$/backups/does_not_work/", "test");
+        HttpResponse<InputStream> createBackupResponse =
+                makeAuthPOSTCallWithPath(server, "$/backups/does_not_work/", "test");
         // then
         assertEquals(404, createBackupResponse.statusCode());
     }
@@ -142,7 +174,7 @@ public class TestBackupData {
         // then
         assertEquals(200, createBackupResponse.statusCode());
         Map responseMap = convertToMap(createBackupResponse);
-        assertEquals("FULL", responseMap.get("backup-type") );
+        assertEquals("FULL", responseMap.get("backup-type"));
         assertEquals("test", responseMap.get("user"));
         // for debugging
         //debug(createBackupResponse);
@@ -157,7 +189,7 @@ public class TestBackupData {
         // then
         assertEquals(200, createBackupResponse.statusCode());
         Map responseMap = convertToMap(createBackupResponse);
-        assertEquals("FULL", responseMap.get("backup-type") );
+        assertEquals("FULL", responseMap.get("backup-type"));
         assertEquals("test", responseMap.get("user"));
         // for debugging
         //debug(createBackupResponse);
@@ -169,11 +201,12 @@ public class TestBackupData {
         // given
         server = buildServer("--port=0", "--empty");
         // when
-        HttpResponse<InputStream> createBackupResponse = makeAuthPOSTCallWithPath(server, "$/backups/create/new-backup", "test");
+        HttpResponse<InputStream> createBackupResponse =
+                makeAuthPOSTCallWithPath(server, "$/backups/create/new-backup", "test");
         // then
         assertEquals(200, createBackupResponse.statusCode());
         Map responseMap = convertToMap(createBackupResponse);
-        assertEquals("new-backup", responseMap.get("backup-type") );
+        assertEquals("new-backup", responseMap.get("backup-type"));
         assertEquals("test", responseMap.get("user"));
         // for debugging
         //debug(createBackupResponse);
@@ -184,11 +217,12 @@ public class TestBackupData {
         // given
         server = buildServer("--port=0", "--empty");
         // when
-        HttpResponse<InputStream> createBackupResponse = makeAuthPOSTCallWithPath(server, "$/backups/create/new-backup/", "test");
+        HttpResponse<InputStream> createBackupResponse =
+                makeAuthPOSTCallWithPath(server, "$/backups/create/new-backup/", "test");
         // then
         assertEquals(200, createBackupResponse.statusCode());
         Map responseMap = convertToMap(createBackupResponse);
-        assertEquals("new-backup", responseMap.get("backup-type") );
+        assertEquals("new-backup", responseMap.get("backup-type"));
         assertEquals("test", responseMap.get("user"));
         assertFalse(responseMap.containsKey("description"));
         // for debugging
@@ -201,11 +235,12 @@ public class TestBackupData {
         // given
         server = buildServer("--port=0", "--empty");
         // when
-        HttpResponse<InputStream> createBackupResponse = makeAuthPOSTCallWithPath(server, "$/backups/create?description=abc", "test");
+        HttpResponse<InputStream> createBackupResponse =
+                makeAuthPOSTCallWithPath(server, "$/backups/create?description=abc", "test");
         // then
         assertEquals(200, createBackupResponse.statusCode());
         Map responseMap = convertToMap(createBackupResponse);
-        assertEquals("FULL", responseMap.get("backup-type") );
+        assertEquals("FULL", responseMap.get("backup-type"));
         assertEquals("test", responseMap.get("user"));
         assertEquals("abc", responseMap.get("description"));
         // for debugging
@@ -217,11 +252,12 @@ public class TestBackupData {
         // given
         server = buildServer("--port=0", "--empty");
         // when
-        HttpResponse<InputStream> createBackupResponse = makeAuthPOSTCallWithPath(server, "$/backups/create?description=abc&backup-name=new-backup", "test");
+        HttpResponse<InputStream> createBackupResponse =
+                makeAuthPOSTCallWithPath(server, "$/backups/create?description=abc&backup-name=new-backup", "test");
         // then
         assertEquals(200, createBackupResponse.statusCode());
         Map responseMap = convertToMap(createBackupResponse);
-        assertEquals("FULL", responseMap.get("backup-type") );
+        assertEquals("FULL", responseMap.get("backup-type"));
         assertEquals("new-backup", responseMap.get("backup-name"));
         assertEquals("test", responseMap.get("user"));
         assertEquals("abc", responseMap.get("description"));
@@ -234,17 +270,28 @@ public class TestBackupData {
         // given
         server = buildServer("--port=0", "--empty");
         // when
-        HttpResponse<InputStream> createBackupResponse = makeAuthPOSTCallWithPath(server, "$/backups/create/ds?backup-name=new-backup", "test");
+        HttpResponse<InputStream> createBackupResponse =
+                makeAuthPOSTCallWithPath(server, "$/backups/create/ds?backup-name=new-backup", "test");
         // then
         assertEquals(200, createBackupResponse.statusCode());
         Map responseMap = convertToMap(createBackupResponse);
-        assertEquals("ds", responseMap.get("backup-type") );
+        assertEquals("ds", responseMap.get("backup-type"));
         assertEquals("new-backup", responseMap.get("backup-name"));
         assertEquals("test", responseMap.get("user"));
         // for debugging
         //debug(createBackupResponse);
     }
 
+    @Test
+    public void givenUserWithWrongRoles_whenCreatingBackup_thenUnauthorized() throws IOException {
+        verifyUnauthorized(tokenWithUserRoleOnly(),
+                           "$/backups/create", "POST", "requires roles");
+    }
+
+    @Test
+    public void givenUserWithInsufficientPermissions_whenCreatingBackup_thenUnauthorized() throws IOException {
+        verifyUnauthorized(tokenWithBackupReadPermission(), "$/backups/create", "POST", "requires permissions");
+    }
 
     @Test
     public void test_listBackups_emptyGraph() {
@@ -253,9 +300,15 @@ public class TestBackupData {
         // when
         HttpResponse<InputStream> createBackupResponse = makeAuthGETCallWithPath(server, "$/backups/list", "test");
         // then
-//        debug(createBackupResponse);
         assertEquals(200, createBackupResponse.statusCode());
     }
+
+    @Test
+    public void givenUserWithWrongRoles_whenListBackups_thenUnauthorized() throws IOException {
+        verifyUnauthorized(tokenWithUserRoleOnly(),
+                           "$/backups/list", "GET", "requires roles");
+    }
+
 
     @Test
     public void test_details_emptyGraph() {
@@ -268,7 +321,8 @@ public class TestBackupData {
             ObjectMapper objectMapper = new ObjectMapper();
             JsonNode rootNode = objectMapper.readTree(createResponse.body());
             String backupIdString = rootNode.path("backup-id").asText();
-            HttpResponse<InputStream> createBackupResponse = makeAuthGETCallWithPath(server, "$/backups/details/" + backupIdString, "test");
+            HttpResponse<InputStream> createBackupResponse =
+                    makeAuthGETCallWithPath(server, "$/backups/details/" + backupIdString, "test");
             // then
             //debug(createBackupResponse);
             assertEquals(200, createBackupResponse.statusCode());
@@ -277,8 +331,7 @@ public class TestBackupData {
             assertFalse(zipSize.isEmpty());
             String zipSizeInBytes = rootBackupNode.path("details").path("zip-size-in-bytes").asText();
             assertFalse(zipSizeInBytes.isEmpty());
-        }
-        catch (IOException ex) {
+        } catch (IOException ex) {
             Assertions.fail("Unexpected exception: " + ex.getMessage());
         }
     }
@@ -290,8 +343,17 @@ public class TestBackupData {
         // when
         HttpResponse<InputStream> createBackupResponse = makeAuthPOSTCallWithPath(server, "$/backups/delete", "test");
         // then
-//        debug(createBackupResponse);
         assertEquals(200, createBackupResponse.statusCode());
+    }
+
+    @Test
+    public void givenWrongRoles_whenDeletingBackup_thenUnauthorized() throws IOException {
+        verifyUnauthorized(tokenWithUserRoleOnly(), "$/backups/delete", "POST", "requires roles");
+    }
+
+    @Test
+    public void givenInsufficientPermissions_whenDeletingBackup_thenUnauthorized() throws IOException {
+        verifyUnauthorized(tokenWithBackupReadPermission(), "$/backups/delete", "POST", "requires permissions");
     }
 
     @Test
@@ -313,10 +375,21 @@ public class TestBackupData {
         // given
         server = buildServer("--port=0", "--empty");
         // when
-        HttpResponse<InputStream> createBackupResponse = makeAuthPOSTCallWithPath(server, "$/backups/restore/1", "test");
+        HttpResponse<InputStream> createBackupResponse =
+                makeAuthPOSTCallWithPath(server, "$/backups/restore/1", "test");
         // then
         //debug(createBackupResponse);
         assertEquals(200, createBackupResponse.statusCode());
+    }
+
+    @Test
+    public void givenWrongRoles_whenRestoreBackup_thenUnauthorized() throws IOException {
+        verifyUnauthorized(tokenWithUserRoleOnly(), "$/backups/restore", "POST", "requires roles");
+    }
+
+    @Test
+    public void givenInsufficientPermissions_whenRestoreBackup_thenUnauthorized() throws IOException {
+        verifyUnauthorized(tokenWithBackupReadPermission(), "$/backups/restore", "POST", "requires permissions");
     }
 
     @Test
@@ -373,6 +446,7 @@ public class TestBackupData {
      *
      * @param response generated response
      */
+    @SuppressWarnings("unused")
     private void debug(HttpResponse<InputStream> response) {
         System.out.println(convertToJSON(response));
     }
@@ -400,20 +474,20 @@ public class TestBackupData {
      * @param response the response returned
      * @return a JSON string
      */
+    @SuppressWarnings("rawtypes")
     private Map convertToMap(HttpResponse<InputStream> response) {
         try {
             InputStream inputStream = response.body();
             InputStreamReader reader = new InputStreamReader(inputStream);
             return OBJECT_MAPPER.readValue(reader, Map.class);
-        }catch (IOException e) {
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
 
     /**
-     * Extension of the Backup Module for testing purposes.
-     * Uses a test instance of actual back up service.
+     * Extension of the Backup Module for testing purposes. Uses a test instance of actual back up service.
      */
     public static class FMod_BackupData_Test extends FMod_BackupData {
 
@@ -424,8 +498,7 @@ public class TestBackupData {
     }
 
     /**
-     * Extension of the Backup Module for testing purposes.
-     * Causes a null pointer exception to be thrown.
+     * Extension of the Backup Module for testing purposes. Causes a null pointer exception to be thrown.
      */
     public static class FMod_BackupData_Null extends FMod_BackupData {
 
@@ -436,8 +509,7 @@ public class TestBackupData {
     }
 
     /**
-     * Extension of the Backup Module for testing purposes.
-     * Allows the underlying service to be mocked
+     * Extension of the Backup Module for testing purposes. Allows the underlying service to be mocked
      */
     public class FMod_BackupData_Mock extends FMod_BackupData {
 

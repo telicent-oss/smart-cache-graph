@@ -1,6 +1,7 @@
 package io.telicent.core;
 
 import io.telicent.LibTestsSCG;
+import io.telicent.backup.TestBackupData;
 import io.telicent.jena.abac.ABAC;
 import io.telicent.jena.abac.SysABAC;
 import io.telicent.jena.abac.attributes.syntax.AEX;
@@ -11,6 +12,8 @@ import io.telicent.jena.abac.labels.Labels;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.Strings;
 import org.apache.jena.fuseki.main.FusekiServer;
 import org.apache.jena.fuseki.servlets.ActionErrorException;
 import org.apache.jena.fuseki.system.FusekiLogging;
@@ -32,8 +35,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Set;
 
-import static io.telicent.TestJwtServletAuth.makeAuthCallWithPathForMethod;
-import static io.telicent.TestJwtServletAuth.makePOSTCallWithPath;
+import static io.telicent.TestJwtServletAuth.*;
 import static io.telicent.TestSmartCacheGraphIntegration.launchServer;
 import static io.telicent.core.FMod_InitialCompaction.compactLabels;
 import static org.apache.jena.graph.Graph.emptyGraph;
@@ -306,7 +308,8 @@ public class TestInitialCompaction {
 
         // when
         HttpResponse<InputStream> compactResponse =
-                makeAuthCallWithPathForMethod(server, "$/compactall", "test", "POST");
+                makeAuthCallWithCustomToken(server, "$/compactall", LibTestsSCG.tokenForUser("test", "test"),
+                                            "POST");
         // then
         assertEquals(200, compactResponse.statusCode());
         mockDatabaseMgr.verify(() -> DatabaseMgr.compact(any(), anyBoolean()), times(0));
@@ -320,9 +323,45 @@ public class TestInitialCompaction {
         server = launchServer(configFile);
         // when
         HttpResponse<InputStream> compactResponse =
-                makeAuthCallWithPathForMethod(server, "$/compactall", "test", "POST");
+                makeAuthCallWithCustomToken(server, "$/compactall", LibTestsSCG.tokenForUser("test", "knowledge"),
+                                            "POST");
         // then
         assertEquals(200, compactResponse.statusCode());
+    }
+
+    @Test
+    public void givenWrongRoles_whenCompactAll_thenUnauthorized() throws IOException {
+        // Given
+        mockDatabaseMgr.when(() -> DatabaseMgr.compact(any(), anyBoolean())).thenAnswer(invocationOnMock -> null);
+        String configFile = "config-persistent.ttl";
+        server = launchServer(configFile);
+
+        // When
+        HttpResponse<InputStream> compactResponse =
+                makeAuthCallWithCustomToken(server, "$/compactall", TestBackupData.tokenWithUserRoleOnly(), "POST");
+
+        // Then
+        assertEquals(401, compactResponse.statusCode());
+        String error = IOUtils.toString(compactResponse.body(), StandardCharsets.UTF_8);
+        assertTrue(Strings.CI.contains(error, "requires roles"));
+    }
+
+    @Test
+    public void givenInsufficientPermissions_whenCompactAll_thenUnauthorized() throws IOException {
+        // Given
+        mockDatabaseMgr.when(() -> DatabaseMgr.compact(any(), anyBoolean())).thenAnswer(invocationOnMock -> null);
+        String configFile = "config-persistent.ttl";
+        server = launchServer(configFile);
+
+        // When
+        HttpResponse<InputStream> compactResponse =
+                makeAuthCallWithCustomToken(server, "$/compactall", TestBackupData.tokenWithBackupReadPermission(),
+                                            "POST");
+
+        // Then
+        assertEquals(401, compactResponse.statusCode());
+        String error = IOUtils.toString(compactResponse.body(), StandardCharsets.UTF_8);
+        assertTrue(Strings.CI.contains(error, "requires permissions"));
     }
 
     @Test

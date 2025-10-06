@@ -1,17 +1,22 @@
 package io.telicent.core.auth;
 
+import com.google.common.collect.Streams;
 import io.telicent.core.CQRS;
 import io.telicent.jena.abac.fuseki.ServerABAC;
 import io.telicent.jena.graphql.fuseki.SysGraphQL;
 import io.telicent.servlet.auth.jwt.PathExclusion;
 import io.telicent.smart.caches.configuration.auth.policy.Policy;
+import io.telicent.smart.caches.configuration.auth.policy.TelicentPermissions;
+import io.telicent.smart.caches.configuration.auth.policy.TelicentRoles;
 import org.apache.commons.lang3.Strings;
 import org.apache.jena.fuseki.Fuseki;
 import org.apache.jena.fuseki.server.DataAccessPoint;
 import org.apache.jena.fuseki.server.Endpoint;
 import org.apache.jena.fuseki.server.Operation;
 
+import java.util.Arrays;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -22,13 +27,13 @@ public class SCG_AuthPolicy {
     /**
      * Default roles policy applied to all recognised dataset endpoints
      */
-    public static final Policy DEFAULT_ROLES = Policy.requireAny("roles", new String[] { "USER", "SUPER_USER" });
-    public static final Policy ADMIN_ROLES = Policy.requireAny("roles", new String[] { "ADMIN_SYSTEM", "SUPER_USER" });
+    public static final Policy DEFAULT_ROLES = Policy.requireAny("roles", new String[] { TelicentRoles.USER });
+    public static final Policy ADMIN_ROLES = Policy.requireAny("roles", new String[] { TelicentRoles.ADMIN_SYSTEM });
 
-    public static final Policy BACKUP_READ_ONLY = Policy.requireAll("permissions", new String[] { "backup.read" });
-    public static final Policy BACKUP_READ_WRITE =
-            Policy.requireAll("permissions", new String[] { "backup.read", "backup.write" });
-    public static final Policy COMPACT = Policy.requireAll("permissions", new String[] { "compact" });
+    public static final Policy BACKUP_READ_ONLY = Policy.requireAll("permissions", TelicentPermissions.Backup.READ);
+    public static final Policy BACKUP_CREATE = Policy.requireAll("permissions", TelicentPermissions.Backup.WRITE);
+    public static final Policy BACKUP_RESTORE = Policy.requireAll("permissions", TelicentPermissions.Backup.RESTORE);
+    public static final Policy BACKUP_DELETE = Policy.requireAll("permissions", TelicentPermissions.Backup.DELETE);
 
     /**
      * Known Fuseki operations (either Core, or from Telicent modules) that are read-only operations
@@ -107,6 +112,12 @@ public class SCG_AuthPolicy {
         // Dataset read permissions
         addPolicy(policies, "/$/labels/" + datasetName, readPermissions(datasetName));
 
+        // Compact endpoints
+        Policy compactPolicy =
+                Policy.requireAll("permissions", new String[] { TelicentPermissions.compactPermission(datasetName) });
+        addPolicy(policies, "/$/compact/" + datasetName, compactPolicy);
+        addOrUpdatePolicy(policies, "/$/compactall", compactPolicy);
+
         // Fuseki will also capture requests to the root dataset path and try to dynamically route them based on the
         // request method and body, since we won't know what kind of request is arriving in advance have to enforce both
         // read and write permissions for this
@@ -157,14 +168,14 @@ public class SCG_AuthPolicy {
 
         // Compact All - /$/compactall
         addPolicy(roles, "/$/compactall", ADMIN_ROLES);
-        addPolicy(perms, "/$/compactall", COMPACT);
 
         // Backup/Restore - /$/backups/*
         // All endpoints require an adminstrator role
         // Endpoints require either backup.read and backup.write permissions as appropriate
         addPolicy(roles, "/\\$/backups/*", ADMIN_ROLES);
-        addPolicy(perms, "/$/backups/create", BACKUP_READ_WRITE);
-        addPolicy(perms, "/$/backups/restore", BACKUP_READ_WRITE);
+        addPolicy(perms, "/$/backups/create", BACKUP_CREATE);
+        addPolicy(perms, "/$/backups/delete", BACKUP_DELETE);
+        addPolicy(perms, "/$/backups/restore", BACKUP_RESTORE);
         addPolicy(perms, "/\\$/backups/*", BACKUP_READ_ONLY);
     }
 
@@ -179,6 +190,25 @@ public class SCG_AuthPolicy {
         PathExclusion key = new PathExclusion(pathPattern);
         policies.put(key, policy);
         Fuseki.configLog.info("Added {} policy for {}: {}", policy.source(), key.getPattern(), policy);
+    }
+
+    /**
+     * Adds/updates a policy in the policies map, also logging what was added for debugging purposes
+     *
+     * @param policies    Policies
+     * @param pathPattern Path pattern to which the policy applies
+     * @param policy      Policy
+     */
+    private static void addOrUpdatePolicy(Map<PathExclusion, Policy> policies, String pathPattern, Policy policy) {
+        PathExclusion key = new PathExclusion(pathPattern);
+        Policy existing = policies.get(key);
+        if (existing != null) {
+            Policy updated = Policy.combine(existing, policy);
+            policies.put(key, updated);
+            Fuseki.configLog.info("Updated {} policy for {}: {}", policy.source(), key.getPattern(), policy);
+        } else {
+            addPolicy(policies, pathPattern, policy);
+        }
     }
 
     /**
@@ -225,20 +255,9 @@ public class SCG_AuthPolicy {
     private static Policy readPermissions(String datasetName) {
         //@formatter:off
         return Policy.requireAll("permissions", new String[] {
-                datasetPermission("api.%s.read", datasetName)
+                TelicentPermissions.readPermission(Strings.CI.removeStart(datasetName, "/"))
         });
         //@formatter:on
-    }
-
-    /**
-     * Generates a permission for a dataset
-     *
-     * @param template    Template, should contain a single {@code %s} placeholder
-     * @param datasetName Dataset name to inject into template
-     * @return Dataset permission
-     */
-    private static String datasetPermission(String template, String datasetName) {
-        return String.format(template, Strings.CI.removeStart(datasetName, "/"));
     }
 
     /**
@@ -249,12 +268,8 @@ public class SCG_AuthPolicy {
      * @return Policy
      */
     private static Policy readWritePermissions(String datasetName) {
-        //@formatter:off
-        return Policy.requireAll("permissions", new String[] {
-                datasetPermission("api.%s.read", datasetName),
-                datasetPermission("api.%s.write", datasetName)
-        });
-        //@formatter:on
+        return Policy.requireAll("permissions",
+                                 TelicentPermissions.readWritePermissions(Strings.CI.removeStart(datasetName, "/")));
     }
 
     /**

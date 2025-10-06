@@ -185,6 +185,15 @@ public class TestJwtServletAuth {
         return makeAuthCallWithPathForMethod(server, path, user, METHOD_GET);
     }
 
+    public static HttpResponse<InputStream> makeAuthCallWithCustomToken(FusekiServer server, String path, String jwt, String method) {
+        HttpRequest.Builder builder =
+                HttpLib.requestBuilderFor(server.serverURL())
+                       .uri(toRequestURI(server.serverURL() + path))
+                       .headers(AwsConstants.HEADER_DATA, jwt)
+                       .method(method, HttpRequest.BodyPublishers.noBody());
+        return execute(HttpEnv.getDftHttpClient(), builder.build());
+    }
+
     public static HttpResponse<InputStream> makeAuthCallWithPathForMethod(FusekiServer server, String path, String user, String method) {
         HttpRequest.Builder builder =
                 HttpLib.requestBuilderFor(server.serverURL())
@@ -193,4 +202,5 @@ public class TestJwtServletAuth {
                         .method(method, HttpRequest.BodyPublishers.noBody());
         return execute(HttpEnv.getDftHttpClient(), builder.build());
     }
+
 }

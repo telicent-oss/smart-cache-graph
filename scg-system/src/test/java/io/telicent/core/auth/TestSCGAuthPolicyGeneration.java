@@ -5,6 +5,7 @@ import io.telicent.jena.graphql.fuseki.SysGraphQL;
 import io.telicent.servlet.auth.jwt.PathExclusion;
 import io.telicent.smart.caches.configuration.auth.policy.Policy;
 import io.telicent.smart.caches.configuration.auth.policy.PolicyKind;
+import io.telicent.smart.caches.configuration.auth.policy.TelicentPermissions;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.jena.fuseki.server.DataAccessPoint;
 import org.apache.jena.fuseki.server.DataService;
@@ -63,8 +64,10 @@ public class TestSCGAuthPolicyGeneration {
     }
 
     private void verifyDatasetPermissions(Map<PathExclusion, Policy> policies, String datasetName) {
-        String readPermission = "api." + datasetName + ".read";
-        String writePermission = "api." + datasetName + ".write";
+        // Permissions available on a dataset
+        String readPermission = TelicentPermissions.readPermission(datasetName);
+        String writePermission = TelicentPermissions.writePermission(datasetName);
+        String compactPermission = TelicentPermissions.compactPermission(datasetName);
 
         // Verify permissions generated for defined endpoints
         verifyPermissions(policies, "/" + datasetName + "/query", readPermission);
@@ -76,6 +79,7 @@ public class TestSCGAuthPolicyGeneration {
         // Verify permissions generated for Telicent custom endpoints
         verifyPermissions(policies, "/" + datasetName + "/access/*", readPermission);
         verifyPermissions(policies, "/$/labels/" + datasetName, readPermission);
+        verifyPermissions(policies, "/$/compact/" + datasetName, compactPermission);
     }
 
     private void verifyRoles(Map<PathExclusion, Policy> policies, String path, String... expected) {
@@ -116,6 +120,9 @@ public class TestSCGAuthPolicyGeneration {
         // Then
         verifyDatasetRoles(roles, "knowledge");
         verifyDatasetPermissions(perms, "knowledge");
+        // NB - The /$/compactall permissions are dynamically built based upon all the registered datasets so in this
+        //      case will only have one permission required
+        verifyPermissions(perms, "/$/compactall", TelicentPermissions.compactPermission("knowledge"));
     }
 
     @Test
@@ -133,12 +140,13 @@ public class TestSCGAuthPolicyGeneration {
         SCG_AuthPolicy.addDatasetPermissionsPolicy(perms, catalog);
 
         // Then
-        Assertions.assertEquals(14, roles.size());
-        Assertions.assertEquals(14, perms.size());
         verifyDatasetRoles(roles, "knowledge");
         verifyDatasetPermissions(perms, "knowledge");
         verifyDatasetRoles(roles, "catalog");
         verifyDatasetPermissions(perms, "catalog");
+        // NB - The /$/compactall permissions are dynamically built based upon all the registered datasets
+        verifyPermissions(perms, "/$/compactall", TelicentPermissions.compactPermission("knowledge"),
+                          TelicentPermissions.compactPermission("catalog"));
     }
 
     @Test
@@ -170,10 +178,13 @@ public class TestSCGAuthPolicyGeneration {
         Assertions.assertFalse(roles.isEmpty());
         Assertions.assertFalse(perms.isEmpty());
         verifyRoles(roles, "/$/compactall", SCG_AuthPolicy.ADMIN_ROLES.values());
-        verifyPermissions(perms, "/$/compactall", SCG_AuthPolicy.COMPACT.values());
+        // NB - Permissions for /$/compactall are dynamically built based on the datasets so will be undefined in this
+        //      case
+        verifyNoPolicy(perms, "/$/compactall");
         verifyRoles(roles, "/\\$/backups/*", SCG_AuthPolicy.ADMIN_ROLES.values());
-        verifyPermissions(perms, "/$/backups/create", SCG_AuthPolicy.BACKUP_READ_WRITE.values());
-        verifyPermissions(perms, "/$/backups/restore", SCG_AuthPolicy.BACKUP_READ_WRITE.values());
+        verifyPermissions(perms, "/$/backups/create", SCG_AuthPolicy.BACKUP_CREATE.values());
+        verifyPermissions(perms, "/$/backups/delete", SCG_AuthPolicy.BACKUP_DELETE.values());
+        verifyPermissions(perms, "/$/backups/restore", SCG_AuthPolicy.BACKUP_RESTORE.values());
         verifyPermissions(perms, "/\\$/backups/*", SCG_AuthPolicy.BACKUP_READ_ONLY.values());
     }
 }

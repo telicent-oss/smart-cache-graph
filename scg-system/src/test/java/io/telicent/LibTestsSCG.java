@@ -29,6 +29,7 @@ import io.telicent.servlet.auth.jwt.verifier.aws.AwsElbKeyUrlRegistry;
 import io.telicent.smart.cache.configuration.Configurator;
 import io.telicent.smart.cache.configuration.sources.PropertiesSource;
 import io.telicent.smart.caches.configuration.auth.AuthConstants;
+import io.telicent.smart.caches.configuration.auth.policy.TelicentPermissions;
 import org.apache.jena.sparql.exec.RowSet;
 import org.apache.jena.sparql.exec.http.DSP;
 import org.apache.jena.sparql.exec.http.QueryExecHTTPBuilder;
@@ -114,11 +115,17 @@ public class LibTestsSCG {
                           List.of("USER", "ADMIN_SYSTEM")
                    )
                    .claim("permissions",
-                          List.of("api." + datasetName + ".read",
-                                  "api." + datasetName + ".write",
-                                  "backup.read",
-                                  "backup.write",
-                                  "compact")
+                          List.of(
+                              // Dataset read/write permissions
+                              TelicentPermissions.readPermission(datasetName),
+                              TelicentPermissions.writePermission(datasetName),
+                              // Backup specific permissions
+                              TelicentPermissions.Backup.READ,
+                              TelicentPermissions.Backup.WRITE,
+                              TelicentPermissions.Backup.RESTORE,
+                              TelicentPermissions.Backup.DELETE,
+                              // Compact specific permissions
+                              TelicentPermissions.compactPermission(datasetName))
                    )
                    .signWith(MOCK_KEY_SERVER.getPrivateKey(keyId))
                    .compact();
