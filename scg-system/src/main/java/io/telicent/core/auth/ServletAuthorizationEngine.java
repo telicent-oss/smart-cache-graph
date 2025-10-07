@@ -28,16 +28,16 @@ class ServletAuthorizationEngine extends TelicentAuthorizationEngine<ServletAuth
      *
      * @param rolesPolicies       Roles policy mappings
      * @param permissionsPolicies Permissions policy mappings
-     * @param rolesFallback       Fallback roles policy, {@link Policy#ALLOW_ALL} if not set
-     * @param permissionsFallback Fallback permissions policy, {@link Policy#ALLOW_ALL} if not set
+     * @param rolesFallback       Fallback roles policy, {@link Policy#DENY_ALL} if not set
+     * @param permissionsFallback Fallback permissions policy, {@link Policy#DENY_ALL} if not set
      */
     ServletAuthorizationEngine(Map<PathExclusion, Policy> rolesPolicies, Map<PathExclusion, Policy> permissionsPolicies,
                                Policy rolesFallback, Policy permissionsFallback) {
         this.rolesPolicies = new LinkedHashMap<>(Objects.requireNonNull(rolesPolicies, "rolesPolicies"));
         this.permissionsPolicies =
                 new LinkedHashMap<>(Objects.requireNonNull(permissionsPolicies, "permissionsPolicies"));
-        this.rolesFallback = Objects.requireNonNullElse(rolesFallback, Policy.ALLOW_ALL);
-        this.permissionsFallback = Objects.requireNonNullElse(permissionsFallback, Policy.ALLOW_ALL);
+        this.rolesFallback = Objects.requireNonNullElse(rolesFallback, Policy.DENY_ALL);
+        this.permissionsFallback = Objects.requireNonNullElse(permissionsFallback, Policy.DENY_ALL);
     }
 
     @Override

@@ -16,10 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 /**
  * A request filter that augments authenticated requests with {@link UserInfo} for use by subsequent filters e.g.
@@ -59,10 +56,15 @@ final class UserInfoFilter implements Filter {
                 // available later
                 UserInfo userInfo = this.userInfoLookup.lookup(jwt);
                 request.setAttribute(UserInfo.class.getCanonicalName(), userInfo);
-                AttributesStoreAuthServer.addUserNameAndAttributes(httpRequest.getRemoteUser(), toAttributeValueSet(
-                        userInfo.getAttributes()));
+                AttributesStoreAuthServer.addUserNameAndAttributes(httpRequest.getRemoteUser(),
+                                                                   toAttributeValueSet(userInfo.getAttributes()));
             } catch (UserInfoLookupException e) {
                 LOGGER.warn("Failed to obtain User Info: {}", e.getMessage());
+
+                // In the error path forcibly reset the cached attributes to the empty set as otherwise users could get
+                // attributes they no longer have
+                AttributesStoreAuthServer.addUserNameAndAttributes(httpRequest.getRemoteUser(),
+                                                                   AttributeValueSet.EMPTY);
             }
         }
 
@@ -81,10 +83,10 @@ final class UserInfoFilter implements Filter {
         return AttributeValueSet.of(attrs);
     }
 
-    private static void convertMapToAttributes(List<AttributeValue> attrs, String prefix,
-                                               Map<String, Object> map) {
+    private static void convertMapToAttributes(List<AttributeValue> attrs, String prefix, Map<String, Object> map) {
+        if (map == null) return;
         for (Map.Entry<String, Object> entry : map.entrySet()) {
-            convertValue(attrs, prefix + entry.getKey(), entry.getValue());
+            convertValue(attrs, !prefix.isEmpty() ? prefix + "." + entry.getKey() : entry.getKey(), entry.getValue());
         }
     }
 
@@ -94,15 +96,15 @@ final class UserInfoFilter implements Filter {
             case String strValue -> attrs.add(AttributeValue.of(key, ValueTerm.value(strValue)));
             case Number numberValue -> attrs.add(AttributeValue.of(key, ValueTerm.value(numberValue.toString())));
             case Boolean boolValue -> attrs.add(AttributeValue.of(key, ValueTerm.value(boolValue)));
-            case List<?> list -> {
-                List<Object> values = (List<Object>) list;
-                for (Object v : values) {
-                    convertValue(attrs, key, v);
-                }
-            }
             case Map<?, ?> map -> {
                 Map<String, Object> values = (Map<String, Object>) map;
                 convertMapToAttributes(attrs, key, values);
+            }
+            case Collection<?> collection -> {
+                Collection<Object> values = (Collection<Object>) collection;
+                for (Object v : values) {
+                    convertValue(attrs, key, v);
+                }
             }
             default -> LOGGER.warn("Unsupported value type for attribute {} ignored: {}", key, value.getClass());
         }
