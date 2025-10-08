@@ -1,6 +1,7 @@
 package io.telicent.core;
 
 import io.telicent.LibTestsSCG;
+import io.telicent.backup.TestBackupData;
 import io.telicent.jena.abac.ABAC;
 import io.telicent.jena.abac.SysABAC;
 import io.telicent.jena.abac.attributes.syntax.AEX;
@@ -11,6 +12,8 @@ import io.telicent.jena.abac.labels.Labels;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.Strings;
 import org.apache.jena.fuseki.main.FusekiServer;
 import org.apache.jena.fuseki.servlets.ActionErrorException;
 import org.apache.jena.fuseki.system.FusekiLogging;
@@ -32,7 +35,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Set;
 
-import static io.telicent.TestJwtServletAuth.makePOSTCallWithPath;
+import static io.telicent.TestJwtServletAuth.*;
 import static io.telicent.TestSmartCacheGraphIntegration.launchServer;
 import static io.telicent.core.FMod_InitialCompaction.compactLabels;
 import static org.apache.jena.graph.Graph.emptyGraph;
@@ -40,7 +43,8 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 public class TestInitialCompaction {
-    private static final MockedStatic<DatabaseMgr> mockDatabaseMgr  = mockStatic(DatabaseMgr.class, Mockito.CALLS_REAL_METHODS);
+    private static final MockedStatic<DatabaseMgr> mockDatabaseMgr =
+            mockStatic(DatabaseMgr.class, Mockito.CALLS_REAL_METHODS);
     private static FusekiServer server;
 
     @BeforeAll
@@ -54,8 +58,8 @@ public class TestInitialCompaction {
 
     @AfterEach
     void clearDown() {
-       mockDatabaseMgr.clearInvocations();
-       mockDatabaseMgr.reset();
+        mockDatabaseMgr.clearInvocations();
+        mockDatabaseMgr.reset();
 
         removePreviousCompactionResults();
     }
@@ -158,10 +162,10 @@ public class TestInitialCompaction {
     public void test_ABACDSG_wrapped_memGraph() {
         // given
         DatasetGraphABAC dsgABAC = ABAC.authzDataset(DatasetGraphFactory.createTxnMem(),
-                AEX.strALLOW,
-                Labels.createLabelsStoreMem(),
-                SysABAC.denyLabel,
-                new AttributesStoreLocal());
+                                                     AEX.strALLOW,
+                                                     Labels.createLabelsStoreMem(),
+                                                     SysABAC.denyLabel,
+                                                     new AttributesStoreLocal());
         // when
         DatasetGraph actualDSG = FMod_InitialCompaction.getTDB2(dsgABAC);
         // then
@@ -171,12 +175,13 @@ public class TestInitialCompaction {
     @Test
     public void test_ABACDSG_wrapped_persistedGraph() {
         // given
-        DatasetGraphSwitchable dsgPersists = new DatasetGraphSwitchable(Path.of("./"), null, DatasetGraphFactory.createTxnMem());
+        DatasetGraphSwitchable dsgPersists =
+                new DatasetGraphSwitchable(Path.of("./"), null, DatasetGraphFactory.createTxnMem());
         DatasetGraphABAC dsgABAC = ABAC.authzDataset(dsgPersists,
-                AEX.strALLOW,
-                Labels.createLabelsStoreMem(),
-                SysABAC.denyLabel,
-                new AttributesStoreLocal());
+                                                     AEX.strALLOW,
+                                                     Labels.createLabelsStoreMem(),
+                                                     SysABAC.denyLabel,
+                                                     new AttributesStoreLocal());
         // when
         DatasetGraph actualDSG = FMod_InitialCompaction.getTDB2(dsgABAC);
         // then
@@ -262,7 +267,8 @@ public class TestInitialCompaction {
     }
 
     @Test
-    public void givenMalformedCompactionResultsFile_whenLoadingPreviousSize_thenDefaultValueReturned() throws IOException {
+    public void givenMalformedCompactionResultsFile_whenLoadingPreviousSize_thenDefaultValueReturned() throws
+            IOException {
         // Given
         File tempDir = Files.createTempDirectory("test").toFile();
         DatasetGraphSwitchable mockDSG = mock(DatasetGraphSwitchable.class);
@@ -290,9 +296,10 @@ public class TestInitialCompaction {
     }
 
     @Test
-    public void test_compactWithExistingLock()  {
+    public void test_compactWithExistingLock() {
         // given
-        DatasetGraphSwitchable dsgPersists = new DatasetGraphSwitchable(Path.of("./"), null, DatasetGraphFactory.createTxnMem());
+        DatasetGraphSwitchable dsgPersists =
+                new DatasetGraphSwitchable(Path.of("./"), null, DatasetGraphFactory.createTxnMem());
         DatasetGraphSwitchable mockedDsg = Mockito.spy(dsgPersists);
 
         when(mockedDsg.tryExclusiveMode(false)).thenReturn(false);
@@ -300,7 +307,9 @@ public class TestInitialCompaction {
         server = SmartCacheGraph.smartCacheGraphBuilder().add("test", mockedDsg).build().start();
 
         // when
-        HttpResponse<InputStream> compactResponse = makePOSTCallWithPath(server, "$/compactall");
+        HttpResponse<InputStream> compactResponse =
+                makeAuthCallWithCustomToken(server, "$/compactall", LibTestsSCG.tokenForUser("test", "test"),
+                                            "POST");
         // then
         assertEquals(200, compactResponse.statusCode());
         mockDatabaseMgr.verify(() -> DatabaseMgr.compact(any(), anyBoolean()), times(0));
@@ -313,9 +322,46 @@ public class TestInitialCompaction {
         String configFile = "config-persistent.ttl";
         server = launchServer(configFile);
         // when
-        HttpResponse<InputStream> compactResponse = makePOSTCallWithPath(server, "$/compactall");
+        HttpResponse<InputStream> compactResponse =
+                makeAuthCallWithCustomToken(server, "$/compactall", LibTestsSCG.tokenForUser("test", "knowledge"),
+                                            "POST");
         // then
         assertEquals(200, compactResponse.statusCode());
+    }
+
+    @Test
+    public void givenWrongRoles_whenCompactAll_thenUnauthorized() throws IOException {
+        // Given
+        mockDatabaseMgr.when(() -> DatabaseMgr.compact(any(), anyBoolean())).thenAnswer(invocationOnMock -> null);
+        String configFile = "config-persistent.ttl";
+        server = launchServer(configFile);
+
+        // When
+        HttpResponse<InputStream> compactResponse =
+                makeAuthCallWithCustomToken(server, "$/compactall", TestBackupData.tokenWithUserRoleOnly(), "POST");
+
+        // Then
+        assertEquals(401, compactResponse.statusCode());
+        String error = IOUtils.toString(compactResponse.body(), StandardCharsets.UTF_8);
+        assertTrue(Strings.CI.contains(error, "requires roles"));
+    }
+
+    @Test
+    public void givenInsufficientPermissions_whenCompactAll_thenUnauthorized() throws IOException {
+        // Given
+        mockDatabaseMgr.when(() -> DatabaseMgr.compact(any(), anyBoolean())).thenAnswer(invocationOnMock -> null);
+        String configFile = "config-persistent.ttl";
+        server = launchServer(configFile);
+
+        // When
+        HttpResponse<InputStream> compactResponse =
+                makeAuthCallWithCustomToken(server, "$/compactall", TestBackupData.tokenWithBackupReadPermission(),
+                                            "POST");
+
+        // Then
+        assertEquals(401, compactResponse.statusCode());
+        String error = IOUtils.toString(compactResponse.body(), StandardCharsets.UTF_8);
+        assertTrue(Strings.CI.contains(error, "requires permissions"));
     }
 
     @Test
@@ -350,10 +396,10 @@ public class TestInitialCompaction {
     public void test_compactLabels_notRocksDB() {
         // given
         DatasetGraphABAC dsgABAC = ABAC.authzDataset(DatasetGraphFactory.createTxnMem(),
-                AEX.strALLOW,
-                Labels.createLabelsStoreMem(),
-                SysABAC.denyLabel,
-                new AttributesStoreLocal());
+                                                     AEX.strALLOW,
+                                                     Labels.createLabelsStoreMem(),
+                                                     SysABAC.denyLabel,
+                                                     new AttributesStoreLocal());
         // when
         // then
         compactLabels(dsgABAC);
@@ -380,6 +426,6 @@ public class TestInitialCompaction {
         when(request.getMethod()).thenReturn("POST");
 
         HttpServletResponse response = mock(HttpServletResponse.class);
-        assertThrows(ActionErrorException.class, () ->capturedServlet.service(request, response));
+        assertThrows(ActionErrorException.class, () -> capturedServlet.service(request, response));
     }
 }

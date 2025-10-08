@@ -1,18 +1,20 @@
 package io.telicent;
 
-import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.*;
 import io.jsonwebtoken.jackson.io.JacksonSerializer;
-import io.jsonwebtoken.security.Jwk;
-import io.jsonwebtoken.security.JwkSet;
-import io.jsonwebtoken.security.JwkSetBuilder;
-import io.jsonwebtoken.security.Jwks;
+import io.jsonwebtoken.security.*;
+import io.telicent.servlet.auth.jwt.JwtHttpConstants;
+import io.telicent.servlet.auth.jwt.verification.SignedJwtVerifier;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.apache.commons.lang3.Strings;
 import org.apache.jena.fuseki.main.JettyServer;
 import org.apache.jena.riot.WebContent;
 import org.apache.jena.sys.JenaSystem;
+import org.junit.platform.commons.util.StringUtils;
+import org.testcontainers.shaded.com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.security.Key;
@@ -56,6 +58,7 @@ public class MockKeyServer {
                                  .contextPath("/")
                                  .addServlet("/jwks.json", new JwksServlet(this.publicKeys))
                                  .addServlet("/aws/*", new AwsElbServlet(this.publicKeys))
+                                 .addServlet("/userinfo", new UserInfoServlet(this.publicKeys))
                                  .build();
     }
 
@@ -77,6 +80,10 @@ public class MockKeyServer {
 
     public String getAwsElbUrlFormat() {
         return String.format("http://localhost:%d/aws/", this.port) + "%s";
+    }
+
+    public String getUserInfoUrl() {
+        return String.format("http://localhost:%d/userinfo", this.port);
     }
 
     public String selectKeyId() {
@@ -132,6 +139,60 @@ public class MockKeyServer {
                 resp.getOutputStream().println("---END PUBLIC KEY---");
                 resp.getOutputStream().close();
             }
+        }
+    }
+
+    private static final class UserInfoServlet extends HttpServlet {
+        private final JwkSet jwks;
+        private final SignedJwtVerifier verifier;
+        private final ObjectMapper json = new ObjectMapper();
+
+        public UserInfoServlet(JwkSet jwks) {
+            this.jwks = jwks;
+            this.verifier = new SignedJwtVerifier(new LocatorAdapter<Key>() {
+                @Override
+                protected Key locate(JwsHeader header) {
+                    Key key = jwks.getKeys()
+                                  .stream()
+                                  .filter(k -> Objects.equals(k.getId(), header.getKeyId()))
+                                  .findFirst()
+                                  .map(Jwk::toKey)
+                                  .orElse(null);
+                    if (key == null) {
+                        throw new InvalidKeyException(
+                                "Failed to locate key " + header.getKeyId() + " which was used to sign the presented JWT");
+                    } else {
+                        return key;
+                    }
+                }
+            });
+        }
+
+        @Override
+        protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+            String authHeader = req.getHeader(JwtHttpConstants.HEADER_AUTHORIZATION);
+            if (StringUtils.isBlank(authHeader)) {
+                resp.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                resp.setContentType(WebContent.contentTypeTextPlain);
+                resp.getWriter().write("No JWT presented");
+                return;
+            }
+
+            String token = Strings.CI.removeStart(authHeader, JwtHttpConstants.AUTH_SCHEME_BEARER).strip();
+            Jws<Claims> jws = this.verifier.verify(token);
+            Claims claims = jws.getPayload();
+
+            // Create a mock response, similar to Auth Server
+            Map<String, Object> userInfo = new HashMap<>();
+            userInfo.put("sub", claims.getSubject());
+            userInfo.put("preferred_name", claims.get("preferred_name", String.class));
+            userInfo.put("roles", claims.getOrDefault("roles", new String[] { "USER" }));
+            userInfo.put("permissions", claims.getOrDefault("permissions", new String[] { "api.read" }));
+            userInfo.put("attributes", claims.getOrDefault("attributes", Map.of()));
+
+            resp.setContentType(WebContent.contentTypeJSON);
+            resp.setStatus(HttpServletResponse.SC_OK);
+            this.json.writeValue(resp.getOutputStream(), userInfo);
         }
     }
 }

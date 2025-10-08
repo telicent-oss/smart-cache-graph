@@ -3,7 +3,7 @@ package io.telicent;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import io.telicent.core.FMod_InitialCompaction;
-import io.telicent.core.FMod_JwtServletAuth;
+import io.telicent.core.auth.FMod_JwtServletAuth;
 import io.telicent.core.SmartCacheGraph;
 import io.telicent.jena.abac.core.Attributes;
 import io.telicent.servlet.auth.jwt.PathExclusion;
@@ -99,8 +99,7 @@ public class TestJwtServletAuth {
         List<PathExclusion> expectedList = List.of(
                 new PathExclusion("/$/ping"),
                 new PathExclusion("/$/metrics"),
-                new PathExclusion("/\\$/stats/*"),
-                new PathExclusion("/$/compactall")
+                new PathExclusion("/\\$/stats/*")
         );
         FMod_JwtServletAuth jwtServletAuth = new FMod_JwtServletAuth();
         FusekiServer.Builder builder = SmartCacheGraph.serverBuilder().addServletAttribute(ATTRIBUTE_JWT_VERIFIER, new TestJwtVerifier());
@@ -134,10 +133,6 @@ public class TestJwtServletAuth {
         // Correct path
         HttpResponse<InputStream> metricsResponse = makePOSTCallWithPath(server, "$/metrics");
         assertEquals(200, metricsResponse.statusCode());
-
-        // Correct path
-        HttpResponse<InputStream> compactResponse = makePOSTCallWithPath(server, "$/compactall");
-        assertEquals(200, compactResponse.statusCode());
 
         // Fails - due to missing path but NOT due to Auth.
         HttpResponse<InputStream> statsResponse = makePOSTCallWithPath(server, "$/stats/unrecognised");
@@ -190,6 +185,15 @@ public class TestJwtServletAuth {
         return makeAuthCallWithPathForMethod(server, path, user, METHOD_GET);
     }
 
+    public static HttpResponse<InputStream> makeAuthCallWithCustomToken(FusekiServer server, String path, String jwt, String method) {
+        HttpRequest.Builder builder =
+                HttpLib.requestBuilderFor(server.serverURL())
+                       .uri(toRequestURI(server.serverURL() + path))
+                       .headers(AwsConstants.HEADER_DATA, jwt)
+                       .method(method, HttpRequest.BodyPublishers.noBody());
+        return execute(HttpEnv.getDftHttpClient(), builder.build());
+    }
+
     public static HttpResponse<InputStream> makeAuthCallWithPathForMethod(FusekiServer server, String path, String user, String method) {
         HttpRequest.Builder builder =
                 HttpLib.requestBuilderFor(server.serverURL())
@@ -198,4 +202,5 @@ public class TestJwtServletAuth {
                         .method(method, HttpRequest.BodyPublishers.noBody());
         return execute(HttpEnv.getDftHttpClient(), builder.build());
     }
+
 }

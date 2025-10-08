@@ -1,6 +1,7 @@
 package io.telicent;
 
 import io.jsonwebtoken.Jwts;
+import org.apache.commons.lang3.Strings;
 import org.apache.jena.atlas.lib.FileOps;
 import org.apache.jena.fuseki.Fuseki;
 import org.apache.jena.fuseki.main.FusekiServer;
@@ -11,11 +12,14 @@ import org.apache.jena.sparql.exec.RowSet;
 import org.apache.jena.sparql.exec.RowSetOps;
 import org.apache.jena.sparql.exec.http.QueryExecHTTPBuilder;
 import org.apache.jena.web.HttpSC;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
+import java.util.List;
+import java.util.Map;
 
 import static io.telicent.TestSmartCacheGraphIntegration.launchServer;
 import static org.junit.jupiter.api.Assertions.*;
@@ -57,16 +61,16 @@ public abstract class AbstractBearerAuthTests {
     }
 
 
-    private static void verifyRequestFailure(String token, String header, int expectedStatus) {
+    private static String verifyRequestFailure(String token, String header, int expectedStatus) {
         // given
         Throwable actual = null;
         try {
             // when
             LibTestsSCG.withLevel(Fuseki.actionLog, "ERROR",
                                   () -> QueryExecHTTPBuilder.service(URL)
-                                      .query(QUERY)
-                                      .httpHeader(header, LibTestsSCG.tokenHeaderValue(token))
-                                      .select());
+                                                            .query(QUERY)
+                                                            .httpHeader(header, LibTestsSCG.tokenHeaderValue(token))
+                                                            .select());
         } catch (Throwable e) {
             actual = e;
         }
@@ -75,6 +79,7 @@ public abstract class AbstractBearerAuthTests {
         assertInstanceOf(QueryExceptionHTTP.class, actual);
         QueryExceptionHTTP q = (QueryExceptionHTTP) actual;
         assertEquals(expectedStatus, q.getStatusCode());
+        return q.getResponse();
     }
 
     @Test
@@ -113,6 +118,29 @@ public abstract class AbstractBearerAuthTests {
     @Test
     void givenNonJwtToken_whenMakingARequest_thenUnauthorized() {
         verifyRequestFailure("username:password", LibTestsSCG.tokenHeader(), HttpSC.UNAUTHORIZED_401);
+    }
+
+    @Test
+    void givenNoRoles_whenMakingARequest_thenUnauthorized() {
+        // Given and When
+        String error = verifyRequestFailure(LibTestsSCG.tokenBuilder("u1").compact(), LibTestsSCG.tokenHeader(),
+                                            HttpSC.UNAUTHORIZED_401);
+
+        // Then
+        Assertions.assertTrue(Strings.CI.contains(error, "requires roles"));
+    }
+
+    @Test
+    void givenWrongPermissions_whenMakingARequest_thenUnauthorized() {
+        // Given and When
+        String error = verifyRequestFailure(
+                LibTestsSCG.tokenBuilder("u1")
+                           .claims(Map.of("roles", List.of("USER"), "permissions", List.of("api.other.read")))
+                           .compact(),
+                LibTestsSCG.tokenHeader(), HttpSC.UNAUTHORIZED_401);
+
+        // Then
+        Assertions.assertTrue(Strings.CI.contains(error, "requires permissions"));
     }
 
     @Test

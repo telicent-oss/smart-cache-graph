@@ -1,5 +1,19 @@
 # Smart Cache Graph
 
+## 0.91.0
+
+- Added Telicent Authorization policy support into SCG when authentication is enabled
+    - Authorization policy is dynamically generated for `/<dataset>/<endpoint>` endpoints based upon the registered 
+      Fuseki `Operation`
+    - Appropriate authorization policies for other endpoints, e.g. `/$/backup/*`, is hardcoded
+- Build improvements:
+    - BouncyCastle upgraded to 1.82
+    - JWT Servlet Auth upgraded to 2.0.1
+    - Logback upgraded to 1.5.19
+    - RDF ABAC upgraded to 1.1.0
+    - Smart Caches Core upgraded to 0.30.1
+    - Various build and test dependencies upgraded to latest available
+
 ## 0.90.2
 
 - Picked up updated Fuseki Kafka Connector release that has improvements to event batching behaviour for high lag and

@@ -1,21 +1,25 @@
-package io.telicent.core;
+package io.telicent.core.auth;
 
 import io.telicent.servlet.auth.jwt.JwtServletConstants;
 import io.telicent.servlet.auth.jwt.PathExclusion;
 import io.telicent.servlet.auth.jwt.configuration.AutomatedConfiguration;
-import io.telicent.servlet.auth.jwt.servlet5.JwtAuthFilter;
 import io.telicent.servlet.auth.jwt.verification.JwtVerifier;
 import io.telicent.smart.cache.configuration.Configurator;
-import io.telicent.smart.caches.configuration.auth.AuthConstants;
-import io.telicent.smart.caches.configuration.auth.TelicentConfigurationAdaptor;
-import jakarta.servlet.FilterConfig;
+import io.telicent.smart.caches.configuration.auth.*;
+import io.telicent.smart.caches.configuration.auth.policy.Policy;
+import io.telicent.smart.caches.server.auth.roles.TelicentAuthorizationEngine;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.jena.atlas.lib.Version;
 import org.apache.jena.atlas.logging.FmtLog;
 import org.apache.jena.fuseki.Fuseki;
 import org.apache.jena.fuseki.main.FusekiServer;
 import org.apache.jena.fuseki.main.sys.FusekiModule;
+import org.apache.jena.fuseki.server.DataAccessPoint;
+import org.apache.jena.fuseki.server.DataAccessPointRegistry;
 import org.apache.jena.rdf.model.Model;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
@@ -40,7 +44,7 @@ public class FMod_JwtServletAuth implements FusekiModule {
         }
 
         // Configure the JWT Verifier
-        FusekiConfigurationAdaptor adaptor = new FusekiConfigurationAdaptor(serverBuilder);
+        FusekiJwtConfigAdaptor adaptor = new FusekiJwtConfigAdaptor(serverBuilder);
         AutomatedConfiguration.configure(adaptor);
         JwtVerifier jwtVerifier = (JwtVerifier) adaptor.getAttribute(JwtServletConstants.ATTRIBUTE_JWT_VERIFIER);
 
@@ -59,38 +63,46 @@ public class FMod_JwtServletAuth implements FusekiModule {
         // Note some of these URLs aren't actually enabled for SCG currently but useful to future-proof our exclusions
         // should we enable these features in future
         serverBuilder.addServletAttribute(JwtServletConstants.ATTRIBUTE_PATH_EXCLUSIONS,
-                                          PathExclusion.parsePathPatterns("/$/ping,/$/metrics,/\\$/stats/*,/$/compactall"));
+                                          PathExclusion.parsePathPatterns(
+                                                  "/$/ping,/$/metrics,/\\$/stats/*"));
 
         // Register the filter
         serverBuilder.addFilter("/*", new FusekiJwtAuthFilter());
-    }
 
-    private static final class FusekiJwtAuthFilter extends JwtAuthFilter {
-
-        @Override
-        public void init(FilterConfig filterConfig) {
-            // Do nothing
-            // We explicitly configure the filter at the server setup level so no need to use the default filter
-            // behaviour of trying to automatically configure itself from init parameters
+        // Register the necessary filters for roles and permissions based authorization
+        if (Configurator.get(AuthConstants.FEATURE_FLAG_AUTHORIZATION, Boolean::parseBoolean, true)) {
+            // Create and register for User Info lookups
+            String userInfoEndpoint = Configurator.get(AuthConstants.ENV_USERINFO_URL);
+            if (StringUtils.isNotBlank(userInfoEndpoint)) {
+                UserInfoLookup userInfoLookup = new RemoteUserInfoLookup(userInfoEndpoint);
+                serverBuilder.addFilter("/*", new UserInfoFilter(userInfoLookup));
+            }
+            // Register an Authorization filter
+            serverBuilder.addFilter("/*", new TelicentAuthorizationFilter());
+        } else {
+            Fuseki.configLog.warn(
+                    "The Authorization Policy enforcement feature has been explicitly disabled via configuration variable {}.  If this was not intended please ensure that this feature flag is set to true in your environment.",
+                    AuthConstants.FEATURE_FLAG_AUTHORIZATION);
         }
     }
 
-    private static final class FusekiConfigurationAdaptor extends TelicentConfigurationAdaptor {
+    @Override
+    public void configured(FusekiServer.Builder serverBuilder, DataAccessPointRegistry dapRegistry, Model configModel) {
+        Map<PathExclusion, Policy> roles = new LinkedHashMap<>();
+        Map<PathExclusion, Policy> perms = new LinkedHashMap<>();
 
-        private final FusekiServer.Builder serverBuilder;
+        // Generate fixed policies for Telicent mod provided endpoints
+        SCG_AuthPolicy.addTelicentEndpointPolicies(roles, perms);
 
-        public FusekiConfigurationAdaptor(FusekiServer.Builder serverBuilder) {
-            this.serverBuilder = serverBuilder;
+        // Generate dynamic policies for configured datasets
+        for (DataAccessPoint dap : dapRegistry.accessPoints()) {
+            SCG_AuthPolicy.addDatasetRolesPolicy(roles, dap);
+            SCG_AuthPolicy.addDatasetPermissionsPolicy(perms, dap);
         }
 
-        @Override
-        public void setAttribute(String attribute, Object value) {
-            this.serverBuilder.addServletAttribute(attribute, value);
-        }
-
-        @Override
-        public Object getAttribute(String attribute) {
-            return this.serverBuilder.getServletAttribute(attribute);
-        }
+        // Create and register our engine
+        ServletAuthorizationEngine engine =
+                new ServletAuthorizationEngine(roles, perms, Policy.DENY_ALL, Policy.DENY_ALL);
+        serverBuilder.addServletAttribute(TelicentAuthorizationEngine.class.getCanonicalName(), engine);
     }
 }

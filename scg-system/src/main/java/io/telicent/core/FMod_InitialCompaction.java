@@ -64,23 +64,17 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
     @Override
     public void configured(FusekiServer.Builder serverBuilder, DataAccessPointRegistry dapRegistry, Model configModel) {
         // Create a new dataset endpoint for compacting all datasets
-        HttpServlet compactAllServlet = new HttpServlet() {
-            @Override
-            public void doPost(HttpServletRequest req, HttpServletResponse res) {
-                try {
-                    // Iterate over all registered datasets
-                    for (DataAccessPoint dataAccessPoint : dapRegistry.accessPoints()) {
-                        DataService dataService = dataAccessPoint.getDataService();
-                        compactDatasetGraphDatabase(dataService.getDataset(), dataAccessPoint.getName());
-                    }
-                } catch (Exception e) {
-                    FmtLog.error(Fuseki.configLog, "Error while compacting data points", e);
-                    ServletOps.errorOccurred(e.getMessage());
-                }
-            }
+        serverBuilder.addServlet("/$/compactall", new CompactAllServlet(dapRegistry));
 
-        };
-        serverBuilder.addServlet("/$/compactall", compactAllServlet);
+        if (dapRegistry != null) {
+            // Create a new endpoint for compacting a single dataset
+            for (DataAccessPoint dataAccessPoint : dapRegistry.accessPoints()) {
+                DataService dataService = dataAccessPoint.getDataService();
+
+                serverBuilder.addServlet("/$/compact" + dataAccessPoint.getName(),
+                                         new CompactOneServlet(dataService.getDataset(), dataAccessPoint.getName()));
+            }
+        }
     }
 
     @Override
@@ -282,5 +276,47 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
             }
         }
         FmtLog.info(LOG, "[Compaction] <<<< Label store compaction not needed.");
+    }
+
+    private static class CompactOneServlet extends HttpServlet {
+        private final DatasetGraph dsg;
+        private final String datasetName;
+
+        public CompactOneServlet(DatasetGraph dsg, String datasetName) {
+            this.dsg = dsg;
+            this.datasetName = datasetName;
+        }
+
+        @Override
+        public void doPost(HttpServletRequest req, HttpServletResponse res) {
+            try {
+                compactDatasetGraphDatabase(this.dsg, this.datasetName);
+            } catch (Exception e) {
+                FmtLog.error(Fuseki.configLog, "Error while compacting dataset " + this.datasetName, e);
+            }
+        }
+    }
+
+    private static class CompactAllServlet extends HttpServlet {
+        private final DataAccessPointRegistry dapRegistry;
+
+        public CompactAllServlet(DataAccessPointRegistry dapRegistry) {
+            this.dapRegistry = dapRegistry;
+        }
+
+        @Override
+        public void doPost(HttpServletRequest req, HttpServletResponse res) {
+            try {
+                // Iterate over all registered datasets
+                for (DataAccessPoint dataAccessPoint : dapRegistry.accessPoints()) {
+                    DataService dataService = dataAccessPoint.getDataService();
+                    compactDatasetGraphDatabase(dataService.getDataset(), dataAccessPoint.getName());
+                }
+            } catch (Exception e) {
+                FmtLog.error(Fuseki.configLog, "Error while compacting data points", e);
+                ServletOps.errorOccurred(e.getMessage());
+            }
+        }
+
     }
 }

@@ -188,7 +188,7 @@ public class TestPersistentSetup {
             printAttrs(user, attributeStore);
         }
 
-        String bearerToken = LibTestsSCG.tokenForUser(user);
+        String bearerToken = LibTestsSCG.tokenForUser(user, URL.split("/")[3]);
         tokenHeader();
         tokenHeaderValue(bearerToken);
 
