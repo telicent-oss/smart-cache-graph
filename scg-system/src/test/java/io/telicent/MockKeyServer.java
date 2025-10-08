@@ -5,7 +5,6 @@ import io.jsonwebtoken.jackson.io.JacksonSerializer;
 import io.jsonwebtoken.security.*;
 import io.telicent.servlet.auth.jwt.JwtHttpConstants;
 import io.telicent.servlet.auth.jwt.verification.SignedJwtVerifier;
-import io.telicent.smart.caches.configuration.auth.AuthConstants;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;

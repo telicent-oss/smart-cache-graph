@@ -1,6 +1,5 @@
 package io.telicent.core.auth;
 
-import com.google.common.collect.Streams;
 import io.telicent.core.CQRS;
 import io.telicent.jena.abac.fuseki.ServerABAC;
 import io.telicent.jena.graphql.fuseki.SysGraphQL;
@@ -14,9 +13,7 @@ import org.apache.jena.fuseki.server.DataAccessPoint;
 import org.apache.jena.fuseki.server.Endpoint;
 import org.apache.jena.fuseki.server.Operation;
 
-import java.util.Arrays;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -27,12 +24,26 @@ public class SCG_AuthPolicy {
     /**
      * Default roles policy applied to all recognised dataset endpoints
      */
-    public static final Policy DEFAULT_ROLES = Policy.requireAny("roles", new String[] { TelicentRoles.USER });
-    public static final Policy ADMIN_ROLES = Policy.requireAny("roles", new String[] { TelicentRoles.ADMIN_SYSTEM });
-
+    public static final Policy DEFAULT_ROLES = Policy.requireAny("roles", TelicentRoles.USER, TelicentRoles.ADMIN_SYSTEM);
+    /**
+     * Admin roles policy applied to admin only endpoints
+     */
+    public static final Policy ADMIN_ROLES = Policy.requireAny("roles", TelicentRoles.ADMIN_SYSTEM);
+    /**
+     * Permissions policy for backup related read-only endpoints
+     */
     public static final Policy BACKUP_READ_ONLY = Policy.requireAll("permissions", TelicentPermissions.Backup.READ);
+    /**
+     * Permissions policy for backup creation endpoint
+     */
     public static final Policy BACKUP_CREATE = Policy.requireAll("permissions", TelicentPermissions.Backup.WRITE);
+    /**
+     * Permissions policy for backup restore endpoint
+     */
     public static final Policy BACKUP_RESTORE = Policy.requireAll("permissions", TelicentPermissions.Backup.RESTORE);
+    /**
+     * Permissions policy for backup delete endpoint
+     */
     public static final Policy BACKUP_DELETE = Policy.requireAll("permissions", TelicentPermissions.Backup.DELETE);
 
     /**

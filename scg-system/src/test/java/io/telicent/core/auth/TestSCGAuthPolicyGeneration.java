@@ -75,6 +75,7 @@ public class TestSCGAuthPolicyGeneration {
         verifyPermissions(policies, "/" + datasetName + "/graphql", readPermission);
         verifyPermissions(policies, "/" + datasetName + "/cqrs", readPermission, writePermission);
         verifyNoPolicy(policies, "/" + datasetName + "/custom");
+        verifyPermissions(policies, "/" + datasetName, readPermission, writePermission);
 
         // Verify permissions generated for Telicent custom endpoints
         verifyPermissions(policies, "/" + datasetName + "/access/*", readPermission);
@@ -100,6 +101,7 @@ public class TestSCGAuthPolicyGeneration {
         verifyRoles(policies, "/" + datasetName + "/graphql", SCG_AuthPolicy.DEFAULT_ROLES.values());
         verifyRoles(policies, "/" + datasetName + "/cqrs", SCG_AuthPolicy.DEFAULT_ROLES.values());
         verifyNoPolicy(policies, "/" + datasetName + "/custom");
+        verifyRoles(policies, "/" + datasetName, SCG_AuthPolicy.DEFAULT_ROLES.values());
 
         // Verify roles generated for Telicent custom endpoints
         verifyRoles(policies, "/" + datasetName + "/access/*", SCG_AuthPolicy.DEFAULT_ROLES.values());

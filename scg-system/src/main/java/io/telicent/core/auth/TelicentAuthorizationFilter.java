@@ -10,8 +10,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.util.Objects;
 
 /**
  * A filter that applies Telicent's roles and permissions based authorization policies
@@ -40,16 +38,17 @@ final class TelicentAuthorizationFilter implements Filter {
 
         ServletAuthorizationContext context = new ServletAuthorizationContext(httpRequest);
         AuthorizationResult result = authorizationEngine.authorize(context);
-        String allReasons = StringUtils.join(result.reasons(), ", ");
+        String clientReasons = StringUtils.join(result.reasons(), ", ");
+        String loggingReasons = StringUtils.join(result.loggingReasons(), ", ");
         switch (result.status()) {
             case DENIED:
                 // Send a 401 Unauthorized
-                LOGGER.warn("Request to {} rejected: {}", context.request().getRequestURI(), allReasons);
-                unauthorized(httpResponse, "Rejected due to servers authorization policy: " + allReasons);
+                LOGGER.warn("Request to {} rejected: {}", context.request().getRequestURI(), loggingReasons);
+                unauthorized(httpResponse, "Rejected due to servers authorization policy: " + clientReasons);
                 break;
             case ALLOWED:
                 // Success, pass request onwards
-                LOGGER.info("Request to {} successfully authorized: {}", context.request().getRequestURI(), allReasons);
+                LOGGER.info("Request to {} successfully authorized: {}", context.request().getRequestURI(), loggingReasons);
                 chain.doFilter(request, response);
                 break;
             case NOT_APPLICABLE:

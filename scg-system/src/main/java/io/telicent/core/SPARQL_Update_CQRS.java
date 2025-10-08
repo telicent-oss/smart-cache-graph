@@ -16,7 +16,6 @@
 
 package io.telicent.core;
 
-import static java.lang.String.format;
 import static org.apache.jena.fuseki.server.CounterName.UpdateExecErrors;
 import static org.apache.jena.fuseki.servlets.ActionExecLib.incCounter;
 import static org.apache.jena.fuseki.servlets.SPARQLProtocol.messageForException;
