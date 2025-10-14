@@ -70,7 +70,7 @@
     <plugin.gpg>3.2.8</plugin.gpg>
     <plugin.install>3.1.1</plugin.install>
     <plugin.jar>3.4.2</plugin.jar>
-    <plugin.jacoco>0.8.13</plugin.jacoco>
+    <plugin.jacoco>0.8.14</plugin.jacoco>
     <plugin.javadoc>3.12.0</plugin.javadoc>
     <plugin.resources>3.3.1</plugin.resources>
     <plugin.shade>3.4.1</plugin.shade>
@@ -85,7 +85,7 @@
     <dependency.fuseki-kafka>2.1.0</dependency.fuseki-kafka>
     <dependency.jena>5.5.0</dependency.jena>
     <dependency.fuseki-server>${dependency.jena}</dependency.fuseki-server>
-    <dependency.graphql>0.10.6</dependency.graphql>
+    <dependency.graphql>0.10.7</dependency.graphql>
     <dependency.jwt-servlet-auth>2.0.1</dependency.jwt-servlet-auth>
     <dependency.smart-caches-core>0.30.1</dependency.smart-caches-core>
 
