@@ -70,7 +70,7 @@
     <plugin.gpg>3.2.8</plugin.gpg>
     <plugin.install>3.1.1</plugin.install>
     <plugin.jar>3.4.2</plugin.jar>
-    <plugin.jacoco>0.8.13</plugin.jacoco>
+    <plugin.jacoco>0.8.14</plugin.jacoco>
     <plugin.javadoc>3.12.0</plugin.javadoc>
     <plugin.resources>3.3.1</plugin.resources>
     <plugin.shade>3.4.1</plugin.shade>
@@ -82,10 +82,10 @@
     <!-- Dependency versions -->
     <!-- Internal dependencies -->
     <dependency.rdf-abac>1.1.0</dependency.rdf-abac>
-    <dependency.fuseki-kafka>2.1.0</dependency.fuseki-kafka>
+    <dependency.fuseki-kafka>2.1.1</dependency.fuseki-kafka>
     <dependency.jena>5.5.0</dependency.jena>
     <dependency.fuseki-server>${dependency.jena}</dependency.fuseki-server>
-    <dependency.graphql>0.10.6</dependency.graphql>
+    <dependency.graphql>0.10.7</dependency.graphql>
     <dependency.jwt-servlet-auth>2.0.1</dependency.jwt-servlet-auth>
     <dependency.smart-caches-core>0.30.1</dependency.smart-caches-core>
 
@@ -104,8 +104,8 @@
 
     <!-- Test dependencies -->
     <dependency.jmh>1.37</dependency.jmh>
-    <dependency.junit5>5.13.4</dependency.junit5>
-    <dependency.junit5-platform>1.13.4</dependency.junit5-platform>
+    <dependency.junit5>6.0.0</dependency.junit5>
+    <dependency.junit5-platform>6.0.0</dependency.junit5-platform>
     <dependency.mockito>5.20.0</dependency.mockito>
     <dependency.testcontainers>1.21.3</dependency.testcontainers>
     <dependency.yaml-config>2.0.1</dependency.yaml-config>
