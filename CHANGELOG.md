@@ -8,10 +8,13 @@
     - Appropriate authorization policies for other endpoints, e.g. `/$/backup/*`, is hardcoded
 - Build improvements:
     - BouncyCastle upgraded to 1.82
+    - Fuseki Kafka upgraded to 2.1.1
+    - GraphQL Jena upgraded to 0.10.7
     - JWT Servlet Auth upgraded to 2.0.1
     - Logback upgraded to 1.5.19
     - RDF ABAC upgraded to 1.1.0
     - Smart Caches Core upgraded to 0.30.1
+    - Telicent Java base image upgraded to 1.2.25
     - Various build and test dependencies upgraded to latest available
 
 ## 0.90.2
