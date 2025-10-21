@@ -83,7 +83,7 @@
     <!-- Internal dependencies -->
     <dependency.rdf-abac>1.1.0</dependency.rdf-abac>
     <dependency.fuseki-kafka>2.1.1</dependency.fuseki-kafka>
-    <dependency.jena>5.5.0</dependency.jena>
+    <dependency.jena>5.6.0</dependency.jena>
     <dependency.fuseki-server>${dependency.jena}</dependency.fuseki-server>
     <dependency.graphql>0.10.7</dependency.graphql>
     <dependency.jwt-servlet-auth>2.0.1</dependency.jwt-servlet-auth>
@@ -99,7 +99,7 @@
 
     <!-- Logging dependencies -->
     <dependency.log4j2>2.25.2</dependency.log4j2>
-    <dependency.logback>1.5.19</dependency.logback>
+    <dependency.logback>1.5.20</dependency.logback>
     <dependency.slf4j>2.0.17</dependency.slf4j>
 
     <!-- Test dependencies -->
