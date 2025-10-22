@@ -23,7 +23,7 @@ It is a container that consists of:
 Smart Cache Graph is configured using a Fuseki configuration file
 ([documentation](docs/configuration-smart-cache-graph.md)). There is an [example config.ttl](docs/config.ttl) file.
 
-You can find further example configurations later under [Try It Out](#try-it-out-).
+You can find further example configurations later under [Try It Out](#try-it-out).
 
 ## System Configuration
 
