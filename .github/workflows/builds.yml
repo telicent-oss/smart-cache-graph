@@ -19,6 +19,12 @@ concurrency:
 jobs:
   maven-build:
     uses: telicent-oss/shared-workflows/.github/workflows/maven.yml@main
+    permissions:
+      contents: write
+      id-token: write
+      issues: write
+      packages: write
+      pull-requests: write
     with:
       # Some Docker based tests in this repository use public images
       USES_DOCKERHUB_IMAGES: true
@@ -39,6 +45,12 @@ jobs:
       fail-fast: false
     needs: maven-build
     uses: telicent-oss/shared-workflows/.github/workflows/docker-push-to-registries.yml@main
+    permissions:
+      contents: write
+      id-token: write
+      issues: write
+      packages: write
+      pull-requests: write
     with:
       APP_NAME: ${{ matrix.image }}
       APP_NAME_PREFIX: ""
