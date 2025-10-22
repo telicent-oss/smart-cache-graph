@@ -1,5 +1,16 @@
 # Smart Cache Graph
 
+## 0.91.1
+
+- Picked up a bug fix for RDF-ABAC around the new Auth Server integration not loading from configuration files correctly
+- Build improvements:
+    - Apache Jena upgraded to 5.6.0
+    - GraphQL Jena upgraded to 0.10.8
+    - Logback upgraded to 1.5.20
+    - RDF ABAC upgraded to 1.1.1
+    - Smart Caches Core upgraded to 0.31.0
+    - Telicent Base Java image upgraded to 1.2.26
+
 ## 0.91.0
 
 - Added Telicent Authorization policy support into SCG when authentication is enabled
