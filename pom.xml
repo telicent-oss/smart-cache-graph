@@ -90,7 +90,7 @@
     <dependency.smart-caches-core>0.31.0</dependency.smart-caches-core>
 
     <!-- External dependencies -->
-    <dependency.jackson>2.20.0</dependency.jackson>
+    <dependency.jackson>2.20.1</dependency.jackson>
     <dependency.bouncycastle>1.82</dependency.bouncycastle>
     <dependency.kafka>3.9.1</dependency.kafka>
     <dependency.kotlin>2.2.21</dependency.kotlin>
@@ -104,8 +104,8 @@
 
     <!-- Test dependencies -->
     <dependency.jmh>1.37</dependency.jmh>
-    <dependency.junit5>6.0.0</dependency.junit5>
-    <dependency.junit5-platform>6.0.0</dependency.junit5-platform>
+    <dependency.junit5>6.0.1</dependency.junit5>
+    <dependency.junit5-platform>6.0.1</dependency.junit5-platform>
     <dependency.mockito>5.20.0</dependency.mockito>
     <dependency.testcontainers>1.21.3</dependency.testcontainers>
     <dependency.yaml-config>2.0.1</dependency.yaml-config>
