@@ -1,0 +1,36 @@
+## Server config for nationality test data
+PREFIX :        <#>
+PREFIX fuseki:  <http://jena.apache.org/fuseki#>
+PREFIX rdf:     <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs:    <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX ja:      <http://jena.hpl.hp.com/2005/11/Assembler#>
+PREFIX tdb2:    <http://jena.apache.org/2016/tdb#>
+
+PREFIX authz:   <http://telicent.io/security#>
+
+## ----- Service definition
+:service rdf:type fuseki:Service ;
+    fuseki:name "knowledge" ;
+    ## Endpoints (read-only)
+    fuseki:endpoint [ fuseki:operation fuseki:query ; fuseki:name "query" ] ;
+    fuseki:endpoint [ fuseki:operation fuseki:gsp-r ; fuseki:name "data" ] ;
+    ## Bind the ABAC-wrapped dataset
+    fuseki:dataset :dataset ;
+    .
+
+## ----- ABAC dataset wrapper
+:dataset rdf:type authz:DatasetAuthz ;
+    ## Base dataset (transactional in-memory) preloaded with the data graph
+    authz:dataset :datasetBase ;
+    ## Load labels (pattern → label rules). This file also contains the data graph; that's fine.
+    authz:labels <file:nationality-data-and-labels.trig> ;
+    ## Use Auth Server (ensure USERINFO_URL env variable is set)
+    authz:authServer true;
+    .
+
+## ----- Base dataset (in-memory) with initial data
+:datasetBase rdf:type ja:MemoryDataset ;
+    ja:data <file:nationality-data-and-labels.trig> ;
+    .
+
+

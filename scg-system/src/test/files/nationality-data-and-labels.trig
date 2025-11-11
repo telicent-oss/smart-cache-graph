@@ -1,0 +1,506 @@
+## Data file representing every possible nationality within the alpha-3 format
+## with security labels including appropriate nationality and randomized clearance and deployed org
+PREFIX : <http://example/>
+PREFIX authz: <http://telicent.io/security#>
+
+:doc-ABW :about "Aruba" .
+:doc-AFG :about "Afghanistan" .
+:doc-AGO :about "Angola" .
+:doc-AIA :about "Anguilla" .
+:doc-ALA :about "Åland Islands" .
+:doc-ALB :about "Albania" .
+:doc-AND :about "Andorra" .
+:doc-ARE :about "United Arab Emirates" .
+:doc-ARG :about "Argentina" .
+:doc-ARM :about "Armenia" .
+:doc-ASM :about "American Samoa" .
+:doc-ATA :about "Antarctica" .
+:doc-ATF :about "French Southern Territories" .
+:doc-ATG :about "Antigua and Barbuda" .
+:doc-AUS :about "Australia" .
+:doc-AUT :about "Austria" .
+:doc-AZE :about "Azerbaijan" .
+:doc-BDI :about "Burundi" .
+:doc-BEL :about "Belgium" .
+:doc-BEN :about "Benin" .
+:doc-BES :about "Caribbean Netherlands" .
+:doc-BFA :about "Burkina Faso" .
+:doc-BGD :about "Bangladesh" .
+:doc-BGR :about "Bulgaria" .
+:doc-BHR :about "Bahrain" .
+:doc-BHS :about "Bahamas" .
+:doc-BIH :about "Bosnia and Herzegovina" .
+:doc-BLM :about "Saint Barthélemy" .
+:doc-BLR :about "Belarus" .
+:doc-BLZ :about "Belize" .
+:doc-BMU :about "Bermuda" .
+:doc-BOL :about "Bolivia" .
+:doc-BRA :about "Brazil" .
+:doc-BRB :about "Barbados" .
+:doc-BRN :about "Brunei" .
+:doc-BTN :about "Bhutan" .
+:doc-BVT :about "Bouvet Island" .
+:doc-BWA :about "Botswana" .
+:doc-CAF :about "Central African Republic" .
+:doc-CAN :about "Canada" .
+:doc-CCK :about "Cocos (Keeling) Islands" .
+:doc-CHE :about "Switzerland" .
+:doc-CHL :about "Chile" .
+:doc-CHN :about "China" .
+:doc-CIV :about "Côte d’Ivoire" .
+:doc-CMR :about "Cameroon" .
+:doc-COD :about "Democratic Republic of the Congo" .
+:doc-COG :about "Republic of the Congo" .
+:doc-COK :about "Cook Islands" .
+:doc-COL :about "Colombia" .
+:doc-COM :about "Comoros" .
+:doc-CPV :about "Cape Verde" .
+:doc-CRI :about "Costa Rica" .
+:doc-CUB :about "Cuba" .
+:doc-CUW :about "Curaçao" .
+:doc-CXR :about "Christmas Island" .
+:doc-CYM :about "Cayman Islands" .
+:doc-CYP :about "Cyprus" .
+:doc-CZE :about "Czechia" .
+:doc-DEU :about "Germany" .
+:doc-DJI :about "Djibouti" .
+:doc-DMA :about "Dominica" .
+:doc-DNK :about "Denmark" .
+:doc-DOM :about "Dominican Republic" .
+:doc-DZA :about "Algeria" .
+:doc-ECU :about "Ecuador" .
+:doc-EGY :about "Egypt" .
+:doc-ERI :about "Eritrea" .
+:doc-ESH :about "Western Sahara" .
+:doc-ESP :about "Spain" .
+:doc-EST :about "Estonia" .
+:doc-ETH :about "Ethiopia" .
+:doc-FIN :about "Finland" .
+:doc-FJI :about "Fiji" .
+:doc-FLK :about "Falkland Islands" .
+:doc-FRA :about "France" .
+:doc-FRO :about "Faroe Islands" .
+:doc-FSM :about "Micronesia" .
+:doc-GAB :about "Gabon" .
+:doc-GBR :about "United Kingdom" .
+:doc-GEO :about "Georgia" .
+:doc-GGY :about "Guernsey" .
+:doc-GHA :about "Ghana" .
+:doc-GIB :about "Gibraltar" .
+:doc-GIN :about "Guinea" .
+:doc-GLP :about "Guadeloupe" .
+:doc-GMB :about "Gambia" .
+:doc-GNB :about "Guinea-Bissau" .
+:doc-GNQ :about "Equatorial Guinea" .
+:doc-GRC :about "Greece" .
+:doc-GRD :about "Grenada" .
+:doc-GRL :about "Greenland" .
+:doc-GTM :about "Guatemala" .
+:doc-GUF :about "French Guiana" .
+:doc-GUM :about "Guam" .
+:doc-GUY :about "Guyana" .
+:doc-HKG :about "Hong Kong" .
+:doc-HMD :about "Heard Island and McDonald Islands" .
+:doc-HND :about "Honduras" .
+:doc-HRV :about "Croatia" .
+:doc-HTI :about "Haiti" .
+:doc-HUN :about "Hungary" .
+:doc-IDN :about "Indonesia" .
+:doc-IMN :about "Isle of Man" .
+:doc-IND :about "India" .
+:doc-IOT :about "British Indian Ocean Territory" .
+:doc-IRL :about "Ireland" .
+:doc-IRN :about "Iran" .
+:doc-IRQ :about "Iraq" .
+:doc-ISL :about "Iceland" .
+:doc-ISR :about "Israel" .
+:doc-ITA :about "Italy" .
+:doc-JAM :about "Jamaica" .
+:doc-JEY :about "Jersey" .
+:doc-JOR :about "Jordan" .
+:doc-JPN :about "Japan" .
+:doc-KAZ :about "Kazakhstan" .
+:doc-KEN :about "Kenya" .
+:doc-KGZ :about "Kyrgyzstan" .
+:doc-KHM :about "Cambodia" .
+:doc-KIR :about "Kiribati" .
+:doc-KNA :about "Saint Kitts and Nevis" .
+:doc-KOR :about "South Korea" .
+:doc-KWT :about "Kuwait" .
+:doc-LAO :about "Laos" .
+:doc-LBN :about "Lebanon" .
+:doc-LBR :about "Liberia" .
+:doc-LBY :about "Libya" .
+:doc-LCA :about "Saint Lucia" .
+:doc-LIE :about "Liechtenstein" .
+:doc-LKA :about "Sri Lanka" .
+:doc-LSO :about "Lesotho" .
+:doc-LTU :about "Lithuania" .
+:doc-LUX :about "Luxembourg" .
+:doc-LVA :about "Latvia" .
+:doc-MAC :about "Macau" .
+:doc-MAF :about "Saint Martin" .
+:doc-MAR :about "Morocco" .
+:doc-MCO :about "Monaco" .
+:doc-MDA :about "Moldova" .
+:doc-MDG :about "Madagascar" .
+:doc-MDV :about "Maldives" .
+:doc-MEX :about "Mexico" .
+:doc-MHL :about "Marshall Islands" .
+:doc-MKD :about "North Macedonia" .
+:doc-MLI :about "Mali" .
+:doc-MLT :about "Malta" .
+:doc-MMR :about "Myanmar" .
+:doc-MNE :about "Montenegro" .
+:doc-MNG :about "Mongolia" .
+:doc-MNP :about "Northern Mariana Islands" .
+:doc-MOZ :about "Mozambique" .
+:doc-MRT :about "Mauritania" .
+:doc-MSR :about "Montserrat" .
+:doc-MTQ :about "Martinique" .
+:doc-MUS :about "Mauritius" .
+:doc-MWI :about "Malawi" .
+:doc-MYS :about "Malaysia" .
+:doc-MYT :about "Mayotte" .
+:doc-NAM :about "Namibia" .
+:doc-NCL :about "New Caledonia" .
+:doc-NER :about "Niger" .
+:doc-NFK :about "Norfolk Island" .
+:doc-NGA :about "Nigeria" .
+:doc-NIC :about "Nicaragua" .
+:doc-NIU :about "Niue" .
+:doc-NLD :about "Netherlands" .
+:doc-NOR :about "Norway" .
+:doc-NPL :about "Nepal" .
+:doc-NRU :about "Nauru" .
+:doc-NZL :about "New Zealand" .
+:doc-OMN :about "Oman" .
+:doc-PAK :about "Pakistan" .
+:doc-PAN :about "Panama" .
+:doc-PCN :about "Pitcairn Islands" .
+:doc-PER :about "Peru" .
+:doc-PHL :about "Philippines" .
+:doc-PLW :about "Palau" .
+:doc-PNG :about "Papua New Guinea" .
+:doc-POL :about "Poland" .
+:doc-PRI :about "Puerto Rico" .
+:doc-PRK :about "North Korea" .
+:doc-PRT :about "Portugal" .
+:doc-PRY :about "Paraguay" .
+:doc-PSE :about "Palestine" .
+:doc-PYF :about "French Polynesia" .
+:doc-QAT :about "Qatar" .
+:doc-REU :about "Réunion" .
+:doc-ROU :about "Romania" .
+:doc-RUS :about "Russia" .
+:doc-RWA :about "Rwanda" .
+:doc-SAU :about "Saudi Arabia" .
+:doc-SDN :about "Sudan" .
+:doc-SEN :about "Senegal" .
+:doc-SGP :about "Singapore" .
+:doc-SGS :about "South Georgia and the South Sandwich Islands" .
+:doc-SHN :about "Saint Helena, Ascension and Tristan da Cunha" .
+:doc-SJM :about "Svalbard and Jan Mayen" .
+:doc-SLB :about "Solomon Islands" .
+:doc-SLE :about "Sierra Leone" .
+:doc-SLV :about "El Salvador" .
+:doc-SMR :about "San Marino" .
+:doc-SOM :about "Somalia" .
+:doc-SPM :about "Saint Pierre and Miquelon" .
+:doc-SRB :about "Serbia" .
+:doc-SSD :about "South Sudan" .
+:doc-STP :about "São Tomé and Príncipe" .
+:doc-SUR :about "Suriname" .
+:doc-SVK :about "Slovakia" .
+:doc-SVN :about "Slovenia" .
+:doc-SWE :about "Sweden" .
+:doc-SWZ :about "Eswatini" .
+:doc-SXM :about "Sint Maarten" .
+:doc-SYC :about "Seychelles" .
+:doc-SYR :about "Syria" .
+:doc-TCA :about "Turks and Caicos Islands" .
+:doc-TCD :about "Chad" .
+:doc-TGO :about "Togo" .
+:doc-THA :about "Thailand" .
+:doc-TJK :about "Tajikistan" .
+:doc-TKL :about "Tokelau" .
+:doc-TKM :about "Turkmenistan" .
+:doc-TLS :about "Timor-Leste" .
+:doc-TON :about "Tonga" .
+:doc-TTO :about "Trinidad and Tobago" .
+:doc-TUN :about "Tunisia" .
+:doc-TUR :about "Turkey" .
+:doc-TUV :about "Tuvalu" .
+:doc-TWN :about "Taiwan" .
+:doc-TZA :about "Tanzania" .
+:doc-UGA :about "Uganda" .
+:doc-UKR :about "Ukraine" .
+:doc-UMI :about "United States Minor Outlying Islands" .
+:doc-URY :about "Uruguay" .
+:doc-USA :about "United States" .
+:doc-UZB :about "Uzbekistan" .
+:doc-VAT :about "Vatican City" .
+:doc-VCT :about "Saint Vincent and the Grenadines" .
+:doc-VEN :about "Venezuela" .
+:doc-VGB :about "British Virgin Islands" .
+:doc-VIR :about "U.S. Virgin Islands" .
+:doc-VNM :about "Vietnam" .
+:doc-VUT :about "Vanuatu" .
+:doc-WLF :about "Wallis and Futuna" .
+:doc-WSM :about "Samoa" .
+:doc-YEM :about "Yemen" .
+:doc-ZAF :about "South Africa" .
+:doc-ZMB :about "Zambia" .
+:doc-ZWE :about "Zimbabwe" .
+
+GRAPH authz:labels {
+  [ authz:pattern ':doc-ABW :about "Aruba"' ; authz:label "clearance=S&nationality=ABW&deployed_organisation=BP" ] .
+  [ authz:pattern ':doc-AFG :about "Afghanistan"' ; authz:label "clearance=TS&nationality=AFG&deployed_organisation=Shell" ] .
+  [ authz:pattern ':doc-AGO :about "Angola"' ; authz:label "clearance=O&nationality=AGO&deployed_organisation=Unilever" ] .
+  [ authz:pattern ':doc-AIA :about "Anguilla"' ; authz:label "clearance=S&nationality=AIA&deployed_organisation=Diageo" ] .
+  [ authz:pattern ':doc-ALA :about "Åland Islands"' ; authz:label "clearance=TS&nationality=ALA&deployed_organisation=AstraZeneca" ] .
+  [ authz:pattern ':doc-ALB :about "Albania"' ; authz:label "clearance=O&nationality=ALB&deployed_organisation=GSK" ] .
+  [ authz:pattern ':doc-AND :about "Andorra"' ; authz:label "clearance=S&nationality=AND&deployed_organisation=Barclays" ] .
+  [ authz:pattern ':doc-ARE :about "United Arab Emirates"' ; authz:label "clearance=TS&nationality=ARE&deployed_organisation=Lloyds_Banking_Group" ] .
+  [ authz:pattern ':doc-ARG :about "Argentina"' ; authz:label "clearance=O&nationality=ARG&deployed_organisation=NatWest_Group" ] .
+  [ authz:pattern ':doc-ARM :about "Armenia"' ; authz:label "clearance=S&nationality=ARM&deployed_organisation=Tesco" ] .
+  [ authz:pattern ':doc-ASM :about "American Samoa"' ; authz:label "clearance=TS&nationality=ASM&deployed_organisation=Vodafone" ] .
+  [ authz:pattern ':doc-ATA :about "Antarctica"' ; authz:label "clearance=O&nationality=ATA&deployed_organisation=BT_Group" ] .
+  [ authz:pattern ':doc-ATF :about "French Southern Territories"' ; authz:label "clearance=S&nationality=ATF&deployed_organisation=Glencore" ] .
+  [ authz:pattern ':doc-ATG :about "Antigua and Barbuda"' ; authz:label "clearance=TS&nationality=ATG&deployed_organisation=Rio_Tinto" ] .
+  [ authz:pattern ':doc-AUS :about "Australia"' ; authz:label "clearance=O&nationality=AUS&deployed_organisation=Anglo_American" ] .
+  [ authz:pattern ':doc-AUT :about "Austria"' ; authz:label "clearance=S&nationality=AUT&deployed_organisation=BHP_Group" ] .
+  [ authz:pattern ':doc-AZE :about "Azerbaijan"' ; authz:label "clearance=TS&nationality=AZE&deployed_organisation=Reckitt_Benckiser" ] .
+  [ authz:pattern ':doc-BDI :about "Burundi"' ; authz:label "clearance=O&nationality=BDI&deployed_organisation=Sage_Group" ] .
+  [ authz:pattern ':doc-BEL :about "Belgium"' ; authz:label "clearance=S&nationality=BEL&deployed_organisation=Ocado_Group" ] .
+  [ authz:pattern ':doc-BEN :about "Benin"' ; authz:label "clearance=TS&nationality=BEN&deployed_organisation=Rolls_Royce_Holdings" ] .
+  [ authz:pattern ':doc-BES :about "Caribbean Netherlands"' ; authz:label "clearance=O&nationality=BES&deployed_organisation=Imperial_Brands" ] .
+  [ authz:pattern ':doc-BFA :about "Burkina Faso"' ; authz:label "clearance=S&nationality=BFA&deployed_organisation=RELX" ] .
+  [ authz:pattern ':doc-BGD :about "Bangladesh"' ; authz:label "clearance=TS&nationality=BGD&deployed_organisation=Experian" ] .
+  [ authz:pattern ':doc-BGR :about "Bulgaria"' ; authz:label "clearance=O&nationality=BGR&deployed_organisation=Legal_General" ] .
+  [ authz:pattern ':doc-BHR :about "Bahrain"' ; authz:label "clearance=S&nationality=BHR&deployed_organisation=Prudential" ] .
+  [ authz:pattern ':doc-BHS :about "Bahamas"' ; authz:label "clearance=TS&nationality=BHS&deployed_organisation=National_Grid" ] .
+  [ authz:pattern ':doc-BIH :about "Bosnia and Herzegovina"' ; authz:label "clearance=O&nationality=BIH&deployed_organisation=SSE" ] .
+  [ authz:pattern ':doc-BLM :about "Saint Barthélemy"' ; authz:label "clearance=S&nationality=BLM&deployed_organisation=Severn_Trent" ] .
+  [ authz:pattern ':doc-BLR :about "Belarus"' ; authz:label "clearance=TS&nationality=BLR&deployed_organisation=United_Utilities" ] .
+  [ authz:pattern ':doc-BLZ :about "Belize"' ; authz:label "clearance=O&nationality=BLZ&deployed_organisation=SEGRO" ] .
+  [ authz:pattern ':doc-BMU :about "Bermuda"' ; authz:label "clearance=S&nationality=BMU&deployed_organisation=Land_Securities" ] .
+  [ authz:pattern ':doc-BOL :about "Bolivia"' ; authz:label "clearance=TS&nationality=BOL&deployed_organisation=British_Land" ] .
+  [ authz:pattern ':doc-BRA :about "Brazil"' ; authz:label "clearance=O&nationality=BRA&deployed_organisation=InterContinental_Hotels_Group" ] .
+  [ authz:pattern ':doc-BRB :about "Barbados"' ; authz:label "clearance=S&nationality=BRB&deployed_organisation=Whitbread" ] .
+  [ authz:pattern ':doc-BRN :about "Brunei"' ; authz:label "clearance=TS&nationality=BRN&deployed_organisation=Burberry" ] .
+  [ authz:pattern ':doc-BTN :about "Bhutan"' ; authz:label "clearance=O&nationality=BTN&deployed_organisation=Kingfisher" ] .
+  [ authz:pattern ':doc-BVT :about "Bouvet Island"' ; authz:label "clearance=S&nationality=BVT&deployed_organisation=Next" ] .
+  [ authz:pattern ':doc-BWA :about "Botswana"' ; authz:label "clearance=TS&nationality=BWA&deployed_organisation=Sainsbury_s" ] .
+  [ authz:pattern ':doc-CAF :about "Central African Republic"' ; authz:label "clearance=O&nationality=CAF&deployed_organisation=Associated_British_Foods" ] .
+  [ authz:pattern ':doc-CAN :about "Canada"' ; authz:label "clearance=S&nationality=CAN&deployed_organisation=Smith_Nephew" ] .
+  [ authz:pattern ':doc-CCK :about "Cocos (Keeling) Islands"' ; authz:label "clearance=TS&nationality=CCK&deployed_organisation=Halma" ] .
+  [ authz:pattern ':doc-CHE :about "Switzerland"' ; authz:label "clearance=O&nationality=CHE&deployed_organisation=Spirax_Sarco_Engineering" ] .
+  [ authz:pattern ':doc-CHL :about "Chile"' ; authz:label "clearance=S&nationality=CHL&deployed_organisation=BAE_Systems" ] .
+  [ authz:pattern ':doc-CHN :about "China"' ; authz:label "clearance=TS&nationality=CHN&deployed_organisation=Melrose_Industries" ] .
+  [ authz:pattern ':doc-CIV :about "Côte d’Ivoire"' ; authz:label "clearance=O&nationality=CIV&deployed_organisation=Rentokil_Initial" ] .
+  [ authz:pattern ':doc-CMR :about "Cameroon"' ; authz:label "clearance=S&nationality=CMR&deployed_organisation=Compass_Group" ] .
+  [ authz:pattern ':doc-COD :about "Democratic Republic of the Congo"' ; authz:label "clearance=TS&nationality=COD&deployed_organisation=Croda_International" ] .
+  [ authz:pattern ':doc-COG :about "Republic of the Congo"' ; authz:label "clearance=O&nationality=COG&deployed_organisation=Intertek" ] .
+  [ authz:pattern ':doc-COK :about "Cook Islands"' ; authz:label "clearance=S&nationality=COK&deployed_organisation=Auto_Trader_Group" ] .
+  [ authz:pattern ':doc-COL :about "Colombia"' ; authz:label "clearance=TS&nationality=COL&deployed_organisation=HSBC_Holdings" ] .
+  [ authz:pattern ':doc-COM :about "Comoros"' ; authz:label "clearance=O&nationality=COM&deployed_organisation=BP" ] .
+  [ authz:pattern ':doc-CPV :about "Cape Verde"' ; authz:label "clearance=S&nationality=CPV&deployed_organisation=Shell" ] .
+  [ authz:pattern ':doc-CRI :about "Costa Rica"' ; authz:label "clearance=TS&nationality=CRI&deployed_organisation=Unilever" ] .
+  [ authz:pattern ':doc-CUB :about "Cuba"' ; authz:label "clearance=O&nationality=CUB&deployed_organisation=Diageo" ] .
+  [ authz:pattern ':doc-CUW :about "Curaçao"' ; authz:label "clearance=S&nationality=CUW&deployed_organisation=AstraZeneca" ] .
+  [ authz:pattern ':doc-CXR :about "Christmas Island"' ; authz:label "clearance=TS&nationality=CXR&deployed_organisation=GSK" ] .
+  [ authz:pattern ':doc-CYM :about "Cayman Islands"' ; authz:label "clearance=O&nationality=CYM&deployed_organisation=Barclays" ] .
+  [ authz:pattern ':doc-CYP :about "Cyprus"' ; authz:label "clearance=S&nationality=CYP&deployed_organisation=Lloyds_Banking_Group" ] .
+  [ authz:pattern ':doc-CZE :about "Czechia"' ; authz:label "clearance=TS&nationality=CZE&deployed_organisation=NatWest_Group" ] .
+  [ authz:pattern ':doc-DEU :about "Germany"' ; authz:label "clearance=O&nationality=DEU&deployed_organisation=Tesco" ] .
+  [ authz:pattern ':doc-DJI :about "Djibouti"' ; authz:label "clearance=S&nationality=DJI&deployed_organisation=Vodafone" ] .
+  [ authz:pattern ':doc-DMA :about "Dominica"' ; authz:label "clearance=TS&nationality=DMA&deployed_organisation=BT_Group" ] .
+  [ authz:pattern ':doc-DNK :about "Denmark"' ; authz:label "clearance=O&nationality=DNK&deployed_organisation=Glencore" ] .
+  [ authz:pattern ':doc-DOM :about "Dominican Republic"' ; authz:label "clearance=S&nationality=DOM&deployed_organisation=Rio_Tinto" ] .
+  [ authz:pattern ':doc-DZA :about "Algeria"' ; authz:label "clearance=TS&nationality=DZA&deployed_organisation=Anglo_American" ] .
+  [ authz:pattern ':doc-ECU :about "Ecuador"' ; authz:label "clearance=O&nationality=ECU&deployed_organisation=BHP_Group" ] .
+  [ authz:pattern ':doc-EGY :about "Egypt"' ; authz:label "clearance=S&nationality=EGY&deployed_organisation=Reckitt_Benckiser" ] .
+  [ authz:pattern ':doc-ERI :about "Eritrea"' ; authz:label "clearance=TS&nationality=ERI&deployed_organisation=Sage_Group" ] .
+  [ authz:pattern ':doc-ESH :about "Western Sahara"' ; authz:label "clearance=O&nationality=ESH&deployed_organisation=Ocado_Group" ] .
+  [ authz:pattern ':doc-ESP :about "Spain"' ; authz:label "clearance=S&nationality=ESP&deployed_organisation=Rolls_Royce_Holdings" ] .
+  [ authz:pattern ':doc-EST :about "Estonia"' ; authz:label "clearance=TS&nationality=EST&deployed_organisation=Imperial_Brands" ] .
+  [ authz:pattern ':doc-ETH :about "Ethiopia"' ; authz:label "clearance=O&nationality=ETH&deployed_organisation=RELX" ] .
+  [ authz:pattern ':doc-FIN :about "Finland"' ; authz:label "clearance=S&nationality=FIN&deployed_organisation=Experian" ] .
+  [ authz:pattern ':doc-FJI :about "Fiji"' ; authz:label "clearance=TS&nationality=FJI&deployed_organisation=Legal_General" ] .
+  [ authz:pattern ':doc-FLK :about "Falkland Islands"' ; authz:label "clearance=O&nationality=FLK&deployed_organisation=Prudential" ] .
+  [ authz:pattern ':doc-FRA :about "France"' ; authz:label "clearance=S&nationality=FRA&deployed_organisation=National_Grid" ] .
+  [ authz:pattern ':doc-FRO :about "Faroe Islands"' ; authz:label "clearance=TS&nationality=FRO&deployed_organisation=SSE" ] .
+  [ authz:pattern ':doc-FSM :about "Micronesia"' ; authz:label "clearance=O&nationality=FSM&deployed_organisation=Severn_Trent" ] .
+  [ authz:pattern ':doc-GAB :about "Gabon"' ; authz:label "clearance=S&nationality=GAB&deployed_organisation=United_Utilities" ] .
+  [ authz:pattern ':doc-GBR :about "United Kingdom"' ; authz:label "clearance=TS&nationality=GBR&deployed_organisation=SEGRO" ] .
+  [ authz:pattern ':doc-GEO :about "Georgia"' ; authz:label "clearance=O&nationality=GEO&deployed_organisation=Land_Securities" ] .
+  [ authz:pattern ':doc-GGY :about "Guernsey"' ; authz:label "clearance=S&nationality=GGY&deployed_organisation=British_Land" ] .
+  [ authz:pattern ':doc-GHA :about "Ghana"' ; authz:label "clearance=TS&nationality=GHA&deployed_organisation=InterContinental_Hotels_Group" ] .
+  [ authz:pattern ':doc-GIB :about "Gibraltar"' ; authz:label "clearance=O&nationality=GIB&deployed_organisation=Whitbread" ] .
+  [ authz:pattern ':doc-GIN :about "Guinea"' ; authz:label "clearance=S&nationality=GIN&deployed_organisation=Burberry" ] .
+  [ authz:pattern ':doc-GLP :about "Guadeloupe"' ; authz:label "clearance=TS&nationality=GLP&deployed_organisation=Kingfisher" ] .
+  [ authz:pattern ':doc-GMB :about "Gambia"' ; authz:label "clearance=O&nationality=GMB&deployed_organisation=Next" ] .
+  [ authz:pattern ':doc-GNB :about "Guinea-Bissau"' ; authz:label "clearance=S&nationality=GNB&deployed_organisation=Sainsbury_s" ] .
+  [ authz:pattern ':doc-GNQ :about "Equatorial Guinea"' ; authz:label "clearance=TS&nationality=GNQ&deployed_organisation=Associated_British_Foods" ] .
+  [ authz:pattern ':doc-GRC :about "Greece"' ; authz:label "clearance=O&nationality=GRC&deployed_organisation=Smith_Nephew" ] .
+  [ authz:pattern ':doc-GRD :about "Grenada"' ; authz:label "clearance=S&nationality=GRD&deployed_organisation=Halma" ] .
+  [ authz:pattern ':doc-GRL :about "Greenland"' ; authz:label "clearance=TS&nationality=GRL&deployed_organisation=Spirax_Sarco_Engineering" ] .
+  [ authz:pattern ':doc-GTM :about "Guatemala"' ; authz:label "clearance=O&nationality=GTM&deployed_organisation=BAE_Systems" ] .
+  [ authz:pattern ':doc-GUF :about "French Guiana"' ; authz:label "clearance=S&nationality=GUF&deployed_organisation=Melrose_Industries" ] .
+  [ authz:pattern ':doc-GUM :about "Guam"' ; authz:label "clearance=TS&nationality=GUM&deployed_organisation=Rentokil_Initial" ] .
+  [ authz:pattern ':doc-GUY :about "Guyana"' ; authz:label "clearance=O&nationality=GUY&deployed_organisation=Compass_Group" ] .
+  [ authz:pattern ':doc-HKG :about "Hong Kong"' ; authz:label "clearance=S&nationality=HKG&deployed_organisation=Croda_International" ] .
+  [ authz:pattern ':doc-HMD :about "Heard Island and McDonald Islands"' ; authz:label "clearance=TS&nationality=HMD&deployed_organisation=Intertek" ] .
+  [ authz:pattern ':doc-HND :about "Honduras"' ; authz:label "clearance=O&nationality=HND&deployed_organisation=Auto_Trader_Group" ] .
+  [ authz:pattern ':doc-HRV :about "Croatia"' ; authz:label "clearance=S&nationality=HRV&deployed_organisation=HSBC_Holdings" ] .
+  [ authz:pattern ':doc-HTI :about "Haiti"' ; authz:label "clearance=TS&nationality=HTI&deployed_organisation=BP" ] .
+  [ authz:pattern ':doc-HUN :about "Hungary"' ; authz:label "clearance=O&nationality=HUN&deployed_organisation=Shell" ] .
+  [ authz:pattern ':doc-IDN :about "Indonesia"' ; authz:label "clearance=S&nationality=IDN&deployed_organisation=Unilever" ] .
+  [ authz:pattern ':doc-IMN :about "Isle of Man"' ; authz:label "clearance=TS&nationality=IMN&deployed_organisation=Diageo" ] .
+  [ authz:pattern ':doc-IND :about "India"' ; authz:label "clearance=O&nationality=IND&deployed_organisation=AstraZeneca" ] .
+  [ authz:pattern ':doc-IOT :about "British Indian Ocean Territory"' ; authz:label "clearance=S&nationality=IOT&deployed_organisation=GSK" ] .
+  [ authz:pattern ':doc-IRL :about "Ireland"' ; authz:label "clearance=TS&nationality=IRL&deployed_organisation=Barclays" ] .
+  [ authz:pattern ':doc-IRN :about "Iran"' ; authz:label "clearance=O&nationality=IRN&deployed_organisation=Lloyds_Banking_Group" ] .
+  [ authz:pattern ':doc-IRQ :about "Iraq"' ; authz:label "clearance=S&nationality=IRQ&deployed_organisation=NatWest_Group" ] .
+  [ authz:pattern ':doc-ISL :about "Iceland"' ; authz:label "clearance=TS&nationality=ISL&deployed_organisation=Tesco" ] .
+  [ authz:pattern ':doc-ISR :about "Israel"' ; authz:label "clearance=O&nationality=ISR&deployed_organisation=Vodafone" ] .
+  [ authz:pattern ':doc-ITA :about "Italy"' ; authz:label "clearance=S&nationality=ITA&deployed_organisation=BT_Group" ] .
+  [ authz:pattern ':doc-JAM :about "Jamaica"' ; authz:label "clearance=TS&nationality=JAM&deployed_organisation=Glencore" ] .
+  [ authz:pattern ':doc-JEY :about "Jersey"' ; authz:label "clearance=O&nationality=JEY&deployed_organisation=Rio_Tinto" ] .
+  [ authz:pattern ':doc-JOR :about "Jordan"' ; authz:label "clearance=S&nationality=JOR&deployed_organisation=Anglo_American" ] .
+  [ authz:pattern ':doc-JPN :about "Japan"' ; authz:label "clearance=TS&nationality=JPN&deployed_organisation=BHP_Group" ] .
+  [ authz:pattern ':doc-KAZ :about "Kazakhstan"' ; authz:label "clearance=O&nationality=KAZ&deployed_organisation=Reckitt_Benckiser" ] .
+  [ authz:pattern ':doc-KEN :about "Kenya"' ; authz:label "clearance=S&nationality=KEN&deployed_organisation=Sage_Group" ] .
+  [ authz:pattern ':doc-KGZ :about "Kyrgyzstan"' ; authz:label "clearance=TS&nationality=KGZ&deployed_organisation=Ocado_Group" ] .
+  [ authz:pattern ':doc-KHM :about "Cambodia"' ; authz:label "clearance=O&nationality=KHM&deployed_organisation=Rolls_Royce_Holdings" ] .
+  [ authz:pattern ':doc-KIR :about "Kiribati"' ; authz:label "clearance=S&nationality=KIR&deployed_organisation=Imperial_Brands" ] .
+  [ authz:pattern ':doc-KNA :about "Saint Kitts and Nevis"' ; authz:label "clearance=TS&nationality=KNA&deployed_organisation=RELX" ] .
+  [ authz:pattern ':doc-KOR :about "South Korea"' ; authz:label "clearance=O&nationality=KOR&deployed_organisation=Experian" ] .
+  [ authz:pattern ':doc-KWT :about "Kuwait"' ; authz:label "clearance=S&nationality=KWT&deployed_organisation=Legal_General" ] .
+  [ authz:pattern ':doc-LAO :about "Laos"' ; authz:label "clearance=TS&nationality=LAO&deployed_organisation=Prudential" ] .
+  [ authz:pattern ':doc-LBN :about "Lebanon"' ; authz:label "clearance=O&nationality=LBN&deployed_organisation=National_Grid" ] .
+  [ authz:pattern ':doc-LBR :about "Liberia"' ; authz:label "clearance=S&nationality=LBR&deployed_organisation=SSE" ] .
+  [ authz:pattern ':doc-LBY :about "Libya"' ; authz:label "clearance=TS&nationality=LBY&deployed_organisation=Severn_Trent" ] .
+  [ authz:pattern ':doc-LCA :about "Saint Lucia"' ; authz:label "clearance=O&nationality=LCA&deployed_organisation=United_Utilities" ] .
+  [ authz:pattern ':doc-LIE :about "Liechtenstein"' ; authz:label "clearance=S&nationality=LIE&deployed_organisation=SEGRO" ] .
+  [ authz:pattern ':doc-LKA :about "Sri Lanka"' ; authz:label "clearance=TS&nationality=LKA&deployed_organisation=Land_Securities" ] .
+  [ authz:pattern ':doc-LSO :about "Lesotho"' ; authz:label "clearance=O&nationality=LSO&deployed_organisation=British_Land" ] .
+  [ authz:pattern ':doc-LTU :about "Lithuania"' ; authz:label "clearance=S&nationality=LTU&deployed_organisation=InterContinental_Hotels_Group" ] .
+  [ authz:pattern ':doc-LUX :about "Luxembourg"' ; authz:label "clearance=TS&nationality=LUX&deployed_organisation=Whitbread" ] .
+  [ authz:pattern ':doc-LVA :about "Latvia"' ; authz:label "clearance=O&nationality=LVA&deployed_organisation=Burberry" ] .
+  [ authz:pattern ':doc-MAC :about "Macau"' ; authz:label "clearance=S&nationality=MAC&deployed_organisation=Kingfisher" ] .
+  [ authz:pattern ':doc-MAF :about "Saint Martin"' ; authz:label "clearance=TS&nationality=MAF&deployed_organisation=Next" ] .
+  [ authz:pattern ':doc-MAR :about "Morocco"' ; authz:label "clearance=O&nationality=MAR&deployed_organisation=Sainsbury_s" ] .
+  [ authz:pattern ':doc-MCO :about "Monaco"' ; authz:label "clearance=S&nationality=MCO&deployed_organisation=Associated_British_Foods" ] .
+  [ authz:pattern ':doc-MDA :about "Moldova"' ; authz:label "clearance=TS&nationality=MDA&deployed_organisation=Smith_Nephew" ] .
+  [ authz:pattern ':doc-MDG :about "Madagascar"' ; authz:label "clearance=O&nationality=MDG&deployed_organisation=Halma" ] .
+  [ authz:pattern ':doc-MDV :about "Maldives"' ; authz:label "clearance=S&nationality=MDV&deployed_organisation=Spirax_Sarco_Engineering" ] .
+  [ authz:pattern ':doc-MEX :about "Mexico"' ; authz:label "clearance=TS&nationality=MEX&deployed_organisation=BAE_Systems" ] .
+  [ authz:pattern ':doc-MHL :about "Marshall Islands"' ; authz:label "clearance=O&nationality=MHL&deployed_organisation=Melrose_Industries" ] .
+  [ authz:pattern ':doc-MKD :about "North Macedonia"' ; authz:label "clearance=S&nationality=MKD&deployed_organisation=Rentokil_Initial" ] .
+  [ authz:pattern ':doc-MLI :about "Mali"' ; authz:label "clearance=TS&nationality=MLI&deployed_organisation=Compass_Group" ] .
+  [ authz:pattern ':doc-MLT :about "Malta"' ; authz:label "clearance=O&nationality=MLT&deployed_organisation=Croda_International" ] .
+  [ authz:pattern ':doc-MMR :about "Myanmar"' ; authz:label "clearance=S&nationality=MMR&deployed_organisation=Intertek" ] .
+  [ authz:pattern ':doc-MNE :about "Montenegro"' ; authz:label "clearance=TS&nationality=MNE&deployed_organisation=Auto_Trader_Group" ] .
+  [ authz:pattern ':doc-MNG :about "Mongolia"' ; authz:label "clearance=O&nationality=MNG&deployed_organisation=HSBC_Holdings" ] .
+  [ authz:pattern ':doc-MNP :about "Northern Mariana Islands"' ; authz:label "clearance=S&nationality=MNP&deployed_organisation=BP" ] .
+  [ authz:pattern ':doc-MOZ :about "Mozambique"' ; authz:label "clearance=TS&nationality=MOZ&deployed_organisation=Shell" ] .
+  [ authz:pattern ':doc-MRT :about "Mauritania"' ; authz:label "clearance=O&nationality=MRT&deployed_organisation=Unilever" ] .
+  [ authz:pattern ':doc-MSR :about "Montserrat"' ; authz:label "clearance=S&nationality=MSR&deployed_organisation=Diageo" ] .
+  [ authz:pattern ':doc-MTQ :about "Martinique"' ; authz:label "clearance=TS&nationality=MTQ&deployed_organisation=AstraZeneca" ] .
+  [ authz:pattern ':doc-MUS :about "Mauritius"' ; authz:label "clearance=O&nationality=MUS&deployed_organisation=GSK" ] .
+  [ authz:pattern ':doc-MWI :about "Malawi"' ; authz:label "clearance=S&nationality=MWI&deployed_organisation=Barclays" ] .
+  [ authz:pattern ':doc-MYS :about "Malaysia"' ; authz:label "clearance=TS&nationality=MYS&deployed_organisation=Lloyds_Banking_Group" ] .
+  [ authz:pattern ':doc-MYT :about "Mayotte"' ; authz:label "clearance=O&nationality=MYT&deployed_organisation=NatWest_Group" ] .
+  [ authz:pattern ':doc-NAM :about "Namibia"' ; authz:label "clearance=S&nationality=NAM&deployed_organisation=Tesco" ] .
+  [ authz:pattern ':doc-NCL :about "New Caledonia"' ; authz:label "clearance=TS&nationality=NCL&deployed_organisation=Vodafone" ] .
+  [ authz:pattern ':doc-NER :about "Niger"' ; authz:label "clearance=O&nationality=NER&deployed_organisation=BT_Group" ] .
+  [ authz:pattern ':doc-NFK :about "Norfolk Island"' ; authz:label "clearance=S&nationality=NFK&deployed_organisation=Glencore" ] .
+  [ authz:pattern ':doc-NGA :about "Nigeria"' ; authz:label "clearance=TS&nationality=NGA&deployed_organisation=Rio_Tinto" ] .
+  [ authz:pattern ':doc-NIC :about "Nicaragua"' ; authz:label "clearance=O&nationality=NIC&deployed_organisation=Anglo_American" ] .
+  [ authz:pattern ':doc-NIU :about "Niue"' ; authz:label "clearance=S&nationality=NIU&deployed_organisation=BHP_Group" ] .
+  [ authz:pattern ':doc-NLD :about "Netherlands"' ; authz:label "clearance=TS&nationality=NLD&deployed_organisation=Reckitt_Benckiser" ] .
+  [ authz:pattern ':doc-NOR :about "Norway"' ; authz:label "clearance=O&nationality=NOR&deployed_organisation=Sage_Group" ] .
+  [ authz:pattern ':doc-NPL :about "Nepal"' ; authz:label "clearance=S&nationality=NPL&deployed_organisation=Ocado_Group" ] .
+  [ authz:pattern ':doc-NRU :about "Nauru"' ; authz:label "clearance=TS&nationality=NRU&deployed_organisation=Rolls_Royce_Holdings" ] .
+  [ authz:pattern ':doc-NZL :about "New Zealand"' ; authz:label "clearance=O&nationality=NZL&deployed_organisation=Imperial_Brands" ] .
+  [ authz:pattern ':doc-OMN :about "Oman"' ; authz:label "clearance=S&nationality=OMN&deployed_organisation=RELX" ] .
+  [ authz:pattern ':doc-PAK :about "Pakistan"' ; authz:label "clearance=TS&nationality=PAK&deployed_organisation=Experian" ] .
+  [ authz:pattern ':doc-PAN :about "Panama"' ; authz:label "clearance=O&nationality=PAN&deployed_organisation=Legal_General" ] .
+  [ authz:pattern ':doc-PCN :about "Pitcairn Islands"' ; authz:label "clearance=S&nationality=PCN&deployed_organisation=Prudential" ] .
+  [ authz:pattern ':doc-PER :about "Peru"' ; authz:label "clearance=TS&nationality=PER&deployed_organisation=National_Grid" ] .
+  [ authz:pattern ':doc-PHL :about "Philippines"' ; authz:label "clearance=O&nationality=PHL&deployed_organisation=SSE" ] .
+  [ authz:pattern ':doc-PLW :about "Palau"' ; authz:label "clearance=S&nationality=PLW&deployed_organisation=Severn_Trent" ] .
+  [ authz:pattern ':doc-PNG :about "Papua New Guinea"' ; authz:label "clearance=TS&nationality=PNG&deployed_organisation=United_Utilities" ] .
+  [ authz:pattern ':doc-POL :about "Poland"' ; authz:label "clearance=O&nationality=POL&deployed_organisation=SEGRO" ] .
+  [ authz:pattern ':doc-PRI :about "Puerto Rico"' ; authz:label "clearance=S&nationality=PRI&deployed_organisation=Land_Securities" ] .
+  [ authz:pattern ':doc-PRK :about "North Korea"' ; authz:label "clearance=TS&nationality=PRK&deployed_organisation=British_Land" ] .
+  [ authz:pattern ':doc-PRT :about "Portugal"' ; authz:label "clearance=O&nationality=PRT&deployed_organisation=InterContinental_Hotels_Group" ] .
+  [ authz:pattern ':doc-PRY :about "Paraguay"' ; authz:label "clearance=S&nationality=PRY&deployed_organisation=Whitbread" ] .
+  [ authz:pattern ':doc-PSE :about "Palestine"' ; authz:label "clearance=TS&nationality=PSE&deployed_organisation=Burberry" ] .
+  [ authz:pattern ':doc-PYF :about "French Polynesia"' ; authz:label "clearance=O&nationality=PYF&deployed_organisation=Kingfisher" ] .
+  [ authz:pattern ':doc-QAT :about "Qatar"' ; authz:label "clearance=S&nationality=QAT&deployed_organisation=Next" ] .
+  [ authz:pattern ':doc-REU :about "Réunion"' ; authz:label "clearance=TS&nationality=REU&deployed_organisation=Sainsbury_s" ] .
+  [ authz:pattern ':doc-ROU :about "Romania"' ; authz:label "clearance=O&nationality=ROU&deployed_organisation=Associated_British_Foods" ] .
+  [ authz:pattern ':doc-RUS :about "Russia"' ; authz:label "clearance=S&nationality=RUS&deployed_organisation=Smith_Nephew" ] .
+  [ authz:pattern ':doc-RWA :about "Rwanda"' ; authz:label "clearance=TS&nationality=RWA&deployed_organisation=Halma" ] .
+  [ authz:pattern ':doc-SAU :about "Saudi Arabia"' ; authz:label "clearance=O&nationality=SAU&deployed_organisation=Spirax_Sarco_Engineering" ] .
+  [ authz:pattern ':doc-SDN :about "Sudan"' ; authz:label "clearance=S&nationality=SDN&deployed_organisation=BAE_Systems" ] .
+  [ authz:pattern ':doc-SEN :about "Senegal"' ; authz:label "clearance=TS&nationality=SEN&deployed_organisation=Melrose_Industries" ] .
+  [ authz:pattern ':doc-SGP :about "Singapore"' ; authz:label "clearance=O&nationality=SGP&deployed_organisation=Rentokil_Initial" ] .
+  [ authz:pattern ':doc-SGS :about "South Georgia and the South Sandwich Islands"' ; authz:label "clearance=S&nationality=SGS&deployed_organisation=Compass_Group" ] .
+  [ authz:pattern ':doc-SHN :about "Saint Helena, Ascension and Tristan da Cunha"' ; authz:label "clearance=TS&nationality=SHN&deployed_organisation=Croda_International" ] .
+  [ authz:pattern ':doc-SJM :about "Svalbard and Jan Mayen"' ; authz:label "clearance=O&nationality=SJM&deployed_organisation=Intertek" ] .
+  [ authz:pattern ':doc-SLB :about "Solomon Islands"' ; authz:label "clearance=S&nationality=SLB&deployed_organisation=Auto_Trader_Group" ] .
+  [ authz:pattern ':doc-SLE :about "Sierra Leone"' ; authz:label "clearance=TS&nationality=SLE&deployed_organisation=HSBC_Holdings" ] .
+  [ authz:pattern ':doc-SLV :about "El Salvador"' ; authz:label "clearance=O&nationality=SLV&deployed_organisation=BP" ] .
+  [ authz:pattern ':doc-SMR :about "San Marino"' ; authz:label "clearance=S&nationality=SMR&deployed_organisation=Shell" ] .
+  [ authz:pattern ':doc-SOM :about "Somalia"' ; authz:label "clearance=TS&nationality=SOM&deployed_organisation=Unilever" ] .
+  [ authz:pattern ':doc-SPM :about "Saint Pierre and Miquelon"' ; authz:label "clearance=O&nationality=SPM&deployed_organisation=Diageo" ] .
+  [ authz:pattern ':doc-SRB :about "Serbia"' ; authz:label "clearance=S&nationality=SRB&deployed_organisation=AstraZeneca" ] .
+  [ authz:pattern ':doc-SSD :about "South Sudan"' ; authz:label "clearance=TS&nationality=SSD&deployed_organisation=GSK" ] .
+  [ authz:pattern ':doc-STP :about "São Tomé and Príncipe"' ; authz:label "clearance=O&nationality=STP&deployed_organisation=Barclays" ] .
+  [ authz:pattern ':doc-SUR :about "Suriname"' ; authz:label "clearance=S&nationality=SUR&deployed_organisation=Lloyds_Banking_Group" ] .
+  [ authz:pattern ':doc-SVK :about "Slovakia"' ; authz:label "clearance=TS&nationality=SVK&deployed_organisation=NatWest_Group" ] .
+  [ authz:pattern ':doc-SVN :about "Slovenia"' ; authz:label "clearance=O&nationality=SVN&deployed_organisation=Tesco" ] .
+  [ authz:pattern ':doc-SWE :about "Sweden"' ; authz:label "clearance=S&nationality=SWE&deployed_organisation=Vodafone" ] .
+  [ authz:pattern ':doc-SWZ :about "Eswatini"' ; authz:label "clearance=TS&nationality=SWZ&deployed_organisation=BT_Group" ] .
+  [ authz:pattern ':doc-SXM :about "Sint Maarten"' ; authz:label "clearance=O&nationality=SXM&deployed_organisation=Glencore" ] .
+  [ authz:pattern ':doc-SYC :about "Seychelles"' ; authz:label "clearance=S&nationality=SYC&deployed_organisation=Rio_Tinto" ] .
+  [ authz:pattern ':doc-SYR :about "Syria"' ; authz:label "clearance=TS&nationality=SYR&deployed_organisation=Anglo_American" ] .
+  [ authz:pattern ':doc-TCA :about "Turks and Caicos Islands"' ; authz:label "clearance=O&nationality=TCA&deployed_organisation=BHP_Group" ] .
+  [ authz:pattern ':doc-TCD :about "Chad"' ; authz:label "clearance=S&nationality=TCD&deployed_organisation=Reckitt_Benckiser" ] .
+  [ authz:pattern ':doc-TGO :about "Togo"' ; authz:label "clearance=TS&nationality=TGO&deployed_organisation=Sage_Group" ] .
+  [ authz:pattern ':doc-THA :about "Thailand"' ; authz:label "clearance=O&nationality=THA&deployed_organisation=Ocado_Group" ] .
+  [ authz:pattern ':doc-TJK :about "Tajikistan"' ; authz:label "clearance=S&nationality=TJK&deployed_organisation=Rolls_Royce_Holdings" ] .
+  [ authz:pattern ':doc-TKL :about "Tokelau"' ; authz:label "clearance=TS&nationality=TKL&deployed_organisation=Imperial_Brands" ] .
+  [ authz:pattern ':doc-TKM :about "Turkmenistan"' ; authz:label "clearance=O&nationality=TKM&deployed_organisation=RELX" ] .
+  [ authz:pattern ':doc-TLS :about "Timor-Leste"' ; authz:label "clearance=S&nationality=TLS&deployed_organisation=Experian" ] .
+  [ authz:pattern ':doc-TON :about "Tonga"' ; authz:label "clearance=TS&nationality=TON&deployed_organisation=Legal_General" ] .
+  [ authz:pattern ':doc-TTO :about "Trinidad and Tobago"' ; authz:label "clearance=O&nationality=TTO&deployed_organisation=Prudential" ] .
+  [ authz:pattern ':doc-TUN :about "Tunisia"' ; authz:label "clearance=S&nationality=TUN&deployed_organisation=National_Grid" ] .
+  [ authz:pattern ':doc-TUR :about "Turkey"' ; authz:label "clearance=TS&nationality=TUR&deployed_organisation=SSE" ] .
+  [ authz:pattern ':doc-TUV :about "Tuvalu"' ; authz:label "clearance=O&nationality=TUV&deployed_organisation=Severn_Trent" ] .
+  [ authz:pattern ':doc-TWN :about "Taiwan"' ; authz:label "clearance=S&nationality=TWN&deployed_organisation=United_Utilities" ] .
+  [ authz:pattern ':doc-TZA :about "Tanzania"' ; authz:label "clearance=TS&nationality=TZA&deployed_organisation=SEGRO" ] .
+  [ authz:pattern ':doc-UGA :about "Uganda"' ; authz:label "clearance=O&nationality=UGA&deployed_organisation=Land_Securities" ] .
+  [ authz:pattern ':doc-UKR :about "Ukraine"' ; authz:label "clearance=S&nationality=UKR&deployed_organisation=British_Land" ] .
+  [ authz:pattern ':doc-UMI :about "United States Minor Outlying Islands"' ; authz:label "clearance=TS&nationality=UMI&deployed_organisation=InterContinental_Hotels_Group" ] .
+  [ authz:pattern ':doc-URY :about "Uruguay"' ; authz:label "clearance=O&nationality=URY&deployed_organisation=Whitbread" ] .
+  [ authz:pattern ':doc-USA :about "United States"' ; authz:label "clearance=S&nationality=USA&deployed_organisation=Burberry" ] .
+  [ authz:pattern ':doc-UZB :about "Uzbekistan"' ; authz:label "clearance=TS&nationality=UZB&deployed_organisation=Kingfisher" ] .
+  [ authz:pattern ':doc-VAT :about "Vatican City"' ; authz:label "clearance=O&nationality=VAT&deployed_organisation=Next" ] .
+  [ authz:pattern ':doc-VCT :about "Saint Vincent and the Grenadines"' ; authz:label "clearance=S&nationality=VCT&deployed_organisation=Sainsbury_s" ] .
+  [ authz:pattern ':doc-VEN :about "Venezuela"' ; authz:label "clearance=TS&nationality=VEN&deployed_organisation=Associated_British_Foods" ] .
+  [ authz:pattern ':doc-VGB :about "British Virgin Islands"' ; authz:label "clearance=O&nationality=VGB&deployed_organisation=Smith_Nephew" ] .
+  [ authz:pattern ':doc-VIR :about "U.S. Virgin Islands"' ; authz:label "clearance=S&nationality=VIR&deployed_organisation=Halma" ] .
+  [ authz:pattern ':doc-VNM :about "Vietnam"' ; authz:label "clearance=TS&nationality=VNM&deployed_organisation=Spirax_Sarco_Engineering" ] .
+  [ authz:pattern ':doc-VUT :about "Vanuatu"' ; authz:label "clearance=O&nationality=VUT&deployed_organisation=BAE_Systems" ] .
+  [ authz:pattern ':doc-WLF :about "Wallis and Futuna"' ; authz:label "clearance=S&nationality=WLF&deployed_organisation=Melrose_Industries" ] .
+  [ authz:pattern ':doc-WSM :about "Samoa"' ; authz:label "clearance=TS&nationality=WSM&deployed_organisation=Rentokil_Initial" ] .
+  [ authz:pattern ':doc-YEM :about "Yemen"' ; authz:label "clearance=O&nationality=YEM&deployed_organisation=Compass_Group" ] .
+  [ authz:pattern ':doc-ZAF :about "South Africa"' ; authz:label "clearance=S&nationality=ZAF&deployed_organisation=Croda_International" ] .
+  [ authz:pattern ':doc-ZMB :about "Zambia"' ; authz:label "clearance=TS&nationality=ZMB&deployed_organisation=Intertek" ] .
+  [ authz:pattern ':doc-ZWE :about "Zimbabwe"' ; authz:label "clearance=O&nationality=ZWE&deployed_organisation=Auto_Trader_Group" ] .
+}
