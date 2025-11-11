@@ -81,7 +81,7 @@
 
     <!-- Dependency versions -->
     <!-- Internal dependencies -->
-    <dependency.rdf-abac>1.1.1</dependency.rdf-abac>
+    <dependency.rdf-abac>1.1.2</dependency.rdf-abac>
     <dependency.fuseki-kafka>2.1.1</dependency.fuseki-kafka>
     <dependency.jena>5.6.0</dependency.jena>
     <dependency.fuseki-server>${dependency.jena}</dependency.fuseki-server>
