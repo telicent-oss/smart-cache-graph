@@ -1,5 +1,11 @@
 # Smart Cache Graph
 
+## 0.91.2
+
+- Picked up bug in RDF-ABAC - using preferred_username instead of preferred_name 
+- Build improvements:
+  - Dependency updates
+
 ## 0.91.1
 
 - Picked up a bug fix for RDF-ABAC around the new Auth Server integration not loading from configuration files correctly
