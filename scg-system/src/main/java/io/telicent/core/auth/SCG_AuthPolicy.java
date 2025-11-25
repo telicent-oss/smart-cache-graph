@@ -101,6 +101,8 @@ public class SCG_AuthPolicy {
         // Fuseki will also capture requests to the root dataset path and try to dynamically route them based on the
         // request method and body, allow this provided users have the default roles
         addPolicy(policies, "/" + datasetName, DEFAULT_ROLES);
+
+        addPolicy(policies, "/$/compact/" + datasetName, ADMIN_ROLES);
     }
 
     /**

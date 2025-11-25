@@ -5,6 +5,9 @@
 
 # Acquire the current directory in case we are running from project root or the local directory
 CURRENT_DIR=$(dirname $0)
+JWKS_URL="http://auth-server:9000/oauth2/jwks"
+USERINFO_URL="http://auth-server:9000/userinfo"
+#JWKS_URL="https://auth.telicent.localhost/oauth2/jwks"
 
 # Function for getting version number from the repo pom file
 function get_version() {
@@ -48,7 +51,8 @@ if [[ "$1" == "alpine" ]]; then
 fi
 
 # Build the Docker image
-docker build --build-arg FUSEKI_JAR="${FUSEKI_JAR_NAME}" \
+docker build --no-cache \
+             --build-arg FUSEKI_JAR="${FUSEKI_JAR_NAME}" \
              --build-arg PROJECT_VERSION="${PROJECT_VERSION}" \
              -t $IMAGE_TAG -f ${CURRENT_DIR}/${DOCKERFILE} ${CURRENT_DIR}/..
 
@@ -71,11 +75,14 @@ MNT_DIR=$(pwd)/${CURRENT_DIR}/mnt
 # Run the Docker container, mapping port 3030, setting the necessary environment variables
 docker run -d \
     -e JAVA_OPTIONS="-Xmx2048m -Xms2048m" \
-    -e JWKS_URL="disabled" \
+    -e JWKS_URL="${JWKS_URL}" \
+    -e USERINFO_URL="${USERINFO_URL}" \
+    -e ALLOW_INSECURE_JWKS=true \
     -e ENABLE_LABELS_QUERY="true" \
     -p 3030:3030 \
     -v "$MNT_DIR/logs:/fuseki/logs"      \
     -v "$MNT_DIR/databases:/fuseki/databases" \
     -v "$MNT_DIR/config:/fuseki/config"  \
+    --network authorizationserver_auth-internal-network \
     --name smart-cache-graph-container \
     $IMAGE_TAG $ARGS

@@ -14,7 +14,6 @@ PREFIX authz:   <http://telicent.io/security#>
     ## Endpoints (read-only)
     fuseki:endpoint [ fuseki:operation fuseki:query ; fuseki:name "query" ] ;
     fuseki:endpoint [ fuseki:operation fuseki:gsp-r ; fuseki:name "data" ] ;
-    fuseki:endpoint [ fuseki:operation fuseki:compact ; fuseki:name "compact" ] ;
     ## Bind the ABAC-wrapped dataset
     fuseki:dataset :dataset ;
     .
