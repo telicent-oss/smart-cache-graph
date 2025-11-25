@@ -36,6 +36,7 @@
     <logger name="org.apache.jena.arq.exec" level="INFO" />
     <logger name="org.apache.jena.riot" level="INFO" />
     <logger name="org.apache.jena.fuseki" level="WARN" />
+    <logger name="org.apache.jena.fuseki.Config" level="INFO" />
     <logger name="org.apache.jena.fuseki.Fuseki" level="WARN" />
     <logger name="org.apache.jena.fuseki.Server" level="WARN" />
     <logger name="org.eclipse.jetty" level="WARN" />

@@ -98,6 +98,9 @@ public class SCG_AuthPolicy {
         String datasetName = Strings.CI.removeStart(dap.getName(), "/");
         addPolicy(policies, "/$/labels/" + datasetName, DEFAULT_ROLES);
 
+        // Compact endpoint for this dataset
+        addPolicy(policies, "/$/compact/" + datasetName, ADMIN_ROLES);
+
         // Fuseki will also capture requests to the root dataset path and try to dynamically route them based on the
         // request method and body, allow this provided users have the default roles
         addPolicy(policies, "/" + datasetName, DEFAULT_ROLES);
@@ -127,7 +130,7 @@ public class SCG_AuthPolicy {
 
         // Compact endpoints
         Policy compactPolicy =
-                Policy.requireAll("permissions", new String[] { TelicentPermissions.compactPermission(datasetName) });
+                Policy.requireAll("permissions", TelicentPermissions.compactPermission(datasetName));
         addPolicy(policies, "/$/compact/" + datasetName, compactPolicy);
         addOrUpdatePolicy(policies, "/$/compactall", compactPolicy);
 
