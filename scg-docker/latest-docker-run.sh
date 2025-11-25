@@ -15,7 +15,12 @@ HOST_PORT="${SCG_PORT:-3030}"
 
 # Common envs used by your image
 JAVA_OPTIONS="${JAVA_OPTIONS:--Xmx2048m -Xms2048m}"
-JWKS_URL="${JWKS_URL:-disabled}"
+#JWKS_URL="${JWKS_URL:-disabled}"
+#JWKS_URL="https://auth.telicent.localhost/oauth2/jwks"
+JWKS_URL="http://auth-server:9000/oauth2/jwks"
+USERINFO_URL="http://auth-server:9000/userinfo"
+#JWKS_URL="https://auth.devops.telicent-sandbox.telicent.live/keys"
+ALLOW_INSECURE_JWKS=true
 ENABLE_LABELS_QUERY="${ENABLE_LABELS_QUERY:-true}"
 
 # Where to create mounts (same structure as before)
@@ -69,7 +74,10 @@ docker run -d \
   --name "${CONTAINER_NAME}" \
   -e JAVA_OPTIONS="${JAVA_OPTIONS}" \
   -e JWKS_URL="${JWKS_URL}" \
+  -e USERINFO_URL="${USERINFO_URL}" \
+  -e ALLOW_INSECURE_JWKS=true \
   -e ENABLE_LABELS_QUERY="${ENABLE_LABELS_QUERY}" \
+  --network authorizationserver_auth-internal-network \
   -p "${HOST_PORT}:3030" \
   -v "${MNT_DIR}/logs:/fuseki/logs" \
   -v "${MNT_DIR}/databases:/fuseki/databases" \
