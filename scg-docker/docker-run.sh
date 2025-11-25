@@ -50,6 +50,7 @@ fi
 # Build the Docker image
 docker build --build-arg FUSEKI_JAR="${FUSEKI_JAR_NAME}" \
              --build-arg PROJECT_VERSION="${PROJECT_VERSION}" \
+             --no-cache \
              -t $IMAGE_TAG -f ${CURRENT_DIR}/${DOCKERFILE} ${CURRENT_DIR}/..
 
 # Remove any existing container with the same name
@@ -69,6 +70,8 @@ fi
 MNT_DIR=$(pwd)/${CURRENT_DIR}/mnt
 
 # Run the Docker container, mapping port 3030, setting the necessary environment variables
+# If the DOCKER_RUN_OPTS environment variable is set then this can be used to inject additional arguments to the
+# docker run command e.g. set/change environment variables
 docker run -d \
     -e JAVA_OPTIONS="-Xmx2048m -Xms2048m" \
     -e JWKS_URL="disabled" \
@@ -77,5 +80,6 @@ docker run -d \
     -v "$MNT_DIR/logs:/fuseki/logs"      \
     -v "$MNT_DIR/databases:/fuseki/databases" \
     -v "$MNT_DIR/config:/fuseki/config"  \
+    $DOCKER_RUN_OPTS \
     --name smart-cache-graph-container \
     $IMAGE_TAG $ARGS
