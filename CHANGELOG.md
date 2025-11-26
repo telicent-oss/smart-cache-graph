@@ -1,5 +1,21 @@
 # Smart Cache Graph
 
+## 0.92.0
+
+- Fixed a bug with missing roles authorization policy for `/$/compact/<dataset>` endpoints
+- Picked up a bug fix in Fuseki Kafka to use either batch size in bytes or number of events as primary batch commit
+  triggers to avoid potential OOM that can occur if the connectors attempt to buffer too many large events in memory
+  prior to applying them to the target dataset
+- Picked up logging improvements in Fuseki Kafka, and underlying Smart Caches Core libraries, that should make Kafka
+  related logging clearer to read when multiple Kafka connectors are active
+- Picked up error handling improvements in JWT Servlet Auth that should give clearer error logging for some
+  authentication failure scenarios
+- Build improvements:
+    - Fuseki Kafka upgraded to 2.2.0
+    - JWT Servlet Auth upgraded to 2.0.2
+    - Smart Caches Core upgraded to 0.32.1
+    - Various build and test dependencies upgraded to latest available
+
 ## 0.91.2
 
 - Picked up bug in RDF-ABAC - using preferred_username instead of preferred_name 
