@@ -1,5 +1,9 @@
 # Smart Cache Graph
 
+## 0.92.1
+
+- Fixed a bug with Docker image selecting incorrect SLF4J provider leading to empty and unhelpful logs
+
 ## 0.92.0
 
 - Fixed a bug with missing roles authorization policy for `/$/compact/<dataset>` endpoints
