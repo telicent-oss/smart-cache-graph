@@ -1,5 +1,11 @@
 # Smart Cache Graph
 
+## 0.92.2
+
+- Picked up bug fixes in Fuseki Kafka around handling corrupted state files that could cause a hang/OOM error on startup
+- Build improvements:
+    - Fuseki Kafka upgraded to 2.3.0
+
 ## 0.92.1
 
 - Fixed a bug with Docker image selecting incorrect SLF4J provider leading to empty and unhelpful logs
