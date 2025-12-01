@@ -3,6 +3,7 @@
 ## 0.92.2
 
 - Picked up bug fixes in Fuseki Kafka around handling corrupted state files that could cause a hang/OOM error on startup
+- Fixed wrong SLF4J provider being present in the Container runtime classpath
 - Build improvements:
     - Fuseki Kafka upgraded to 2.3.0
 
