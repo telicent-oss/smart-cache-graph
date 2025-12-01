@@ -15,77 +15,79 @@
     limitations under the License.
 -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
-  <modelVersion>4.0.0</modelVersion>
-  <artifactId>docker</artifactId>
-  <name>Telicent Smart Cache Graph - Docker Container</name>
-  <description>Docker Container preparation for Smart Cache Graph</description>
-  <packaging>pom</packaging>
+    <modelVersion>4.0.0</modelVersion>
+    <artifactId>docker</artifactId>
+    <name>Telicent Smart Cache Graph - Docker Container</name>
+    <description>Docker Container preparation for Smart Cache Graph</description>
+    <packaging>pom</packaging>
 
-  <parent>
-    <groupId>io.telicent.smart-caches.graph</groupId>
-    <artifactId>scg-base</artifactId>
-    <version>0.92.2-SNAPSHOT</version>
-  </parent>
+    <parent>
+        <groupId>io.telicent.smart-caches.graph</groupId>
+        <artifactId>scg-base</artifactId>
+        <version>0.92.2-SNAPSHOT</version>
+    </parent>
 
-  <properties>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-  </properties>
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
 
-  <dependencies>
-    <!-- Individual jars, with version information, many jars for the container -->
-    <dependency>
-      <groupId>io.telicent.smart-caches.graph</groupId>
-      <artifactId>scg-system</artifactId>
-      <version>${project.version}</version>
-    </dependency>
+    <dependencies>
+        <!-- Individual jars, with version information, many jars for the container -->
+        <dependency>
+            <groupId>io.telicent.smart-caches.graph</groupId>
+            <artifactId>scg-system</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
-    <dependency>
-      <groupId>io.opentelemetry.javaagent</groupId>
-      <artifactId>opentelemetry-javaagent</artifactId>
-      <version>${dependency.otel}</version>
-      <scope>runtime</scope>
-    </dependency>
-    
-  </dependencies>
-  
-  <build>
-    <plugins>
-      <!--
-          Copy the necessary dependencies into target/dependency and target/agent (if OTel Agent is enabled)
-          The Dockerfile will copy from these locations to build the Docker image
-      -->
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-dependency-plugin</artifactId>
-        <version>${plugin.dependency}</version>
-        <executions>
-          <execution>
-            <id>copy-dependencies</id>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <phase>package</phase>
-            <configuration>
-              <excludeArtifactIds>opentelemetry-javaagent</excludeArtifactIds>
-              <outputDirectory>${project.build.directory}/dependency</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>copy-otel-agent</id>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <phase>package</phase>
-            <configuration>
-              <includeArtifactIds>opentelemetry-javaagent</includeArtifactIds>
-              <outputDirectory>${project.build.directory}/agents</outputDirectory>
-              <stripVersion>true</stripVersion>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
-  </build>
+        <dependency>
+            <groupId>io.opentelemetry.javaagent</groupId>
+            <artifactId>opentelemetry-javaagent</artifactId>
+            <version>${dependency.otel}</version>
+            <scope>runtime</scope>
+        </dependency>
+
+    </dependencies>
+
+    <build>
+        <plugins>
+            <!--
+                Copy the necessary dependencies into target/dependency and target/agent (if OTel Agent is enabled)
+                The Dockerfile will copy from these locations to build the Docker image
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>${plugin.dependency}</version>
+                <executions>
+                    <execution>
+                        <id>copy-dependencies</id>
+                        <goals>
+                            <goal>copy-dependencies</goal>
+                        </goals>
+                        <phase>package</phase>
+                        <configuration>
+                            <excludeArtifactIds>opentelemetry-javaagent</excludeArtifactIds>
+                            <outputDirectory>${project.build.directory}/dependency</outputDirectory>
+                            <includeScope>runtime</includeScope>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>copy-otel-agent</id>
+                        <goals>
+                            <goal>copy-dependencies</goal>
+                        </goals>
+                        <phase>package</phase>
+                        <configuration>
+                            <includeArtifactIds>opentelemetry-javaagent</includeArtifactIds>
+                            <outputDirectory>${project.build.directory}/agents</outputDirectory>
+                            <stripVersion>true</stripVersion>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 </project>
