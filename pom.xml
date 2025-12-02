@@ -72,10 +72,10 @@
     <plugin.jar>3.5.0</plugin.jar>
     <plugin.jacoco>0.8.14</plugin.jacoco>
     <plugin.javadoc>3.12.0</plugin.javadoc>
-    <plugin.resources>3.3.1</plugin.resources>
+    <plugin.resources>3.4.0</plugin.resources>
     <plugin.shade>3.4.1</plugin.shade>
     <plugin.site>3.9.1</plugin.site>
-    <plugin.source>3.3.1</plugin.source>
+    <plugin.source>3.4.0</plugin.source>
     <plugin.surefire>3.5.4</plugin.surefire>
     <plugin.versions>2.20.1</plugin.versions>
 
@@ -91,7 +91,7 @@
 
     <!-- External dependencies -->
     <dependency.jackson>2.20.1</dependency.jackson>
-    <dependency.bouncycastle>1.82</dependency.bouncycastle>
+    <dependency.bouncycastle>1.83</dependency.bouncycastle>
     <dependency.kafka>3.9.1</dependency.kafka>
     <dependency.kotlin>2.2.21</dependency.kotlin>
     <dependency.otel>1.33.0</dependency.otel> <!-- These two must be in-step. -->
