@@ -1,5 +1,17 @@
 # Smart Cache Graph
 
+## 0.93.3
+
+- Build improvements:
+    - CVE-2025-12183:
+        - Excluded vulnerable `lz4-java` library from `kafka-clients` dependencies
+        - Added alternative fork of `lz4-java` library with fix
+    - Bouncy Castle upgraded to 1.83
+    - Fuseki Kafka upgraded to 2.3.1
+    - Smart Caches Core upgraded to 0.32.3
+    - Telicent base Java image upgraded to 1.2.34
+    - Various build and test plugins upgraded to latest available
+
 ## 0.92.2
 
 - Picked up bug fixes in Fuseki Kafka around handling corrupted state files that could cause a hang/OOM error on startup
