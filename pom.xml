@@ -82,19 +82,19 @@
     <!-- Dependency versions -->
     <!-- Internal dependencies -->
     <dependency.rdf-abac>1.1.2</dependency.rdf-abac>
-    <dependency.fuseki-kafka>2.3.1</dependency.fuseki-kafka>
+    <dependency.fuseki-kafka>2.3.2</dependency.fuseki-kafka>
     <dependency.jena>5.6.0</dependency.jena>
     <dependency.fuseki-server>${dependency.jena}</dependency.fuseki-server>
     <dependency.graphql>0.10.8</dependency.graphql>
     <dependency.jwt-servlet-auth>2.0.2</dependency.jwt-servlet-auth>
-    <dependency.smart-caches-core>0.32.3</dependency.smart-caches-core>
+    <dependency.smart-caches-core>0.32.4</dependency.smart-caches-core>
 
     <!-- External dependencies -->
     <dependency.jackson>2.20.1</dependency.jackson>
     <dependency.bouncycastle>1.83</dependency.bouncycastle>
     <dependency.kafka>3.9.1</dependency.kafka>
     <dependency.kotlin>2.2.21</dependency.kotlin>
-    <dependency.lz4>1.8.1</dependency.lz4>
+    <dependency.lz4>1.10.1</dependency.lz4>
     <dependency.otel>1.33.0</dependency.otel> <!-- These two must be in-step. -->
     <dependency.otel-semconv>1.30.1-alpha</dependency.otel-semconv> <!-- These two must be in-step. -->
 
