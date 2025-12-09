@@ -1,0 +1,49 @@
+name: Weekly Benchmark - LabelsStoreRocksDBBaselineBenchmark
+
+on:
+  # Run once a week (Monday 08:00)
+  schedule:
+    - cron: "0 8 * * 1"
+  # Allow manual runs
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  deployments: write
+
+jobs:
+  benchmark:
+    name: Run JMH baseline benchmark
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Build JMH benchmark module
+        run: |
+          mvn -B -pl scg-benchmark -am -DskipTests clean package
+
+      - name: Run SCG Benchmark
+        run: |
+          java -jar target/benchmarks.jar -rf json \
+          -rff scg-benchmark/jmh-result.json
+
+      - name: Store benchmark result
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          name: SCG Benchmark
+          tool: 'jmh'
+          output-file-path: scg-benchmark/jmh-result.json
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: true
+          alert-threshold: '200%'
+          comment-on-alert: true
+          fail-on-alert: true
+          alert-comment-cc-users: '@TelicentPaul'

@@ -11,11 +11,11 @@ This will build the benchmarks jar
 mvn package
 ```
 ## Run Benchmarking jar
-It"s recommended to store the output to file.
+It's recommended to store the output to file.
 
 *Note:* this can take a significant time to run.
 ```bash
-ava -jar target/benchmarks.jar 2>/dev/null | tee run_output.txt
+java -jar target/benchmarks.jar 2>/dev/null | tee run_output.txt
 ```
 
 ## Parsing Results
@@ -34,7 +34,7 @@ This profile tracks and assesses the Garbage Collection.
 java -jar target/benchmarks.jar -prof gc -f 1 -wi 5 -i 5
 ```
 ### Stack
-As the name suggests this provides analysis on the performance of the stacj.
+As the name suggests this provides analysis on the performance of the stack.
 
 ```bash
 java -jar target/benchmarks.jar -prof stack -f 1 -wi 5 -i 5
