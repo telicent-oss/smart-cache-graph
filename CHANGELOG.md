@@ -1,6 +1,13 @@
 # Smart Cache Graph
 
-## 0.93.3
+## 0.92.4
+
+- Build improvements:
+   - Fuseki Kafka upgraded to 2.3.2
+   - LZ4 Java upgraded to 1.10.1
+   - Smart Caches Core upgraded to 0.32.4
+
+## 0.92.3
 
 - Build improvements:
     - CVE-2025-12183:
