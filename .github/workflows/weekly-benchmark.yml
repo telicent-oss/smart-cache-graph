@@ -1,4 +1,4 @@
-name: Weekly Benchmark - LabelsStoreRocksDBBaselineBenchmark
+name: Weekly Benchmark - Smart Cache Graph
 
 on:
   # Run once a week (Monday 08:00)
@@ -28,7 +28,7 @@ jobs:
 
       - name: Build JMH benchmark module
         run: |
-          mvn -B clean install -DskipTests=true
+          mvn -B clean install -Dgpg.skip=true -DskipITs -DskipTests=true
 
       - name: Run ABAC Benchmark
         run: |
