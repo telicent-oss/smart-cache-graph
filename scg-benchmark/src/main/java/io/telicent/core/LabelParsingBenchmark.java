@@ -13,7 +13,7 @@ import java.util.concurrent.TimeUnit;
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MICROSECONDS)
 @State(Scope.Thread)
-public class LabelParsingBenchMark {
+public class LabelParsingBenchmark {
 
     @Param({"1", "10", "100", "1000"})
     private int numberOfLabels;

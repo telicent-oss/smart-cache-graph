@@ -28,19 +28,115 @@ jobs:
 
       - name: Build JMH benchmark module
         run: |
-          mvn -B -pl scg-benchmark -am -DskipTests clean package
+          mvn -B clean install -DskipTests=true
+
+      - name: Run ABAC Benchmark
+        run: |
+          java -jar scg-benchmark/target/benchmarks.jar \
+          "io.telicent.core.ABACLabelEvaluationBenchmark.*" \
+          -rf json -rff scg-benchmark/abac-result.json
+
+      - name: Store ABAC benchmark result
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          name: ABAC Benchmark
+          tool: 'jmh'
+          output-file-path: scg-benchmark/abac-result.json
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: true
+          alert-threshold: '200%'
+          comment-on-alert: true
+          fail-on-alert: true
+          alert-comment-cc-users: '@TelicentPaul'
+
+      - name: Run CQRS Benchmark
+        run: |
+          java -jar scg-benchmark/target/benchmarks.jar \
+          "io.telicent.core.CQRSUpdateBenchmark.*" \
+          -rf json -rff scg-benchmark/cqrs-result.json
+
+      - name: Store CQRS benchmark result
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          name: CQRS Benchmark
+          tool: 'jmh'
+          output-file-path: scg-benchmark/cqrs-result.json
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: true
+          alert-threshold: '200%'
+          comment-on-alert: true
+          fail-on-alert: true
+          alert-comment-cc-users: '@TelicentPaul'
+
+      - name: Run Ingestion Benchmark
+        run: |
+          java -jar scg-benchmark/target/benchmarks.jar \
+          "io.telicent.core.IngestBenchmark.*" \
+          -rf json -rff scg-benchmark/ingest-result.json
+
+      - name: Store Ingestion benchmark result
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          name: Ingest Benchmark
+          tool: 'jmh'
+          output-file-path: scg-benchmark/ingest-result.json
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: true
+          alert-threshold: '200%'
+          comment-on-alert: true
+          fail-on-alert: true
+          alert-comment-cc-users: '@TelicentPaul'
+
+      - name: Run Label Benchmark
+        run: |
+          java -jar scg-benchmark/target/benchmarks.jar \
+          "io.telicent.core.LabelParsingBenchmark.*" \
+          -rf json -rff scg-benchmark/label-result.json
+
+      - name: Store Label benchmark result
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          name: Label Benchmark
+          tool: 'jmh'
+          output-file-path: scg-benchmark/label-result.json
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: true
+          alert-threshold: '200%'
+          comment-on-alert: true
+          fail-on-alert: true
+          alert-comment-cc-users: '@TelicentPaul'
 
       - name: Run SCG Benchmark
         run: |
-          java -jar target/benchmarks.jar -rf json \
-          -rff scg-benchmark/jmh-result.json
+          java -jar scg-benchmark/target/benchmarks.jar \
+          "io.telicent.core.SCGBenchmark.*" \
+          -rf json -rff scg-benchmark/scg-result.json
 
-      - name: Store benchmark result
+      - name: Store SCG benchmark result
         uses: benchmark-action/github-action-benchmark@v1
         with:
           name: SCG Benchmark
           tool: 'jmh'
-          output-file-path: scg-benchmark/jmh-result.json
+          output-file-path: scg-benchmark/scg-result.json
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: true
+          alert-threshold: '200%'
+          comment-on-alert: true
+          fail-on-alert: true
+          alert-comment-cc-users: '@TelicentPaul'
+
+      - name: Run SCG Graph Scenario Benchmark
+        run: |
+          java -jar scg-benchmark/target/benchmarks.jar \
+          "io.telicent.core.SCGraphScenarioBenchmark.*" \
+          -rf json -rff scg-benchmark/scenario-result.json
+
+      - name: Store SCG Graph Scenario benchmark result
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          name: SCG Graph Scenario Benchmark
+          tool: 'jmh'
+          output-file-path: scg-benchmark/scenario-result.json
           github-token: ${{ secrets.GITHUB_TOKEN }}
           auto-push: true
           alert-threshold: '200%'
