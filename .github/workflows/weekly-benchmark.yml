@@ -71,7 +71,7 @@ jobs:
       - name: Run Ingestion Benchmark
         run: |
           java -jar scg-benchmark/target/benchmarks.jar \
-          "io.telicent.core.IngestBenchmark.*" \
+          "io.telicent.core.IngestionBenchmark.*" \
           -rf json -rff scg-benchmark/ingest-result.json
 
       - name: Store Ingestion benchmark result
