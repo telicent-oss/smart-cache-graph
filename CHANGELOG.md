@@ -1,5 +1,11 @@
 # Smart Cache Graph
 
+## 0.92.5
+
+- Build improvements:
+    - RDF-ABAC upgraded to 1.1.4
+    - Smart Caches Core upgraded to 0.32.6
+
 ## 0.92.4
 
 - Build improvements:
