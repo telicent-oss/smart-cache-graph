@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1766996040973,
+  "lastUpdate": 1766996240653,
   "repoUrl": "https://github.com/telicent-oss/smart-cache-graph",
   "entries": {
     "ABAC Benchmark": [
@@ -552,6 +552,46 @@ window.BENCHMARK_DATA = {
           {
             "name": "io.telicent.core.IngestionBenchmark.benchmarkIngestWithLabels ( {\"batchSize\":\"10000\"} )",
             "value": 22.036134576335677,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "Paul Gallagher",
+            "username": "TelicentPaul",
+            "email": "132362215+TelicentPaul@users.noreply.github.com"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "9d0b040f0ff8ea6955b0ce0bfdafbe4c20a2cd73",
+          "message": "Merge pull request #337 from telicent-oss/dependabot/docker/scg-docker/telicent/telicent-java21-1.2.35\n\nBump telicent/telicent-java21 from 1.2.34 to 1.2.35 in /scg-docker",
+          "timestamp": "2025-12-17T07:48:15Z",
+          "url": "https://github.com/telicent-oss/smart-cache-graph/commit/9d0b040f0ff8ea6955b0ce0bfdafbe4c20a2cd73"
+        },
+        "date": 1766996240418,
+        "tool": "jmh",
+        "benches": [
+          {
+            "name": "io.telicent.core.IngestionBenchmark.benchmarkIngestWithLabels ( {\"batchSize\":\"100\"} )",
+            "value": 62.90572915464908,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "io.telicent.core.IngestionBenchmark.benchmarkIngestWithLabels ( {\"batchSize\":\"1000\"} )",
+            "value": 86.81904699268412,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "io.telicent.core.IngestionBenchmark.benchmarkIngestWithLabels ( {\"batchSize\":\"10000\"} )",
+            "value": 20.51399836689251,
             "unit": "ops/s",
             "extra": "iterations: 5\nforks: 1\nthreads: 1"
           }
