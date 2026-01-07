@@ -34,9 +34,13 @@ public class LabelsQueryService {
         return Txn.calculateRead(datasetGraph, () -> {
             List<TripleLabels> tripleLabels = new ArrayList<>();
             ExtendedIterator<Triple> iter = datasetGraph.getDefaultGraph().find(triple);
-            while (iter.hasNext()) {
-                Triple t = iter.next();
-                tripleLabels.add(new TripleLabels(t, labelStore.labelsForTriples(t)));
+            try {
+                while (iter.hasNext()) {
+                    Triple t = iter.next();
+                    tripleLabels.add(new TripleLabels(t, labelStore.labelsForTriples(t)));
+                }
+            } finally {
+                iter.close();
             }
             return tripleLabels;
         });

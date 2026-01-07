@@ -16,6 +16,9 @@ import org.apache.jena.fuseki.servlets.ActionService;
 import org.apache.jena.fuseki.servlets.HttpAction;
 import org.apache.jena.sparql.core.DatasetGraphFactory;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
+import org.apache.kafka.clients.producer.MockProducer;
+import org.apache.kafka.common.serialization.ByteArraySerializer;
+import org.apache.kafka.common.serialization.StringSerializer;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
 import org.slf4j.Logger;
@@ -47,6 +50,7 @@ public class CQRSUpdateBenchmark {
     private DataService dataService;
     private HttpAction httpAction;
     private ActionService updateService;
+    private MockProducer<String, byte[]> producer;
 
     private static final HttpServletRequest MOCK_REQUEST = mock(HttpServletRequest.class);
     private static final HttpServletResponse MOCK_RESPONSE = mock(HttpServletResponse.class);
@@ -59,7 +63,8 @@ public class CQRSUpdateBenchmark {
         configureMocks();
         httpAction = createHttpAction();
         configureHttpActionWithDataService();
-        updateService = CQRS.updateAction("benchmark-topic", null);
+        producer = new MockProducer<>(true, new StringSerializer(), new ByteArraySerializer());
+        updateService = CQRS.updateActionWithProducer("benchmark-topic", producer);
     }
 
     @TearDown(Level.Trial)
@@ -71,6 +76,7 @@ public class CQRSUpdateBenchmark {
     public void benchmarkCqrsUpdate(Blackhole bh) {
         updateService.execute(httpAction);
         bh.consume(datasetGraph.size());
+        bh.consume(producer.history().size());
     }
 
     private void createDatasetAndService() {

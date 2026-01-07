@@ -29,7 +29,6 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
-import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 import static org.mockito.Mockito.*;
@@ -58,7 +57,7 @@ public class ABACLabelEvaluationBenchmark {
     private ABAC_SPARQL_QueryDataset abacQueryService;
     private HttpAction httpAction;
 
-    private final Random random = new Random(123456);
+    private Label dataLabel;
 
     private static final HttpServletRequest MOCK_REQUEST = mock(HttpServletRequest.class);
     private static final HttpServletResponse MOCK_RESPONSE = mock(HttpServletResponse.class);
@@ -70,10 +69,10 @@ public class ABACLabelEvaluationBenchmark {
         AttributesStoreLocal store = new AttributesStoreLocal();
         // "user" is the identity used by ABAC_SPARQL_QueryDataset below
         switch (labelComplexity) {
-            case "simple" -> store.put("user", AttributeValueSet.of("A"));
-            case "medium" -> store.put("user", AttributeValueSet.of("A", "B", "C", "D"));
-            case "complex" -> store.put("user", AttributeValueSet.of("A", "B", "C", "D", "E", "F", "G", "H"));
-            default -> store.put("user", AttributeValueSet.of("A"));
+            case "simple" -> store.put("user", AttributeValueSet.of("nationality:GBR", "clearance:O"));
+            case "medium" -> store.put("user", AttributeValueSet.of("nationality:GBR", "nationality:USA", "clearance:S"));
+            case "complex" -> store.put("user", AttributeValueSet.of("nationality:GBR", "nationality:USA", "nationality:NOR", "clearance:TS"));
+            default -> store.put("user", AttributeValueSet.of("nationality:GBR", "clearance:O"));
         }
 
         datasetGraph = new DatasetGraphABAC(
@@ -84,6 +83,7 @@ public class ABACLabelEvaluationBenchmark {
                 store
         );
 
+        dataLabel = Label.fromText(labelExpressionForComplexity(labelComplexity));
         for (int i = 0; i < tripleCount; i++) {
             Triple t = Triple.create(
                     NodeFactory.createURI("urn:s:" + (i % (tripleCount / 10 + 1))),
@@ -91,6 +91,7 @@ public class ABACLabelEvaluationBenchmark {
                     NodeFactory.createLiteralString("o-" + i)
             );
             datasetGraph.getDefaultGraph().add(t);
+            datasetGraph.labelsStore().add(t.getSubject(), t.getPredicate(), t.getObject(), dataLabel);
         }
 
         dataService = DataService.newBuilder(datasetGraph).build();
@@ -169,5 +170,14 @@ public class ABACLabelEvaluationBenchmark {
     private void configureHttpActionWithDataService() {
         DataAccessPoint dap = new DataAccessPoint("ABACBenchmark", dataService);
         httpAction.setRequest(dap, dataService);
+    }
+
+    private String labelExpressionForComplexity(String complexity) {
+        return switch (complexity) {
+            case "simple" -> "nationality:GBR & clearance:O";
+            case "medium" -> "(nationality:GBR | nationality:USA) & clearance:S";
+            case "complex" -> "(nationality:GBR | nationality:USA | nationality:NOR) & (clearance:S | clearance:TS)";
+            default -> "nationality:GBR & clearance:O";
+        };
     }
 }

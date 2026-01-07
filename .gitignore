@@ -62,6 +62,11 @@ DB*
 .#*
 \#*
 scg-system/*.state
+# JMH benchmarks
+benchmark-logs/
+jmh-result.json
+io.telicent.core.*/
+scg-benchmark/*.json
 ## Docker container ID file.
 *.cid
 ## MacOS only
