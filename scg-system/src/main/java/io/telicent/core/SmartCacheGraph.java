@@ -116,9 +116,11 @@ public class SmartCacheGraph {
             mods.add(compaction);
         }
 
+        if (isKafkaEnabled()) {
+            mods.add(new FMod_FusekiKafkaSCG());
+        }
         mods.addAll(List.of(
-                new FMod_FusekiKafkaSCG()
-                , new FMod_JwtServletAuth()
+                new FMod_JwtServletAuth()
                 , new FMod_OpenTelemetry()
                 , new FMod_TelicentGraphQL()
                 , new FMod_RequestIDFilter()
@@ -141,6 +143,14 @@ public class SmartCacheGraph {
 
     private static boolean isInitialCompactionEnabled() {
         return !Configurator.get(FMod_InitialCompaction.DISABLE_INITIAL_COMPACTION, Boolean::parseBoolean, false);
+    }
+
+    private static boolean isKafkaEnabled() {
+        String disableKafka = Configurator.get("scg.disable.kafka");
+        if (disableKafka == null) {
+            disableKafka = System.getProperty("scg.disable.kafka");
+        }
+        return !Boolean.parseBoolean(disableKafka);
     }
 
     private static void convertYamlConfigToRDF(String... args) {
