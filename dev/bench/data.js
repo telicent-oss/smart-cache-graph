@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1767805850144,
+  "lastUpdate": 1767805919200,
   "repoUrl": "https://github.com/telicent-oss/smart-cache-graph",
   "entries": {
     "ABAC Benchmark": [
@@ -574,6 +574,34 @@ window.BENCHMARK_DATA = {
           {
             "name": "io.telicent.core.CQRSUpdateBenchmark.benchmarkCqrsUpdate",
             "value": 0.11222553146669827,
+            "unit": "ms/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "Paul Gallagher",
+            "username": "TelicentPaul",
+            "email": "132362215+TelicentPaul@users.noreply.github.com"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "bfc9d78e5ef552c4a618a6344e4fa566db2b0895",
+          "message": "Merge pull request #339 from telicent-oss/minor/benchmakring_follow_up\n\n[Minor] Benchmarking follow up - from before NY",
+          "timestamp": "2026-01-07T15:20:39Z",
+          "url": "https://github.com/telicent-oss/smart-cache-graph/commit/bfc9d78e5ef552c4a618a6344e4fa566db2b0895"
+        },
+        "date": 1767805918872,
+        "tool": "jmh",
+        "benches": [
+          {
+            "name": "io.telicent.core.CQRSUpdateBenchmark.benchmarkCqrsUpdate",
+            "value": 0.8962386606554056,
             "unit": "ms/op",
             "extra": "iterations: 5\nforks: 1\nthreads: 1"
           }
