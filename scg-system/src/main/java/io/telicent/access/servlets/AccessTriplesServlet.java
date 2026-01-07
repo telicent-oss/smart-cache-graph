@@ -41,7 +41,7 @@ public class AccessTriplesServlet extends HttpServlet {
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        boolean requireAllVisible = isAllVisibleRequired(request.getQueryString());
+        boolean requireAllVisible = isAllVisibleRequired(request);
         try (final InputStream inputStream = request.getInputStream()) {
             final JsonTriples query = OBJECT_MAPPER.readValue(inputStream, JsonTriples.class);
             final List<Triple> requestedTriples = getTripleList(query);
@@ -68,17 +68,12 @@ public class AccessTriplesServlet extends HttpServlet {
         processResponse(response, OBJECT_MAPPER.valueToTree(results));
     }
 
-    private boolean isAllVisibleRequired(String queryString) {
-        if (queryString != null && !queryString.isEmpty()) {
-            String[] queryStringTokens = queryString.split("=");
-            if (queryStringTokens[0].equals("all")) {
-                return Boolean.parseBoolean(queryStringTokens[1]);
-            } else {
-                return true; // default value
-            }
-        } else {
+    private boolean isAllVisibleRequired(HttpServletRequest request) {
+        String allParam = request.getParameter("all");
+        if (allParam == null || allParam.isEmpty()) {
             return true; // default value
         }
+        return Boolean.parseBoolean(allParam);
     }
 
     private List<Triple> getTripleList(JsonTriples triplesRequest) throws SmartCacheGraphException {
