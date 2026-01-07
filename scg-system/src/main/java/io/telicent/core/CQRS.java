@@ -81,6 +81,10 @@ public class CQRS {
         return new SPARQL_Update_CQRS(topic, producer, onBegin, onCommit, onAbort);
     }
 
+    static ActionService updateActionWithProducer(String topic, Producer<String, byte[]> producer) {
+        return new SPARQL_Update_CQRS(topic, producer, onBegin, onCommit, onAbort);
+    }
+
     /**
      * Setup to capture changes within the update lifecycle.
      * Return the dataset for the update execution.
