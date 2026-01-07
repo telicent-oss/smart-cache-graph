@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1767607845021,
+  "lastUpdate": 1767805850144,
   "repoUrl": "https://github.com/telicent-oss/smart-cache-graph",
   "entries": {
     "ABAC Benchmark": [
@@ -346,6 +346,64 @@ window.BENCHMARK_DATA = {
           {
             "name": "io.telicent.core.ABACLabelEvaluationBenchmark.benchmarkAbacQuery ( {\"labelComplexity\":\"complex\",\"tripleCount\":\"10000\"} )",
             "value": 0.11344490910173118,
+            "unit": "ms/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "Paul Gallagher",
+            "username": "TelicentPaul",
+            "email": "132362215+TelicentPaul@users.noreply.github.com"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "bfc9d78e5ef552c4a618a6344e4fa566db2b0895",
+          "message": "Merge pull request #339 from telicent-oss/minor/benchmakring_follow_up\n\n[Minor] Benchmarking follow up - from before NY",
+          "timestamp": "2026-01-07T15:20:39Z",
+          "url": "https://github.com/telicent-oss/smart-cache-graph/commit/bfc9d78e5ef552c4a618a6344e4fa566db2b0895"
+        },
+        "date": 1767805849675,
+        "tool": "jmh",
+        "benches": [
+          {
+            "name": "io.telicent.core.ABACLabelEvaluationBenchmark.benchmarkAbacQuery ( {\"labelComplexity\":\"simple\",\"tripleCount\":\"1000\"} )",
+            "value": 0.1162447992152833,
+            "unit": "ms/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "io.telicent.core.ABACLabelEvaluationBenchmark.benchmarkAbacQuery ( {\"labelComplexity\":\"simple\",\"tripleCount\":\"10000\"} )",
+            "value": 0.11455864962809884,
+            "unit": "ms/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "io.telicent.core.ABACLabelEvaluationBenchmark.benchmarkAbacQuery ( {\"labelComplexity\":\"medium\",\"tripleCount\":\"1000\"} )",
+            "value": 0.11391206019352436,
+            "unit": "ms/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "io.telicent.core.ABACLabelEvaluationBenchmark.benchmarkAbacQuery ( {\"labelComplexity\":\"medium\",\"tripleCount\":\"10000\"} )",
+            "value": 0.11565459998917857,
+            "unit": "ms/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "io.telicent.core.ABACLabelEvaluationBenchmark.benchmarkAbacQuery ( {\"labelComplexity\":\"complex\",\"tripleCount\":\"1000\"} )",
+            "value": 0.11406574344696792,
+            "unit": "ms/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "io.telicent.core.ABACLabelEvaluationBenchmark.benchmarkAbacQuery ( {\"labelComplexity\":\"complex\",\"tripleCount\":\"10000\"} )",
+            "value": 0.11549639297454632,
             "unit": "ms/op",
             "extra": "iterations: 5\nforks: 1\nthreads: 1"
           }
