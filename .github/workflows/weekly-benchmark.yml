@@ -106,6 +106,63 @@ jobs:
           fail-on-alert: true
           alert-comment-cc-users: '@TelicentPaul'
 
+      - name: Run Labels Query Benchmark
+        run: |
+          java -jar scg-benchmark/target/benchmarks.jar \
+          "io.telicent.core.LabelsQueryServiceBenchmark.*" \
+          -rf json -rff scg-benchmark/labels-query-result.json
+
+      - name: Store Labels Query benchmark result
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          name: Labels Query Benchmark
+          tool: 'jmh'
+          output-file-path: scg-benchmark/labels-query-result.json
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: true
+          alert-threshold: '200%'
+          comment-on-alert: true
+          fail-on-alert: true
+          alert-comment-cc-users: '@TelicentPaul'
+
+      - name: Run Access Query Benchmark
+        run: |
+          java -jar scg-benchmark/target/benchmarks.jar \
+          "io.telicent.core.AccessQueryServiceBenchmark.*" \
+          -rf json -rff scg-benchmark/access-query-result.json
+
+      - name: Store Access Query benchmark result
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          name: Access Query Benchmark
+          tool: 'jmh'
+          output-file-path: scg-benchmark/access-query-result.json
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: true
+          alert-threshold: '200%'
+          comment-on-alert: true
+          fail-on-alert: true
+          alert-comment-cc-users: '@TelicentPaul'
+
+      - name: Run Backup Restore Benchmark
+        run: |
+          java -jar scg-benchmark/target/benchmarks.jar \
+          "io.telicent.core.BackupRestoreBenchmark.*" \
+          -rf json -rff scg-benchmark/backup-restore-result.json
+
+      - name: Store Backup Restore benchmark result
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          name: Backup Restore Benchmark
+          tool: 'jmh'
+          output-file-path: scg-benchmark/backup-restore-result.json
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: true
+          alert-threshold: '200%'
+          comment-on-alert: true
+          fail-on-alert: true
+          alert-comment-cc-users: '@TelicentPaul'
+
       - name: Run SCG Benchmark
         run: |
           java -jar scg-benchmark/target/benchmarks.jar \
@@ -137,6 +194,25 @@ jobs:
           name: SCG Graph Scenario Benchmark
           tool: 'jmh'
           output-file-path: scg-benchmark/scenario-result.json
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: true
+          alert-threshold: '200%'
+          comment-on-alert: true
+          fail-on-alert: true
+          alert-comment-cc-users: '@TelicentPaul'
+
+      - name: Run SCG ABAC Persistent Scenario Benchmark
+        run: |
+          java -jar scg-benchmark/target/benchmarks.jar \
+          "io.telicent.core.SCGraphAbacPersistentScenarioBenchmark.*" \
+          -rf json -rff scg-benchmark/abac-scenario-result.json
+
+      - name: Store SCG ABAC Persistent Scenario benchmark result
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          name: SCG ABAC Persistent Scenario Benchmark
+          tool: 'jmh'
+          output-file-path: scg-benchmark/abac-scenario-result.json
           github-token: ${{ secrets.GITHUB_TOKEN }}
           auto-push: true
           alert-threshold: '200%'
