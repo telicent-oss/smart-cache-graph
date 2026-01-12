@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1768205830216,
+  "lastUpdate": 1768209842688,
   "repoUrl": "https://github.com/telicent-oss/smart-cache-graph",
   "entries": {
     "ABAC Benchmark": [
@@ -1142,6 +1142,76 @@ window.BENCHMARK_DATA = {
           {
             "name": "io.telicent.core.LabelParsingBenchmark.benchmarkOldParseAttributeList ( {\"numberOfLabels\":\"1000\"} )",
             "value": 263.8847578079151,
+            "unit": "us/op",
+            "extra": "iterations: 5\nforks: 5\nthreads: 1"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "Paul Gallagher",
+            "username": "TelicentPaul",
+            "email": "132362215+TelicentPaul@users.noreply.github.com"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "de216a089334f623ad999422c34150a95470aa08",
+          "message": "Merge pull request #340 from telicent-oss/dependabot/maven/maven-patch-group-f90304635c\n\nBump the maven-patch-group group with 6 updates",
+          "timestamp": "2026-01-07T17:33:30Z",
+          "url": "https://github.com/telicent-oss/smart-cache-graph/commit/de216a089334f623ad999422c34150a95470aa08"
+        },
+        "date": 1768209842349,
+        "tool": "jmh",
+        "benches": [
+          {
+            "name": "io.telicent.core.LabelParsingBenchmark.benchmarkNewParseAttributeListToLabels ( {\"numberOfLabels\":\"1\"} )",
+            "value": 0.2525976912105517,
+            "unit": "us/op",
+            "extra": "iterations: 5\nforks: 5\nthreads: 1"
+          },
+          {
+            "name": "io.telicent.core.LabelParsingBenchmark.benchmarkNewParseAttributeListToLabels ( {\"numberOfLabels\":\"10\"} )",
+            "value": 2.4204896925240518,
+            "unit": "us/op",
+            "extra": "iterations: 5\nforks: 5\nthreads: 1"
+          },
+          {
+            "name": "io.telicent.core.LabelParsingBenchmark.benchmarkNewParseAttributeListToLabels ( {\"numberOfLabels\":\"100\"} )",
+            "value": 27.8356331310034,
+            "unit": "us/op",
+            "extra": "iterations: 5\nforks: 5\nthreads: 1"
+          },
+          {
+            "name": "io.telicent.core.LabelParsingBenchmark.benchmarkNewParseAttributeListToLabels ( {\"numberOfLabels\":\"1000\"} )",
+            "value": 274.03132041230083,
+            "unit": "us/op",
+            "extra": "iterations: 5\nforks: 5\nthreads: 1"
+          },
+          {
+            "name": "io.telicent.core.LabelParsingBenchmark.benchmarkOldParseAttributeList ( {\"numberOfLabels\":\"1\"} )",
+            "value": 0.2584716077757253,
+            "unit": "us/op",
+            "extra": "iterations: 5\nforks: 5\nthreads: 1"
+          },
+          {
+            "name": "io.telicent.core.LabelParsingBenchmark.benchmarkOldParseAttributeList ( {\"numberOfLabels\":\"10\"} )",
+            "value": 2.3265532777725797,
+            "unit": "us/op",
+            "extra": "iterations: 5\nforks: 5\nthreads: 1"
+          },
+          {
+            "name": "io.telicent.core.LabelParsingBenchmark.benchmarkOldParseAttributeList ( {\"numberOfLabels\":\"100\"} )",
+            "value": 24.689383460512385,
+            "unit": "us/op",
+            "extra": "iterations: 5\nforks: 5\nthreads: 1"
+          },
+          {
+            "name": "io.telicent.core.LabelParsingBenchmark.benchmarkOldParseAttributeList ( {\"numberOfLabels\":\"1000\"} )",
+            "value": 263.01066253044087,
             "unit": "us/op",
             "extra": "iterations: 5\nforks: 5\nthreads: 1"
           }
