@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.7
 
-FROM telicent/telicent-java21:1.2.35 AS smart-cache-graph
+FROM telicent/telicent-java21:1.2.36 AS smart-cache-graph
 
 USER root
 
