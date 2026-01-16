@@ -32,6 +32,18 @@ public class TestAccessQueryService extends TestAccessBase {
               "predicate":"http://dbpedia.org/ontology/populationTotal"
             }""";
 
+    private static final String REQUEST_LONDON_HOMEPAGE = """
+            {
+              "subject":"http://dbpedia.org/resource/London",
+              "predicate":"http://xmlns.com/foaf/0.1/homepage"
+            }""";
+
+    private static final String REQUEST_LONDON_LEADER = """
+            {
+              "subject":"http://dbpedia.org/resource/London",
+              "predicate":"http://dbpedia.org/ontology/leader"
+            }""";
+
     private static final String USER1 = "User1";
     private static final String USER2 = "User2";
 
@@ -45,7 +57,6 @@ public class TestAccessQueryService extends TestAccessBase {
                   "subject" : "http://dbpedia.org/resource/London",
                   "predicate" : "http://dbpedia.org/ontology/country",
                   "objects" : [ {
-                    "dataType" : "http://www.w3.org/2001/XMLSchema#anyURI",
                     "value" : "http://dbpedia.org/resource/United_Kingdom"
                   } ]
                 }""";
@@ -53,6 +64,47 @@ public class TestAccessQueryService extends TestAccessBase {
         startServer();
         loadData();
         final String response = callServiceEndpoint(REQUEST_LONDON_COUNTRY, USER1, SERVICE_NAME_1, ENDPOINT_UNDER_TEST);
+        assertEquals(expectedResponseBody, response, "Unexpected access query response");
+    }
+
+    /**
+     * In this test User1 successfully accesses a literal URI object for London in dataset 1
+     */
+    @Test
+    void test_user1_access_homepage_dataset1() throws Exception {
+        final String expectedResponseBody = """
+                {
+                  "subject" : "http://dbpedia.org/resource/London",
+                  "predicate" : "http://xmlns.com/foaf/0.1/homepage",
+                  "objects" : [ {
+                    "dataType" : "http://www.w3.org/2001/XMLSchema#anyURI",
+                    "value" : "https://www.london.gov.uk/"
+                  } ]
+                }""";
+
+        startServer();
+        loadData();
+        final String response = callServiceEndpoint(REQUEST_LONDON_HOMEPAGE, USER1, SERVICE_NAME_1, ENDPOINT_UNDER_TEST);
+        assertEquals(expectedResponseBody, response, "Unexpected access query response");
+    }
+
+    /**
+     * In this test User1 successfully accesses a blank node object for London in dataset 1
+     */
+    @Test
+    void test_user1_access_leader_blank_node_dataset1() throws Exception {
+        final String expectedResponseBody = """
+                {
+                  "subject" : "http://dbpedia.org/resource/London",
+                  "predicate" : "http://dbpedia.org/ontology/leader",
+                  "objects" : [ {
+                    "value" : "_:leader"
+                  } ]
+                }""";
+
+        startServer();
+        loadData();
+        final String response = callServiceEndpoint(REQUEST_LONDON_LEADER, USER1, SERVICE_NAME_1, ENDPOINT_UNDER_TEST);
         assertEquals(expectedResponseBody, response, "Unexpected access query response");
     }
 
@@ -66,7 +118,6 @@ public class TestAccessQueryService extends TestAccessBase {
                   "subject" : "http://dbpedia.org/resource/Paris",
                   "predicate" : "http://dbpedia.org/ontology/country",
                   "objects" : [ {
-                    "dataType" : "http://www.w3.org/2001/XMLSchema#anyURI",
                     "value" : "http://dbpedia.org/resource/France"
                   } ]
                 }""";
@@ -176,10 +227,8 @@ public class TestAccessQueryService extends TestAccessBase {
                   "subject" : "http://dbpedia.org/resource/London",
                   "predicate" : "http://dbpedia.org/ontology/country",
                   "objects" : [ {
-                    "dataType" : "http://www.w3.org/2001/XMLSchema#anyURI",
                     "value" : "http://dbpedia.org/resource/United_Kingdom"
                   }, {
-                    "dataType" : "http://www.w3.org/2001/XMLSchema#anyURI",
                     "value" : "http://dbpedia.org/resource/England"
                   } ]
                 }""";
@@ -311,7 +360,6 @@ public class TestAccessQueryService extends TestAccessBase {
                   "subject" : "http://dbpedia.org/resource/Paris",
                   "predicate" : "http://dbpedia.org/ontology/country",
                   "objects" : [ {
-                    "dataType" : "http://www.w3.org/2001/XMLSchema#anyURI",
                     "value" : "http://dbpedia.org/resource/France"
                   } ]
                 }""";

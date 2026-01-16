@@ -27,16 +27,18 @@ Example response body with object values found:
   "predicate": "http://dbpedia.org/ontology/country",
   "objects": [
     {
-      "dataType": "http://www.w3.org/2001/XMLSchema#anyURI",
       "value": "http://dbpedia.org/resource/United_Kingdom"
     },
     {
-      "dataType": "http://www.w3.org/2001/XMLSchema#anyURI",
       "value": "http://dbpedia.org/resource/England"
     }
   ]
 }
 ```
+
+Object values that are resource URIs omit `dataType`. Literal values include `dataType`, and literal URIs use
+`http://www.w3.org/2001/XMLSchema#anyURI`.
+Blank node objects are returned as values like `_:label` with no `dataType`.
 
 Example response body without any object values found:
 
@@ -80,7 +82,6 @@ Example request body:
       "subject": "http://dbpedia.org/resource/London",
       "predicate": "http://dbpedia.org/ontology/country",
       "object": {
-        "dataType": "xsd:anyURI",
         "value": "http://dbpedia.org/resource/United_Kingdom"
       }
     }
@@ -108,7 +109,6 @@ Example response body:
       "predicate": "http://dbpedia.org/ontology/country",
       "object": [
         {
-          "dataType": "xsd:anyURI",
           "value": "http://dbpedia.org/resource/United_Kingdom"
         }
       ]
@@ -117,4 +117,3 @@ Example response body:
   "visible": true
 }
 ```
-
