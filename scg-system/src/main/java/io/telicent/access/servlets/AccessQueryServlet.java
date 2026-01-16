@@ -47,18 +47,7 @@ public class AccessQueryServlet extends HttpServlet {
             final List<Triple> triples = queryService.getTriples(action, accessQueryTriple);
             final List<JsonTripleObject> results = new ArrayList<>();
             for (Triple triple : triples) {
-                final Node tripleObject = triple.getObject();
-                if (tripleObject.isURI()) {
-                    final JsonTripleObject jsonTripleObject = new JsonTripleObject(
-                            XSDDatatype.XSDanyURI.getURI(),
-                            tripleObject.getURI());
-                    results.add(jsonTripleObject);
-                } else {
-                    final JsonTripleObject jsonTripleObject = new JsonTripleObject(
-                            tripleObject.getLiteralDatatype().getURI(),
-                            tripleObject.getLiteralValue().toString());
-                    results.add(jsonTripleObject);
-                }
+                results.add(toJsonTripleObject(triple.getObject()));
             }
             final AccessQueryResults queryResults = new AccessQueryResults(query, (results.isEmpty() ? null : results));
             processResponse(response, OBJECT_MAPPER.valueToTree(queryResults));
@@ -67,6 +56,31 @@ public class AccessQueryServlet extends HttpServlet {
         } catch (JsonProcessingException ex) {
             handleError(response, OBJECT_MAPPER.createObjectNode(), HttpServletResponse.SC_BAD_REQUEST, "Missing or invalid request body content");
         }
+    }
+
+    private static JsonTripleObject toJsonTripleObject(Node tripleObject) {
+        if (tripleObject.isURI()) {
+            return new JsonTripleObject(null, tripleObject.getURI());
+        }
+        if (tripleObject.isLiteral()) {
+            return getJsonTripleObjectFromLiteralNode(tripleObject);
+        }
+        if (tripleObject.isBlank()) {
+            final String blankNodeId = "_:" + tripleObject.getBlankNodeLabel();
+            return new JsonTripleObject(null, blankNodeId);
+        }
+        return new JsonTripleObject(null, tripleObject.toString());
+    }
+
+    private static JsonTripleObject getJsonTripleObjectFromLiteralNode(Node tripleObject) {
+        String datatypeUri = tripleObject.getLiteralDatatype() == null
+                ? null
+                : tripleObject.getLiteralDatatype().getURI();
+        return new JsonTripleObject(
+                XSDDatatype.XSDanyURI.equals(tripleObject.getLiteralDatatype())
+                        ? XSDDatatype.XSDanyURI.getURI()
+                        : datatypeUri,
+                tripleObject.getLiteralLexicalForm());
     }
 
     private Triple getAccessQueryTriple(AccessQuery accessQuery) throws SmartCacheGraphException {

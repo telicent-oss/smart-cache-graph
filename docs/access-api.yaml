@@ -77,10 +77,8 @@ paths:
                     subject: http://dbpedia.org/resource/London
                     predicate: http://dbpedia.org/ontology/country
                     objects:
-                      - dataType: http://www.w3.org/2001/XMLSchema#anyURI
-                        value: http://dbpedia.org/resource/United_Kingdom
-                      - dataType: http://www.w3.org/2001/XMLSchema#anyURI
-                        value: http://dbpedia.org/resource/England
+                      - value: http://dbpedia.org/resource/United_Kingdom
+                      - value: http://dbpedia.org/resource/England
                 London Birth Date:
                   value:
                     subject: http://dbpedia.org/resource/London
