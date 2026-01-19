@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1768817937673,
+  "lastUpdate": 1768818074509,
   "repoUrl": "https://github.com/telicent-oss/smart-cache-graph",
   "entries": {
     "ABAC Benchmark": [
@@ -1808,6 +1808,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "io.telicent.core.SCGraphScenarioBenchmark.benchmarkSparqlSelect",
             "value": 0.7836670714596112,
+            "unit": "ms/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "Paul Gallagher",
+            "username": "TelicentPaul",
+            "email": "132362215+TelicentPaul@users.noreply.github.com"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "9c23109b008a8c00081239144766b25e5e098f8d",
+          "message": "Merge pull request #341 from telicent-oss/dependabot/maven/maven-patch-group-6c1186fe36\n\nBump org.sonatype.central:central-publishing-maven-plugin from 0.9.0 to 0.10.0 in the maven-patch-group group",
+          "timestamp": "2026-01-13T12:44:52Z",
+          "url": "https://github.com/telicent-oss/smart-cache-graph/commit/9c23109b008a8c00081239144766b25e5e098f8d"
+        },
+        "date": 1768818074199,
+        "tool": "jmh",
+        "benches": [
+          {
+            "name": "io.telicent.core.SCGraphScenarioBenchmark.benchmarkGraphQL",
+            "value": 0.8815318628499288,
+            "unit": "ms/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "io.telicent.core.SCGraphScenarioBenchmark.benchmarkSparqlSelect",
+            "value": 1.0899789821945327,
             "unit": "ms/op",
             "extra": "iterations: 5\nforks: 1\nthreads: 1"
           }
