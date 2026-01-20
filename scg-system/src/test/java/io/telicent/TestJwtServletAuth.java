@@ -99,7 +99,7 @@ public class TestJwtServletAuth {
         List<PathExclusion> expectedList = List.of(
                 new PathExclusion("/$/ping"),
                 new PathExclusion("/$/metrics"),
-                new PathExclusion("/\\$/stats/*")
+                new PathExclusion("/$/stats/*")
         );
         FMod_JwtServletAuth jwtServletAuth = new FMod_JwtServletAuth();
         FusekiServer.Builder builder = SmartCacheGraph.serverBuilder().addServletAttribute(ATTRIBUTE_JWT_VERIFIER, new TestJwtVerifier());
