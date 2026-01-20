@@ -175,10 +175,7 @@ public class SCG_AuthPolicy {
      * @param perms Permissions policies to populate
      */
     public static void addTelicentEndpointPolicies(Map<PathExclusion, Policy> roles, Map<PathExclusion, Policy> perms) {
-        // NB - Where we are using wildcard policies the * is transformed into a .* in a regular expression, any other
-        //      characters that have significance, e.g. $, need to be escaped which we do by injecting a \ prior to it
-        //      which will be interpreted as an escape sequence when the given path is translated into a regular
-        //      expression
+        // NB - PathExclusion treats regex metacharacters as literals, so path patterns like "/$/..." are safe as-is.
 
         // Compact All - /$/compactall
         addPolicy(roles, "/$/compactall", ADMIN_ROLES);
@@ -186,11 +183,11 @@ public class SCG_AuthPolicy {
         // Backup/Restore - /$/backups/*
         // All endpoints require an adminstrator role
         // Endpoints require either backup.read and backup.write permissions as appropriate
-        addPolicy(roles, "/\\$/backups/*", ADMIN_ROLES);
+        addPolicy(roles, "/$/backups/*", ADMIN_ROLES);
         addPolicy(perms, "/$/backups/create", BACKUP_CREATE);
         addPolicy(perms, "/$/backups/delete", BACKUP_DELETE);
         addPolicy(perms, "/$/backups/restore", BACKUP_RESTORE);
-        addPolicy(perms, "/\\$/backups/*", BACKUP_READ_ONLY);
+        addPolicy(perms, "/$/backups/*", BACKUP_READ_ONLY);
     }
 
     /**
