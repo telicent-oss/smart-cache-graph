@@ -27,6 +27,7 @@ import java.util.concurrent.Future;
 import java.util.function.Consumer;
 
 import io.telicent.jena.abac.SysABAC;
+import io.telicent.jena.abac.fuseki.ServerABAC;
 import org.apache.jena.atlas.lib.Bytes;
 import org.apache.jena.atlas.logging.FmtLog;
 import org.apache.jena.atlas.logging.Log;
@@ -78,11 +79,11 @@ public class CQRS {
         Producer<String, byte[]> producer = (producerProperties == null)
                 ? null
                 : new KafkaProducer<>(producerProperties, new StringSerializer(), new ByteArraySerializer());
-        return new SPARQL_Update_CQRS(topic, producer, onBegin, onCommit, onAbort);
+        return new SPARQL_Update_CQRS(ServerABAC.userForRequest(), topic, producer, onBegin, onCommit, onAbort);
     }
 
     static ActionService updateActionWithProducer(String topic, Producer<String, byte[]> producer) {
-        return new SPARQL_Update_CQRS(topic, producer, onBegin, onCommit, onAbort);
+        return new SPARQL_Update_CQRS(ServerABAC.userForRequest(), topic, producer, onBegin, onCommit, onAbort);
     }
 
     /**
@@ -92,11 +93,11 @@ public class CQRS {
     static UpdateCQRS startOperation(String topic,
                                      Producer<String, byte[]> producer,
                                      HttpAction action,
+                                     DatasetGraph dsgBase,
                                      Consumer<HttpAction> onBegin,
                                      Consumer<HttpAction> onCommit,
                                      Consumer<HttpAction> onAbort) {
         // Base dataset is only ever read.
-        DatasetGraph dsgBase = action.getActiveDSG();
         String hSecurityLabel = action.getRequestHeader(SysABAC.hSecurityLabel);
 
         BufferingDatasetGraph dsgBuffering = new BufferingDatasetGraph(dsgBase);

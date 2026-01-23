@@ -1,0 +1,39 @@
+PREFIX :        <#>
+PREFIX fuseki:  <http://jena.apache.org/fuseki#>
+PREFIX rdf:     <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX tdb:     <http://jena.apache.org/2016/tdb#>
+PREFIX ja:      <http://jena.hpl.hp.com/2005/11/Assembler#>
+PREFIX authz:   <http://telicent.io/security#>
+PREFIX cqrs:    <http://telicent.io/cqrs#>
+PREFIX fk:      <http://jena.apache.org/fuseki/kafka#>
+
+:serviceSimple rdf:type fuseki:Service ;
+    fuseki:name "ds" ;
+    fuseki:dataset :datasetAuth ;
+    fuseki:endpoint [ fuseki:operation fuseki:query ; fuseki:name "query" ; ] ;
+    fuseki:endpoint [ fuseki:operation cqrs:update ; fuseki:name "update" ; ] ;
+    .
+:datasetAuth rdf:type authz:DatasetAuthz ;
+    authz:dataset :datasetBase;
+    authz:tripleDefaultAttributes "!";
+    authz:attributes  <file:attribute-store.ttl> ;
+    authz:labelsStore [ authz:labelsStorePath "target/databases/cqrsLabels.db" ] ;
+    .
+
+:datasetBase rdf:type      ja:MemoryDataset ;
+    .
+
+ ## ---- Kafka connector. Connected to the /ds dataset
+
+ :connector  rdf:type         fk:Connector;
+     fk:bootstrapServers   "env:{BOOTSTRAP_SERVERS}" ;
+     ## Connected to the dataset of this service.
+     fk:fusekiServiceName  "/ds" ;
+     ## Always replay the full contents of the Kafka topic
+     fk:replayTopic        true ;
+     fk:stateFile          "target/cqrs.state" ;
+     fk:topic              "tests" ;
+     fk:groupId            "env:{CONSUMER_GROUP}" ;
+     ## Set batch size to 1 so updates are applied immediately upon receipt from Kafka
+     fk:config ( "fuseki.kafka.batch.size" "1" )
+     .

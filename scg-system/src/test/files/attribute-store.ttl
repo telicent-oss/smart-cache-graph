@@ -8,6 +8,10 @@ PREFIX authz: <http://telicent.io/security#>
    authz:userAttribute "engineer" , "contractor" ;
    .
 
+[] authz:user "admin" ;
+   authz:userAttribute "engineer" , "employee" , "contractor" , "clearance=top-secret" ;
+   .
+
 [] authz:user "public" .
 
 [] authz:user "user1" ;

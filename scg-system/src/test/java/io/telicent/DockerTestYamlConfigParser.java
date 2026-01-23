@@ -18,6 +18,8 @@ package io.telicent;
 
 import io.telicent.jena.abac.fuseki.SysFusekiABAC;
 import io.telicent.smart.cache.configuration.Configurator;
+import io.telicent.smart.cache.sources.kafka.BasicKafkaTestCluster;
+import io.telicent.smart.cache.sources.kafka.KafkaTestCluster;
 import org.apache.jena.atlas.io.IO;
 import org.apache.jena.atlas.lib.FileOps;
 import org.apache.jena.datatypes.xsd.XSDDatatype;
@@ -58,7 +60,7 @@ class DockerTestYamlConfigParser {
 
     private static final String DIR = "src/test/files";
     private FusekiServer server;
-    private static MockKafka mock;
+    private static KafkaTestCluster KAFKA = new BasicKafkaTestCluster();
 
     private static final String serviceName = "/ds";
     public final String update = "data-update";
@@ -115,12 +117,14 @@ class DockerTestYamlConfigParser {
 
     Properties producerProps() {
         Properties producerProps = new Properties();
-        producerProps.put("bootstrap.servers", mock.getServer());
+        producerProps.put("bootstrap.servers", KAFKA.getBootstrapServers());
         return producerProps;
     }
 
     @BeforeAll
     public static void before() {
+        KAFKA.setup();
+
         // build a RowSetRewindable expectedRSR for checking the ABAC tests results
         Model comparisonModel = ModelFactory.createDefaultModel();
         String baseURI = "http://example/";
@@ -143,13 +147,12 @@ class DockerTestYamlConfigParser {
         expectedRSRtdl = qExec2.select().rewindable();
 
         // for the kafka connector tests
-        mock = new MockKafka();
         Properties consumerProps = new Properties();
-        consumerProps.put("bootstrap.servers", mock.getServer());
+        consumerProps.put("bootstrap.servers", KAFKA.getBootstrapServers());
         Properties producerProps = new Properties();
-        producerProps.put("bootstrap.servers", mock.getServer());
+        producerProps.put("bootstrap.servers", KAFKA.getBootstrapServers());
 
-        mock.createTopic("RDF0");
+        KAFKA.createTopic("RDF0");
     }
 
     @BeforeEach
@@ -171,7 +174,7 @@ class DockerTestYamlConfigParser {
 
     @AfterAll
     public static void after() {
-        mock.stop();
+        KAFKA.teardown();
     }
 
 
@@ -207,7 +210,7 @@ class DockerTestYamlConfigParser {
         FileOps.clearDirectory(STATE_DIR);
 
         File originalConfig = new File(DIR + "/yaml/config-connector-integration-test-1.yaml");
-        File actualConfig = replacePlaceholder(originalConfig, "localhost:9092", mock.getServer());
+        File actualConfig = replacePlaceholder(originalConfig, "localhost:9092", KAFKA.getBootstrapServers());
         List<String> arguments = List.of("--conf", actualConfig.getAbsolutePath());
 
         server = construct(arguments.toArray(new String[0]));

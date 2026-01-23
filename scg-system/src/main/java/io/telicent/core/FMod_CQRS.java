@@ -18,8 +18,8 @@ package io.telicent.core;
 
 import static io.telicent.core.CQRS.symKafkaTopic;
 
-import java.util.List;
-import java.util.Set;
+import java.time.Duration;
+import java.util.*;
 
 import org.apache.jena.atlas.lib.Version;
 import org.apache.jena.atlas.logging.FmtLog;
@@ -35,20 +35,31 @@ import org.apache.jena.fuseki.servlets.HttpAction;
 import org.apache.jena.kafka.KConnectorDesc;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.riot.WebContent;
+import org.apache.jena.sparql.algebra.Op;
 import org.apache.jena.sparql.util.Context;
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.Producer;
 import org.slf4j.Logger;
 
-/** Add CQRS update (writes patches to Kafka). */
+/**
+ * Add CQRS update (writes patches to Kafka).
+ */
 public class FMod_CQRS implements FusekiModule {
 
     public static Logger LOG = CQRS.LOG;
 
-    /** Software version taken from the jar file. */
+    /**
+     * Software version taken from the jar file.
+     */
     private static final String VERSION = Version.versionForClass(FMod_CQRS.class).orElse("<development>");
 
-    private static ActionService placeholder = new  ActionService() {
+    private final ThreadLocal<Map<String, Producer<?, ?>>> producers = ThreadLocal.withInitial(HashMap::new);
+
+    private static ActionService placeholder = new ActionService() {
         @Override
-        public void validate(HttpAction action) {}
+        public void validate(HttpAction action) {
+        }
+
         @Override
         public void execute(HttpAction action) {
             FmtLog.info(CQRS.LOG, "CQRS execute called but ActionService not configured");
@@ -59,7 +70,7 @@ public class FMod_CQRS implements FusekiModule {
         // Register a placeholder ActionService
         // This is replaced by the specific ActionService during prepare()
         OperationRegistry.get()
-            .register(CQRS.Vocab.operationUpdateCQRS, WebContent.contentTypeSPARQLUpdate, placeholder);
+                         .register(CQRS.Vocab.operationUpdateCQRS, WebContent.contentTypeSPARQLUpdate, placeholder);
     }
 
     @Override
@@ -72,9 +83,7 @@ public class FMod_CQRS implements FusekiModule {
         FmtLog.info(Fuseki.configLog, "CQRS Fuseki Module (%s)", VERSION);
 //        // Register "http://telicent.io/cqrs#update".
         // The configured ActionService is set during configDataAccessPoint.
-        builder.registerOperation(CQRS.Vocab.operationUpdateCQRS,
-                                  WebContent.contentTypeSPARQLUpdate,
-                                  placeholder);
+        builder.registerOperation(CQRS.Vocab.operationUpdateCQRS, WebContent.contentTypeSPARQLUpdate, placeholder);
     }
 
     @Override
@@ -84,7 +93,7 @@ public class FMod_CQRS implements FusekiModule {
 
     @Override
     public void configDataAccessPoint(DataAccessPoint dap, Model configModel) {
-        dap.getDataService().forEachEndpoint(endpoint->{
+        dap.getDataService().forEachEndpoint(endpoint -> {
             Operation op = endpoint.getOperation();
             // Upgrade all update operations ...
 //            if ( Operation.Update.equals(op) ) {
@@ -93,45 +102,77 @@ public class FMod_CQRS implements FusekiModule {
 //            }
 
             // Bind a processor to any CQRS Update operation.
-            if ( CQRS.Vocab.operationUpdateCQRS.equals(op) ) {
+            if (CQRS.Vocab.operationUpdateCQRS.equals(op)) {
                 String topicName = getTopicFromContext(endpoint.getContext());
-                if ( topicName == null ) {
+                if (topicName == null) {
                     List<String> topics = FKS.findTopics(dap.getName());
-                    if ( topics.isEmpty()) {
+                    if (topics.isEmpty()) {
                         FmtLog.error(LOG, "No topic name in context nor a registered connector for dataset %s.");
                         throw new FusekiConfigException("No topic name found");
                     }
-                    if ( topics.size() > 1 ) {
-                        FmtLog.error(LOG, "Multiple registered connectors for dataset %s. Set topic name in context to select one.");
+                    if (topics.size() > 1) {
+                        FmtLog.error(LOG,
+                                     "Multiple registered connectors for dataset %s. Set topic name in context to select one.");
                         throw new FusekiConfigException("Multiple topic names found");
                     }
                     topicName = topics.getFirst();
                 }
 
-                FmtLog.info(LOG, "Endpoint %s (operation %s) to topic %s", endpointName(dap, endpoint), op.getName(), topicName);
-                if ( topicName.isEmpty() )
-                    throw new FusekiConfigException("Empty string for topic name for "+symKafkaTopic+" on CQRS update operation");
+                FmtLog.info(LOG, "Endpoint %s (operation %s) to topic %s", endpointName(dap, endpoint), op.getName(),
+                            topicName);
+                if (topicName.isEmpty()) {
+                    throw new FusekiConfigException(
+                            "Empty string for topic name for " + symKafkaTopic + " on CQRS update operation");
+                }
 
                 KConnectorDesc conn = FKRegistry.get().getConnectorDescriptor(topicName);
                 // NB - It's safe to just pass the same set of Consumer Properties to the Producer, it will simply
                 //      ignore the properties that are consumer specific
                 //      If we don't pass these in as-in any extra configuration a user has provided, e.g. for Kafka
-                //      AuthN, won't be propagated and the producer will be stuck in a failure loop
+                //      Authentication/Authorization, these won't be propagated and the producer will be stuck in a
+                //      failure loop
                 ActionService cqrsUpdate = CQRS.updateAction(topicName, conn.getKafkaConsumerProps());
                 endpoint.setProcessor(cqrsUpdate);
+
+                // Register the created Kafka producer in our ThreadLocal so we can later ensure that we flush and close
+                // the producers upon server stop
+                if (cqrsUpdate instanceof SPARQL_Update_CQRS cqrsAction) {
+                    producers.get().put(topicName, cqrsAction.getProducer());
+                }
             }
         });
     }
 
+    @Override
+    public void serverStopped(FusekiServer server) {
+        Map<String, Producer<?, ?>> producers = this.producers.get();
+        if (producers != null) {
+            // Ensure that any active producers are explicitly flushed and closed upon server stop
+            producers.forEach((topic, producer) -> {
+                try {
+                    FmtLog.info(LOG, "Closing Kafka Producer for topic %s", topic);
+                    producer.flush();
+                    producer.close(Duration.ofSeconds(10));
+                    FmtLog.info(LOG, "Closed Kafka Producer for topic %s successfully", topic);
+                } catch (Throwable e) {
+                    FmtLog.warn(LOG, "Error closing Kafka Producer for topic %s: %s", topic, e.getMessage());
+                }
+            });
+            producers.clear();
+        }
+    }
+
     private String endpointName(DataAccessPoint dap, Endpoint endpoint) {
-        if ( endpoint.isUnnamed() )
+        if (endpoint.isUnnamed()) {
             return dap.getName();
-        return dap.getName()+"/"+endpoint.getName();
+        }
+        return dap.getName() + "/" + endpoint.getName();
     }
 
     private static String getTopicFromContext(Context context) {
-        if ( context == null )
+        if (context == null) {
             return null;
+        }
         return context.get(symKafkaTopic);
     }
 }

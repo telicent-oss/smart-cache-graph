@@ -215,6 +215,11 @@
             <version>2.1.8</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.awaitility</groupId>
+            <artifactId>awaitility</artifactId>
+            <version>${dependency.awaitility}</version>
+        </dependency>
 
         <!-- Open Telemetry - testing -->
         <dependency>
@@ -256,6 +261,13 @@
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.telicent.smart-caches</groupId>
+            <artifactId>event-source-kafka</artifactId>
+            <version>${dependency.smart-caches-core}</version>
+            <classifier>tests</classifier>
             <scope>test</scope>
         </dependency>
         <dependency>
