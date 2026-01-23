@@ -31,7 +31,6 @@ import java.util.function.Function;
 import io.telicent.jena.abac.ABAC;
 import io.telicent.jena.abac.fuseki.ABAC_Processor;
 import io.telicent.jena.abac.fuseki.ABAC_Request;
-import io.telicent.jena.graphql.schemas.telicent.graph.TelicentGraphSchema;
 import jakarta.servlet.http.HttpServletRequest;
 import org.apache.jena.fuseki.Fuseki;
 import org.apache.jena.fuseki.servlets.*;

@@ -15,10 +15,7 @@ import org.apache.jena.sparql.exec.http.QueryExecHTTPBuilder;
 import org.apache.jena.sparql.exec.http.UpdateExecHTTPBuilder;
 import org.awaitility.Awaitility;
 import org.junit.Assert;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -93,6 +90,13 @@ public class DockerTestCQRS {
         FusekiLogging.setLogging();
         LibTestsSCG.setupAuthentication();
         LibTestsSCG.disableInitialCompaction();
+    }
+
+    @AfterAll
+    protected static void teardownKafka() {
+        if (KAFKA != null) {
+            KAFKA.teardown();
+        }
     }
 
     @BeforeEach

@@ -20,7 +20,9 @@ import static io.telicent.core.CQRS.symKafkaTopic;
 
 import java.time.Duration;
 import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
 
+import org.apache.jena.atlas.lib.Pair;
 import org.apache.jena.atlas.lib.Version;
 import org.apache.jena.atlas.logging.FmtLog;
 import org.apache.jena.fuseki.Fuseki;
@@ -53,7 +55,7 @@ public class FMod_CQRS implements FusekiModule {
      */
     private static final String VERSION = Version.versionForClass(FMod_CQRS.class).orElse("<development>");
 
-    private final ThreadLocal<Map<String, Producer<?, ?>>> producers = ThreadLocal.withInitial(HashMap::new);
+    private final List<Pair<String, Producer<?, ?>>> producers = new CopyOnWriteArrayList<>();
 
     private static ActionService placeholder = new ActionService() {
         @Override
@@ -137,7 +139,7 @@ public class FMod_CQRS implements FusekiModule {
                 // Register the created Kafka producer in our ThreadLocal so we can later ensure that we flush and close
                 // the producers upon server stop
                 if (cqrsUpdate instanceof SPARQL_Update_CQRS cqrsAction) {
-                    producers.get().put(topicName, cqrsAction.getProducer());
+                    producers.add(Pair.create(topicName, cqrsAction.getProducer()));
                 }
             }
         });
@@ -145,21 +147,20 @@ public class FMod_CQRS implements FusekiModule {
 
     @Override
     public void serverStopped(FusekiServer server) {
-        Map<String, Producer<?, ?>> producers = this.producers.get();
-        if (producers != null) {
-            // Ensure that any active producers are explicitly flushed and closed upon server stop
-            producers.forEach((topic, producer) -> {
-                try {
-                    FmtLog.info(LOG, "Closing Kafka Producer for topic %s", topic);
-                    producer.flush();
-                    producer.close(Duration.ofSeconds(10));
-                    FmtLog.info(LOG, "Closed Kafka Producer for topic %s successfully", topic);
-                } catch (Throwable e) {
-                    FmtLog.warn(LOG, "Error closing Kafka Producer for topic %s: %s", topic, e.getMessage());
-                }
-            });
-            producers.clear();
-        }
+        // Ensure that any active producers are explicitly flushed and closed upon server stop
+        producers.forEach(pair -> {
+            String topic = pair.getLeft();
+            Producer<?,?> producer = pair.getRight();
+            try {
+                FmtLog.info(LOG, "Closing Kafka Producer for topic %s", topic);
+                producer.flush();
+                producer.close(Duration.ofSeconds(10));
+                FmtLog.info(LOG, "Closed Kafka Producer for topic %s successfully", topic);
+            } catch (Throwable e) {
+                FmtLog.warn(LOG, "Error closing Kafka Producer for topic %s: %s", topic, e.getMessage());
+            }
+        });
+        producers.clear();
     }
 
     private String endpointName(DataAccessPoint dap, Endpoint endpoint) {
