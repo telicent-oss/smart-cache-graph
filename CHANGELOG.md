@@ -1,5 +1,20 @@
 # Smart Cache Graph
 
+## 0.93.0
+
+- Fixed a bug in CQRS endpoint where it did not interact correctly with ABAC datasets potentially allowing a user with
+  write privileges to issue a crafted SPARQL update to modify data they could not normally see
+- Improved access query JSON response format to better disambiguate URIs from Literals
+- Build improvements:
+    - Jackson upgraded to 2.21.0
+    - JWT Servlet Auth upgraded to 3.0.0
+    - Log4j upgraded to 2.25.2
+    - Logback upgraded to 1.5.25
+    - LZ4 Java upgraded to 1.10.2
+    - Smart Caches Core upgraded to 0.33.0
+    - Various build and test plugins upgraded to latest available
+    - Added more JMH benchmarking
+
 ## 0.92.5
 
 - Build improvements:
