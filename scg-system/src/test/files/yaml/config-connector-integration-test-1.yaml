@@ -31,10 +31,12 @@ connectors:
     bootstrap-servers: "localhost:9092"
     state-file: "target/Replay-RDF0-ds.state"
     replay-topic: true
+    group-id: ds
   - fuseki-service: "/ds2"
-    topic: "RDF0"
+    topic: "RDF1"
     bootstrap-servers: "localhost:9092"
     state-file: "target/Replay-RDF0-ds2.state"
     replay-topic: true
+    group-id: ds2
 
 

@@ -90,6 +90,7 @@
     <dependency.smart-caches-core>0.33.0</dependency.smart-caches-core>
 
     <!-- External dependencies -->
+    <dependency.awaitility>4.3.0</dependency.awaitility>
     <dependency.jackson>2.21.0</dependency.jackson>
     <dependency.bouncycastle>1.83</dependency.bouncycastle>
     <dependency.kafka>3.9.1</dependency.kafka>
