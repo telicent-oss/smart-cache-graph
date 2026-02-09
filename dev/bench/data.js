@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1770625379178,
+  "lastUpdate": 1770625579903,
   "repoUrl": "https://github.com/telicent-oss/smart-cache-graph",
   "entries": {
     "ABAC Benchmark": [
@@ -1394,6 +1394,46 @@ window.BENCHMARK_DATA = {
           {
             "name": "io.telicent.core.IngestionBenchmark.benchmarkIngestWithLabels ( {\"batchSize\":\"10000\"} )",
             "value": 19.736460691780948,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "Paul Gallagher",
+            "username": "TelicentPaul",
+            "email": "132362215+TelicentPaul@users.noreply.github.com"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "585d68f290598186cec7a9787bd3060c7c4de508",
+          "message": "Merge pull request #352 from telicent-oss/dependabot/maven/maven-patch-group-640e564cb0\n\nBump the maven-patch-group group with 5 updates",
+          "timestamp": "2026-02-03T12:02:26Z",
+          "url": "https://github.com/telicent-oss/smart-cache-graph/commit/585d68f290598186cec7a9787bd3060c7c4de508"
+        },
+        "date": 1770625579255,
+        "tool": "jmh",
+        "benches": [
+          {
+            "name": "io.telicent.core.IngestionBenchmark.benchmarkIngestWithLabels ( {\"batchSize\":\"100\"} )",
+            "value": 51.630106521289655,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "io.telicent.core.IngestionBenchmark.benchmarkIngestWithLabels ( {\"batchSize\":\"1000\"} )",
+            "value": 25.08245173827011,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "io.telicent.core.IngestionBenchmark.benchmarkIngestWithLabels ( {\"batchSize\":\"10000\"} )",
+            "value": 20.15522785668629,
             "unit": "ops/s",
             "extra": "iterations: 5\nforks: 1\nthreads: 1"
           }
