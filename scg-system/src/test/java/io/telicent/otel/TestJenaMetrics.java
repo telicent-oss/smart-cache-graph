@@ -309,7 +309,9 @@ class TestJenaMetrics {
                   .filter(d -> d.getAttributes().get(aDBname).equals("/ds") &&
                                d.getAttributes().get(aDBoperation).equals("gsp-rw"))
                   .anyMatch(d -> d.getValue() == 1));
-        } finally { server.stop(); }
+        } finally {
+            server.stop();
+        }
     }
 
     @Test
@@ -332,7 +334,9 @@ class TestJenaMetrics {
                     .build();
             HttpResponse<Void> response = HttpEnv.getDftHttpClient().send(request, HttpResponse.BodyHandlers.discarding());
 //            server.join();
-        } finally { server.stop(); }
+        } finally {
+            server.stop();
+        }
     }
 
     @Test

@@ -148,7 +148,6 @@ public class TestPersistentSetup {
             Assertions.fail("Unexpected error: " + ex.getMessage());
         } finally {
             server.stop();
-            server = null;
         }
     }
 

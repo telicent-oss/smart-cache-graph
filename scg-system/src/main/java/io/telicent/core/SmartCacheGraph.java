@@ -28,7 +28,7 @@ import io.telicent.smart.caches.configuration.auth.AuthConstants;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.jena.atlas.lib.Version;
 import org.apache.jena.fuseki.main.FusekiServer;
-import org.apache.jena.fuseki.main.cmds.FusekiMain;
+import org.apache.jena.fuseki.main.FusekiMain;
 import org.apache.jena.fuseki.main.sys.FusekiModule;
 import org.apache.jena.fuseki.main.sys.FusekiModules;
 import org.apache.jena.rdf.model.Model;
@@ -72,13 +72,10 @@ public class SmartCacheGraph {
      */
     public static FusekiServer construct(String... args) {
         convertYamlConfigToRDF(args);
-        FusekiModules fmods = modules();
-        FusekiServer server = FusekiMain
-                .builder(args)
-                .fusekiModules(fmods)
+        return FusekiMain
+                .builder(modules(), args)
                 .enablePing(true)
                 .build();
-        return server;
     }
 
     /**
