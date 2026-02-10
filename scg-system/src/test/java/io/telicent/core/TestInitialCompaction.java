@@ -60,8 +60,10 @@ public class TestInitialCompaction {
     void clearDown() {
         mockDatabaseMgr.clearInvocations();
         mockDatabaseMgr.reset();
-
         removePreviousCompactionResults();
+        if (server != null) {
+            server.stop();
+        }
     }
 
     private static void removePreviousCompactionResults() {

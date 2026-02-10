@@ -51,8 +51,9 @@ public class TestRequestIDFilter {
 
     @AfterAll
     static void stopFusekiServer(){
-        if (null != server)
+        if (null != server) {
             server.stop();
+        }
     }
 
     @Test

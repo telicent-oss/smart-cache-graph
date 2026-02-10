@@ -89,8 +89,9 @@ public class TestSmartCacheGraphIntegration {
             long x = RowSetOps.count(rs);
             assertEquals(expected, x);
         } finally {
-            if ( server != null )
+            if ( server != null ){
                 server.stop();
+            }
         }
     }
 
@@ -99,9 +100,8 @@ public class TestSmartCacheGraphIntegration {
         // Remote Attribute Store
         Graph g = RDFParser.source(DIR+"/attribute-store.ttl").toGraph();
         AttributesStore attrStore = Attributes.buildStore(g);
-        String mockAttributesStoreURL = SimpleAttributesStore.run(0, attrStore);
 
-        String attributeStoreBaseURL = mockAttributesStoreURL;
+        String attributeStoreBaseURL = SimpleAttributesStore.run(0, attrStore);
         String lookupUserAttribesURL = LibAuthService.serviceURL(attributeStoreBaseURL, AttributeService.lookupUserAttributeTemplate);
         String lookupHierarchAttribesURL = LibAuthService.serviceURL(attributeStoreBaseURL, AttributeService.lookupHierarchyTemplate);
 

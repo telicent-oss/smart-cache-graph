@@ -14,7 +14,7 @@ import io.telicent.smart.cache.configuration.sources.PropertiesSource;
 import io.telicent.smart.caches.configuration.auth.AuthConstants;
 import org.apache.jena.atlas.web.HttpException;
 import org.apache.jena.fuseki.main.FusekiServer;
-import org.apache.jena.fuseki.main.cmds.FusekiMain;
+import org.apache.jena.fuseki.main.FusekiMain;
 import org.apache.jena.fuseki.main.sys.FusekiModules;
 import org.apache.jena.http.HttpEnv;
 import org.apache.jena.http.HttpLib;
@@ -102,7 +102,7 @@ public class TestJwtServletAuth {
                 new PathExclusion("/$/stats/*")
         );
         FMod_JwtServletAuth jwtServletAuth = new FMod_JwtServletAuth();
-        FusekiServer.Builder builder = SmartCacheGraph.serverBuilder().addServletAttribute(ATTRIBUTE_JWT_VERIFIER, new TestJwtVerifier());
+        FusekiServer.Builder builder = SmartCacheGraph.serverBuilder().setServletAttribute(ATTRIBUTE_JWT_VERIFIER, new TestJwtVerifier());
         // when
         jwtServletAuth.prepare(builder, null, null);
         // then
@@ -118,9 +118,8 @@ public class TestJwtServletAuth {
         FMod_JwtServletAuth jwtServletAuth = new FMod_JwtServletAuth();
         FMod_InitialCompaction initialCompaction = new FMod_InitialCompaction ();
         Attributes.buildStore(emptyGraph);
-        FusekiServer server = FusekiMain.builder("--port=0", "--empty")
-                .fusekiModules(FusekiModules.create(List.of(jwtServletAuth, initialCompaction)))
-                .addServletAttribute(ATTRIBUTE_JWT_VERIFIER, new TestJwtVerifier())
+        FusekiServer server = FusekiMain.builder(FusekiModules.create(jwtServletAuth, initialCompaction), "--port=0", "--empty")
+                .setServletAttribute(ATTRIBUTE_JWT_VERIFIER, new TestJwtVerifier())
                 .enablePing(true)
                 .enableMetrics(true)
                 .enableStats(true)
@@ -145,7 +144,6 @@ public class TestJwtServletAuth {
         assertEquals(401, otherResponse.statusCode());
         httpException = assertThrows(HttpException.class, () -> handleResponseNoBody(otherResponse));
         assertTrue(httpException.getResponse().contains("Unauthorized"));
-
         server.stop();
     }
 

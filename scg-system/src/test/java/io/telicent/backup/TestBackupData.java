@@ -28,7 +28,7 @@ import io.telicent.smart.caches.configuration.auth.policy.TelicentRoles;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.Strings;
 import org.apache.jena.fuseki.main.FusekiServer;
-import org.apache.jena.fuseki.main.cmds.FusekiMain;
+import org.apache.jena.fuseki.main.FusekiMain;
 import org.apache.jena.fuseki.main.sys.FusekiModule;
 import org.apache.jena.fuseki.main.sys.FusekiModules;
 import org.apache.jena.fuseki.server.DataAccessPointRegistry;
@@ -99,8 +99,7 @@ public class TestBackupData {
 
     private FusekiServer buildServer(String... args) {
         return FusekiMain
-                .builder(args)
-                .fusekiModules(generateModulesAndReplaceWithTestModule())
+                .builder(generateModulesAndReplaceWithTestModule(), args)
                 .build().start();
     }
 
