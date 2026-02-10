@@ -64,7 +64,7 @@
     <plugin.clean>3.3.2</plugin.clean>
     <plugin.compiler>3.15.0</plugin.compiler>
     <plugin.cyclonedx>2.9.1</plugin.cyclonedx>
-    <plugin.dependency>3.9.0</plugin.dependency>
+    <plugin.dependency>3.10.0</plugin.dependency>
     <plugin.deploy>3.1.4</plugin.deploy>
     <plugin.enforcer>3.4.1</plugin.enforcer>
     <plugin.gpg>3.2.8</plugin.gpg>
@@ -87,21 +87,21 @@
     <dependency.fuseki-server>${dependency.jena}</dependency.fuseki-server>
     <dependency.graphql>0.10.8</dependency.graphql>
     <dependency.jwt-servlet-auth>3.0.0</dependency.jwt-servlet-auth>
-    <dependency.smart-caches-core>0.34.0</dependency.smart-caches-core>
+    <dependency.smart-caches-core>0.35.0</dependency.smart-caches-core>
 
     <!-- External dependencies -->
     <dependency.awaitility>4.3.0</dependency.awaitility>
     <dependency.jackson>2.21.0</dependency.jackson>
     <dependency.bouncycastle>1.83</dependency.bouncycastle>
     <dependency.kafka>3.9.1</dependency.kafka>
-    <dependency.kotlin>2.3.0</dependency.kotlin>
+    <dependency.kotlin>2.3.10</dependency.kotlin>
     <dependency.lz4>1.10.3</dependency.lz4>
     <dependency.otel>1.33.0</dependency.otel> <!-- These two must be in-step. -->
     <dependency.otel-semconv>1.30.1-alpha</dependency.otel-semconv> <!-- These two must be in-step. -->
 
     <!-- Logging dependencies -->
     <dependency.log4j2>2.25.3</dependency.log4j2>
-    <dependency.logback>1.5.27</dependency.logback>
+    <dependency.logback>1.5.29</dependency.logback>
     <dependency.slf4j>2.0.17</dependency.slf4j>
 
     <!-- Test dependencies -->
