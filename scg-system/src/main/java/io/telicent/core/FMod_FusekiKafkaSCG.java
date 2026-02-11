@@ -28,7 +28,6 @@ import io.telicent.smart.cache.payloads.RdfPayload;
 import io.telicent.smart.cache.projectors.Sink;
 import io.telicent.smart.cache.sources.Event;
 import org.apache.jena.atlas.io.IOX;
-import org.apache.jena.atlas.logging.FmtLog;
 import org.apache.jena.fuseki.kafka.FKS;
 import org.apache.jena.fuseki.kafka.FMod_FusekiKafka;
 import org.apache.jena.fuseki.main.FusekiServer;
@@ -138,10 +137,10 @@ public class FMod_FusekiKafkaSCG extends FMod_FusekiKafka {
         String filename = path + "/" + sanitizedDataset + ".json";
         File offsetStoreFile = new File(filename);
         if (offsetStoreFile.length() == 0) {
-            String errorMessage =
-                    String.format("Unable to restore Kafka for dataset (%s) as restore file (%s) not suitable. ",
-                                  dataset, filename);
-            FmtLog.info(LOG, errorMessage);
+            String errorMessage = String.format(
+                    "Unable to restore Kafka for dataset (%s) as restore file (%s) not suitable.",
+                    dataset, filename);
+            LOG.warn("Unable to restore Kafka for dataset {} as restore file {} not suitable.", dataset, filename);
             resultNode.put("success", false);
             resultNode.put("reason", errorMessage);
             return resultNode;

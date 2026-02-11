@@ -54,7 +54,7 @@ public class SmartCacheGraph {
      */
     public static final String VERSION = version();
 
-    public final static Logger log = LoggerFactory.getLogger("fuseki-yaml-config");
+    public final static Logger log = LoggerFactory.getLogger(SmartCacheGraph.class);
 
     private static String version() {
         return Version.versionForClass(SmartCacheGraph.class).orElse("<development>");
@@ -172,13 +172,13 @@ public class SmartCacheGraph {
                             configModel.write(out, "TTL", new File(configPath).getAbsoluteFile().getParentFile().toURI().toString());
                             args[i + 1] = rdfConfigPath.getPath();
                         } catch (IOException e) {
-                            log.error(e.getMessage());
-                            throw new RuntimeException(e.getMessage());
+                            log.error("Failed to write generated RDF config", e);
+                            throw new RuntimeException("Failed to write generated RDF config", e);
                         }
                     } catch (RuntimeException ex) {
-                        throw new RuntimeException("Failure parsing the YAML config file: " + ex.getMessage());
+                        throw new RuntimeException("Failure parsing the YAML config file: " + ex.getMessage(), ex);
                     } catch (IOException e) {
-                        throw new RuntimeException(e);
+                        throw new RuntimeException("Failed to parse the YAML config file", e);
                     }
                 }
             }

@@ -11,7 +11,6 @@ import io.telicent.utils.SmartCacheGraphException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.apache.jena.atlas.logging.FmtLog;
 import org.apache.jena.graph.Node;
 import org.apache.jena.graph.NodeFactory;
 import org.apache.jena.graph.Triple;
@@ -90,11 +89,11 @@ public class LabelsQueryServlet extends HttpServlet {
                 }
             } else {
                 final String message = "Invalid JSON format: Missing 'triples' array.";
-                FmtLog.error(LOG, message);
+                LOG.warn(message);
                 throw new SmartCacheGraphException(message);
             }
         } catch (IOException | IllegalArgumentException exception) {
-            FmtLog.error(LOG, exception.getMessage());
+            LOG.warn("Failed to parse labels query request", exception);
             throw new SmartCacheGraphException(exception.getMessage());
         }
         return tripleList;

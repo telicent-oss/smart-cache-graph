@@ -33,7 +33,7 @@ import java.util.zip.ZipInputStream;
 
 public class CompressionUtils {
 
-    public static final Logger LOG = LoggerFactory.getLogger("CompressionUtils");
+    public static final Logger LOG = LoggerFactory.getLogger(CompressionUtils.class);
     private static final int BUFFER_SIZE = 1024;
 
     /**
@@ -89,7 +89,7 @@ public class CompressionUtils {
             return zipFilePath;
 
         } catch (IOException e) {
-            LOG.error("Error zipping directory {}: {}", sourceDirPath, e.getMessage());
+            LOG.error("Error zipping directory {}", sourceDirPath, e);
             throw new RuntimeException(e);
         } finally {
             if (deleteSource && zipSuccessful) {
@@ -97,7 +97,7 @@ public class CompressionUtils {
                     deleteDirectoryRecursive(sourceDirPath);
                     LOG.info("Source directory deleted: {}", sourceDirPath);
                 } catch (IOException e) {
-                    LOG.error("Error deleting source directory {} after zipping: {}", sourceDirPath, e.getMessage());
+                    LOG.error("Error deleting source directory {} after zipping", sourceDirPath, e);
                 }
             }
         }

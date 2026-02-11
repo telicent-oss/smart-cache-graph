@@ -71,7 +71,7 @@ import static org.apache.jena.riot.Lang.NQUADS;
 
 public class DatasetBackupService {
 
-    public static final Logger LOG = LoggerFactory.getLogger("DatasetBackupService");
+    public static final Logger LOG = LoggerFactory.getLogger(DatasetBackupService.class);
 
     private final static String BACKUP_SUFFIX = "_backup";
 
@@ -795,7 +795,7 @@ public class DatasetBackupService {
                 LOG.debug("Successfully encrypted file: {} as {}", zipFilePath, encZipPath.toString());
                 Files.delete(zipFilePath);
             } catch (IOException | PGPException ex) {
-                LOG.error("Failed to encrypt backup files due to {}", ex.getMessage(), ex);
+                LOG.error("Failed to encrypt backup files", ex);
             }
         }
         ZonedDateTime endTime = ZonedDateTime.now();

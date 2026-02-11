@@ -31,7 +31,7 @@ import java.util.Optional;
 
 public class EncryptionUtils {
 
-    private static final Logger LOG = LoggerFactory.getLogger("EncryptionUtils");
+    private static final Logger LOG = LoggerFactory.getLogger(EncryptionUtils.class);
 
 
     private final int compressionAlgorithm;

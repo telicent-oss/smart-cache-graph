@@ -41,7 +41,7 @@ import java.util.Optional;
  */
 public class FMod_BackupData implements FusekiAutoModule {
 
-    public static final Logger LOG = LoggerFactory.getLogger("FMod_BackupData");
+    public static final Logger LOG = LoggerFactory.getLogger(FMod_BackupData.class);
 
     /**
      * Configuration flag to enable/disable functionality.
@@ -91,7 +91,7 @@ public class FMod_BackupData implements FusekiAutoModule {
                 serverBuilder.addServlet("/$/backups/report/*", new ReportServlet(backupService));
                 serverBuilder.addServlet("/$/backups/details/*", new DetailsServlet(backupService));
             } catch (SmartCacheGraphException ex) {
-                LOG.warn("Database backups are not enabled due to {}", ex.getMessage());
+                LOG.warn("Database backups are not enabled", ex);
             }
         }
     }
@@ -117,7 +117,7 @@ public class FMod_BackupData implements FusekiAutoModule {
             try{
                 return Optional.of(KeyPair.fromValues(getPrivateKeyUrl(), getPublicKeyUrl(), getPasskey()));
             } catch (IllegalArgumentException | MalformedURLException | URISyntaxException ex){
-                LOG.error("Unable to read backup encryption key pair due to {}",ex.getMessage(),ex);
+                LOG.error("Unable to read backup encryption key pair", ex);
                 return Optional.empty();
             }
         } else {
