@@ -22,7 +22,7 @@ RUN chown -R user:user "$FUSEKI_DIR" /opt/telicent/sbom
 WORKDIR "$FUSEKI_DIR"
 
 # Copy application files with correct ownership and permissions
-COPY --chown=user:user scg-docker/entrypoint.sh scg-docker/logback.xml ./
+COPY --chown=user:user scg-docker/entrypoint.sh scg-docker/logback.xml scg-docker/log4j2.properties ./
 COPY --chown=user:user scg-docker/target/dependency lib/
 COPY --chown=user:user scg-docker/target/agents agents/
 COPY --chown=user:user scg-docker/target/docker-${PROJECT_VERSION}-bom.json /opt/telicent/sbom/smart-cache-graph-${PROJECT_VERSION}-bom.json
