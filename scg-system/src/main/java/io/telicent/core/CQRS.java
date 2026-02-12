@@ -29,7 +29,6 @@ import java.util.function.Consumer;
 import io.telicent.jena.abac.SysABAC;
 import io.telicent.jena.abac.fuseki.ServerABAC;
 import org.apache.jena.atlas.lib.Bytes;
-import org.apache.jena.atlas.logging.FmtLog;
 import org.apache.jena.atlas.logging.Log;
 import org.apache.jena.fuseki.server.Operation;
 import org.apache.jena.fuseki.servlets.ActionService;
@@ -60,7 +59,7 @@ import org.slf4j.LoggerFactory;
 public class CQRS {
 
     /** Log for CQRS related messages */
-    public static Logger LOG = LoggerFactory.getLogger("io.telicent.CQRS");
+    public static Logger LOG = LoggerFactory.getLogger(CQRS.class);
     /** Context symbol for Kafka topic */
     public static Symbol symKafkaTopic = Symbol.create("kafka:topic");
 
@@ -163,7 +162,7 @@ public class CQRS {
     private static void onCommit(HttpAction action) {
         UpdateCQRS changesCtl = action.getContext().get(symbol);
         if ( changesCtl == null ) {
-            FmtLog.error(LOG, "[%d] onCommit: No UpdateCQRS record", action.id);
+            LOG.error("[{}] onCommit: No UpdateCQRS record", action.id);
             return;
         }
 
@@ -189,7 +188,7 @@ public class CQRS {
             sendToKafka(changesCtl.producer, changesCtl.topic, sendHeaders, kBody);
         } else {
             System.out.print(Bytes.bytes2string(kBody));
-            FmtLog.info(LOG, "Send to Kafka: topic=%s bytes=%d", changesCtl.topic, kBody.length);
+            LOG.info("Send to Kafka: topic={} bytes={}", changesCtl.topic, kBody.length);
         }
         action.getContext().remove(symbol);
     }
@@ -201,7 +200,7 @@ public class CQRS {
         UpdateCQRS changesCtl = action.getContext().get(symbol);
         if ( changesCtl == null ) {
             // May be an abort before or after UpdateCQRS exists (unlikely!)
-            FmtLog.warn(LOG, "[%d] onAbort: No UpdateCQRS record", action.id);
+            LOG.warn("[{}] onAbort: No UpdateCQRS record", action.id);
             return;
         }
         action.getContext().remove(symbol);
@@ -212,7 +211,7 @@ public class CQRS {
      */
     protected static <K,V> long sendToKafka(Producer<K,V> producer, String topic, List<Header> sendHeaders, V content) {
         RecordMetadata res = sendToKafka(producer, null, topic, sendHeaders, content);
-        FmtLog.info(LOG, "[%s] Send: Offset = %d", topic, res.offset());
+        LOG.info("[{}] Send: Offset = {}", topic, res.offset());
         return res.offset();
     }
 

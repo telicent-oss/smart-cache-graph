@@ -39,7 +39,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class FMod_InitialCompaction implements FusekiAutoModule {
 
-    public static final Logger LOG = LoggerFactory.getLogger("io.telicent.core.FMod_InitialCompaction");
+    public static final Logger LOG = LoggerFactory.getLogger(FMod_InitialCompaction.class);
     final Set<String> datasets = new HashSet<>();
     static final boolean DELETE_OLD = true;
     public static final String DISABLE_INITIAL_COMPACTION = "DISABLE_INITIAL_COMPACTION";
@@ -94,7 +94,7 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
             if (optionalDatasetGraph.isPresent()) {
                 compactDatasetGraphDatabase(optionalDatasetGraph.get(), name);
             } else {
-                FmtLog.debug(LOG, "Compaction not required for %s as no graph", name);
+                LOG.debug("Compaction not required for {} as no graph", name);
             }
         }
     }
@@ -115,9 +115,8 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
             long sizeBefore = findDatabaseSize(dsg);
             if (SIZES.containsKey(name)) {
                 if (sizeBefore <= SIZES.get(name)) {
-                    FmtLog.info(LOG,
-                                "[Compaction] Additional compaction not required for %s as it is already maximally compacted at %s (%d)",
-                                name, humanReadableSize(sizeBefore), sizeBefore);
+                    LOG.info("[Compaction] Additional compaction not required for {} as it is already maximally compacted at {} ({})",
+                             name, humanReadableSize(sizeBefore), sizeBefore);
                     return;
                 }
             }
@@ -129,9 +128,8 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
             // from further compaction
             long previousCompactionSize = findPreviousCompactionSize(dsg);
             if (previousCompactionSize == sizeBefore) {
-                FmtLog.info(LOG,
-                            "[Compaction] Additional compaction not required for %s as it was already maximally compacted by a prior compaction at %s (%d)",
-                            name, humanReadableSize(sizeBefore), sizeBefore);
+                LOG.info("[Compaction] Additional compaction not required for {} as it was already maximally compacted by a prior compaction at {} ({})",
+                         name, humanReadableSize(sizeBefore), sizeBefore);
                 return;
             }
 
@@ -140,18 +138,17 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
                 // If it fails, stop processing to avoid deadlock.
 
                 if (!dsg.tryExclusiveMode(false)) {
-                    FmtLog.info(LOG,
-                                "[Compaction] Ignoring for %s due to potential deadlock operation", name);
+                    LOG.info("[Compaction] Ignoring for {} due to potential deadlock operation", name);
                     return;
                 }
-                FmtLog.info(LOG, "[Compaction] >>>> Start compact %s, current size is %s (%d)", name,
-                            humanReadableSize(sizeBefore), sizeBefore);
+                LOG.info("[Compaction] >>>> Start compact {}, current size is {} ({})", name,
+                         humanReadableSize(sizeBefore), sizeBefore);
                 Timer timer = new Timer();
                 timer.startTimer();
                 DatabaseMgr.compact(dsg, DELETE_OLD);
                 long sizeAfter = findDatabaseSize(dsg);
-                FmtLog.info(LOG, "[Compaction] <<<< Finish compact %s. Took %s seconds.  Compacted size is %s (%d)",
-                            name, Timer.timeStr(timer.endTimer()), humanReadableSize(sizeAfter), sizeAfter);
+                LOG.info("[Compaction] <<<< Finish compact {}. Took {} seconds.  Compacted size is {} ({})",
+                         name, Timer.timeStr(timer.endTimer()), humanReadableSize(sizeAfter), sizeAfter);
                 SIZES.put(name, sizeAfter);
                 updateCompactionResultsFile(dsg, sizeAfter);
                 compactLabels(datasetGraph);
@@ -159,7 +156,7 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
                 dsg.finishExclusiveMode();
             }
         } else {
-            FmtLog.debug(LOG, "Compaction not required for %s as not TDB2", name);
+            LOG.debug("Compaction not required for {} as not TDB2", name);
         }
     }
 
@@ -173,9 +170,8 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
         try (FileOutputStream output = new FileOutputStream(getPreviousCompactionResultFile(dsg))) {
             output.write(Long.toString(size).getBytes(StandardCharsets.UTF_8));
         } catch (IOException e) {
-            FmtLog.warn(LOG,
-                        "[Compaction] Unable to write compaction results file - {} - unnecessary compactions may occur in a future as a result",
-                        e.getMessage());
+            LOG.warn("[Compaction] Unable to write compaction results file - unnecessary compactions may occur in a future as a result",
+                     e);
         }
     }
 
@@ -268,14 +264,14 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
             if (labelsStore instanceof LabelsStoreRocksDB rocksDB) {
                 Timer timer = new Timer();
                 timer.startTimer();
-                FmtLog.info(LOG, "[Compaction] <<<< Start label store compaction.");
+                LOG.info("[Compaction] <<<< Start label store compaction.");
                 rocksDB.compact();
-                FmtLog.info(LOG, "[Compaction] <<<< Finish label store compaction. Took %s seconds.",
-                            Timer.timeStr(timer.endTimer()));
+                LOG.info("[Compaction] <<<< Finish label store compaction. Took {} seconds.",
+                         Timer.timeStr(timer.endTimer()));
                 return;
             }
         }
-        FmtLog.info(LOG, "[Compaction] <<<< Label store compaction not needed.");
+        LOG.info("[Compaction] <<<< Label store compaction not needed.");
     }
 
     private static class CompactOneServlet extends HttpServlet {

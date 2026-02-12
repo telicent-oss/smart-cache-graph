@@ -59,7 +59,7 @@ final class UserInfoFilter implements Filter {
                 AttributesStoreAuthServer.addUserNameAndAttributes(httpRequest.getRemoteUser(),
                                                                    toAttributeValueSet(userInfo.getAttributes()));
             } catch (UserInfoLookupException e) {
-                LOGGER.warn("Failed to obtain User Info: {}", e.getMessage());
+                LOGGER.warn("Failed to obtain User Info", e);
 
                 // In the error path forcibly reset the cached attributes to the empty set as otherwise users could get
                 // attributes they no longer have
@@ -115,7 +115,7 @@ final class UserInfoFilter implements Filter {
         try {
             this.userInfoLookup.close();
         } catch (Throwable t) {
-            LOGGER.warn("Failed to close UserInfoLookup: {}", t.getMessage());
+            LOGGER.warn("Failed to close UserInfoLookup", t);
         }
     }
 }

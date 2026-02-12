@@ -27,7 +27,7 @@ import org.slf4j.LoggerFactory;
 
 public class MainSmartCacheGraph {
 
-    public final static Logger LOG = LoggerFactory.getLogger("io.telicent.SCacheGraph");
+    public final static Logger LOG = LoggerFactory.getLogger(MainSmartCacheGraph.class);
 
     /*
     To test with Open Telemetry metrics you'll need to adjust the run configuration for this class to attach the Java
@@ -65,7 +65,7 @@ public class MainSmartCacheGraph {
         LOG.info("Apache Jena Fuseki ({})", Fuseki.VERSION);
         String userAttributeStore = urlUserAttributeStore();
         if ( userAttributeStore == null )
-            LOG.info("No ENV_USER_ATTRIBUTES_URL setting");
+            LOG.warn("No ENV_USER_ATTRIBUTES_URL setting");
         else
             LOG.info("User attribute store: {}", userAttributeStore);
 

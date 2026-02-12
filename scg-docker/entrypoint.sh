@@ -12,6 +12,13 @@ FUSEKI_LIB="${FUSEKI_DIR}/lib"
 ## All in one directory
 FUSEKI_CP="$FUSEKI_LIB"'/*'
 
+if [ -z "${LOG4J_CONFIGURATION_FILE}" ] && [ -f "${FUSEKI_DIR}/log4j2.properties" ]; then
+  LOG4J_CONFIGURATION_FILE="${FUSEKI_DIR}/log4j2.properties"
+fi
+if [ -n "${LOG4J_CONFIGURATION_FILE}" ]; then
+  JAVA_OPTIONS="-Dlog4j2.configurationFile=${LOG4J_CONFIGURATION_FILE} ${JAVA_OPTIONS}"
+fi
+
 env | grep "OTEL" >/dev/null 2>&1
 if [ $? -eq 0 ]; then
   export FUSEKI_FMOD_OTEL=true

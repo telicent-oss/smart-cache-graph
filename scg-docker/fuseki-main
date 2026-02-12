@@ -89,4 +89,11 @@ JVM_ARGS=${JVM_ARGS:--Xmx2G}
 ##  SystemProperty log4j2.configurationFile 
 ##    https://logging.apache.org/log4j/2.x/manual/configuration.html#SystemProperties
 
+if [ -z "$LOG4J_CONFIGURATION_FILE" ] && [ -f "$FUSEKI_HOME/log4j2.properties" ]; then
+  LOG4J_CONFIGURATION_FILE="$FUSEKI_HOME/log4j2.properties"
+fi
+if [ -n "$LOG4J_CONFIGURATION_FILE" ]; then
+  JVM_ARGS="$JVM_ARGS -Dlog4j2.configurationFile=$LOG4J_CONFIGURATION_FILE"
+fi
+
 exec $JAVA $JVM_ARGS -cp "$FUSEKI_LIB"'/*' "$MAIN" $ARGS

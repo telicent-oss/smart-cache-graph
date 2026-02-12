@@ -64,7 +64,7 @@ public class FMod_CQRS implements FusekiModule {
 
         @Override
         public void execute(HttpAction action) {
-            FmtLog.info(CQRS.LOG, "CQRS execute called but ActionService not configured");
+            LOG.info("CQRS execute called but ActionService not configured");
         }
     };
 
@@ -109,19 +109,18 @@ public class FMod_CQRS implements FusekiModule {
                 if (topicName == null) {
                     List<String> topics = FKS.findTopics(dap.getName());
                     if (topics.isEmpty()) {
-                        FmtLog.error(LOG, "No topic name in context nor a registered connector for dataset %s.");
+                        LOG.error("No topic name in context nor a registered connector for dataset {}", dap.getName());
                         throw new FusekiConfigException("No topic name found");
                     }
                     if (topics.size() > 1) {
-                        FmtLog.error(LOG,
-                                     "Multiple registered connectors for dataset %s. Set topic name in context to select one.");
+                        LOG.error("Multiple registered connectors for dataset {}. Set topic name in context to select one.",
+                                  dap.getName());
                         throw new FusekiConfigException("Multiple topic names found");
                     }
                     topicName = topics.getFirst();
                 }
 
-                FmtLog.info(LOG, "Endpoint %s (operation %s) to topic %s", endpointName(dap, endpoint), op.getName(),
-                            topicName);
+                LOG.info("Endpoint {} (operation {}) to topic {}", endpointName(dap, endpoint), op.getName(), topicName);
                 if (topicName.isEmpty()) {
                     throw new FusekiConfigException(
                             "Empty string for topic name for " + symKafkaTopic + " on CQRS update operation");
@@ -152,12 +151,12 @@ public class FMod_CQRS implements FusekiModule {
             String topic = pair.getLeft();
             Producer<?,?> producer = pair.getRight();
             try {
-                FmtLog.info(LOG, "Closing Kafka Producer for topic %s", topic);
+                LOG.info("Closing Kafka Producer for topic {}", topic);
                 producer.flush();
                 producer.close(Duration.ofSeconds(10));
-                FmtLog.info(LOG, "Closed Kafka Producer for topic %s successfully", topic);
+                LOG.info("Closed Kafka Producer for topic {} successfully", topic);
             } catch (Throwable e) {
-                FmtLog.warn(LOG, "Error closing Kafka Producer for topic %s: %s", topic, e.getMessage());
+                LOG.warn("Error closing Kafka Producer for topic {}", topic, e);
             }
         });
         producers.clear();

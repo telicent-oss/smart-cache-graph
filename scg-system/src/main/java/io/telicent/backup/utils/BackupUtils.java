@@ -25,7 +25,6 @@ import io.telicent.smart.cache.configuration.Configurator;
 import io.telicent.utils.ServletUtils;
 import jakarta.servlet.http.HttpServletResponse;
 import org.apache.commons.io.FileUtils;
-import org.apache.jena.atlas.logging.FmtLog;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,7 +54,7 @@ import static io.telicent.backup.utils.JsonFileUtils.OBJECT_MAPPER;
  */
 public class BackupUtils extends ServletUtils {
 
-    public static final Logger LOG = LoggerFactory.getLogger("BackupUtils");
+    public static final Logger LOG = LoggerFactory.getLogger(BackupUtils.class);
 
     private static final Pattern NUMBERED_ITEM_PATTERN = Pattern.compile("^(\\d+)(\\.zip)?$");
 
@@ -99,29 +98,29 @@ public class BackupUtils extends ServletUtils {
             dirBackupStr = System.getenv("PWD") + "/backups";
             File dir = new File(dirBackupStr);
             dir.mkdir();
-            FmtLog.info(LOG, "ENV_BACKUPS_DIR not set!!. Backups folder set to [default] : /backups");
+            LOG.warn("ENV_BACKUPS_DIR not set. Backups folder set to [default]: /backups");
             return dirBackupStr;
         }
 
         File dir = new File(dirBackupStr);
         if (!dir.exists()) {
             if (dir.mkdir()) {
-                FmtLog.info(LOG, "ENV_BACKUPS_DIR : /%s", dirBackupStr);
+                LOG.info("ENV_BACKUPS_DIR: /{}", dirBackupStr);
             } else {
-                FmtLog.info(LOG, "ENV_BACKUPS_DIR invalid!!. Backups folder set to [default] : /backups");
+                LOG.warn("ENV_BACKUPS_DIR invalid. Backups folder set to [default]: /backups");
                 dirBackupStr = System.getenv("PWD") + "/backups";
             }
             return dirBackupStr;
         }
 
-        FmtLog.info(LOG, "ENV_BACKUPS_DIR already exists. Backups folder set to /%s", dirBackupStr);
+        LOG.info("ENV_BACKUPS_DIR already exists. Backups folder set to /{}", dirBackupStr);
         return dirBackupStr;
     }
 
     public static int getHighestDirectoryNumber(String directoryPath) {
         if (!checkPathExistsAndIsDir(directoryPath)) {
             String errorMsg = "Base dir does not exist properly: " + directoryPath;
-            FmtLog.error(LOG, errorMsg);
+            LOG.error(errorMsg);
             throw new BackupException(errorMsg);
         }
         File baseDir = new File(directoryPath);
@@ -150,7 +149,7 @@ public class BackupUtils extends ServletUtils {
     public static int getNextDirectoryNumberAndCreate(String directoryPath) {
         if (!checkPathExistsAndIsDir(directoryPath)) {
             String errorMsg = "Base dir does not exist properly: " + directoryPath;
-            FmtLog.error(LOG, errorMsg);
+            LOG.error(errorMsg);
             throw new BackupException(errorMsg);
         }
         File baseDir = new File(directoryPath);
@@ -161,7 +160,7 @@ public class BackupUtils extends ServletUtils {
 
         if (!newDirectory.mkdir()) {
             String errorMsg = "Failed to create new directory: " + newDirectory.getAbsolutePath();
-            FmtLog.error(LOG, errorMsg);
+            LOG.error(errorMsg);
             throw new BackupException(errorMsg);
         }
 
@@ -423,7 +422,7 @@ public class BackupUtils extends ServletUtils {
                     JsonNode fileContent = OBJECT_MAPPER.readTree(Files.readString(filePath));
                     targetNode.set(numericKey, fileContent);
                 } catch (IOException e) {
-                    FmtLog.error(LOG, "Error reading or parsing JSON from file %s: %s", filePath, e.getMessage());
+                    LOG.error("Error reading or parsing JSON from file {}", filePath, e);
                     throw e;
                 }
             }
@@ -445,7 +444,7 @@ public class BackupUtils extends ServletUtils {
         try {
             populateObjectNodeFromNumberedFiles(resultNode, directoryPath, suffix);
         } catch (IOException e) {
-            FmtLog.error(LOG, "Error reading or parsing JSON from file %s: %s", directoryPath, e.getMessage());
+            LOG.error("Error reading or parsing JSON from file {}", directoryPath, e);
             throw new RuntimeException(e);
         }
         return resultNode;
@@ -468,12 +467,12 @@ public class BackupUtils extends ServletUtils {
                             Files.delete(path);
                         } catch (IOException e) {
                             // Handle deletion failure for individual files
-                            LOG.error("Failed to delete file: {}. Reason: {}", path, e.getMessage());
+                            LOG.error("Failed to delete file: {}", path, e);
                             // You could also choose to rethrow a custom exception or accumulate failures
                         }
                     });
         } catch (UncheckedIOException | IOException e) {
-            LOG.error("Failed to delete files from {}. Reason: {}", deletePath, e.getMessage());
+            LOG.error("Failed to delete files from {}", deletePath, e);
         }
     }
 
@@ -583,7 +582,7 @@ public class BackupUtils extends ServletUtils {
             }
         }
         catch (IOException e) {
-            LOG.error("Error reading zip file {}: {}", zipFilePath, e.getMessage());
+            LOG.error("Error reading zip file {}", zipFilePath, e);
             return Optional.empty();
         }
         return Optional.empty();
@@ -604,13 +603,13 @@ public class BackupUtils extends ServletUtils {
             String dateTimeString = rootNode.get(fieldName).asText();
             return Optional.of(ZonedDateTime.parse(dateTimeString));
         } catch (IOException ex) {
-            LOG.warn("Error reading file: {}", ex.getMessage());
+            LOG.warn("Error reading file {}", filePath, ex);
             return Optional.empty();
         } catch (DateTimeParseException ex) {
-            LOG.warn("Invalid date format in field '{}': {}", fieldName, ex.getMessage());
+            LOG.warn("Invalid date format in field '{}' for file {}", fieldName, filePath, ex);
             return Optional.empty();
         } catch (Exception ex) {
-            LOG.warn("Unexpected error: {}", ex.getMessage());
+            LOG.warn("Unexpected error reading time field '{}' from file {}", fieldName, filePath, ex);
             return Optional.empty();
         }
     }
