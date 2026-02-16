@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1771230030323,
+  "lastUpdate": 1771230099196,
   "repoUrl": "https://github.com/telicent-oss/smart-cache-graph",
   "entries": {
     "ABAC Benchmark": [
@@ -1090,6 +1090,34 @@ window.BENCHMARK_DATA = {
           {
             "name": "io.telicent.core.CQRSUpdateBenchmark.benchmarkCqrsUpdate",
             "value": 0.04530502406649987,
+            "unit": "ms/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "Paul Gallagher",
+            "username": "TelicentPaul",
+            "email": "132362215+TelicentPaul@users.noreply.github.com"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "83d28ff3826e84062be600b36b2aef07b553cb58",
+          "message": "Merge pull request #355 from telicent-oss/core_714_consolidate_graph_logging\n\n[CORE-714] Consolidate logging so approach is consistent, using SLF4 Logger over Jena FmtLog.",
+          "timestamp": "2026-02-12T09:56:39Z",
+          "url": "https://github.com/telicent-oss/smart-cache-graph/commit/83d28ff3826e84062be600b36b2aef07b553cb58"
+        },
+        "date": 1771230098837,
+        "tool": "jmh",
+        "benches": [
+          {
+            "name": "io.telicent.core.CQRSUpdateBenchmark.benchmarkCqrsUpdate",
+            "value": 0.04225059612949682,
             "unit": "ms/op",
             "extra": "iterations: 5\nforks: 1\nthreads: 1"
           }
