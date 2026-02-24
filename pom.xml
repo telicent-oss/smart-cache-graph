@@ -116,7 +116,7 @@
     <!-- CVE-2025-48734-->
     <dependency.commons-beanutils>1.11.0</dependency.commons-beanutils>
     <!-- CVE-2025-28976 -->
-    <dependency.commons-fileupload2>2.0.0-M4</dependency.commons-fileupload2>
+    <dependency.commons-fileupload2>2.0.0-M5</dependency.commons-fileupload2>
 
   </properties>
 
