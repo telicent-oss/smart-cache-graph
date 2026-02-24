@@ -76,7 +76,7 @@
     <plugin.shade>3.4.1</plugin.shade>
     <plugin.site>3.9.1</plugin.site>
     <plugin.source>3.4.0</plugin.source>
-    <plugin.surefire>3.5.4</plugin.surefire>
+    <plugin.surefire>3.5.5</plugin.surefire>
     <plugin.versions>2.21.0</plugin.versions>
 
     <!-- Dependency versions -->
@@ -91,9 +91,9 @@
 
     <!-- External dependencies -->
     <dependency.awaitility>4.3.0</dependency.awaitility>
-    <dependency.jackson>2.21.0</dependency.jackson>
+    <dependency.jackson>2.21.1</dependency.jackson>
     <dependency.bouncycastle>1.83</dependency.bouncycastle>
-    <dependency.kafka>3.9.1</dependency.kafka>
+    <dependency.kafka>3.9.2</dependency.kafka>
     <dependency.kotlin>2.3.10</dependency.kotlin>
     <dependency.lz4>1.10.3</dependency.lz4>
     <dependency.otel>1.33.0</dependency.otel> <!-- These two must be in-step. -->
