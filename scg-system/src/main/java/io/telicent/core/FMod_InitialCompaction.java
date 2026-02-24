@@ -32,6 +32,7 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -49,6 +50,14 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
      * needed or not
      */
     static final Map<String, Long> SIZES = new ConcurrentHashMap<>();
+
+    enum CompactionStatus {
+        COMPACTED,
+        SKIPPED_ALREADY_COMPACTED,
+        SKIPPED_PREVIOUSLY_COMPACTED,
+        SKIPPED_LOCK_CONTENTION,
+        SKIPPED_NOT_TDB2
+    }
 
     @Override
     public String name() {
@@ -105,7 +114,7 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
      * @param datasetGraph Dataset Graph
      * @param name         Name of dataset
      */
-    private static void compactDatasetGraphDatabase(DatasetGraph datasetGraph, String name) {
+    private static CompactionStatus compactDatasetGraphDatabase(DatasetGraph datasetGraph, String name) {
         DatasetGraphSwitchable dsg = getTDB2(datasetGraph);
         if (dsg != null) {
             // See how big the database is, and whether it's size has changed
@@ -117,7 +126,7 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
                 if (sizeBefore <= SIZES.get(name)) {
                     LOG.info("[Compaction] Additional compaction not required for {} as it is already maximally compacted at {} ({})",
                              name, humanReadableSize(sizeBefore), sizeBefore);
-                    return;
+                    return CompactionStatus.SKIPPED_ALREADY_COMPACTED;
                 }
             }
 
@@ -130,17 +139,16 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
             if (previousCompactionSize == sizeBefore) {
                 LOG.info("[Compaction] Additional compaction not required for {} as it was already maximally compacted by a prior compaction at {} ({})",
                          name, humanReadableSize(sizeBefore), sizeBefore);
-                return;
+                return CompactionStatus.SKIPPED_PREVIOUSLY_COMPACTED;
             }
 
+            // Due to known issue - obtain a write lock prior to compaction.
+            // If it fails, stop processing to avoid deadlock.
+            if (!dsg.tryExclusiveMode(false)) {
+                LOG.info("[Compaction] Ignoring for {} due to potential deadlock operation", name);
+                return CompactionStatus.SKIPPED_LOCK_CONTENTION;
+            }
             try {
-                // Due to known issue - obtain a write lock prior to compaction.
-                // If it fails, stop processing to avoid deadlock.
-
-                if (!dsg.tryExclusiveMode(false)) {
-                    LOG.info("[Compaction] Ignoring for {} due to potential deadlock operation", name);
-                    return;
-                }
                 LOG.info("[Compaction] >>>> Start compact {}, current size is {} ({})", name,
                          humanReadableSize(sizeBefore), sizeBefore);
                 Timer timer = new Timer();
@@ -152,11 +160,13 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
                 SIZES.put(name, sizeAfter);
                 updateCompactionResultsFile(dsg, sizeAfter);
                 compactLabels(datasetGraph);
+                return CompactionStatus.COMPACTED;
             } finally {
                 dsg.finishExclusiveMode();
             }
         } else {
             LOG.debug("Compaction not required for {} as not TDB2", name);
+            return CompactionStatus.SKIPPED_NOT_TDB2;
         }
     }
 
@@ -286,9 +296,13 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
         @Override
         public void doPost(HttpServletRequest req, HttpServletResponse res) {
             try {
-                compactDatasetGraphDatabase(this.dsg, this.datasetName);
+                CompactionStatus outcome = compactDatasetGraphDatabase(this.dsg, this.datasetName);
+                writeCompactionSummaryResponse(res, Map.of(this.datasetName, outcome));
             } catch (Exception e) {
                 FmtLog.error(Fuseki.configLog, "Error while compacting dataset " + this.datasetName, e);
+                String details = "Compaction failed for dataset " + this.datasetName + ": "
+                        + (e.getMessage() != null ? e.getMessage() : e.getClass().getName());
+                ServletOps.errorOccurred(details);
             }
         }
     }
@@ -302,17 +316,74 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
 
         @Override
         public void doPost(HttpServletRequest req, HttpServletResponse res) {
-            try {
-                // Iterate over all registered datasets
-                for (DataAccessPoint dataAccessPoint : dapRegistry.accessPoints()) {
-                    DataService dataService = dataAccessPoint.getDataService();
-                    compactDatasetGraphDatabase(dataService.getDataset(), dataAccessPoint.getName());
-                }
-            } catch (Exception e) {
-                FmtLog.error(Fuseki.configLog, "Error while compacting data points", e);
-                ServletOps.errorOccurred(e.getMessage());
+            if (dapRegistry == null) {
+                ServletOps.errorOccurred("No DataAccessPoint registry configured");
+                return;
             }
+            Map<String, CompactionStatus> outcomes = new LinkedHashMap<>();
+            Map<String, String> failures = new LinkedHashMap<>();
+            // Iterate over all registered datasets
+            for (DataAccessPoint dataAccessPoint : dapRegistry.accessPoints()) {
+                DataService dataService = dataAccessPoint.getDataService();
+                String datasetName = dataAccessPoint.getName();
+                try {
+                    CompactionStatus outcome = compactDatasetGraphDatabase(dataService.getDataset(), datasetName);
+                    outcomes.put(datasetName, outcome);
+                } catch (Exception e) {
+                    failures.put(datasetName, e.getMessage() != null ? e.getMessage() : e.getClass().getName());
+                    FmtLog.error(Fuseki.configLog, "Error while compacting dataset " + datasetName, e);
+                }
+            }
+
+            if (!failures.isEmpty()) {
+                StringBuilder details = new StringBuilder("Compaction failed for one or more datasets: ");
+                boolean first = true;
+                for (Map.Entry<String, String> entry : failures.entrySet()) {
+                    if (!first) {
+                        details.append("; ");
+                    }
+                    first = false;
+                    details.append(entry.getKey()).append("=").append(entry.getValue());
+                }
+                FmtLog.error(Fuseki.configLog, details.toString());
+                ServletOps.errorOccurred(details.toString());
+                return;
+            }
+
+            writeCompactionSummaryResponse(res, outcomes);
         }
 
+    }
+
+    private static void writeCompactionSummaryResponse(HttpServletResponse res, Map<String, CompactionStatus> outcomes) {
+        res.setStatus(HttpServletResponse.SC_OK);
+        res.setContentType("application/json");
+        res.setCharacterEncoding(StandardCharsets.UTF_8.name());
+        try {
+            res.getWriter().write(toCompactionSummaryJson(outcomes));
+        } catch (IOException e) {
+            FmtLog.warn(Fuseki.configLog, "Error writing compaction response", e);
+        }
+    }
+
+    private static String toCompactionSummaryJson(Map<String, CompactionStatus> outcomes) {
+        StringBuilder builder = new StringBuilder();
+        builder.append("{\"status\":\"ok\",\"datasets\":{");
+        boolean first = true;
+        for (Map.Entry<String, CompactionStatus> entry : outcomes.entrySet()) {
+            if (!first) {
+                builder.append(',');
+            }
+            first = false;
+            builder.append('"')
+                   .append(entry.getKey())
+                   .append('"')
+                   .append(':')
+                   .append('"')
+                   .append(entry.getValue().name())
+                   .append('"');
+        }
+        builder.append("}}");
+        return builder.toString();
     }
 }

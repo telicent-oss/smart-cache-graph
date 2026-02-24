@@ -1,0 +1,101 @@
+openapi: 3.0.3
+info:
+  title: Dataset Compaction API
+  description: API for manual compaction of Smart Cache Graph datasets.
+  version: 0.82.8
+servers:
+  - url: http://localhost:3030/
+    description: Base path for compaction operations.
+components:
+  securitySchemes:
+    BearerAuth:
+      description: Generic Bearer Authentication is supported using JWTs
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    AwsBearerAuth:
+      description: |
+        For AWS usage we support JWTs that are injected into requests by the ELB.
+        Since these come in a non-standard HTTP header we have to declare this as
+        an API Key scheme in OpenAPI spec as it doesn't have a notion of using a
+        HTTP scheme in a non-standard way (yay AWS weirdness!)
+      type: apiKey
+      in: header
+      name: X-Amzn-Oidc-Data
+  schemas:
+    CompactionSummaryResponse:
+      type: object
+      required:
+        - status
+        - datasets
+      properties:
+        status:
+          type: string
+          example: ok
+        datasets:
+          type: object
+          description: Map of dataset path to compaction outcome.
+          additionalProperties:
+            type: string
+            enum:
+              - COMPACTED
+              - SKIPPED_ALREADY_COMPACTED
+              - SKIPPED_PREVIOUSLY_COMPACTED
+              - SKIPPED_LOCK_CONTENTION
+              - SKIPPED_NOT_TDB2
+security:
+  - BearerAuth: []
+  - AwsBearerAuth: []
+paths:
+  /$/compact/{datasetName}:
+    post:
+      summary: Compact a single dataset
+      description: |
+        Attempts compaction for a single configured dataset.
+        Returns a structured outcome payload when compaction succeeds or is skipped.
+      parameters:
+        - name: datasetName
+          in: path
+          required: true
+          description: Dataset name (without leading slash), for example `knowledge`.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Compaction request handled successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompactionSummaryResponse'
+        '401':
+          description: Unauthorized due to missing role/permission.
+        '500':
+          description: Compaction failed while handling the request.
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: Compaction failed for dataset /knowledge: <reason>
+
+  /$/compactall:
+    post:
+      summary: Compact all configured datasets
+      description: |
+        Attempts compaction for each configured dataset and returns per-dataset outcomes.
+        If one or more dataset compactions fail with exceptions, the endpoint returns 500.
+      responses:
+        '200':
+          description: Compaction request handled successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompactionSummaryResponse'
+        '401':
+          description: Unauthorized due to missing role/permission.
+        '500':
+          description: One or more dataset compactions failed.
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: Compaction failed for one or more datasets: /knowledge=<reason>

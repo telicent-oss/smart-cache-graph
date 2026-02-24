@@ -92,3 +92,11 @@ Options: none.
 ### SC Graph ABAC Persistent Scenario Benchmark
 Runs end-to-end SPARQL against a persistent ABAC-configured Smart Cache Graph with labeled sample data.
 Options: none.
+
+
+## Weekly Benchmarking
+
+To assess the impact of changes to the repository and ensure no performance regressions are introduced, we run the benchmarks above on a weekly basis.
+
+The resulting charts are published here:
+https://telicent-oss.github.io/smart-cache-graph/dev/bench/
