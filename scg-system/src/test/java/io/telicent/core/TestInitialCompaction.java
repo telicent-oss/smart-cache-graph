@@ -33,6 +33,8 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import static io.telicent.TestJwtServletAuth.*;
@@ -60,6 +62,7 @@ public class TestInitialCompaction {
     void clearDown() {
         mockDatabaseMgr.clearInvocations();
         mockDatabaseMgr.reset();
+        FMod_InitialCompaction.SIZES.clear();
         removePreviousCompactionResults();
         if (server != null) {
             server.stop();
@@ -298,15 +301,13 @@ public class TestInitialCompaction {
     }
 
     @Test
-    public void test_compactWithExistingLock() {
+    public void test_compactWithExistingLock() throws IOException {
         // given
-        DatasetGraphSwitchable dsgPersists =
-                new DatasetGraphSwitchable(Path.of("./"), null, DatasetGraphFactory.createTxnMem());
+        DatasetGraphSwitchable dsgPersists = createPersistentSwitchableDataset();
         DatasetGraphSwitchable mockedDsg = Mockito.spy(dsgPersists);
 
         when(mockedDsg.tryExclusiveMode(false)).thenReturn(false);
-        doNothing().when(mockedDsg).finishExclusiveMode();
-        server = SmartCacheGraph.smartCacheGraphBuilder().add("test", mockedDsg).build().start();
+        server = SmartCacheGraph.smartCacheGraphBuilder().port(0).add("test", mockedDsg).build().start();
 
         // when
         HttpResponse<InputStream> compactResponse =
@@ -314,7 +315,105 @@ public class TestInitialCompaction {
                                             "POST");
         // then
         assertEquals(200, compactResponse.statusCode());
+        String body = IOUtils.toString(compactResponse.body(), StandardCharsets.UTF_8);
+        assertTrue(Strings.CI.contains(body, "\"status\":\"ok\""));
+        assertTrue(Strings.CI.contains(body, "SKIPPED_LOCK_CONTENTION"));
         mockDatabaseMgr.verify(() -> DatabaseMgr.compact(any(), anyBoolean()), times(0));
+        verify(mockedDsg, times(0)).finishExclusiveMode();
+    }
+
+    @Test
+    public void test_compactOne_withExistingLockReturnsSummary() throws IOException {
+        // given
+        DatasetGraphSwitchable dsgPersists = createPersistentSwitchableDataset();
+        DatasetGraphSwitchable mockedDsg = Mockito.spy(dsgPersists);
+
+        when(mockedDsg.tryExclusiveMode(false)).thenReturn(false);
+        server = SmartCacheGraph.smartCacheGraphBuilder().port(0).add("test", mockedDsg).build().start();
+
+        // when
+        HttpResponse<InputStream> compactResponse =
+                makeAuthCallWithCustomToken(server, "$/compact/test",
+                                            tokenForUserWithCompactPermissions("test", "test"), "POST");
+
+        // then
+        assertEquals(200, compactResponse.statusCode());
+        String body = IOUtils.toString(compactResponse.body(), StandardCharsets.UTF_8);
+        assertTrue(Strings.CI.contains(body, "\"status\":\"ok\""));
+        assertTrue(Strings.CI.contains(body, "SKIPPED_LOCK_CONTENTION"));
+        mockDatabaseMgr.verify(() -> DatabaseMgr.compact(any(), anyBoolean()), times(0));
+        verify(mockedDsg, times(0)).finishExclusiveMode();
+    }
+
+    @Test
+    public void test_compactOne_failureReturnsError() throws IOException {
+        // given
+        DatasetGraphSwitchable dsgPersists = createPersistentSwitchableDataset();
+        DatasetGraphSwitchable mockedDsg = Mockito.spy(dsgPersists);
+        when(mockedDsg.tryExclusiveMode(false)).thenReturn(false);
+        server = SmartCacheGraph.smartCacheGraphBuilder().port(0).add("test", mockedDsg).build().start();
+        when(mockedDsg.tryExclusiveMode(false)).thenThrow(new RuntimeException("failure"));
+
+        // when
+        HttpResponse<InputStream> compactResponse =
+                makeAuthCallWithCustomToken(server, "$/compact/test",
+                                            tokenForUserWithCompactPermissions("test", "test"), "POST");
+
+        // then
+        assertEquals(500, compactResponse.statusCode());
+        String body = IOUtils.toString(compactResponse.body(), StandardCharsets.UTF_8);
+        assertTrue(Strings.CI.contains(body, "Compaction failed for dataset"));
+        assertTrue(Strings.CI.contains(body, "failure"));
+    }
+
+    @Test
+    public void test_compactAll_mixedOutcomesReturnsSummary() throws IOException {
+        // Given
+        DatasetGraphSwitchable dsgPersists = createPersistentSwitchableDataset();
+        DatasetGraphSwitchable mockedDsg = Mockito.spy(dsgPersists);
+        DatasetGraph memDsg = DatasetGraphFactory.createTxnMem();
+        when(mockedDsg.tryExclusiveMode(false)).thenReturn(false);
+        server = SmartCacheGraph.smartCacheGraphBuilder()
+                                .port(0)
+                                .add("test", mockedDsg)
+                                .add("mem", memDsg)
+                                .build()
+                                .start();
+
+        // When
+        HttpResponse<InputStream> compactResponse = makeAuthCallWithCustomToken(server, "$/compactall",
+                                                                                 tokenForUserWithCompactPermissions(
+                                                                                         "test", "test", "mem"),
+                                                                                 "POST");
+
+        // Then
+        assertEquals(200, compactResponse.statusCode());
+        String body = IOUtils.toString(compactResponse.body(), StandardCharsets.UTF_8);
+        assertTrue(Strings.CI.contains(body, "\"status\":\"ok\""));
+        assertTrue(Strings.CI.contains(body, "SKIPPED_LOCK_CONTENTION"));
+        assertTrue(Strings.CI.contains(body, "SKIPPED_NOT_TDB2"));
+    }
+
+    @Test
+    public void test_compactAll_failureInDatasetReturnsError() throws IOException {
+        // Given
+        DatasetGraphSwitchable dsgPersists = createPersistentSwitchableDataset();
+        DatasetGraphSwitchable mockedDsg = Mockito.spy(dsgPersists);
+        when(mockedDsg.tryExclusiveMode(false)).thenReturn(false);
+        server = SmartCacheGraph.smartCacheGraphBuilder().port(0).add("test", mockedDsg).build().start();
+        when(mockedDsg.tryExclusiveMode(false)).thenThrow(new RuntimeException("failure"));
+
+        // When
+        HttpResponse<InputStream> compactResponse = makeAuthCallWithCustomToken(server, "$/compactall",
+                                                                                 tokenForUserWithCompactPermissions(
+                                                                                         "test", "test"),
+                                                                                 "POST");
+
+        // Then
+        assertEquals(500, compactResponse.statusCode());
+        String body = IOUtils.toString(compactResponse.body(), StandardCharsets.UTF_8);
+        assertTrue(Strings.CI.contains(body, "Compaction failed for one or more datasets"));
+        assertTrue(Strings.CI.contains(body, "failure"));
     }
 
     @Test
@@ -329,6 +428,10 @@ public class TestInitialCompaction {
                                             "POST");
         // then
         assertEquals(200, compactResponse.statusCode());
+        assertDoesNotThrow(() -> {
+            String body = IOUtils.toString(compactResponse.body(), StandardCharsets.UTF_8);
+            assertTrue(Strings.CI.contains(body, "\"status\":\"ok\""));
+        });
     }
 
     @Test
@@ -429,5 +532,23 @@ public class TestInitialCompaction {
 
         HttpServletResponse response = mock(HttpServletResponse.class);
         assertThrows(ActionErrorException.class, () -> capturedServlet.service(request, response));
+    }
+
+    private static String tokenForUserWithCompactPermissions(String user, String... datasetNames) {
+        List<String> compactPermissions = java.util.Arrays.stream(datasetNames)
+                                                          .map(name -> "api." + name + ".compact")
+                                                          .toList();
+        return LibTestsSCG.tokenBuilder(user)
+                          .claims(Map.of("roles", List.of("ADMIN_SYSTEM"),
+                                         "permissions", compactPermissions))
+                          .compact();
+    }
+
+    private static DatasetGraphSwitchable createPersistentSwitchableDataset() throws IOException {
+        Path container = Files.createTempDirectory("compaction-test-dsg");
+        Path dataDir = container.resolve("Data-0001");
+        Files.createDirectories(dataDir);
+        Files.writeString(dataDir.resolve("marker.txt"), "x", StandardCharsets.UTF_8);
+        return new DatasetGraphSwitchable(container, null, DatasetGraphFactory.createTxnMem());
     }
 }

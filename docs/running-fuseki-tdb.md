@@ -75,10 +75,32 @@ which will call the compact operation at application start-up prior to the serve
 available. This is automatically turned on but can be disabled by setting the 
 environment variable `DISABLE_INITIAL_COMPACTION`.
 
-If the fuseki server is run with `--compact`, then the endpoint `/$/compact`
-will perform a database compaction. This can execute on a live server allowing
-read-operation to continue to be processed in parallel.  *Note:* write
-operations are held up during this action.
+Compaction endpoints are exposed by Smart Cache Graph:
+- `POST /$/compact/<dataset>` for compaction of a single dataset
+- `POST /$/compactall` for compaction of all configured datasets
+
+These can execute on a live server allowing read operations to continue to be
+processed in parallel. *Note:* write operations are held up during compaction.
+
+Successful responses from both endpoints return JSON:
+```json
+{
+  "status": "ok",
+  "datasets": {
+    "/knowledge": "COMPACTED"
+  }
+}
+```
+
+Possible per-dataset outcomes are:
+- `COMPACTED`
+- `SKIPPED_ALREADY_COMPACTED`
+- `SKIPPED_PREVIOUSLY_COMPACTED`
+- `SKIPPED_LOCK_CONTENTION`
+- `SKIPPED_NOT_TDB2`
+
+When compaction throws an exception, the endpoint returns HTTP `500` with an
+error message that includes dataset information.
 
 ## Backup / Restore
 
@@ -121,7 +143,6 @@ gpg --armor --export-secret-keys F2C0B93297F09448 > private.asc
 There is an additional Fuseki module `JWT Servlet Auth` that applies authentication to all the endpoints offered by the server.
 
 We have disabled authentication for a number of the utility endpoints listed below:
-- `/$/compact` 
 - `/$/ping`
 - `/$/metrics` 
 - `/$/stats`

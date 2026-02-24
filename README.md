@@ -25,6 +25,13 @@ Smart Cache Graph is configured using a Fuseki configuration file
 
 You can find further example configurations later under [Try It Out](#try-it-out).
 
+## API Specifications
+
+- [Graph API](graph-api.yaml)
+- [Compaction API](docs/compaction-api.yaml)
+- [Backups API](docs/backups-api.yaml)
+- [Labels API](docs/labels-api.yaml)
+
 ## System Configuration
 
 The following environment variables can be used to control Smart Cache Graph:
