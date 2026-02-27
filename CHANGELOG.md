@@ -1,4 +1,10 @@
 # Smart Cache Graph
+## 0.93.1
+- Server improvements:
+  - Improved response from compact/compactall calls 
+  - Consolidated logging approach 
+- Build improvements:
+  - Updated dependencies including Telicent Java Base
 
 ## 0.93.0
 
