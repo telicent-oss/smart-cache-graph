@@ -1,8 +1,20 @@
 # Smart Cache Graph
 
-## 0.93.2
+
+## 0.93.3
+
 - Build improvements:
-  - Dependency updates
+    - Fuseki Kafka upgraded to 3.0.0
+    - GraphQL Jena upgraded to 0.11.0
+
+## 0.93.2
+
+- Build improvements:
+    - RDF-ABAC upgraded to 2.0.0
+    - JWT Servlet Auth upgraded to 4.0.0
+    - LZ4 Java upgraded to 1.10.4
+    - Smart Caches Core upgraded to 0.36.1
+    - Various build and test plugins upgraded to latest available
 
 ## 0.93.1
 - Server improvements:
