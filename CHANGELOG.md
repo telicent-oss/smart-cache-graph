@@ -1,4 +1,9 @@
 # Smart Cache Graph
+
+## 0.93.2
+- Build improvements:
+  - Dependency updates
+
 ## 0.93.1
 - Server improvements:
   - Improved response from compact/compactall calls 
@@ -7,7 +12,6 @@
   - Updated dependencies including Telicent Java Base
 
 ## 0.93.0
-
 - Fixed a bug in CQRS endpoint where it did not interact correctly with ABAC datasets potentially allowing a user with
   write privileges to issue a crafted SPARQL update to modify data they could not normally see
 - Improved access query JSON response format to better disambiguate URIs from Literals
