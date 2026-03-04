@@ -6,6 +6,7 @@
 - Build improvements:
     - Fuseki Kafka upgraded to 3.0.0
     - GraphQL Jena upgraded to 0.11.0
+    - All dependencies now aligned to Java 21 minimum and Apache Jena 6.x
 
 ## 0.93.2
 
