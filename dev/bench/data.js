@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1773052033094,
+  "lastUpdate": 1773052102812,
   "repoUrl": "https://github.com/telicent-oss/smart-cache-graph",
   "entries": {
     "ABAC Benchmark": [
@@ -4646,6 +4646,34 @@ window.BENCHMARK_DATA = {
           {
             "name": "io.telicent.core.SCGraphAbacPersistentScenarioBenchmark.benchmarkAbacSparqlSelect",
             "value": 1.2927719862516756,
+            "unit": "ms/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "Rob Vesse",
+            "username": "rvesse",
+            "email": "rob.vesse@telicent.io"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "a76120d3cc014799357abc767e519e5d39911886",
+          "message": "Merge pull request #366 from telicent-oss/release/0.93.3\n\nComplete Release 0.93.3",
+          "timestamp": "2026-03-04T09:35:13Z",
+          "url": "https://github.com/telicent-oss/smart-cache-graph/commit/a76120d3cc014799357abc767e519e5d39911886"
+        },
+        "date": 1773052102384,
+        "tool": "jmh",
+        "benches": [
+          {
+            "name": "io.telicent.core.SCGraphAbacPersistentScenarioBenchmark.benchmarkAbacSparqlSelect",
+            "value": 0.9320897925147793,
             "unit": "ms/op",
             "extra": "iterations: 5\nforks: 1\nthreads: 1"
           }
