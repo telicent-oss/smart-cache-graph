@@ -72,7 +72,7 @@
     <plugin.jar>3.5.0</plugin.jar>
     <plugin.jacoco>0.8.14</plugin.jacoco>
     <plugin.javadoc>3.12.0</plugin.javadoc>
-    <plugin.resources>3.4.0</plugin.resources>
+    <plugin.resources>3.5.0</plugin.resources>
     <plugin.shade>3.4.1</plugin.shade>
     <plugin.site>3.9.1</plugin.site>
     <plugin.source>3.4.0</plugin.source>
@@ -608,7 +608,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-shade-plugin</artifactId>
-          <version>3.6.1</version>
+          <version>3.6.2</version>
         </plugin>
 
         <plugin>
