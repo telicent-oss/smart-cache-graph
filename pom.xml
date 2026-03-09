@@ -81,10 +81,10 @@
 
     <!-- Dependency versions -->
     <!-- Internal dependencies -->
-    <dependency.rdf-abac>2.0.0</dependency.rdf-abac>
+    <dependency.rdf-abac>2.0.1</dependency.rdf-abac>
     <dependency.fuseki-kafka>3.0.0</dependency.fuseki-kafka>
     <dependency.jena>6.0.0</dependency.jena>
-    <dependency.fuseki-server>${dependency.jena}</dependency.fuseki-server>
+
     <dependency.graphql>0.11.0</dependency.graphql>
     <dependency.jwt-servlet-auth>4.0.0</dependency.jwt-servlet-auth>
     <dependency.smart-caches-core>0.36.1</dependency.smart-caches-core>
@@ -117,6 +117,8 @@
     <dependency.commons-beanutils>1.11.0</dependency.commons-beanutils>
     <!-- CVE-2025-28976 -->
     <dependency.commons-fileupload2>2.0.0-M5</dependency.commons-fileupload2>
+    <!-- CVE-2026-1605 -->
+    <dependency.jetty>12.1.7</dependency.jetty>
 
   </properties>
 
@@ -502,6 +504,33 @@
         <version>${dependency.commons-fileupload2}</version>
       </dependency>
 
+      <!-- CVE-2026-1605 patch block start-->
+      <dependency>
+        <groupId>org.eclipse.jetty.ee11</groupId>
+        <artifactId>jetty-ee11-servlet</artifactId>
+        <version>${dependency.jetty}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee11</groupId>
+        <artifactId>jetty-ee11-servlets</artifactId>
+        <version>${dependency.jetty}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-security</artifactId>
+        <version>${dependency.jetty}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-server</artifactId>
+        <version>${dependency.jetty}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-xml</artifactId>
+        <version>${dependency.jetty}</version>
+      </dependency>
+        <!-- CVE-2026-1605 patch block end-->
     </dependencies>
   </dependencyManagement>
 
