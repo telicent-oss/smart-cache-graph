@@ -1,5 +1,8 @@
 # Smart Cache Graph
 
+## 0.93.4
+- Build improvements
+  - Addressing CVE-2026-1605
 
 ## 0.93.3
 
