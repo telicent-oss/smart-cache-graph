@@ -117,7 +117,7 @@ PREFIX graphql: <https://telicent.io/fuseki/modules/graphql#>
     ## Server wide settings are inherited.
     ja:context [
         ja:cxtName "arq:httpServiceAllowed" ;
-        ja:cxtValue "false"
+        ja:cxtValue "true"
     ];
 
     ## Development and testing - in-memory databases.
@@ -131,9 +131,10 @@ PREFIX graphql: <https://telicent.io/fuseki/modules/graphql#>
     ## env:NAME is replaced by the value of environment variable NAME.
     ## If not set in teh process envionment, the code also looks in
     ## Java system properties ("-D" on the command line).
-    
-    authz:attributesURL <env:USER_ATTRIBUTES_URL>;
-    authz:hierarchiesURL <env:ABAC_HIERARCHIES_URL>;
+
+    authz:attributes <file:attribute-store.ttl>
+    #authz:attributesURL <env:USER_ATTRIBUTES_URL>;
+    #authz:hierarchiesURL <env:ABAC_HIERARCHIES_URL>;
     .
 
 ## --------------------

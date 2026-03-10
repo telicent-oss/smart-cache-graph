@@ -1,0 +1,38 @@
+PREFIX authz:    <http://telicent.io/security#>
+PREFIX data:     <http://telicent.io/data#>
+PREFIX dc:       <http://purl.org/dc/terms/>
+PREFIX ies:      <http://ies.data.gov.uk/ontology/ies4#>
+PREFIX rdf:      <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs:     <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX telicent: <http://telicent.io/ontology/>
+
+data:c8142bf41892c8a974d22a5ba185102ac425ed62b7470fc03bbd9e27fb719e14
+    rdf:type   ies:WorkOfDocumentation ;
+    rdfs:label "UKR_T90_bbcm_brief.pdf" ;
+    dc:format  "application/pdf; version=1.4" ;
+    dc:title   "Ukraine officials report T-90 tank sighted firing on buildings in Shtepivka village, Sumy region" .
+
+# (classification=O&urn:telicent:groups:datasets:bbcm:and)
+
+data:AdmiralWoodward
+    rdf:type             ies:Person ;
+    rdfs:comment         "Admiral Sir John Forster 'Sandy' Woodward, GBE, KCB (1 May 1932 – 4 August 2013) was a senior Royal Navy officer who commanded the Task Force of the Falklands War." ;
+    ies:hasName          data:2349ee25-d9cd-4923-9709-0863672e66d5, data:4ddd381f-2cca-407c-8dcc-b98677304743,
+                         data:AdmiralWoodward_FIRSTNAME, data:AdmiralWoodward_SURNAME ;
+    telicent:primaryName "Admiral Woodward", "John Foster Woodward", "WOODWARD, John Foster" .
+
+# (classification=O&urn:telicent:groups:datasets:random-knowledge:and)
+
+data:8bdcd94e-713e-4a3f-8c6b-93c383fb7683
+    rdf:type      ies:BoundingState ;
+    ies:inPeriod  <http://iso.org/iso8601#1982-03-26> ;
+    ies:isStartOf data:0c62a34d-6de2-4e80-a8d5-b62eddca6bbd .
+
+
+GRAPH authz:labels {
+    [ authz:pattern '<http://telicent.io/data#c8142bf41892c8a974d22a5ba185102ac425ed62b7470fc03bbd9e27fb719e14> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://ies.data.gov.uk/ontology/ies4#WorkOfDocumentation>' ; authz:label "(classification=O&urn:telicent:groups:datasets:random-knowledge:and)" ] .
+    [ authz:pattern '<http://telicent.io/data#c8142bf41892c8a974d22a5ba185102ac425ed62b7470fc03bbd9e27fb719e14> <http://www.w3.org/2000/01/rdf-schema#label> "UKR_T90_bbcm_brief.pdf"' ; authz:label "(classification=O&urn:telicent:groups:datasets:random-knowledge:and)" ] .
+    [ authz:pattern '<http://telicent.io/data#c8142bf41892c8a974d22a5ba185102ac425ed62b7470fc03bbd9e27fb719e14> <http://purl.org/dc/terms/format> "application/pdf; version=1.4"' ; authz:label "(classification=O&urn:telicent:groups:datasets:random-knowledge:and)" ] .
+    [ authz:pattern '<http://telicent.io/data#c8142bf41892c8a974d22a5ba185102ac425ed62b7470fc03bbd9e27fb719e14> <http://purl.org/dc/terms/title> "Ukraine officials report T-90 tank sighted firing on buildings in Shtepivka village, Sumy region"' ; authz:label "(classification=O&urn:telicent:groups:datasets:random-knowledge:and)" ] .
+}
+
