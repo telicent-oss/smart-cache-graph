@@ -84,6 +84,7 @@ public class FMod_BackupData implements FusekiAutoModule {
             try {
                 DatasetBackupService backupService = getBackupService(dapRegistry);
                 serverBuilder.addServlet("/$/backups/create/*", new BackupServlet(backupService));
+                serverBuilder.addServlet("/$/backups/datasets/list/*", new ListDatasetsServlet(backupService));
                 serverBuilder.addServlet("/$/backups/list/*", new ListBackupsServlet(backupService));
                 serverBuilder.addServlet("/$/backups/restore/*", new RestoreServlet(backupService));
                 serverBuilder.addServlet("/$/backups/delete/*", new DeleteServlet(backupService));

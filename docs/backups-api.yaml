@@ -178,6 +178,38 @@ paths:
                     type: string
                     description: Error message.
 
+  /$/backups/datasets/list:
+    get:
+      summary: Get a list of all available datasets
+      description: Gets a list of all available datasets
+      responses:
+        '200':
+          description: Dataset list retrieved successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  date:
+                    type: string
+                    format: date-time
+                    description: Timestamp of the listing operation.
+                  datasets:
+                    type: array
+                    items:
+                      type: string
+                    description: Names of datasets available for backup operations.
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Error message.
+
   /$/backups/restore:
     post:
       summary: Restore the latest backup

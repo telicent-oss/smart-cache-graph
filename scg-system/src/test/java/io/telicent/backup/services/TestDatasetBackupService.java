@@ -156,6 +156,21 @@ public class TestDatasetBackupService {
     }
 
     @Test
+    @DisplayName("List datasets returns sanitised dataset names")
+    public void test_listDatasets_contents() {
+        // given
+        DataAccessPoint first = new DataAccessPoint("/ds-one", DataService.newBuilder().dataset(DatasetGraphFactory.createTxnMem()).build());
+        DataAccessPoint second = new DataAccessPoint("ds-two/", DataService.newBuilder().dataset(DatasetGraphFactory.createTxnMem()).build());
+        when(mockRegistry.accessPoints()).thenReturn(List.of(first, second));
+
+        // when
+        ArrayNode result = cut.listDatasets();
+
+        // then
+        assertEquals(List.of("ds-one", "ds-two"), OBJECT_MAPPER.convertValue(result, List.class));
+    }
+
+    @Test
     @DisplayName("Return the details for a backup of an empty database")
     public void test_backupDetails_emptyDir() throws IOException {
         // given
