@@ -30,11 +30,16 @@ import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -57,6 +62,16 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
         SKIPPED_PREVIOUSLY_COMPACTED,
         SKIPPED_LOCK_CONTENTION,
         SKIPPED_NOT_TDB2
+    }
+
+    enum CompactionIndicatorState {
+        IN_PROGRESS,
+        SUCCEEDED,
+        FAILED
+    }
+
+   record CompactionIndicator(CompactionIndicatorState state, String datasetName, String startedAt,
+                                      String updatedAt, long sizeBefore, long sizeAfter, String error) {
     }
 
     @Override
@@ -101,7 +116,13 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
         for (String name : datasets) {
             Optional<DatasetGraph> optionalDatasetGraph = FKS.findDataset(server, name);
             if (optionalDatasetGraph.isPresent()) {
-                compactDatasetGraphDatabase(optionalDatasetGraph.get(), name);
+                try {
+                    compactDatasetGraphDatabase(optionalDatasetGraph.get(), name);
+                } catch (Throwable t) {
+                    // Compaction is a best-effort maintenance task and must not take the server down.
+                    LOG.error("[Compaction] Startup compaction failed for {}. Leaving dataset available without compaction.",
+                              name, t);
+                }
             } else {
                 LOG.debug("Compaction not required for {} as no graph", name);
             }
@@ -117,6 +138,8 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
     private static CompactionStatus compactDatasetGraphDatabase(DatasetGraph datasetGraph, String name) {
         DatasetGraphSwitchable dsg = getTDB2(datasetGraph);
         if (dsg != null) {
+            logPreviousCompactionIndicator(dsg, name);
+
             // See how big the database is, and whether it's size has changed
             // NB - Due to how the module is registered twice (see SmartCacheGraph) we'll get called twice, once
             //      before Kafka connectors are started, and again after they are started, this gives us two
@@ -151,10 +174,25 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
             try {
                 LOG.info("[Compaction] >>>> Start compact {}, current size is {} ({})", name,
                          humanReadableSize(sizeBefore), sizeBefore);
+                Instant startedAt = Instant.now();
+                updateCompactionIndicator(dsg, new CompactionIndicator(CompactionIndicatorState.IN_PROGRESS, name,
+                                                                       startedAt.toString(), startedAt.toString(),
+                                                                       sizeBefore, -1, null));
                 Timer timer = new Timer();
                 timer.startTimer();
-                DatabaseMgr.compact(dsg, DELETE_OLD);
+                try {
+                    DatabaseMgr.compact(dsg, DELETE_OLD);
+                } catch (Throwable t) {
+                    updateCompactionIndicator(dsg,
+                                              new CompactionIndicator(CompactionIndicatorState.FAILED, name,
+                                                                      startedAt.toString(), Instant.now().toString(),
+                                                                      sizeBefore, -1, summarizeThrowable(t)));
+                    throw t;
+                }
                 long sizeAfter = findDatabaseSize(dsg);
+                updateCompactionIndicator(dsg, new CompactionIndicator(CompactionIndicatorState.SUCCEEDED, name,
+                                                                       startedAt.toString(), Instant.now().toString(),
+                                                                       sizeBefore, sizeAfter, null));
                 LOG.info("[Compaction] <<<< Finish compact {}. Took {} seconds.  Compacted size is {} ({})",
                          name, Timer.timeStr(timer.endTimer()), humanReadableSize(sizeAfter), sizeAfter);
                 SIZES.put(name, sizeAfter);
@@ -236,6 +274,36 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
         return new File(switchable.getContainerPath().toFile(), ".last-compaction");
     }
 
+    static Optional<CompactionIndicator> findPreviousCompactionIndicator(DatasetGraph dsg) {
+        if (dsg instanceof DatasetGraphSwitchable switchable) {
+            File indicatorFile = getCompactionIndicatorFile(switchable);
+            if (indicatorFile.exists() && indicatorFile.isFile()) {
+                Properties properties = new Properties();
+                try (InputStream input = new FileInputStream(indicatorFile)) {
+                    properties.load(input);
+                    String state = properties.getProperty("state");
+                    String datasetName = properties.getProperty("dataset");
+                    if (state == null || datasetName == null) {
+                        return Optional.empty();
+                    }
+                    return Optional.of(new CompactionIndicator(CompactionIndicatorState.valueOf(state), datasetName,
+                                                               properties.getProperty("startedAt"),
+                                                               properties.getProperty("updatedAt"),
+                                                               parseLongProperty(properties.getProperty("sizeBefore")),
+                                                               parseLongProperty(properties.getProperty("sizeAfter")),
+                                                               properties.getProperty("error")));
+                } catch (IOException | IllegalArgumentException e) {
+                    return Optional.empty();
+                }
+            }
+        }
+        return Optional.empty();
+    }
+
+    static File getCompactionIndicatorFile(DatasetGraphSwitchable switchable) {
+        return new File(switchable.getContainerPath().toFile(), ".compaction-status");
+    }
+
     /**
      * Formats a database size (if known) as a human-readable size
      *
@@ -284,6 +352,81 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
         LOG.info("[Compaction] <<<< Label store compaction not needed.");
     }
 
+    private static String compactionFailureDetails(String datasetName, Throwable t) {
+        return "Compaction failed for dataset " + datasetName + ": "
+                + (t.getMessage() != null ? t.getMessage() : t.getClass().getName());
+    }
+
+    private static void logPreviousCompactionIndicator(DatasetGraphSwitchable dsg, String datasetName) {
+        findPreviousCompactionIndicator(dsg).ifPresent(indicator -> {
+            if (indicator.state() == CompactionIndicatorState.IN_PROGRESS) {
+                LOG.warn("[Compaction] Previous compaction for {} appears to have been interrupted. Last recorded start={}, size before={} ({})",
+                         datasetName, indicator.startedAt(), humanReadableSize(indicator.sizeBefore()),
+                         indicator.sizeBefore());
+            } else if (indicator.state() == CompactionIndicatorState.FAILED) {
+                LOG.warn("[Compaction] Previous compaction for {} failed. Last recorded update={}, error={}",
+                         datasetName, indicator.updatedAt(), indicator.error());
+            }
+        });
+    }
+
+    private static void updateCompactionIndicator(DatasetGraphSwitchable dsg, CompactionIndicator indicator) {
+        Properties properties = new Properties();
+        properties.setProperty("state", indicator.state().name());
+        properties.setProperty("dataset", indicator.datasetName());
+        if (indicator.startedAt() != null) {
+            properties.setProperty("startedAt", indicator.startedAt());
+        }
+        if (indicator.updatedAt() != null) {
+            properties.setProperty("updatedAt", indicator.updatedAt());
+        }
+        properties.setProperty("sizeBefore", Long.toString(indicator.sizeBefore()));
+        properties.setProperty("sizeAfter", Long.toString(indicator.sizeAfter()));
+        if (indicator.error() != null) {
+            properties.setProperty("error", indicator.error());
+        }
+
+        File indicatorFile = getCompactionIndicatorFile(dsg);
+        File tempFile = new File(indicatorFile.getParentFile(), indicatorFile.getName() + ".tmp");
+        try (OutputStream output = new FileOutputStream(tempFile)) {
+            properties.store(output, "Smart Cache Graph compaction status");
+        } catch (IOException e) {
+            LOG.warn("[Compaction] Unable to write compaction indicator file {}", indicatorFile, e);
+            return;
+        }
+
+        try {
+            try {
+                Files.move(tempFile.toPath(), indicatorFile.toPath(),
+                           StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+            } catch (AtomicMoveNotSupportedException e) {
+                Files.move(tempFile.toPath(), indicatorFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            }
+        } catch (IOException e) {
+            LOG.warn("[Compaction] Unable to move compaction indicator file into place {}", indicatorFile, e);
+            tempFile.delete();
+        }
+    }
+
+    private static long parseLongProperty(String value) {
+        if (value == null) {
+            return -1;
+        }
+        try {
+            return Long.parseLong(value);
+        } catch (NumberFormatException e) {
+            return -1;
+        }
+    }
+
+    private static String summarizeThrowable(Throwable t) {
+        String message = t.getMessage();
+        if (message == null || message.isBlank()) {
+            return t.getClass().getName();
+        }
+        return t.getClass().getName() + ": " + message;
+    }
+
     private static class CompactOneServlet extends HttpServlet {
         private final DatasetGraph dsg;
         private final String datasetName;
@@ -298,10 +441,9 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
             try {
                 CompactionStatus outcome = compactDatasetGraphDatabase(this.dsg, this.datasetName);
                 writeCompactionSummaryResponse(res, Map.of(this.datasetName, outcome));
-            } catch (Exception e) {
-                FmtLog.error(Fuseki.configLog, "Error while compacting dataset " + this.datasetName, e);
-                String details = "Compaction failed for dataset " + this.datasetName + ": "
-                        + (e.getMessage() != null ? e.getMessage() : e.getClass().getName());
+            } catch (Throwable t) {
+                FmtLog.error(Fuseki.configLog, "Error while compacting dataset " + this.datasetName, t);
+                String details = compactionFailureDetails(this.datasetName, t);
                 ServletOps.errorOccurred(details);
             }
         }
@@ -329,9 +471,9 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
                 try {
                     CompactionStatus outcome = compactDatasetGraphDatabase(dataService.getDataset(), datasetName);
                     outcomes.put(datasetName, outcome);
-                } catch (Exception e) {
-                    failures.put(datasetName, e.getMessage() != null ? e.getMessage() : e.getClass().getName());
-                    FmtLog.error(Fuseki.configLog, "Error while compacting dataset " + datasetName, e);
+                } catch (Throwable t) {
+                    failures.put(datasetName, t.getMessage() != null ? t.getMessage() : t.getClass().getName());
+                    FmtLog.error(Fuseki.configLog, "Error while compacting dataset " + datasetName, t);
                 }
             }
 
