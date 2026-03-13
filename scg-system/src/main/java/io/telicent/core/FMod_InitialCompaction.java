@@ -70,7 +70,7 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
         FAILED
     }
 
-    static record CompactionIndicator(CompactionIndicatorState state, String datasetName, String startedAt,
+   record CompactionIndicator(CompactionIndicatorState state, String datasetName, String startedAt,
                                       String updatedAt, long sizeBefore, long sizeAfter, String error) {
     }
 
