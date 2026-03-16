@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1773657437582,
+  "lastUpdate": 1773657508177,
   "repoUrl": "https://github.com/telicent-oss/smart-cache-graph",
   "entries": {
     "ABAC Benchmark": [
@@ -5094,6 +5094,34 @@ window.BENCHMARK_DATA = {
           {
             "name": "io.telicent.core.SCGraphAbacPersistentScenarioBenchmark.benchmarkAbacSparqlSelect",
             "value": 0.9320897925147793,
+            "unit": "ms/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "Paul Gallagher",
+            "username": "TelicentPaul",
+            "email": "132362215+TelicentPaul@users.noreply.github.com"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "e0c43293e171312287287064e2cef647036eab68",
+          "message": "Merge pull request #371 from telicent-oss/core_1205_log_fixes\n\n[CORE-1205] Making changes based upon log review",
+          "timestamp": "2026-03-13T09:10:34Z",
+          "url": "https://github.com/telicent-oss/smart-cache-graph/commit/e0c43293e171312287287064e2cef647036eab68"
+        },
+        "date": 1773657507456,
+        "tool": "jmh",
+        "benches": [
+          {
+            "name": "io.telicent.core.SCGraphAbacPersistentScenarioBenchmark.benchmarkAbacSparqlSelect",
+            "value": 0.8406163058327264,
             "unit": "ms/op",
             "extra": "iterations: 5\nforks: 1\nthreads: 1"
           }
