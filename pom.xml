@@ -63,7 +63,7 @@
     <plugin.central>0.10.0</plugin.central>
     <plugin.clean>3.3.2</plugin.clean>
     <plugin.compiler>3.15.0</plugin.compiler>
-    <plugin.cyclonedx>2.8.2</plugin.cyclonedx>
+    <plugin.cyclonedx>2.9.1</plugin.cyclonedx>
     <plugin.dependency>3.10.0</plugin.dependency>
     <plugin.deploy>3.1.4</plugin.deploy>
     <plugin.enforcer>3.4.1</plugin.enforcer>
@@ -94,7 +94,7 @@
     <dependency.jackson>2.21.1</dependency.jackson>
     <dependency.bouncycastle>1.83</dependency.bouncycastle>
     <dependency.kafka>3.9.2</dependency.kafka>
-    <dependency.kotlin>2.3.10</dependency.kotlin>
+    <dependency.kotlin>2.3.20</dependency.kotlin>
     <dependency.lz4>1.10.4</dependency.lz4>
     <dependency.otel>1.33.0</dependency.otel> <!-- These two must be in-step. -->
     <dependency.otel-semconv>1.30.1-alpha</dependency.otel-semconv> <!-- These two must be in-step. -->
@@ -108,7 +108,7 @@
     <dependency.jmh>1.37</dependency.jmh>
     <dependency.junit5>6.0.3</dependency.junit5>
     <dependency.junit5-platform>6.0.3</dependency.junit5-platform>
-    <dependency.mockito>5.22.0</dependency.mockito>
+    <dependency.mockito>5.23.0</dependency.mockito>
     <dependency.testcontainers>1.21.4</dependency.testcontainers>
     <dependency.yaml-config>2.0.1</dependency.yaml-config>
 
