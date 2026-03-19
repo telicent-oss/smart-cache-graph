@@ -9,8 +9,11 @@ import io.telicent.smart.cache.sources.Event;
 import io.telicent.smart.cache.sources.TelicentHeaders;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.jena.graph.Graph;
+import org.apache.jena.graph.Node;
+import org.apache.jena.graph.NodeFactory;
 import org.apache.jena.kafka.common.FusekiSink;
 import org.apache.jena.rdfpatch.RDFChanges;
+import org.apache.jena.sparql.core.Quad;
 import org.apache.kafka.common.utils.Bytes;
 
 /**
@@ -19,8 +22,11 @@ import org.apache.kafka.common.utils.Bytes;
  */
 public class SmartCacheGraphSink extends FusekiSink<DatasetGraphABAC> {
 
-    public SmartCacheGraphSink(DatasetGraphABAC dataset) {
+    private final boolean routeToNamedGraphs;
+
+    public SmartCacheGraphSink(DatasetGraphABAC dataset, boolean routeToNamedGraphs) {
         super(dataset);
+        this.routeToNamedGraphs = routeToNamedGraphs;
     }
 
     @Override
@@ -47,11 +53,37 @@ public class SmartCacheGraphSink extends FusekiSink<DatasetGraphABAC> {
                 return;
             }
 
-            this.dataset.add(q);
-            if (eventSecurityLabel != null) {
-                // Specific label for this event
-                labelsStore.add(q.asTriple(), eventSecurityLabel);
+            if (routeToNamedGraphs) {
+                //TODO
+                // add TelicentHeaders.DISTRIBUTION_ID const
+                String distributionId = event.lastHeader("Distribution-Id");
+                if (StringUtils.isEmpty(distributionId)) {
+                    //throw new IllegalArgumentException("No distribution id specified when in routing mode");
+                    IllegalArgumentException ex = new IllegalArgumentException("No distribution id specified when in routing mode");
+                    ex.printStackTrace();
+                    throw ex;
+                }
+                else {
+                    Node targetGraph = NodeFactory.createURI(distributionId);
+                    Quad rerouted = new Quad(targetGraph, q.getSubject(), q.getPredicate(), q.getObject());
+                    this.dataset.add(rerouted);
+                    if (eventSecurityLabel != null) {
+                        // Specific label for this event
+                        //TODO
+                        // write a comment about changing it once the label graph name filtering is on
+                        // needs updating once
+                        labelsStore.add(rerouted.asTriple(), eventSecurityLabel);
+                    }
+                }
             }
+            else {
+                this.dataset.add(q);
+                if (eventSecurityLabel != null) {
+                    // Specific label for this event
+                    labelsStore.add(q.asTriple(), eventSecurityLabel);
+                }
+            }
+
             // NB - If no specific label for this event, dataset default will apply at read time, no need to set
             //      anything in the labels store
         });

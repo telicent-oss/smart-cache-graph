@@ -105,7 +105,7 @@ public class TestPersistentSetup {
         final DatasetGraph dsgBase = dsgz.getBase();
 
         // Add connectors in such a way we can manually inject requests.
-        SmartCacheGraphSink sink = new SmartCacheGraphSink(dsgz);
+        SmartCacheGraphSink sink = new SmartCacheGraphSink(dsgz, false);
 
         try {
             server.start();

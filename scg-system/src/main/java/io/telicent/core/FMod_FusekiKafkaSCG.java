@@ -69,7 +69,9 @@ public class FMod_FusekiKafkaSCG extends FMod_FusekiKafka {
         return dsg -> {
             if (dsg instanceof DatasetGraphABAC dsgABAC) {
                 // For ABAC enabled datasets use our custom sink that applies labels
-                return new SmartCacheGraphSink(dsgABAC);
+                //TODO
+                // the false should probably be some sort of env var
+                return new SmartCacheGraphSink(dsgABAC, true);
             } else {
                 // For non-ABAC datasets use the default Fuseki Kafka sink
                 return FusekiSink.builder().dataset(dsg).build();
