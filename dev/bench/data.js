@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1774258862266,
+  "lastUpdate": 1774259132071,
   "repoUrl": "https://github.com/telicent-oss/smart-cache-graph",
   "entries": {
     "ABAC Benchmark": [
@@ -4768,6 +4768,52 @@ window.BENCHMARK_DATA = {
           {
             "name": "io.telicent.core.AccessQueryServiceBenchmark.benchmarkVisibleTriplesCount ( {\"tripleCount\":\"10000\"} )",
             "value": 2.6712248868407578,
+            "unit": "ms/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "Rob Walpole",
+            "username": "robwtelicent",
+            "email": "183595007+robwtelicent@users.noreply.github.com"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "19fe6fb6ada4f3eee0c53583128c6e2f5c6b81f2",
+          "message": "Merge pull request #375 from telicent-oss/dependabot/docker/scg-docker/telicent/telicent-java21-1.2.43\n\nBump telicent/telicent-java21 from 1.2.42 to 1.2.43 in /scg-docker",
+          "timestamp": "2026-03-20T11:11:22Z",
+          "url": "https://github.com/telicent-oss/smart-cache-graph/commit/19fe6fb6ada4f3eee0c53583128c6e2f5c6b81f2"
+        },
+        "date": 1774259131734,
+        "tool": "jmh",
+        "benches": [
+          {
+            "name": "io.telicent.core.AccessQueryServiceBenchmark.benchmarkGetTriples ( {\"tripleCount\":\"1000\"} )",
+            "value": 0.5050991141474468,
+            "unit": "ms/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "io.telicent.core.AccessQueryServiceBenchmark.benchmarkGetTriples ( {\"tripleCount\":\"10000\"} )",
+            "value": 3.6390361791151973,
+            "unit": "ms/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "io.telicent.core.AccessQueryServiceBenchmark.benchmarkVisibleTriplesCount ( {\"tripleCount\":\"1000\"} )",
+            "value": 0.327923740622107,
+            "unit": "ms/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "io.telicent.core.AccessQueryServiceBenchmark.benchmarkVisibleTriplesCount ( {\"tripleCount\":\"10000\"} )",
+            "value": 2.969932216403352,
             "unit": "ms/op",
             "extra": "iterations: 5\nforks: 1\nthreads: 1"
           }
