@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1774259132071,
+  "lastUpdate": 1774259282808,
   "repoUrl": "https://github.com/telicent-oss/smart-cache-graph",
   "entries": {
     "ABAC Benchmark": [
@@ -5184,6 +5184,52 @@ window.BENCHMARK_DATA = {
           {
             "name": "io.telicent.core.BackupRestoreBenchmark.benchmarkRestoreDataset ( {\"tripleCount\":\"10000\"} )",
             "value": 140.28031739542826,
+            "unit": "ms/op",
+            "extra": "iterations: 3\nforks: 1\nthreads: 1"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "Rob Walpole",
+            "username": "robwtelicent",
+            "email": "183595007+robwtelicent@users.noreply.github.com"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "19fe6fb6ada4f3eee0c53583128c6e2f5c6b81f2",
+          "message": "Merge pull request #375 from telicent-oss/dependabot/docker/scg-docker/telicent/telicent-java21-1.2.43\n\nBump telicent/telicent-java21 from 1.2.42 to 1.2.43 in /scg-docker",
+          "timestamp": "2026-03-20T11:11:22Z",
+          "url": "https://github.com/telicent-oss/smart-cache-graph/commit/19fe6fb6ada4f3eee0c53583128c6e2f5c6b81f2"
+        },
+        "date": 1774259282207,
+        "tool": "jmh",
+        "benches": [
+          {
+            "name": "io.telicent.core.BackupRestoreBenchmark.benchmarkBackupDataset ( {\"tripleCount\":\"1000\"} )",
+            "value": 12.071325038613141,
+            "unit": "ms/op",
+            "extra": "iterations: 3\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "io.telicent.core.BackupRestoreBenchmark.benchmarkBackupDataset ( {\"tripleCount\":\"10000\"} )",
+            "value": 36.560751973257574,
+            "unit": "ms/op",
+            "extra": "iterations: 3\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "io.telicent.core.BackupRestoreBenchmark.benchmarkRestoreDataset ( {\"tripleCount\":\"1000\"} )",
+            "value": 37.59380097768732,
+            "unit": "ms/op",
+            "extra": "iterations: 3\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "io.telicent.core.BackupRestoreBenchmark.benchmarkRestoreDataset ( {\"tripleCount\":\"10000\"} )",
+            "value": 135.38377675219218,
             "unit": "ms/op",
             "extra": "iterations: 3\nforks: 1\nthreads: 1"
           }
