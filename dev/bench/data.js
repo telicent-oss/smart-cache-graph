@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1773657508177,
+  "lastUpdate": 1774254316925,
   "repoUrl": "https://github.com/telicent-oss/smart-cache-graph",
   "entries": {
     "ABAC Benchmark": [
@@ -984,6 +984,64 @@ window.BENCHMARK_DATA = {
           {
             "name": "io.telicent.core.ABACLabelEvaluationBenchmark.benchmarkAbacQuery ( {\"labelComplexity\":\"complex\",\"tripleCount\":\"10000\"} )",
             "value": 0.11566416449258192,
+            "unit": "ms/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "Rob Walpole",
+            "username": "robwtelicent",
+            "email": "183595007+robwtelicent@users.noreply.github.com"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "19fe6fb6ada4f3eee0c53583128c6e2f5c6b81f2",
+          "message": "Merge pull request #375 from telicent-oss/dependabot/docker/scg-docker/telicent/telicent-java21-1.2.43\n\nBump telicent/telicent-java21 from 1.2.42 to 1.2.43 in /scg-docker",
+          "timestamp": "2026-03-20T11:11:22Z",
+          "url": "https://github.com/telicent-oss/smart-cache-graph/commit/19fe6fb6ada4f3eee0c53583128c6e2f5c6b81f2"
+        },
+        "date": 1774254316420,
+        "tool": "jmh",
+        "benches": [
+          {
+            "name": "io.telicent.core.ABACLabelEvaluationBenchmark.benchmarkAbacQuery ( {\"labelComplexity\":\"simple\",\"tripleCount\":\"1000\"} )",
+            "value": 0.11214437896759104,
+            "unit": "ms/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "io.telicent.core.ABACLabelEvaluationBenchmark.benchmarkAbacQuery ( {\"labelComplexity\":\"simple\",\"tripleCount\":\"10000\"} )",
+            "value": 0.11186063318306512,
+            "unit": "ms/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "io.telicent.core.ABACLabelEvaluationBenchmark.benchmarkAbacQuery ( {\"labelComplexity\":\"medium\",\"tripleCount\":\"1000\"} )",
+            "value": 0.11118258997122454,
+            "unit": "ms/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "io.telicent.core.ABACLabelEvaluationBenchmark.benchmarkAbacQuery ( {\"labelComplexity\":\"medium\",\"tripleCount\":\"10000\"} )",
+            "value": 0.11216779907758231,
+            "unit": "ms/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "io.telicent.core.ABACLabelEvaluationBenchmark.benchmarkAbacQuery ( {\"labelComplexity\":\"complex\",\"tripleCount\":\"1000\"} )",
+            "value": 0.11266045247811429,
+            "unit": "ms/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "io.telicent.core.ABACLabelEvaluationBenchmark.benchmarkAbacQuery ( {\"labelComplexity\":\"complex\",\"tripleCount\":\"10000\"} )",
+            "value": 0.11205442349637582,
             "unit": "ms/op",
             "extra": "iterations: 5\nforks: 1\nthreads: 1"
           }
