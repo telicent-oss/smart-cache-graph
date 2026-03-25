@@ -745,4 +745,45 @@ class TestSmartCacheGraphSink {
                 };
         runTestProcessorSCGWithAuth(action);
     }
+
+    @Test
+    void processorSCG_namedGraph_rdfPatch_differentDistributionIdsRouteToDifferentGraphs() {
+        String namedGraph1 = "http://example/graph1";
+        String namedGraph2 = "http://example/graph2";
+        TestAction action =
+                (Sink<Event<Bytes, RdfPayload>> proc, FusekiServer server, DatasetGraph dsgBase, DatasetGraph dsg) -> {
+                    sendEventWithDistributionId(dsg, proc, """
+                    TX .
+                    A <http://example/s> <http://example/p> "value1" .
+                    TC .
+                    """, WebContent.contentTypePatch, attrPermit, namedGraph1);
+                    sendEventWithDistributionId(dsg, proc, """
+                    TX .
+                    A <http://example/s> <http://example/p> "value2" .
+                    TC .
+                    """, WebContent.contentTypePatch, attrPermit, namedGraph2);
+
+                    assertFalse(dsgBase.getGraph(NodeFactory.createURI(namedGraph1)).isEmpty(), "Graph1 should have data");
+                    assertFalse(dsgBase.getGraph(NodeFactory.createURI(namedGraph2)).isEmpty(), "Graph2 should have data");
+
+                    // Also verify data is in the correct graph, not the default
+                    assertTrue(dsgBase.getDefaultGraph().isEmpty(), "Default graph should be empty");
+                };
+        runTestProcessorSCGWithAuthNamedGraph(action);
+    }
+
+    @Test
+    void processorSCG_namedGraph_rdfPatch_noDistributionId_throws() {
+        TestAction action =
+                (Sink<Event<Bytes, RdfPayload>> proc, FusekiServer server, DatasetGraph dsgBase, DatasetGraph dsg) -> {
+                    assertThrows(JenaKafkaException.class, () ->
+                            sendEventWithDistributionId(dsg, proc, """
+                        TX .
+                        A <http://example/s> <http://example/p> "value1" .
+                        TC .
+                        """, WebContent.contentTypePatch, attrPermit, null)
+                    );
+                };
+        runTestProcessorSCGWithAuthNamedGraph(action);
+    }
 }

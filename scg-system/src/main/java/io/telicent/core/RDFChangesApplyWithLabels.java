@@ -1,9 +1,11 @@
 package io.telicent.core;
 
+import io.micrometer.common.util.StringUtils;
 import io.telicent.jena.abac.core.DatasetGraphABAC;
 import io.telicent.jena.abac.core.VocabAuthz;
 import io.telicent.jena.abac.labels.Label;
 import org.apache.jena.graph.Node;
+import org.apache.jena.graph.NodeFactory;
 import org.apache.jena.kafka.utils.RDFChangesApplyExternalTransaction;
 import org.apache.jena.query.TxnType;
 import org.apache.jena.sparql.graph.GraphFactory;
@@ -19,6 +21,7 @@ class RDFChangesApplyWithLabels extends RDFChangesApplyExternalTransaction {
     private final Label securityLabel;
     private final DatasetGraphABAC datasetABAC;
     private final GraphTxn labelsGraph = GraphFactory.createTxnGraph();
+    private String distributionId = null;
 
     public RDFChangesApplyWithLabels(DatasetGraphABAC dsgz,
                                      Label securitylabel) {
@@ -28,12 +31,24 @@ class RDFChangesApplyWithLabels extends RDFChangesApplyExternalTransaction {
         this.labelsGraph.begin(TxnType.WRITE);
     }
 
+    public RDFChangesApplyWithLabels(DatasetGraphABAC dsgz,
+                                     Label securitylabel, String distributionId) {
+        super(dsgz);
+        this.securityLabel = securitylabel;
+        this.datasetABAC = dsgz;
+        this.distributionId = distributionId;
+        this.labelsGraph.begin(TxnType.WRITE);
+    }
+
     @Override
     public void add(Node g, Node s, Node p, Node o) {
         if (VocabAuthz.graphForLabels.equals(g)) {
             // If quad is for labels graph just track that for now
             this.labelsGraph.add(s, p, o);
         } else {
+            if (!StringUtils.isEmpty(distributionId)) {
+                g = NodeFactory.createURI(distributionId);
+            }
             super.add(g, s, p, o);
 
             // Apply specific security label if there is one, if not we're relying on the dataset default label applying
