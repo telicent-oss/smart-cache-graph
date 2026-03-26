@@ -149,7 +149,7 @@ PREFIX fk:      <http://jena.apache.org/fuseki/kafka#>
 <#connector> rdf:type fk:Connector ;
     fk:bootstrapServers    "-- kafka connection URL string --";
     fk:topic               "knowledge";
-    ## This should refer to an authz:upload endpoint
+    ## This should refer to the base dataset path. The connector resolves the authz:upload endpoint from the service.
     fk:fusekiServiceName   "/knowledge";
     
     ##fk:syncTopic        false;
@@ -160,4 +160,3 @@ PREFIX fk:      <http://jena.apache.org/fuseki/kafka#>
 ```
 
 The `fk:fusekiServiceName` connects the topic (`fk:topic`) to the data service.
-

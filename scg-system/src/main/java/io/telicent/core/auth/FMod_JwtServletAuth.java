@@ -62,7 +62,7 @@ public class FMod_JwtServletAuth implements FusekiModule {
         // Disable authentication for purely informative paths that are useful for health checks and metrics
         // Note some of these URLs aren't actually enabled for SCG currently but useful to future-proof our exclusions
         // should we enable these features in future
-        serverBuilder.addServletAttribute(JwtServletConstants.ATTRIBUTE_PATH_EXCLUSIONS,
+        serverBuilder.setServletAttribute(JwtServletConstants.ATTRIBUTE_PATH_EXCLUSIONS,
                                           PathExclusion.parsePathPatterns(
                                                   "/$/ping,/$/metrics,/$/stats/*"));
 
@@ -103,6 +103,6 @@ public class FMod_JwtServletAuth implements FusekiModule {
         // Create and register our engine
         ServletAuthorizationEngine engine =
                 new ServletAuthorizationEngine(roles, perms, Policy.DENY_ALL, Policy.DENY_ALL);
-        serverBuilder.addServletAttribute(TelicentAuthorizationEngine.class.getCanonicalName(), engine);
+        serverBuilder.setServletAttribute(TelicentAuthorizationEngine.class.getCanonicalName(), engine);
     }
 }

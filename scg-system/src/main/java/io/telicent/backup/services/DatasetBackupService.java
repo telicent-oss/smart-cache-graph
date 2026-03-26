@@ -59,6 +59,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 import java.util.zip.GZIPInputStream;
 
 import static io.telicent.backup.utils.BackupConstants.*;
@@ -281,6 +282,23 @@ public class DatasetBackupService {
      */
     public ObjectNode listBackups() {
         return getObjectNodeFromNumberedFiles(getBackUpDir(), JSON_INFO_SUFFIX);
+    }
+
+    /**
+     * List all configured datasets that are available for backup operations.
+     *
+     * @return Dataset names using the same sanitised form expected by backup endpoints.
+     */
+    public ArrayNode listDatasets() {
+        ArrayNode datasets = OBJECT_MAPPER.createArrayNode();
+        StreamSupport.stream(dapRegistry.accessPoints().spliterator(), false)
+                     .map(DataAccessPoint::getName)
+                     .map(DatasetBackupService::sanitiseName)
+                     .filter(name -> !name.isEmpty())
+                     .distinct()
+                     .sorted()
+                     .forEach(datasets::add);
+        return datasets;
     }
 
     /**

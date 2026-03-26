@@ -303,9 +303,29 @@ public class TestBackupData {
     }
 
     @Test
+    @SuppressWarnings("rawtypes")
+    public void test_listDatasets() {
+        // given
+        server = buildServer("--port=0", "--mem", "/ds");
+        // when
+        HttpResponse<InputStream> listDatasetsResponse =
+                makeAuthGETCallWithPath(server, "$/backups/datasets/list", "test");
+        // then
+        assertEquals(200, listDatasetsResponse.statusCode());
+        Map responseMap = convertToMap(listDatasetsResponse);
+        assertEquals(List.of("ds"), responseMap.get("datasets"));
+    }
+
+    @Test
     public void givenUserWithWrongRoles_whenListBackups_thenUnauthorized() throws IOException {
         verifyUnauthorized(tokenWithUserRoleOnly(),
                            "$/backups/list", "GET", "requires roles");
+    }
+
+    @Test
+    public void givenUserWithWrongRoles_whenListDatasets_thenUnauthorized() throws IOException {
+        verifyUnauthorized(tokenWithUserRoleOnly(),
+                           "$/backups/datasets/list", "GET", "requires roles");
     }
 
 
@@ -414,6 +434,18 @@ public class TestBackupData {
         // then
 //        debug(createBackupResponse);
         assertEquals(500, createBackupResponse.statusCode());
+    }
+
+    @Test
+    public void test_listDatasets_error() {
+        // given
+        testModule = new FMod_BackupData_Null();
+        server = buildServer("--port=0", "--empty");
+        // when
+        HttpResponse<InputStream> listDatasetsResponse =
+                makeAuthGETCallWithPath(server, "$/backups/datasets/list", "test");
+        // then
+        assertEquals(500, listDatasetsResponse.statusCode());
     }
 
     @Test

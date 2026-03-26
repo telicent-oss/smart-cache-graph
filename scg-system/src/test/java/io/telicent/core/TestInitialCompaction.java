@@ -33,6 +33,8 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Optional;
+import java.util.Properties;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -73,6 +75,10 @@ public class TestInitialCompaction {
         File previousCompactionSize = Path.of("target", "databases", "knowledge", ".last-compaction").toFile();
         if (previousCompactionSize.exists()) {
             previousCompactionSize.delete();
+        }
+        File previousCompactionStatus = Path.of("target", "databases", "knowledge", ".compaction-status").toFile();
+        if (previousCompactionStatus.exists()) {
+            previousCompactionStatus.delete();
         }
     }
 
@@ -217,6 +223,20 @@ public class TestInitialCompaction {
     }
 
     @Test
+    public void test_serverAfterStarting_internalError_doesNotPropagate() throws IOException {
+        // given
+        mockDatabaseMgr.when(() -> DatabaseMgr.compact(any(), anyBoolean()))
+                       .thenThrow(new InternalError("unsafe memory access"));
+        server = FusekiServer.create().port(0).add("test", createPersistentSwitchableDataset()).build().start();
+        FMod_InitialCompaction fModInitialCompaction = new FMod_InitialCompaction();
+        fModInitialCompaction.prepare(null, Set.of("test"), null);
+
+        // when / then
+        assertDoesNotThrow(() -> fModInitialCompaction.serverAfterStarting(server));
+        mockDatabaseMgr.verify(() -> DatabaseMgr.compact(any(), anyBoolean()), times(1));
+    }
+
+    @Test
     public void test_databaseSize_handlesInvalidInput() {
         // given
         DatasetGraph emptyDsg = DatasetGraphFactory.create();
@@ -258,6 +278,37 @@ public class TestInitialCompaction {
     }
 
     @Test
+    public void givenCompactionIndicatorFile_whenLoadingPreviousIndicator_thenCorrect() throws IOException {
+        // Given
+        File tempDir = Files.createTempDirectory("test").toFile();
+        DatasetGraphSwitchable mockDSG = mock(DatasetGraphSwitchable.class);
+        when(mockDSG.getContainerPath()).thenReturn(Path.of(tempDir.getAbsolutePath()));
+        File indicatorFile = FMod_InitialCompaction.getCompactionIndicatorFile(mockDSG);
+        Properties properties = new Properties();
+        properties.setProperty("state", FMod_InitialCompaction.CompactionIndicatorState.FAILED.name());
+        properties.setProperty("dataset", "/knowledge");
+        properties.setProperty("startedAt", "2026-03-09T07:04:11Z");
+        properties.setProperty("updatedAt", "2026-03-09T07:14:27Z");
+        properties.setProperty("sizeBefore", "17924117568");
+        properties.setProperty("sizeAfter", "-1");
+        properties.setProperty("error", "java.lang.InternalError: unsafe memory access");
+        try (OutputStream output = new FileOutputStream(indicatorFile)) {
+            properties.store(output, "test");
+        }
+
+        // When
+        Optional<FMod_InitialCompaction.CompactionIndicator> indicator =
+                FMod_InitialCompaction.findPreviousCompactionIndicator(mockDSG);
+
+        // Then
+        assertTrue(indicator.isPresent());
+        assertEquals(FMod_InitialCompaction.CompactionIndicatorState.FAILED, indicator.get().state());
+        assertEquals("/knowledge", indicator.get().datasetName());
+        assertEquals(17924117568L, indicator.get().sizeBefore());
+        assertEquals("java.lang.InternalError: unsafe memory access", indicator.get().error());
+    }
+
+    @Test
     public void givenNoCompactionResultsFile_whenLoadingPreviousSize_thenDefaultValueReturned() throws IOException {
         // Given
         File tempDir = Files.createTempDirectory("test").toFile();
@@ -269,6 +320,25 @@ public class TestInitialCompaction {
 
         // Then
         Assertions.assertEquals(-1, previousSize);
+    }
+
+    @Test
+    public void givenMalformedCompactionIndicatorFile_whenLoadingPreviousIndicator_thenEmptyReturned() throws IOException {
+        // Given
+        File tempDir = Files.createTempDirectory("test").toFile();
+        DatasetGraphSwitchable mockDSG = mock(DatasetGraphSwitchable.class);
+        when(mockDSG.getContainerPath()).thenReturn(Path.of(tempDir.getAbsolutePath()));
+        File indicatorFile = FMod_InitialCompaction.getCompactionIndicatorFile(mockDSG);
+        try (OutputStream output = new FileOutputStream(indicatorFile)) {
+            output.write("state=NOT_A_REAL_STATE\n".getBytes(StandardCharsets.UTF_8));
+        }
+
+        // When
+        Optional<FMod_InitialCompaction.CompactionIndicator> indicator =
+                FMod_InitialCompaction.findPreviousCompactionIndicator(mockDSG);
+
+        // Then
+        assertTrue(indicator.isEmpty());
     }
 
     @Test
@@ -367,6 +437,30 @@ public class TestInitialCompaction {
     }
 
     @Test
+    public void test_compactOne_internalErrorReturnsError() throws IOException {
+        // given
+        mockDatabaseMgr.when(() -> DatabaseMgr.compact(any(), anyBoolean()))
+                       .thenThrow(new InternalError("unsafe memory access"));
+        DatasetGraphSwitchable dsgPersists = createPersistentSwitchableDataset();
+        server = SmartCacheGraph.smartCacheGraphBuilder().port(0).add("test", dsgPersists).build().start();
+
+        // when
+        HttpResponse<InputStream> compactResponse =
+                makeAuthCallWithCustomToken(server, "$/compact/test",
+                                            tokenForUserWithCompactPermissions("test", "test"), "POST");
+
+        // then
+        assertEquals(500, compactResponse.statusCode());
+        String body = IOUtils.toString(compactResponse.body(), StandardCharsets.UTF_8);
+        assertTrue(Strings.CI.contains(body, "Compaction failed for dataset"));
+        Optional<FMod_InitialCompaction.CompactionIndicator> indicator =
+                FMod_InitialCompaction.findPreviousCompactionIndicator(dsgPersists);
+        assertTrue(indicator.isPresent());
+        assertEquals(FMod_InitialCompaction.CompactionIndicatorState.FAILED, indicator.get().state());
+        assertNotNull(indicator.get().error());
+    }
+
+    @Test
     public void test_compactAll_mixedOutcomesReturnsSummary() throws IOException {
         // Given
         DatasetGraphSwitchable dsgPersists = createPersistentSwitchableDataset();
@@ -414,6 +508,31 @@ public class TestInitialCompaction {
         String body = IOUtils.toString(compactResponse.body(), StandardCharsets.UTF_8);
         assertTrue(Strings.CI.contains(body, "Compaction failed for one or more datasets"));
         assertTrue(Strings.CI.contains(body, "failure"));
+    }
+
+    @Test
+    public void test_compactAll_internalErrorInDatasetReturnsError() throws IOException {
+        // Given
+        mockDatabaseMgr.when(() -> DatabaseMgr.compact(any(), anyBoolean()))
+                       .thenThrow(new InternalError("unsafe memory access"));
+        DatasetGraphSwitchable dsgPersists = createPersistentSwitchableDataset();
+        server = SmartCacheGraph.smartCacheGraphBuilder().port(0).add("test", dsgPersists).build().start();
+
+        // When
+        HttpResponse<InputStream> compactResponse = makeAuthCallWithCustomToken(server, "$/compactall",
+                                                                                 tokenForUserWithCompactPermissions(
+                                                                                         "test", "test"),
+                                                                                 "POST");
+
+        // Then
+        assertEquals(500, compactResponse.statusCode());
+        String body = IOUtils.toString(compactResponse.body(), StandardCharsets.UTF_8);
+        assertTrue(Strings.CI.contains(body, "Compaction failed for one or more datasets"));
+        Optional<FMod_InitialCompaction.CompactionIndicator> indicator =
+                FMod_InitialCompaction.findPreviousCompactionIndicator(dsgPersists);
+        assertTrue(indicator.isPresent());
+        assertEquals(FMod_InitialCompaction.CompactionIndicatorState.FAILED, indicator.get().state());
+        assertNotNull(indicator.get().error());
     }
 
     @Test

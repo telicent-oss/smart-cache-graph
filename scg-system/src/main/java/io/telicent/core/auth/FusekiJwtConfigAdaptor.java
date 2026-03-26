@@ -22,7 +22,7 @@ final class FusekiJwtConfigAdaptor extends TelicentConfigurationAdaptor {
 
     @Override
     public void setAttribute(String attribute, Object value) {
-        this.serverBuilder.addServletAttribute(attribute, value);
+        this.serverBuilder.setServletAttribute(attribute, value);
     }
 
     @Override

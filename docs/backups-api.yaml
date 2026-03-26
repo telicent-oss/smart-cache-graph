@@ -162,11 +162,74 @@ paths:
                     type: string
                     format: date-time
                     description: Timestamp of the listing operation.
-                  list:
+                  backups:
+                    type: object
+                    description: |
+                      Backup metadata keyed by backup ID as a string, e.g. `"1"`, `"2"`.
+                      Each value is the JSON metadata recorded for that backup.
+                    additionalProperties:
+                      type: object
+                      properties:
+                        backup-id:
+                          type: integer
+                          description: Numeric ID of the backup.
+                        backup-type:
+                          type: string
+                          description: Dataset name for a dataset-specific backup, or `FULL` for a full backup.
+                        backup-name:
+                          type: string
+                          description: Optional human-readable backup name.
+                        user:
+                          type: string
+                          description: User that created the backup.
+                        description:
+                          type: string
+                          description: Optional backup description.
+                        date:
+                          type: string
+                          format: date-time
+                          description: Timestamp recorded for the backup.
+                        start-time:
+                          type: string
+                          format: date-time
+                          description: Start time of the backup operation.
+                        datasets:
+                          type: array
+                          description: Per-dataset backup details captured for the backup.
+                          items:
+                            type: object
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Error message.
+
+  /$/backups/datasets/list:
+    get:
+      summary: Get a list of all available datasets
+      description: Gets a list of all available datasets
+      responses:
+        '200':
+          description: Dataset list retrieved successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  date:
+                    type: string
+                    format: date-time
+                    description: Timestamp of the listing operation.
+                  datasets:
                     type: array
                     items:
-                      type: object
-                      description: Details of each backup.
+                      type: string
+                    description: Names of datasets available for backup operations.
         '500':
           description: Internal server error.
           content:
