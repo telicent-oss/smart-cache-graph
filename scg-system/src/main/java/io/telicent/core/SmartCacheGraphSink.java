@@ -36,9 +36,9 @@ public class SmartCacheGraphSink extends FusekiSink<DatasetGraphABAC> {
         //      that handles those sensibly.  Transaction boundaries can still lead to failures if the
         //      transaction boundaries in the patch are not valid.
         //      The implementation used here also ensures that labels are applied to the labels store as appropriate
-        String distributionId = null;
+        String distributionId;
         if (routeToNamedGraphs) {
-            distributionId = event.lastHeader("Distribution-Id");
+            distributionId = event.lastHeader(TelicentHeaders.DISTRIBUTION_ID);
             if (StringUtils.isEmpty(distributionId)) {
                 throw new IllegalArgumentException("No distribution id specified when in routing mode");
             }
@@ -69,24 +69,16 @@ public class SmartCacheGraphSink extends FusekiSink<DatasetGraphABAC> {
             }
 
             if (routeToNamedGraphs) {
-                //TODO
-                // add TelicentHeaders.DISTRIBUTION_ID const
-                String distributionId = event.lastHeader("Distribution-Id");
+                String distributionId = event.lastHeader(TelicentHeaders.DISTRIBUTION_ID);
                 if (StringUtils.isEmpty(distributionId)) {
-                    //throw new IllegalArgumentException("No distribution id specified when in routing mode");
-                    IllegalArgumentException ex = new IllegalArgumentException("No distribution id specified when in routing mode");
-                    ex.printStackTrace();
-                    throw ex;
+                    throw new IllegalArgumentException("No distribution id specified when in routing mode");
                 }
                 else {
                     Node targetGraph = NodeFactory.createURI(distributionId);
                     Quad rerouted = new Quad(targetGraph, q.getSubject(), q.getPredicate(), q.getObject());
                     this.dataset.add(rerouted);
                     if (eventSecurityLabel != null) {
-                        // Specific label for this event
-                        //TODO
-                        // write a comment about changing it once the label graph name filtering is on
-                        // needs updating once
+                        // Currently works only on the default graph, needs updating once labels store supports named graph labelling
                         labelsStore.add(rerouted.asTriple(), eventSecurityLabel);
                     }
                 }

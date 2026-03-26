@@ -48,6 +48,7 @@ import io.telicent.smart.cache.projectors.Sink;
 import io.telicent.smart.cache.sources.Event;
 import io.telicent.smart.cache.sources.EventHeader;
 import io.telicent.smart.cache.sources.Header;
+import io.telicent.smart.cache.sources.TelicentHeaders;
 import io.telicent.smart.cache.sources.memory.SimpleEvent;
 import org.apache.jena.fuseki.main.FusekiServer;
 import org.apache.jena.fuseki.server.DataService;
@@ -604,7 +605,6 @@ class TestSmartCacheGraphSink {
         }
     }
 
-    // Helper method to send event with Distribution-Id header
     private void sendEventWithDistributionId(DatasetGraph dsg, Sink<Event<Bytes, RdfPayload>> sink, String body,
                                              String contentType, AttributeValue securityLabel, String distributionId) {
         Map<String, String> headers = new HashMap<>();
@@ -613,12 +613,11 @@ class TestSmartCacheGraphSink {
             headers.put(SysABAC.hSecurityLabel, securityLabel.asString());
         }
         if (distributionId != null) {
-            headers.put("Distribution-Id", distributionId);
+            headers.put(TelicentHeaders.DISTRIBUTION_ID, distributionId);
         }
         sendEventWithExceptions(dsg, sink, body, headers);
     }
 
-    // Helper to run tests in named-graph routing mode
     private void runTestProcessorSCGWithAuthNamedGraph(TestAction execTestAction) {
         DatasetGraph dsgBase = DatasetGraphFactory.createTxnMem();
         LabelsStore labelsStore = Labels.createLabelsStoreMem();
@@ -645,7 +644,6 @@ class TestSmartCacheGraphSink {
 
     @Test
     void processorSCG_namedGraph_routesDataToNamedGraph() {
-        // Data should land in the named graph, not the default graph
         String namedGraph = "http://example/graph1";
         TestAction action =
                 (Sink<Event<Bytes, RdfPayload>> proc, FusekiServer server, DatasetGraph dsgBase, DatasetGraph dsg) -> {
@@ -654,7 +652,6 @@ class TestSmartCacheGraphSink {
                         PREFIX : <http://example/>
                         :s :p "turtle" .
                         """, WebContent.contentTypeTurtle, attrPermit, namedGraph);
-                    // Data should be in named graph, not default graph
                     assertTrue(dsgBase.getDefaultGraph().isEmpty(), "Default graph should be empty");
                     assertFalse(dsgBase.getGraph(NodeFactory.createURI(namedGraph)).isEmpty(),
                             "Named graph should contain data");
@@ -662,8 +659,7 @@ class TestSmartCacheGraphSink {
         runTestProcessorSCGWithAuthNamedGraph(action);
     }
 
-    //TODO
-    // write a comment about changing it once the label graph name filtering is on
+    // needs updating once labels store supports named graph labelling
     @Test
     void processorSCG_namedGraph_securityLabelStillApplied() {
         String namedGraph = "http://example/graph1";
@@ -689,7 +685,6 @@ class TestSmartCacheGraphSink {
 
     @Test
     void processorSCG_namedGraph_missingDistributionIdThrows() {
-        // In named graph mode, events without Distribution-Id MUST be rejected
         TestAction action =
                 (Sink<Event<Bytes, RdfPayload>> proc, FusekiServer server, DatasetGraph dsgBase, DatasetGraph dsg) -> {
                     checkDatasetSize(dsgBase, 0);
@@ -701,7 +696,6 @@ class TestSmartCacheGraphSink {
                     );
                     assertInstanceOf(IllegalArgumentException.class, ex.getCause());
                     assertEquals("No distribution id specified when in routing mode", ex.getCause().getMessage());
-                    // No data should have been written
                     checkDatasetSize(dsgBase, 0);
                 };
         runTestProcessorSCGWithAuthNamedGraph(action);
@@ -709,7 +703,6 @@ class TestSmartCacheGraphSink {
 
     @Test
     void processorSCG_namedGraph_differentDistributionIdsRouteToDifferentGraphs() {
-        // Two events with different Distribution-Ids should end up in different named graphs
         String namedGraph1 = "http://example/graph1";
         String namedGraph2 = "http://example/graph2";
         TestAction action =
@@ -731,7 +724,6 @@ class TestSmartCacheGraphSink {
 
     @Test
     void processorSCG_normalMode_distributionIdIgnored() {
-        // In normal (non-named-graph) mode, Distribution-Id header should be ignored and data goes to default graph
         TestAction action =
                 (Sink<Event<Bytes, RdfPayload>> proc, FusekiServer server, DatasetGraph dsgBase, DatasetGraph dsg) -> {
                     checkDatasetSize(dsgBase, 0);
@@ -739,7 +731,6 @@ class TestSmartCacheGraphSink {
                         PREFIX : <http://example/>
                         :s :p "turtle" .
                         """, WebContent.contentTypeTurtle, attrPermit, "http://example/graph1");
-                    // Should be in default graph as normal
                     checkDatasetSize(dsgBase, 1);
                     assertFalse(dsgBase.getDefaultGraph().isEmpty(), "Default graph should have data in normal mode");
                 };
@@ -765,8 +756,6 @@ class TestSmartCacheGraphSink {
 
                     assertFalse(dsgBase.getGraph(NodeFactory.createURI(namedGraph1)).isEmpty(), "Graph1 should have data");
                     assertFalse(dsgBase.getGraph(NodeFactory.createURI(namedGraph2)).isEmpty(), "Graph2 should have data");
-
-                    // Also verify data is in the correct graph, not the default
                     assertTrue(dsgBase.getDefaultGraph().isEmpty(), "Default graph should be empty");
                 };
         runTestProcessorSCGWithAuthNamedGraph(action);

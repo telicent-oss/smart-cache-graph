@@ -66,12 +66,13 @@ public class FMod_FusekiKafkaSCG extends FMod_FusekiKafka {
 
     @Override
     protected Function<DatasetGraph, Sink<Event<Bytes, RdfPayload>>> getSinkBuilder() {
+        boolean routeToNamedGraphs = Boolean.parseBoolean(
+                System.getenv().getOrDefault("ROUTE_TO_NAMED_GRAPHS", "false")
+        );
         return dsg -> {
             if (dsg instanceof DatasetGraphABAC dsgABAC) {
                 // For ABAC enabled datasets use our custom sink that applies labels
-                //TODO
-                // the false should probably be some sort of env var
-                return new SmartCacheGraphSink(dsgABAC, true);
+                return new SmartCacheGraphSink(dsgABAC, routeToNamedGraphs);
             } else {
                 // For non-ABAC datasets use the default Fuseki Kafka sink
                 return FusekiSink.builder().dataset(dsg).build();

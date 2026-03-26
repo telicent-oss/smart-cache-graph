@@ -4,5 +4,6 @@ services:
       - graph
     environment:
       - FUSEKI_CONFIG=smart-cache-graph-config.ttl
+      - ROUTE_TO_NAMED_GRAPHS=true
     image: telicent/smart-cache-graph:latest
     
