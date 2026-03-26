@@ -9,7 +9,6 @@ import io.telicent.smart.cache.sources.Event;
 import io.telicent.smart.cache.sources.TelicentHeaders;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.jena.graph.Graph;
-
 import org.apache.jena.graph.Node;
 import org.apache.jena.graph.NodeFactory;
 import org.apache.jena.kafka.common.FusekiSink;
@@ -36,19 +35,15 @@ public class SmartCacheGraphSink extends FusekiSink<DatasetGraphABAC> {
         //      that handles those sensibly.  Transaction boundaries can still lead to failures if the
         //      transaction boundaries in the patch are not valid.
         //      The implementation used here also ensures that labels are applied to the labels store as appropriate
-        String distributionId;
+        String distributionId = null;
         if (routeToNamedGraphs) {
             distributionId = event.lastHeader(TelicentHeaders.DISTRIBUTION_ID);
             if (StringUtils.isEmpty(distributionId)) {
                 throw new IllegalArgumentException("No distribution id specified when in routing mode");
             }
-            RDFChanges apply = new RDFChangesApplyWithLabels(this.dataset, getEventSecurityLabel(event), distributionId);
-            event.value().getPatch().apply(apply);
         }
-        else {
-            RDFChanges apply = new RDFChangesApplyWithLabels(this.dataset, getEventSecurityLabel(event));
-            event.value().getPatch().apply(apply);
-        }
+        RDFChanges apply = new RDFChangesApplyWithLabels(this.dataset, getEventSecurityLabel(event), distributionId);
+        event.value().getPatch().apply(apply);
     }
 
     @Override
@@ -60,14 +55,10 @@ public class SmartCacheGraphSink extends FusekiSink<DatasetGraphABAC> {
 
         // Copy across quads, updating the labels store as needed
         event.value().getDataset().stream().forEach(q -> {
-            System.out.println("Processing quad: " + q);
-            System.out.println("Graph: " + q.getGraph());
-            System.out.println("routeToNamedGraphs: " + routeToNamedGraphs);
             if (q.getGraph().equals(VocabAuthz.graphForLabels)) {
                 // Ignore, labels graph is only metadata and not written to target dataset
                 return;
             }
-
             if (routeToNamedGraphs) {
                 String distributionId = event.lastHeader(TelicentHeaders.DISTRIBUTION_ID);
                 if (StringUtils.isEmpty(distributionId)) {
@@ -90,7 +81,6 @@ public class SmartCacheGraphSink extends FusekiSink<DatasetGraphABAC> {
                     labelsStore.add(q.asTriple(), eventSecurityLabel);
                 }
             }
-
             // NB - If no specific label for this event, dataset default will apply at read time, no need to set
             //      anything in the labels store
         });

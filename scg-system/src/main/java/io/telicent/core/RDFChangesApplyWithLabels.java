@@ -21,14 +21,11 @@ class RDFChangesApplyWithLabels extends RDFChangesApplyExternalTransaction {
     private final Label securityLabel;
     private final DatasetGraphABAC datasetABAC;
     private final GraphTxn labelsGraph = GraphFactory.createTxnGraph();
-    private String distributionId = null;
+    private final String distributionId;
 
     public RDFChangesApplyWithLabels(DatasetGraphABAC dsgz,
                                      Label securitylabel) {
-        super(dsgz);
-        this.securityLabel = securitylabel;
-        this.datasetABAC = dsgz;
-        this.labelsGraph.begin(TxnType.WRITE);
+        this(dsgz, securitylabel, null);
     }
 
     public RDFChangesApplyWithLabels(DatasetGraphABAC dsgz,

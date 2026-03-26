@@ -523,8 +523,7 @@ class TestSmartCacheGraphSink {
         Event<Bytes, RdfPayload> event = new SimpleEvent<>(toHeaders(headers), null,
                 RdfPayload.of(headers.get("Content-Type"),
                         body.getBytes(StandardCharsets.UTF_8)));
-        //Txn.executeWrite(dsg, () -> sink.send(event));  // No try/catch
-        sink.send(event); // to make sure ALL errors pop up, I think txn might eat some of them
+        sink.send(event);
     }
 
     public static List<EventHeader> toHeaders(Map<String, String> headers) {
