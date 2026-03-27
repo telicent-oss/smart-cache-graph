@@ -9,8 +9,11 @@ import io.telicent.smart.cache.sources.Event;
 import io.telicent.smart.cache.sources.TelicentHeaders;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.jena.graph.Graph;
+import org.apache.jena.graph.Node;
+import org.apache.jena.graph.NodeFactory;
 import org.apache.jena.kafka.common.FusekiSink;
 import org.apache.jena.rdfpatch.RDFChanges;
+import org.apache.jena.sparql.core.Quad;
 import org.apache.kafka.common.utils.Bytes;
 
 /**
@@ -19,8 +22,11 @@ import org.apache.kafka.common.utils.Bytes;
  */
 public class SmartCacheGraphSink extends FusekiSink<DatasetGraphABAC> {
 
-    public SmartCacheGraphSink(DatasetGraphABAC dataset) {
+    private final boolean routeToNamedGraphs;
+
+    public SmartCacheGraphSink(DatasetGraphABAC dataset, boolean routeToNamedGraphs) {
         super(dataset);
+        this.routeToNamedGraphs = routeToNamedGraphs;
     }
 
     @Override
@@ -29,7 +35,14 @@ public class SmartCacheGraphSink extends FusekiSink<DatasetGraphABAC> {
         //      that handles those sensibly.  Transaction boundaries can still lead to failures if the
         //      transaction boundaries in the patch are not valid.
         //      The implementation used here also ensures that labels are applied to the labels store as appropriate
-        RDFChanges apply = new RDFChangesApplyWithLabels(this.dataset, getEventSecurityLabel(event));
+        String distributionId = null;
+        if (routeToNamedGraphs) {
+            distributionId = event.lastHeader(TelicentHeaders.DISTRIBUTION_ID);
+            if (StringUtils.isEmpty(distributionId)) {
+                throw new IllegalArgumentException("No distribution id specified when in routing mode");
+            }
+        }
+        RDFChanges apply = new RDFChangesApplyWithLabels(this.dataset, getEventSecurityLabel(event), distributionId);
         event.value().getPatch().apply(apply);
     }
 
@@ -39,6 +52,16 @@ public class SmartCacheGraphSink extends FusekiSink<DatasetGraphABAC> {
         // Find the Security-Label for this event, if any
         Label eventSecurityLabel = getEventSecurityLabel(event);
         LabelsStore labelsStore = this.dataset.labelsStore();
+        Node targetGraph;
+        if (routeToNamedGraphs) {
+            String distributionId = event.lastHeader(TelicentHeaders.DISTRIBUTION_ID);
+            if (StringUtils.isEmpty(distributionId)) {
+                throw new IllegalArgumentException("No distribution id specified when in routing mode");
+            }
+            targetGraph = NodeFactory.createURI(distributionId);
+        } else {
+            targetGraph = null;
+        }
 
         // Copy across quads, updating the labels store as needed
         event.value().getDataset().stream().forEach(q -> {
@@ -46,11 +69,20 @@ public class SmartCacheGraphSink extends FusekiSink<DatasetGraphABAC> {
                 // Ignore, labels graph is only metadata and not written to target dataset
                 return;
             }
-
-            this.dataset.add(q);
-            if (eventSecurityLabel != null) {
-                // Specific label for this event
-                labelsStore.add(q.asTriple(), eventSecurityLabel);
+            if (routeToNamedGraphs) {
+                Quad rerouted = new Quad(targetGraph, q.getSubject(), q.getPredicate(), q.getObject());
+                this.dataset.add(rerouted);
+                if (eventSecurityLabel != null) {
+                    // Currently works only on the default graph, needs updating once labels store supports named graph labelling
+                    labelsStore.add(rerouted.asTriple(), eventSecurityLabel);
+                }
+            }
+            else {
+                this.dataset.add(q);
+                if (eventSecurityLabel != null) {
+                    // Specific label for this event
+                    labelsStore.add(q.asTriple(), eventSecurityLabel);
+                }
             }
             // NB - If no specific label for this event, dataset default will apply at read time, no need to set
             //      anything in the labels store

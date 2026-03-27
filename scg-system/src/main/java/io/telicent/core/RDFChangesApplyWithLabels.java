@@ -4,6 +4,7 @@ import io.telicent.jena.abac.core.DatasetGraphABAC;
 import io.telicent.jena.abac.core.VocabAuthz;
 import io.telicent.jena.abac.labels.Label;
 import org.apache.jena.graph.Node;
+import org.apache.jena.graph.NodeFactory;
 import org.apache.jena.kafka.utils.RDFChangesApplyExternalTransaction;
 import org.apache.jena.query.TxnType;
 import org.apache.jena.sparql.graph.GraphFactory;
@@ -19,12 +20,19 @@ class RDFChangesApplyWithLabels extends RDFChangesApplyExternalTransaction {
     private final Label securityLabel;
     private final DatasetGraphABAC datasetABAC;
     private final GraphTxn labelsGraph = GraphFactory.createTxnGraph();
+    private final Node targetGraph;
 
     public RDFChangesApplyWithLabels(DatasetGraphABAC dsgz,
                                      Label securitylabel) {
+        this(dsgz, securitylabel, null);
+    }
+
+    public RDFChangesApplyWithLabels(DatasetGraphABAC dsgz,
+                                     Label securitylabel, String distributionId) {
         super(dsgz);
         this.securityLabel = securitylabel;
         this.datasetABAC = dsgz;
+        this.targetGraph = distributionId != null ? NodeFactory.createURI(distributionId) : null;
         this.labelsGraph.begin(TxnType.WRITE);
     }
 
@@ -34,6 +42,9 @@ class RDFChangesApplyWithLabels extends RDFChangesApplyExternalTransaction {
             // If quad is for labels graph just track that for now
             this.labelsGraph.add(s, p, o);
         } else {
+            if (this.targetGraph != null) {
+                g = targetGraph;
+            }
             super.add(g, s, p, o);
 
             // Apply specific security label if there is one, if not we're relying on the dataset default label applying
@@ -50,6 +61,9 @@ class RDFChangesApplyWithLabels extends RDFChangesApplyExternalTransaction {
             // If quad is for labels graph just update the labels graph state
             this.labelsGraph.delete(s, p, o);
         } else {
+            if (this.targetGraph != null) {
+                g = targetGraph;
+            }
             // Otherwise remove the quad
             // NB - While there is a remove() method on LabelsStore we intentionally don't use it because otherwise a
             //      malicious data producer could remove labels from data by creating a patch that deleted and then re-added

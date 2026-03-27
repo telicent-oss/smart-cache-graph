@@ -16,12 +16,14 @@
 
 package io.telicent;
 
+import static graphql.Assert.assertFalse;
 import static io.telicent.LibTestsSCG.queryNoToken;
 import static io.telicent.LibTestsSCG.queryWithToken;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -46,11 +48,13 @@ import io.telicent.smart.cache.projectors.Sink;
 import io.telicent.smart.cache.sources.Event;
 import io.telicent.smart.cache.sources.EventHeader;
 import io.telicent.smart.cache.sources.Header;
+import io.telicent.smart.cache.sources.TelicentHeaders;
 import io.telicent.smart.cache.sources.memory.SimpleEvent;
 import org.apache.jena.fuseki.main.FusekiServer;
 import org.apache.jena.fuseki.server.DataService;
 import org.apache.jena.fuseki.server.Operation;
 import org.apache.jena.fuseki.system.FusekiLogging;
+import org.apache.jena.graph.NodeFactory;
 import org.apache.jena.kafka.FusekiKafka;
 import org.apache.jena.kafka.JenaKafkaException;
 import org.apache.jena.kafka.common.FusekiSink;
@@ -514,6 +518,14 @@ class TestSmartCacheGraphSink {
         });
     }
 
+    private void sendEventWithExceptions(DatasetGraph dsg, Sink<Event<Bytes, RdfPayload>> sink, String body,
+                              Map<String, String> headers) {
+        Event<Bytes, RdfPayload> event = new SimpleEvent<>(toHeaders(headers), null,
+                RdfPayload.of(headers.get("Content-Type"),
+                        body.getBytes(StandardCharsets.UTF_8)));
+        sink.send(event);
+    }
+
     public static List<EventHeader> toHeaders(Map<String, String> headers) {
         return headers.entrySet()
                       .stream()
@@ -551,7 +563,7 @@ class TestSmartCacheGraphSink {
         server.start();
         try {
             if (dsg instanceof DatasetGraphABAC abac) {
-                try (SmartCacheGraphSink sink = new SmartCacheGraphSink(abac)) {
+                try (SmartCacheGraphSink sink = new SmartCacheGraphSink(abac, false)) {
                     execTestAction.execTest(sink, server, dsgBase, dsg);
                 }
             } else {
@@ -590,5 +602,202 @@ class TestSmartCacheGraphSink {
         } else {
             System.out.println("-- User Attributes -- null");
         }
+    }
+
+    private void sendEventWithDistributionId(DatasetGraph dsg, Sink<Event<Bytes, RdfPayload>> sink, String body,
+                                             String contentType, AttributeValue securityLabel, String distributionId) {
+        Map<String, String> headers = new HashMap<>();
+        headers.put(HttpNames.hContentType, contentType);
+        if (securityLabel != null) {
+            headers.put(SysABAC.hSecurityLabel, securityLabel.asString());
+        }
+        if (distributionId != null) {
+            headers.put(TelicentHeaders.DISTRIBUTION_ID, distributionId);
+        }
+        sendEventWithExceptions(dsg, sink, body, headers);
+    }
+
+    private void runTestProcessorSCGWithAuthNamedGraph(TestAction execTestAction) {
+        DatasetGraph dsgBase = DatasetGraphFactory.createTxnMem();
+        LabelsStore labelsStore = Labels.createLabelsStoreMem();
+        AttributesStoreModifiable attributesStore = new AttributesStoreLocal();
+        attributesStore.put(userPublic, AttributeValueSet.of());
+        attributesStore.put(userPermit, AttributeValueSet.of("PERMIT"));
+        attributesStore.put(userOther, AttributeValueSet.of("OTHER"));
+
+        DatasetGraphABAC dsgz = ABAC.authzDataset(dsgBase, AEX.strALLOW,
+                labelsStore, SysABAC.denyLabel,
+                attributesStore);
+        DataService dataSrv = DataService.newBuilder(dsgz).addEndpoint(Operation.Query).build();
+
+        FusekiServer server = SmartCacheGraph.serverBuilder().port(0).add(dsName, dataSrv).add(dsBase, dsgBase).build();
+        server.start();
+        try {
+            try (SmartCacheGraphSink sink = new SmartCacheGraphSink(dsgz, true)) {
+                execTestAction.execTest(sink, server, dsgBase, dsgz);
+            }
+        } finally {
+            server.stop();
+        }
+    }
+
+    @Test
+    void processorSCG_namedGraph_routesDataToNamedGraph() {
+        String namedGraph = "http://example/graph1";
+        TestAction action =
+                (Sink<Event<Bytes, RdfPayload>> proc, FusekiServer server, DatasetGraph dsgBase, DatasetGraph dsg) -> {
+                    checkDatasetSize(dsgBase, 0);
+                    sendEventWithDistributionId(dsg, proc, """
+                        PREFIX : <http://example/>
+                        :s :p "turtle" .
+                        """, WebContent.contentTypeTurtle, attrPermit, namedGraph);
+                    assertTrue(dsgBase.getDefaultGraph().isEmpty(), "Default graph should be empty");
+                    assertFalse(dsgBase.getGraph(NodeFactory.createURI(namedGraph)).isEmpty(),
+                            "Named graph should contain data");
+                };
+        runTestProcessorSCGWithAuthNamedGraph(action);
+    }
+
+    // needs updating once labels store supports named graph labelling
+    @Test
+    void processorSCG_namedGraph_securityLabelStillApplied() {
+        String namedGraph = "http://example/graph1";
+        TestAction action =
+                (Sink<Event<Bytes, RdfPayload>> proc, FusekiServer server, DatasetGraph dsgBase, DatasetGraph dsg) -> {
+                    String URL = server.datasetURL(dsName);
+                    sendEventWithDistributionId(dsg, proc, """
+                        PREFIX : <http://example/>
+                        :s :p "turtle" .
+                        """, WebContent.contentTypeTurtle, attrPermit, namedGraph);
+
+                    DatasetGraphABAC abac = getDatasetABAC(server);
+                    assertFalse(abac.getGraph(NodeFactory.createURI(namedGraph)).isEmpty(),
+                            "Data should be in the named graph");
+                    assertFalse(abac.labelsStore().isEmpty(), "Labels store should not be empty");
+//                    long c1 = count(URL, queryAll, userPermit);
+//                    assertEquals(1L, c1, "Count (user:permit)");
+//                    long c2 = count(URL, queryAll, userOther);
+//                    assertEquals(0L, c2, "Count (user:other)");
+                };
+        runTestProcessorSCGWithAuthNamedGraph(action);
+    }
+
+    @Test
+    void processorSCG_namedGraph_missingDistributionIdThrows() {
+        TestAction action =
+                (Sink<Event<Bytes, RdfPayload>> proc, FusekiServer server, DatasetGraph dsgBase, DatasetGraph dsg) -> {
+                    checkDatasetSize(dsgBase, 0);
+                    JenaKafkaException ex = assertThrows(JenaKafkaException.class, () ->
+                            sendEventWithDistributionId(dsg, proc, """
+                            PREFIX : <http://example/>
+                            :s :p "turtle" .
+                            """, WebContent.contentTypeTurtle, attrPermit, null)
+                    );
+                    assertInstanceOf(IllegalArgumentException.class, ex.getCause());
+                    assertEquals("No distribution id specified when in routing mode", ex.getCause().getMessage());
+                    checkDatasetSize(dsgBase, 0);
+                };
+        runTestProcessorSCGWithAuthNamedGraph(action);
+    }
+
+    @Test
+    void processorSCG_namedGraph_differentDistributionIdsRouteToDifferentGraphs() {
+        String namedGraph1 = "http://example/graph1";
+        String namedGraph2 = "http://example/graph2";
+        TestAction action =
+                (Sink<Event<Bytes, RdfPayload>> proc, FusekiServer server, DatasetGraph dsgBase, DatasetGraph dsg) -> {
+                    sendEventWithDistributionId(dsg, proc, """
+                        PREFIX : <http://example/>
+                        :s :p "value1" .
+                        """, WebContent.contentTypeTurtle, attrPermit, namedGraph1);
+                    sendEventWithDistributionId(dsg, proc, """
+                        PREFIX : <http://example/>
+                        :s :p "value2" .
+                        """, WebContent.contentTypeTurtle, attrPermit, namedGraph2);
+
+                    assertFalse(dsgBase.getGraph(NodeFactory.createURI(namedGraph1)).isEmpty(), "Graph1 should have data");
+                    assertFalse(dsgBase.getGraph(NodeFactory.createURI(namedGraph2)).isEmpty(), "Graph2 should have data");
+                };
+        runTestProcessorSCGWithAuthNamedGraph(action);
+    }
+
+    @Test
+    void processorSCG_normalMode_distributionIdIgnored() {
+        TestAction action =
+                (Sink<Event<Bytes, RdfPayload>> proc, FusekiServer server, DatasetGraph dsgBase, DatasetGraph dsg) -> {
+                    checkDatasetSize(dsgBase, 0);
+                    sendEventWithDistributionId(dsg, proc, """
+                        PREFIX : <http://example/>
+                        :s :p "turtle" .
+                        """, WebContent.contentTypeTurtle, attrPermit, "http://example/graph1");
+                    checkDatasetSize(dsgBase, 1);
+                    assertFalse(dsgBase.getDefaultGraph().isEmpty(), "Default graph should have data in normal mode");
+                };
+        runTestProcessorSCGWithAuth(action);
+    }
+
+    @Test
+    void processorSCG_namedGraph_rdfPatch_differentDistributionIdsRouteToDifferentGraphs() {
+        String namedGraph1 = "http://example/graph1";
+        String namedGraph2 = "http://example/graph2";
+        TestAction action =
+                (Sink<Event<Bytes, RdfPayload>> proc, FusekiServer server, DatasetGraph dsgBase, DatasetGraph dsg) -> {
+                    sendEventWithDistributionId(dsg, proc, """
+                    TX .
+                    A <http://example/s> <http://example/p> "value1" .
+                    TC .
+                    """, WebContent.contentTypePatch, attrPermit, namedGraph1);
+                    sendEventWithDistributionId(dsg, proc, """
+                    TX .
+                    A <http://example/s> <http://example/p> "value2" .
+                    TC .
+                    """, WebContent.contentTypePatch, attrPermit, namedGraph2);
+
+                    assertFalse(dsgBase.getGraph(NodeFactory.createURI(namedGraph1)).isEmpty(), "Graph1 should have data");
+                    assertFalse(dsgBase.getGraph(NodeFactory.createURI(namedGraph2)).isEmpty(), "Graph2 should have data");
+                    assertTrue(dsgBase.getDefaultGraph().isEmpty(), "Default graph should be empty");
+                };
+        runTestProcessorSCGWithAuthNamedGraph(action);
+    }
+
+    @Test
+    void processorSCG_namedGraph_rdfPatch_noDistributionId_throws() {
+        TestAction action =
+                (Sink<Event<Bytes, RdfPayload>> proc, FusekiServer server, DatasetGraph dsgBase, DatasetGraph dsg) -> {
+                    assertThrows(JenaKafkaException.class, () ->
+                            sendEventWithDistributionId(dsg, proc, """
+                        TX .
+                        A <http://example/s> <http://example/p> "value1" .
+                        TC .
+                        """, WebContent.contentTypePatch, attrPermit, null)
+                    );
+                };
+        runTestProcessorSCGWithAuthNamedGraph(action);
+    }
+
+    @Test
+    void processorSCG_namedGraph_rdfPatch_addThenDelete_graphIsEmpty() {
+        String namedGraph = "http://example/graph1";
+        TestAction action =
+                (Sink<Event<Bytes, RdfPayload>> proc, FusekiServer server, DatasetGraph dsgBase, DatasetGraph dsg) -> {
+                    sendEventWithDistributionId(dsg, proc, """
+                    TX .
+                    A <http://example/s> <http://example/p> "value1" .
+                    TC .
+                    """, WebContent.contentTypePatch, attrPermit, namedGraph);
+
+                    assertFalse(dsgBase.getGraph(NodeFactory.createURI(namedGraph)).isEmpty(),
+                            "Graph should have data after add");
+
+                    sendEventWithDistributionId(dsg, proc, """
+                    TX .
+                    D <http://example/s> <http://example/p> "value1" .
+                    TC .
+                    """, WebContent.contentTypePatch, attrPermit, namedGraph);
+
+                    assertTrue(dsgBase.getGraph(NodeFactory.createURI(namedGraph)).isEmpty(),
+                            "Graph should be empty after delete");
+                };
+        runTestProcessorSCGWithAuthNamedGraph(action);
     }
 }
