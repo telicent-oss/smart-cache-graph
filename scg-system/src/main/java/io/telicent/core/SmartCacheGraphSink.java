@@ -52,6 +52,16 @@ public class SmartCacheGraphSink extends FusekiSink<DatasetGraphABAC> {
         // Find the Security-Label for this event, if any
         Label eventSecurityLabel = getEventSecurityLabel(event);
         LabelsStore labelsStore = this.dataset.labelsStore();
+        Node targetGraph;
+        if (routeToNamedGraphs) {
+            String distributionId = event.lastHeader(TelicentHeaders.DISTRIBUTION_ID);
+            if (StringUtils.isEmpty(distributionId)) {
+                throw new IllegalArgumentException("No distribution id specified when in routing mode");
+            }
+            targetGraph = NodeFactory.createURI(distributionId);
+        } else {
+            targetGraph = null;
+        }
 
         // Copy across quads, updating the labels store as needed
         event.value().getDataset().stream().forEach(q -> {
@@ -60,18 +70,11 @@ public class SmartCacheGraphSink extends FusekiSink<DatasetGraphABAC> {
                 return;
             }
             if (routeToNamedGraphs) {
-                String distributionId = event.lastHeader(TelicentHeaders.DISTRIBUTION_ID);
-                if (StringUtils.isEmpty(distributionId)) {
-                    throw new IllegalArgumentException("No distribution id specified when in routing mode");
-                }
-                else {
-                    Node targetGraph = NodeFactory.createURI(distributionId);
-                    Quad rerouted = new Quad(targetGraph, q.getSubject(), q.getPredicate(), q.getObject());
-                    this.dataset.add(rerouted);
-                    if (eventSecurityLabel != null) {
-                        // Currently works only on the default graph, needs updating once labels store supports named graph labelling
-                        labelsStore.add(rerouted.asTriple(), eventSecurityLabel);
-                    }
+                Quad rerouted = new Quad(targetGraph, q.getSubject(), q.getPredicate(), q.getObject());
+                this.dataset.add(rerouted);
+                if (eventSecurityLabel != null) {
+                    // Currently works only on the default graph, needs updating once labels store supports named graph labelling
+                    labelsStore.add(rerouted.asTriple(), eventSecurityLabel);
                 }
             }
             else {

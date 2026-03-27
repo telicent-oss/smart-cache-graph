@@ -1,6 +1,5 @@
 package io.telicent.core;
 
-import io.micrometer.common.util.StringUtils;
 import io.telicent.jena.abac.core.DatasetGraphABAC;
 import io.telicent.jena.abac.core.VocabAuthz;
 import io.telicent.jena.abac.labels.Label;
@@ -21,7 +20,7 @@ class RDFChangesApplyWithLabels extends RDFChangesApplyExternalTransaction {
     private final Label securityLabel;
     private final DatasetGraphABAC datasetABAC;
     private final GraphTxn labelsGraph = GraphFactory.createTxnGraph();
-    private final String distributionId;
+    private final Node targetGraph;
 
     public RDFChangesApplyWithLabels(DatasetGraphABAC dsgz,
                                      Label securitylabel) {
@@ -33,7 +32,7 @@ class RDFChangesApplyWithLabels extends RDFChangesApplyExternalTransaction {
         super(dsgz);
         this.securityLabel = securitylabel;
         this.datasetABAC = dsgz;
-        this.distributionId = distributionId;
+        this.targetGraph = distributionId != null ? NodeFactory.createURI(distributionId) : null;
         this.labelsGraph.begin(TxnType.WRITE);
     }
 
@@ -43,8 +42,8 @@ class RDFChangesApplyWithLabels extends RDFChangesApplyExternalTransaction {
             // If quad is for labels graph just track that for now
             this.labelsGraph.add(s, p, o);
         } else {
-            if (!StringUtils.isEmpty(distributionId)) {
-                g = NodeFactory.createURI(distributionId);
+            if (this.targetGraph != null) {
+                g = targetGraph;
             }
             super.add(g, s, p, o);
 

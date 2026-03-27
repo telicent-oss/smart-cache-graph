@@ -24,6 +24,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.telicent.backup.services.DatasetBackupService;
 import io.telicent.jena.abac.core.DatasetGraphABAC;
+import io.telicent.smart.cache.configuration.Configurator;
 import io.telicent.smart.cache.payloads.RdfPayload;
 import io.telicent.smart.cache.projectors.Sink;
 import io.telicent.smart.cache.sources.Event;
@@ -66,9 +67,7 @@ public class FMod_FusekiKafkaSCG extends FMod_FusekiKafka {
 
     @Override
     protected Function<DatasetGraph, Sink<Event<Bytes, RdfPayload>>> getSinkBuilder() {
-        boolean routeToNamedGraphs = Boolean.parseBoolean(
-                System.getenv().getOrDefault("ROUTE_TO_NAMED_GRAPHS", "false")
-        );
+        boolean routeToNamedGraphs = Configurator.get("ROUTE_TO_NAMED_GRAPHS", Boolean::parseBoolean, false);
         return dsg -> {
             if (dsg instanceof DatasetGraphABAC dsgABAC) {
                 // For ABAC enabled datasets use our custom sink that applies labels
