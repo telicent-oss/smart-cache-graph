@@ -774,4 +774,30 @@ class TestSmartCacheGraphSink {
                 };
         runTestProcessorSCGWithAuthNamedGraph(action);
     }
+
+    @Test
+    void processorSCG_namedGraph_rdfPatch_addThenDelete_graphIsEmpty() {
+        String namedGraph = "http://example/graph1";
+        TestAction action =
+                (Sink<Event<Bytes, RdfPayload>> proc, FusekiServer server, DatasetGraph dsgBase, DatasetGraph dsg) -> {
+                    sendEventWithDistributionId(dsg, proc, """
+                    TX .
+                    A <http://example/s> <http://example/p> "value1" .
+                    TC .
+                    """, WebContent.contentTypePatch, attrPermit, namedGraph);
+
+                    assertFalse(dsgBase.getGraph(NodeFactory.createURI(namedGraph)).isEmpty(),
+                            "Graph should have data after add");
+
+                    sendEventWithDistributionId(dsg, proc, """
+                    TX .
+                    D <http://example/s> <http://example/p> "value1" .
+                    TC .
+                    """, WebContent.contentTypePatch, attrPermit, namedGraph);
+
+                    assertTrue(dsgBase.getGraph(NodeFactory.createURI(namedGraph)).isEmpty(),
+                            "Graph should be empty after delete");
+                };
+        runTestProcessorSCGWithAuthNamedGraph(action);
+    }
 }

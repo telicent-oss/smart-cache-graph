@@ -61,6 +61,9 @@ class RDFChangesApplyWithLabels extends RDFChangesApplyExternalTransaction {
             // If quad is for labels graph just update the labels graph state
             this.labelsGraph.delete(s, p, o);
         } else {
+            if (this.targetGraph != null) {
+                g = targetGraph;
+            }
             // Otherwise remove the quad
             // NB - While there is a remove() method on LabelsStore we intentionally don't use it because otherwise a
             //      malicious data producer could remove labels from data by creating a patch that deleted and then re-added
