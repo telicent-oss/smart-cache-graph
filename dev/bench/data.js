@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1774864163426,
+  "lastUpdate": 1774864428461,
   "repoUrl": "https://github.com/telicent-oss/smart-cache-graph",
   "entries": {
     "ABAC Benchmark": [
@@ -4680,6 +4680,52 @@ window.BENCHMARK_DATA = {
           {
             "name": "io.telicent.core.LabelsQueryServiceBenchmark.benchmarkQueryOnlyLabelStore ( {\"tripleCount\":\"10000\"} )",
             "value": 0.00001822576493157825,
+            "unit": "ms/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "Karolina",
+            "username": "karolina-telicent",
+            "email": "158044573+karolina-telicent@users.noreply.github.com"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "7d3a68ac5c16e15e2f929390c99ba69aab4bc17c",
+          "message": "[CORE-1192] - Extend SmartCacheGraphSink to allow routing data into named graphs based on Distribution-ID (#377)\n\n* Routing data into named graphs by SmartCacheGraphSink.\n\nData gets routed into named graphs based on DistributionId. Routing mode is set in code for now, to be changed.\n\n* Added distribution-id functionality to RDF patches.\n\nData sent via RDF patches can now be routed to named graphs as well. Includes unit tests.\n\n* Routing mode set via env var.\n\nROUTE_TO_NAME_GRAPHS environment variable introduced to set routing mode, clean up comments.\n\n* [Minor] - clean up duplicate code.\n\n* [Minor] - move targetGraph creation oustide of loops.\n\n* [Minor] - Make delete via RDF change use the named graph from Distribution-Id.",
+          "timestamp": "2026-03-27T11:30:00Z",
+          "url": "https://github.com/telicent-oss/smart-cache-graph/commit/7d3a68ac5c16e15e2f929390c99ba69aab4bc17c"
+        },
+        "date": 1774864428071,
+        "tool": "jmh",
+        "benches": [
+          {
+            "name": "io.telicent.core.LabelsQueryServiceBenchmark.benchmarkQueryDSGAndLabelStore ( {\"tripleCount\":\"1000\"} )",
+            "value": 0.39631731145141147,
+            "unit": "ms/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "io.telicent.core.LabelsQueryServiceBenchmark.benchmarkQueryDSGAndLabelStore ( {\"tripleCount\":\"10000\"} )",
+            "value": 4.418387107695131,
+            "unit": "ms/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "io.telicent.core.LabelsQueryServiceBenchmark.benchmarkQueryOnlyLabelStore ( {\"tripleCount\":\"1000\"} )",
+            "value": 0.00001819617553587958,
+            "unit": "ms/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "io.telicent.core.LabelsQueryServiceBenchmark.benchmarkQueryOnlyLabelStore ( {\"tripleCount\":\"10000\"} )",
+            "value": 0.00001822899282055008,
             "unit": "ms/op",
             "extra": "iterations: 5\nforks: 1\nthreads: 1"
           }
