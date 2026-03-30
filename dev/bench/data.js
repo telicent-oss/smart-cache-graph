@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1774864697859,
+  "lastUpdate": 1774864848359,
   "repoUrl": "https://github.com/telicent-oss/smart-cache-graph",
   "entries": {
     "ABAC Benchmark": [
@@ -5604,6 +5604,52 @@ window.BENCHMARK_DATA = {
           {
             "name": "io.telicent.core.BackupRestoreBenchmark.benchmarkRestoreDataset ( {\"tripleCount\":\"10000\"} )",
             "value": 135.38377675219218,
+            "unit": "ms/op",
+            "extra": "iterations: 3\nforks: 1\nthreads: 1"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "Karolina",
+            "username": "karolina-telicent",
+            "email": "158044573+karolina-telicent@users.noreply.github.com"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "7d3a68ac5c16e15e2f929390c99ba69aab4bc17c",
+          "message": "[CORE-1192] - Extend SmartCacheGraphSink to allow routing data into named graphs based on Distribution-ID (#377)\n\n* Routing data into named graphs by SmartCacheGraphSink.\n\nData gets routed into named graphs based on DistributionId. Routing mode is set in code for now, to be changed.\n\n* Added distribution-id functionality to RDF patches.\n\nData sent via RDF patches can now be routed to named graphs as well. Includes unit tests.\n\n* Routing mode set via env var.\n\nROUTE_TO_NAME_GRAPHS environment variable introduced to set routing mode, clean up comments.\n\n* [Minor] - clean up duplicate code.\n\n* [Minor] - move targetGraph creation oustide of loops.\n\n* [Minor] - Make delete via RDF change use the named graph from Distribution-Id.",
+          "timestamp": "2026-03-27T11:30:00Z",
+          "url": "https://github.com/telicent-oss/smart-cache-graph/commit/7d3a68ac5c16e15e2f929390c99ba69aab4bc17c"
+        },
+        "date": 1774864847985,
+        "tool": "jmh",
+        "benches": [
+          {
+            "name": "io.telicent.core.BackupRestoreBenchmark.benchmarkBackupDataset ( {\"tripleCount\":\"1000\"} )",
+            "value": 12.877347973044602,
+            "unit": "ms/op",
+            "extra": "iterations: 3\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "io.telicent.core.BackupRestoreBenchmark.benchmarkBackupDataset ( {\"tripleCount\":\"10000\"} )",
+            "value": 37.20490681425081,
+            "unit": "ms/op",
+            "extra": "iterations: 3\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "io.telicent.core.BackupRestoreBenchmark.benchmarkRestoreDataset ( {\"tripleCount\":\"1000\"} )",
+            "value": 47.11277644474222,
+            "unit": "ms/op",
+            "extra": "iterations: 3\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "io.telicent.core.BackupRestoreBenchmark.benchmarkRestoreDataset ( {\"tripleCount\":\"10000\"} )",
+            "value": 144.03058710931677,
             "unit": "ms/op",
             "extra": "iterations: 3\nforks: 1\nthreads: 1"
           }
