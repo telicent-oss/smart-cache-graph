@@ -44,7 +44,6 @@
         <dependency>
             <groupId>io.opentelemetry.javaagent</groupId>
             <artifactId>opentelemetry-javaagent</artifactId>
-            <version>${dependency.otel}</version>
             <scope>runtime</scope>
         </dependency>
 
