@@ -295,19 +295,13 @@ class TestJenaMetrics {
             attributes={db.name="/ds", db.operation="gsp-rw", db.system="Apache Jena Fuseki", fuseki.endpoint="", fuseki.operation="Graph Store Protocol"}, value=1
              */
 
-            // Moving to IncubatingSemanticAttributes
-            @SuppressWarnings("deprecation")
-            AttributeKey<String> aDBname = io.opentelemetry.semconv.trace.attributes.SemanticAttributes.DB_NAME;
-            @SuppressWarnings("deprecation")
-            AttributeKey<String> aDBoperation = io.opentelemetry.semconv.trace.attributes.SemanticAttributes.DB_OPERATION;
-
             assertTrue(
                 reader.collectAllMetrics()
                   .stream()
                   .filter(m -> m.getName().equals("smartcache.graph.requests.good"))
                   .flatMap(m -> m.getLongGaugeData().getPoints().stream())
-                  .filter(d -> d.getAttributes().get(aDBname).equals("/ds") &&
-                               d.getAttributes().get(aDBoperation).equals("gsp-rw"))
+                  .filter(d -> d.getAttributes().get(FMod_OpenTelemetry.DB_NAME).equals("/ds") &&
+                               d.getAttributes().get(FMod_OpenTelemetry.DB_OPERATION).equals("gsp-rw"))
                   .anyMatch(d -> d.getValue() == 1));
         } finally {
             server.stop();

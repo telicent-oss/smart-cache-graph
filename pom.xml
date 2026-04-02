@@ -87,7 +87,7 @@
 
     <dependency.graphql>0.11.0</dependency.graphql>
     <dependency.jwt-servlet-auth>4.0.1</dependency.jwt-servlet-auth>
-    <dependency.smart-caches-core>0.36.2</dependency.smart-caches-core>
+    <dependency.smart-caches-core>0.36.3</dependency.smart-caches-core>
 
     <!-- External dependencies -->
     <dependency.awaitility>4.3.0</dependency.awaitility>
@@ -96,8 +96,7 @@
     <dependency.kafka>3.9.2</dependency.kafka>
     <dependency.kotlin>2.3.20</dependency.kotlin>
     <dependency.lz4>1.10.4</dependency.lz4>
-    <dependency.otel>1.33.0</dependency.otel> <!-- These two must be in-step. -->
-    <dependency.otel-semconv>1.30.1-alpha</dependency.otel-semconv> <!-- These two must be in-step. -->
+    <dependency.otel>1.60.1</dependency.otel>
 
     <!-- Logging dependencies -->
     <dependency.log4j2>2.25.3</dependency.log4j2>
@@ -131,6 +130,14 @@
 
   <dependencyManagement>
     <dependencies>
+
+      <dependency>
+        <groupId>io.telicent.smart-caches</groupId>
+        <artifactId>parent</artifactId>
+        <version>${dependency.smart-caches-core}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
 
       <!-- Internal dependencies-->
       <dependency>
@@ -385,23 +392,6 @@
         <version>${dependency.otel}</version>
         <type>pom</type>
         <scope>import</scope>
-      </dependency>
-      <dependency>
-        <groupId>io.opentelemetry.javaagent</groupId>
-        <artifactId>opentelemetry-javaagent</artifactId>
-        <scope>runtime</scope>
-        <version>${dependency.otel}</version>
-      </dependency>
-      <dependency>
-        <groupId>io.opentelemetry</groupId>
-        <artifactId>opentelemetry-sdk-testing</artifactId>
-        <version>${dependency.otel}</version>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>io.opentelemetry</groupId>
-        <artifactId>opentelemetry-semconv</artifactId>
-        <version>${dependency.otel-semconv}</version>
       </dependency>
       <dependency>
         <groupId>org.jetbrains.kotlin</groupId>

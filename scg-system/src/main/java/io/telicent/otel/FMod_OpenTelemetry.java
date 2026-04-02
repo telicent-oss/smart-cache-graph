@@ -23,7 +23,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.metrics.Meter;
-import io.opentelemetry.semconv.trace.attributes.SemanticAttributes;
 import org.apache.jena.Jena;
 import org.apache.jena.atlas.lib.Lib;
 import org.apache.jena.atlas.lib.Version;
@@ -37,6 +36,9 @@ import org.apache.jena.rdf.model.Model;
 @SuppressWarnings("deprecation")
 public class FMod_OpenTelemetry implements FusekiModule {
 
+    public static final AttributeKey<String> DB_SYSTEM = AttributeKey.stringKey("db.system");
+    public static final AttributeKey<String> DB_NAME = AttributeKey.stringKey("db.name");
+    public static final AttributeKey<String> DB_OPERATION = AttributeKey.stringKey("db.operation");
     public static final AttributeKey<String> FUSEKI_ENDPOINT = AttributeKey.stringKey("fuseki.endpoint");
     public static final AttributeKey<String> FUSEKI_OPERATION = AttributeKey.stringKey("fuseki.operation");
 
@@ -100,11 +102,9 @@ public class FMod_OpenTelemetry implements FusekiModule {
                     // Single shared gauge for each Fuseki counter, unique attribute sets for each endpoint that has
                     // that counter
                     // smartcache.graph.[counter name]
-                    // Moving to io.opentelemetry.semconv:opentelemetry-semconv
-                    // and the class name looks like it becomes IncubatingSemanticAttributes
-                    Attributes metricAttributes = Attributes.of(SemanticAttributes.DB_SYSTEM, "Apache Jena Fuseki",
-                                                                SemanticAttributes.DB_NAME, dap.getName(),
-                                                                SemanticAttributes.DB_OPERATION,
+                    Attributes metricAttributes = Attributes.of(DB_SYSTEM, "Apache Jena Fuseki",
+                                                                DB_NAME, dap.getName(),
+                                                                DB_OPERATION,
                                                                 endpoint.getOperation().getName(),
                                                                 FUSEKI_ENDPOINT, endpoint.getName(),
                                                                 FUSEKI_OPERATION, operation.getDescription());
