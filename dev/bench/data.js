@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1775464770453,
+  "lastUpdate": 1775464969959,
   "repoUrl": "https://github.com/telicent-oss/smart-cache-graph",
   "entries": {
     "ABAC Benchmark": [
@@ -2402,6 +2402,46 @@ window.BENCHMARK_DATA = {
           {
             "name": "io.telicent.core.IngestionBenchmark.benchmarkIngestWithLabels ( {\"batchSize\":\"10000\"} )",
             "value": 23.771997380388854,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "Rob Vesse",
+            "username": "rvesse",
+            "email": "rob.vesse@telicent.io"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "253da9efc3dccd5b936c21a918037e06c4349e50",
+          "message": "Merge pull request #381 from telicent-oss/core_37_upgrade_ot\n\n[CORE-37] Updating Open Telemetry (and SC Core)",
+          "timestamp": "2026-04-02T08:25:57Z",
+          "url": "https://github.com/telicent-oss/smart-cache-graph/commit/253da9efc3dccd5b936c21a918037e06c4349e50"
+        },
+        "date": 1775464969724,
+        "tool": "jmh",
+        "benches": [
+          {
+            "name": "io.telicent.core.IngestionBenchmark.benchmarkIngestWithLabels ( {\"batchSize\":\"100\"} )",
+            "value": 57.25952923227972,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "io.telicent.core.IngestionBenchmark.benchmarkIngestWithLabels ( {\"batchSize\":\"1000\"} )",
+            "value": 100.76661879284683,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "io.telicent.core.IngestionBenchmark.benchmarkIngestWithLabels ( {\"batchSize\":\"10000\"} )",
+            "value": 27.17110108799837,
             "unit": "ops/s",
             "extra": "iterations: 5\nforks: 1\nthreads: 1"
           }
