@@ -1,0 +1,11 @@
+apiVersion: 1
+
+providers:
+  - name: Smart Cache Graph Telemetry
+    orgId: 1
+    folder: Smart Cache Graph
+    type: file
+    disableDeletion: true
+    editable: false
+    options:
+      path: /var/lib/grafana/dashboards

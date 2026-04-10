@@ -1,0 +1,15 @@
+global:
+  scrape_interval: 5s
+  evaluation_interval: 5s
+
+scrape_configs:
+  - job_name: smart-cache-graph-otel
+    static_configs:
+      - targets:
+          - smart-cache-graph:9464
+
+  - job_name: smart-cache-graph-fuseki
+    metrics_path: /$/metrics
+    static_configs:
+      - targets:
+          - smart-cache-graph:3030
