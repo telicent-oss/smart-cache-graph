@@ -147,7 +147,7 @@ Example:
 
 ## Local Telemetry
 
-In order that the OpenTelemetry exporter and Fuseki native metrics can be inspected togethe, and to aid with local development, we have included a docker set-up that includes Grafana/Prometheus.
+In order that the OpenTelemetry exporter and Fuseki native metrics can be inspected together, and to aid with local development, we have included a docker set-up that includes Grafana/Prometheus.
 
 It is intended to make the the following more visible:
 
