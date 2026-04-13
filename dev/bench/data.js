@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1776070104351,
+  "lastUpdate": 1776070179423,
   "repoUrl": "https://github.com/telicent-oss/smart-cache-graph",
   "entries": {
     "ABAC Benchmark": [
@@ -1778,6 +1778,34 @@ window.BENCHMARK_DATA = {
           {
             "name": "io.telicent.core.CQRSUpdateBenchmark.benchmarkCqrsUpdate",
             "value": 0.046256460281953266,
+            "unit": "ms/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "Paul Gallagher",
+            "username": "TelicentPaul",
+            "email": "132362215+TelicentPaul@users.noreply.github.com"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "51f9e75e88a2e5e2a4cc8e63ca80cdbc4fbe22e7",
+          "message": "Merge pull request #383 from telicent-oss/core_1264_add_telemtry_to_local_docker\n\n[CORE-1264] Adding local docker set-up for grafana/prometheus.",
+          "timestamp": "2026-04-10T16:16:55Z",
+          "url": "https://github.com/telicent-oss/smart-cache-graph/commit/51f9e75e88a2e5e2a4cc8e63ca80cdbc4fbe22e7"
+        },
+        "date": 1776070179172,
+        "tool": "jmh",
+        "benches": [
+          {
+            "name": "io.telicent.core.CQRSUpdateBenchmark.benchmarkCqrsUpdate",
+            "value": 0.047166746780008706,
             "unit": "ms/op",
             "extra": "iterations: 5\nforks: 1\nthreads: 1"
           }
