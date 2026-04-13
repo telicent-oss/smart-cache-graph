@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1776070179423,
+  "lastUpdate": 1776070379060,
   "repoUrl": "https://github.com/telicent-oss/smart-cache-graph",
   "entries": {
     "ABAC Benchmark": [
@@ -2528,6 +2528,46 @@ window.BENCHMARK_DATA = {
           {
             "name": "io.telicent.core.IngestionBenchmark.benchmarkIngestWithLabels ( {\"batchSize\":\"10000\"} )",
             "value": 27.17110108799837,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "Paul Gallagher",
+            "username": "TelicentPaul",
+            "email": "132362215+TelicentPaul@users.noreply.github.com"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "51f9e75e88a2e5e2a4cc8e63ca80cdbc4fbe22e7",
+          "message": "Merge pull request #383 from telicent-oss/core_1264_add_telemtry_to_local_docker\n\n[CORE-1264] Adding local docker set-up for grafana/prometheus.",
+          "timestamp": "2026-04-10T16:16:55Z",
+          "url": "https://github.com/telicent-oss/smart-cache-graph/commit/51f9e75e88a2e5e2a4cc8e63ca80cdbc4fbe22e7"
+        },
+        "date": 1776070378798,
+        "tool": "jmh",
+        "benches": [
+          {
+            "name": "io.telicent.core.IngestionBenchmark.benchmarkIngestWithLabels ( {\"batchSize\":\"100\"} )",
+            "value": 57.8756626464528,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "io.telicent.core.IngestionBenchmark.benchmarkIngestWithLabels ( {\"batchSize\":\"1000\"} )",
+            "value": 37.69131863805488,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "io.telicent.core.IngestionBenchmark.benchmarkIngestWithLabels ( {\"batchSize\":\"10000\"} )",
+            "value": 19.30511565422325,
             "unit": "ops/s",
             "extra": "iterations: 5\nforks: 1\nthreads: 1"
           }
