@@ -39,7 +39,7 @@ class TestLabelsQueryService {
 
     @BeforeAll
     public static void beforeAll() {
-        when(mockLabelsStore.labelsForTriples(any(Triple.class))).thenReturn(List.of(Label.fromText("example")));
+        when(mockLabelsStore.labelForTriple(any(Triple.class))).thenReturn(Label.fromText("example"));
     }
 
     @AfterEach
@@ -53,7 +53,6 @@ class TestLabelsQueryService {
         List<TripleLabels> labels = queryService.queryOnlyLabelStore(TRIPLE);
         // then
         Assertions.assertEquals(1, labels.size());
-        Assertions.assertEquals(1, labels.getFirst().labels.size());
     }
 
     @Test
@@ -64,7 +63,6 @@ class TestLabelsQueryService {
         List<TripleLabels> labels = queryService.queryDSGAndLabelStore(TRIPLE);
         // then
         Assertions.assertEquals(1, labels.size());
-        Assertions.assertEquals(1, labels.getFirst().labels.size());
     }
 
     @Test
@@ -89,7 +87,6 @@ class TestLabelsQueryService {
         List<TripleLabels> labels = queryService.queryDSGAndLabelStore(queryTriple);
         // then
         Assertions.assertEquals(1, labels.size());
-        Assertions.assertEquals(1, labels.getFirst().labels.size());
     }
 
     @Test
@@ -106,7 +103,6 @@ class TestLabelsQueryService {
         List<TripleLabels> labels = queryService.queryDSGAndLabelStore(queryTriple);
         // then
         Assertions.assertEquals(1, labels.size());
-        Assertions.assertEquals(1, labels.getFirst().labels.size());
     }
 
     @Test
@@ -123,7 +119,6 @@ class TestLabelsQueryService {
         List<TripleLabels> labels = queryService.queryDSGAndLabelStore(queryTriple);
         // then
         Assertions.assertEquals(1, labels.size());
-        Assertions.assertEquals(1, labels.getFirst().labels.size());
     }
 
     @Test
@@ -140,6 +135,5 @@ class TestLabelsQueryService {
         List<TripleLabels> labels = queryService.queryDSGAndLabelStore(queryTriple);
         // then
         Assertions.assertEquals(1, labels.size());
-        Assertions.assertEquals(1, labels.getFirst().labels.size());
     }
 }

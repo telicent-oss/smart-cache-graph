@@ -21,7 +21,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.telicent.backup.utils.EncryptionUtils;
 import io.telicent.jena.abac.core.DatasetGraphABAC;
 import io.telicent.jena.abac.labels.LabelsStore;
-import io.telicent.jena.abac.labels.LabelsStoreRocksDB;
+import io.telicent.jena.abac.labels.store.rocksdb.legacy.LegacyLabelsStoreRocksDB;
 import io.telicent.jena.abac.labels.node.LabelToNodeGenerator;
 import io.telicent.model.KeyPair;
 import jakarta.servlet.http.HttpServletRequest;
@@ -70,6 +70,7 @@ import static io.telicent.backup.utils.JsonFileUtils.OBJECT_MAPPER;
 import static io.telicent.backup.utils.JsonFileUtils.writeObjectNodeToFile;
 import static org.apache.jena.riot.Lang.NQUADS;
 
+@SuppressWarnings("deprecation")
 public class DatasetBackupService {
 
     public static final Logger LOG = LoggerFactory.getLogger(DatasetBackupService.class);
@@ -246,7 +247,7 @@ public class DatasetBackupService {
         DatasetGraph dsg = dataAccessPoint.getDataService().getDataset();
         if (dsg instanceof DatasetGraphABAC abac) {
             LabelsStore labelsStore = abac.labelsStore();
-            if (labelsStore instanceof LabelsStoreRocksDB rocksDB) {
+            if (labelsStore instanceof LegacyLabelsStoreRocksDB rocksDB) {
                 try {
                     executeBackupLabelStore(rocksDB, backupPath, node);
                 } catch (RuntimeException e) {
@@ -270,7 +271,7 @@ public class DatasetBackupService {
      * @param labelBackupPath path to use
      * @param node            to collect the results
      */
-    void executeBackupLabelStore(LabelsStoreRocksDB rocksDB, String labelBackupPath, ObjectNode node) {
+    void executeBackupLabelStore(LegacyLabelsStoreRocksDB rocksDB, String labelBackupPath, ObjectNode node) {
         rocksDB.backup(labelBackupPath);
         node.put("success", true);
     }
@@ -291,7 +292,7 @@ public class DatasetBackupService {
      */
     public ArrayNode listDatasets() {
         ArrayNode datasets = OBJECT_MAPPER.createArrayNode();
-        StreamSupport.stream(dapRegistry.accessPoints().spliterator(), false)
+        dapRegistry.accessPoints().stream()
                      .map(DataAccessPoint::getName)
                      .map(DatasetBackupService::sanitiseName)
                      .filter(name -> !name.isEmpty())
@@ -500,7 +501,7 @@ public class DatasetBackupService {
         DatasetGraph dsg = dataAccessPoint.getDataService().getDataset();
         if (dsg instanceof DatasetGraphABAC abac) {
             LabelsStore labelsStore = abac.labelsStore();
-            if (labelsStore instanceof LabelsStoreRocksDB rocksDB) {
+            if (labelsStore instanceof LegacyLabelsStoreRocksDB rocksDB) {
                 if (!checkPathExistsAndIsDir(restorePath)) {
                     node.put("reason", "Restore directory not found: " + restorePath);
                     node.put("success", false);
@@ -529,7 +530,7 @@ public class DatasetBackupService {
      * @param labelRestorePath the location of the recovery files
      * @param node             the results of the operation
      */
-    void executeRestoreLabelStore(LabelsStoreRocksDB rocksDB, String labelRestorePath, ObjectNode node) {
+    void executeRestoreLabelStore(LegacyLabelsStoreRocksDB rocksDB, String labelRestorePath, ObjectNode node) {
         rocksDB.restore(labelRestorePath);
         node.put("success", true);
     }

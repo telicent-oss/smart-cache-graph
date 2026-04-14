@@ -27,7 +27,7 @@ public class LabelsQueryService {
     }
 
     public List<TripleLabels> queryOnlyLabelStore(Triple triple) {
-        return List.of(new TripleLabels(triple, labelStore.labelsForTriples(triple)));
+        return List.of(new TripleLabels(triple, labelStore.labelForTriple(triple)));
     }
 
     public List<TripleLabels> queryDSGAndLabelStore(Triple triple) {
@@ -37,7 +37,7 @@ public class LabelsQueryService {
             try {
                 while (iter.hasNext()) {
                     Triple t = iter.next();
-                    tripleLabels.add(new TripleLabels(t, labelStore.labelsForTriples(t)));
+                    tripleLabels.add(new TripleLabels(t, labelStore.labelForTriple(t)));
                 }
             } finally {
                 iter.close();

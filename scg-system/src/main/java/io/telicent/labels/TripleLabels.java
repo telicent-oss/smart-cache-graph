@@ -5,18 +5,16 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.telicent.jena.abac.labels.Label;
 import org.apache.jena.graph.Triple;
 
-import java.util.List;
-
 import static io.telicent.backup.utils.JsonFileUtils.OBJECT_MAPPER;
 
 public class TripleLabels {
 
-    public TripleLabels(Triple triple, List<Label> labels){
+    public TripleLabels(Triple triple, Label label){
         this.triple = triple;
-        this.labels = labels;
+        this.label = label;
     }
 
-    public List<Label> labels;
+    public Label label;
     public Triple triple;
 
     public ObjectNode toJSONNode() {
@@ -25,7 +23,9 @@ public class TripleLabels {
         node.put("predicate", triple.getPredicate().toString());
         node.put("object", triple.getObject().toString());
         ArrayNode labelNode = OBJECT_MAPPER.createArrayNode();
-        labels.forEach(l -> labelNode.add(l.getText()));
+        if (label != null) {
+            labelNode.add(label.getText());
+        }
         node.set("labels", labelNode);
         return node;
     }

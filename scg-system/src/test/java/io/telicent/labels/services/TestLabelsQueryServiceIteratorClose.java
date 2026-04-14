@@ -36,7 +36,7 @@ class TestLabelsQueryServiceIteratorClose {
         when(graph.find(triple)).thenReturn(iter);
 
         LabelsStore labelsStore = mock(LabelsStore.class);
-        when(labelsStore.labelsForTriples(triple)).thenReturn(List.of());
+        when(labelsStore.labelForTriple(triple)).thenReturn(null);
 
         LabelsQueryService service = new LabelsQueryService(labelsStore, datasetGraph, "dataset");
         List<TripleLabels> results = service.queryDSGAndLabelStore(triple);

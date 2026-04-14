@@ -160,6 +160,7 @@ public class TestInitialCompaction {
     }
 
     @Test
+    @SuppressWarnings("removal")
     public void test_TDB1_DSG() {
         // given
         DatasetGraph tdb1_DG = TDB1Factory.createDatasetGraph(Location.mem());
@@ -608,6 +609,7 @@ public class TestInitialCompaction {
     }
 
     @Test
+    @SuppressWarnings("removal")
     public void test_compactLabels_notABAC() {
         // given
         DatasetGraph dsgNotABAC = TDB1Factory.createDatasetGraph(Location.mem());

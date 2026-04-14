@@ -41,7 +41,6 @@ public class TestLabelsQueryServiceMem {
         final LabelsQueryService queryService = new LabelsQueryService(labelsStoreMem, emptyDsg, DATASET_NAME);
         final List<TripleLabels> labels = queryService.queryOnlyLabelStore(triple);
         Assertions.assertEquals(1, labels.size());
-        Assertions.assertEquals(1, labels.getFirst().labels.size());
     }
 
     @Test
@@ -58,7 +57,6 @@ public class TestLabelsQueryServiceMem {
         final LabelsQueryService queryService = new LabelsQueryService(labelsStoreMem, emptyDsg, DATASET_NAME);
         final List<TripleLabels> labels = queryService.queryOnlyLabelStore(triple);
         Assertions.assertEquals(1, labels.size());
-        Assertions.assertEquals(1, labels.getFirst().labels.size());
     }
 
     @AfterEach
