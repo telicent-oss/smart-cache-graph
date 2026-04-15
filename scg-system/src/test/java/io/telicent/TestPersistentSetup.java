@@ -29,6 +29,7 @@ import java.util.Map;
 
 import io.telicent.core.MainSmartCacheGraph;
 import io.telicent.core.SmartCacheGraphSink;
+import io.telicent.core.TestSmartCacheGraphSink;
 import io.telicent.jena.abac.AttributeValueSet;
 import io.telicent.jena.abac.SysABAC;
 import io.telicent.jena.abac.attributes.Attribute;

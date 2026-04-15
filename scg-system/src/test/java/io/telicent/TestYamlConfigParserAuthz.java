@@ -54,6 +54,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Test SCG usage of varying configuration parameters.
  */
+@SuppressWarnings("deprecation")
 class TestYamlConfigParserAuthz {
 
     private static final String DIR = "src/test/files";

@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.util.List;
 
+@SuppressWarnings("deprecation")
 public class TestLabelsQueryServiceMem {
 
     private static final String DATASET_NAME = "test";

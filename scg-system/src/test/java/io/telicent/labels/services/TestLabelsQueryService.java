@@ -19,6 +19,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+@SuppressWarnings("deprecation")
 class TestLabelsQueryService {
 
     private static final LabelsStore mockLabelsStore = mock(LabelsStore.class);

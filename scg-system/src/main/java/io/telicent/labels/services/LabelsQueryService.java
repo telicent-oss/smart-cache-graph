@@ -10,6 +10,7 @@ import org.apache.jena.util.iterator.ExtendedIterator;
 import java.util.ArrayList;
 import java.util.List;
 
+@SuppressWarnings("deprecation")
 public class LabelsQueryService {
 
     private final LabelsStore labelStore;
