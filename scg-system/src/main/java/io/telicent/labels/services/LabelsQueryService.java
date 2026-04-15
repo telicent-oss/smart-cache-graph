@@ -1,7 +1,7 @@
 package io.telicent.labels.services;
 
 import io.telicent.jena.abac.labels.LabelsStore;
-import io.telicent.labels.TripleLabels;
+import io.telicent.labels.TripleLabel;
 import org.apache.jena.graph.Triple;
 import org.apache.jena.sparql.core.DatasetGraph;
 import org.apache.jena.system.Txn;
@@ -26,18 +26,18 @@ public class LabelsQueryService {
         return datasetName;
     }
 
-    public List<TripleLabels> queryOnlyLabelStore(Triple triple) {
-        return List.of(new TripleLabels(triple, labelStore.labelsForTriples(triple)));
+    public List<TripleLabel> queryOnlyLabelStore(Triple triple) {
+        return List.of(new TripleLabel(triple, labelStore.labelForTriple(triple)));
     }
 
-    public List<TripleLabels> queryDSGAndLabelStore(Triple triple) {
+    public List<TripleLabel> queryDSGAndLabelStore(Triple triple) {
         return Txn.calculateRead(datasetGraph, () -> {
-            List<TripleLabels> tripleLabels = new ArrayList<>();
+            List<TripleLabel> tripleLabels = new ArrayList<>();
             ExtendedIterator<Triple> iter = datasetGraph.getDefaultGraph().find(triple);
             try {
                 while (iter.hasNext()) {
                     Triple t = iter.next();
-                    tripleLabels.add(new TripleLabels(t, labelStore.labelsForTriples(t)));
+                    tripleLabels.add(new TripleLabel(t, labelStore.labelForTriple(t)));
                 }
             } finally {
                 iter.close();

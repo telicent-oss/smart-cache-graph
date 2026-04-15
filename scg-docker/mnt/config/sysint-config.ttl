@@ -78,7 +78,7 @@ PREFIX tdb2:    <http://jena.apache.org/2016/tdb#>
                         fuseki:name      "upload" ] ;
 
     # Knowledge dataset to use
-    fuseki:dataset  :datasetAuthBase ;
+    fuseki:dataset  :datasetAuth ;
 .
 
 ## Dataset without security labels.
@@ -90,7 +90,7 @@ PREFIX tdb2:    <http://jena.apache.org/2016/tdb#>
 ## Transactional in-memory dataset.
 :datasetAuth rdf:type authz:DatasetAuthz ;
     ## Config item where labels are stored (only define if not in memory)
-    authz:labelsStore [ authz:labelsStorePath "/fuseki/databases/knowledgeLabels.db" ] ;
+    authz:labelsStore [ authz:labelsStorePath "target/databases/knowledgeLabels.db" ] ;
     authz:dataset :datasetAuthBase;
     authz:tripleDefaultLabels "*";
     ## This substitutes the value of the environment variable
@@ -102,6 +102,9 @@ PREFIX tdb2:    <http://jena.apache.org/2016/tdb#>
 
     ## Local attribute store for dev use only
     authz:attributes <file:attribute-store.ttl>;
+
+    tdb2:unionDefaultGraph true;
+
 
     # ABAC endpoint for user attributes
     #authz:attributesURL <env:USER_ATTRIBUTES_URL>;
@@ -115,7 +118,7 @@ PREFIX tdb2:    <http://jena.apache.org/2016/tdb#>
 :datasetAuthBase
     rdf:type      tdb2:DatasetTDB2 ;
 #    tdb2:location "/fuseki/databases/knowledge" ;
-    tdb2:location "target/databases/knowledge"
+    tdb2:location "target/databases/knowledge" ;
 .
 
 

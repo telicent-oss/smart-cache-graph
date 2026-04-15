@@ -3,7 +3,7 @@ package io.telicent.labels.servlets;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.telicent.labels.TripleLabels;
+import io.telicent.labels.TripleLabel;
 import io.telicent.labels.services.LabelsQueryService;
 import io.telicent.model.JsonTriple;
 import io.telicent.model.JsonTriples;
@@ -55,14 +55,14 @@ public class LabelsQueryServlet extends HttpServlet {
     ArrayNode processQueryList(List<Triple> tripleQueryList) {
         ArrayNode resultNodeList = OBJECT_MAPPER.createArrayNode();
         tripleQueryList.forEach(triple -> {
-            List<TripleLabels> results = processTriple(triple);
+            List<TripleLabel> results = processTriple(triple);
             results.forEach(tripleLabel -> resultNodeList.add(tripleLabel.toJSONNode()));
         });
 
         return resultNodeList;
     }
 
-    List<TripleLabels> processTriple(Triple triple) {
+    List<TripleLabel> processTriple(Triple triple) {
         if (isWildcardTriple(triple)) {
             return queryService.queryDSGAndLabelStore(triple);
         } else {

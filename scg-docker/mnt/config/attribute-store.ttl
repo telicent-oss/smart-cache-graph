@@ -21,6 +21,13 @@ PREFIX authz: <http://telicent.io/security#>
    ##authz:userAttribute "clearance=top-secret";
    .
 
+[] authz:user "A067188" ;
+   ## authz:userAttribute "e2e"; ## Not a hierarchy
+   ##authz:userAttribute "clearance=ordinary";
+   authz:userAttribute "clearance=secret";
+   ##authz:userAttribute "clearance=top-secret";
+.
+
 [] authz:hierarchy [ authz:attribute "clearance" ;
                      authz:attributeValues "ordinary, secret, top-secret" ];
    .

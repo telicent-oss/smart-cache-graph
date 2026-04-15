@@ -6,6 +6,7 @@ PREFIX rdf:      <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX rdfs:     <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX telicent: <http://telicent.io/ontology/>
 
+GRAPH <http://example.org/graph1> {
 data:c8142bf41892c8a974d22a5ba185102ac425ed62b7470fc03bbd9e27fb719e14
     rdf:type   ies:WorkOfDocumentation ;
     rdfs:label "UKR_T90_bbcm_brief.pdf" ;
@@ -27,7 +28,13 @@ data:8bdcd94e-713e-4a3f-8c6b-93c383fb7683
     rdf:type      ies:BoundingState ;
     ies:inPeriod  <http://iso.org/iso8601#1982-03-26> ;
     ies:isStartOf data:0c62a34d-6de2-4e80-a8d5-b62eddca6bbd .
+}
 
+## default graph
+data:AdmiralNelson
+    rdf:type             ies:Person ;
+    rdfs:comment         "Horatio Nelson, 1st Viscount Nelson, 1st Duke of Bronte was a British Royal Navy office who led the British fleet to victory at the Battle of Trafalgar." ;
+    telicent:primaryName "Admiral Nelson", "Lord Nelson", "Horatio Nelson" .
 
 GRAPH authz:labels {
     [ authz:pattern '<http://telicent.io/data#c8142bf41892c8a974d22a5ba185102ac425ed62b7470fc03bbd9e27fb719e14> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://ies.data.gov.uk/ontology/ies4#WorkOfDocumentation>' ; authz:label "(classification=O&urn:telicent:groups:datasets:random-knowledge:and)" ] .

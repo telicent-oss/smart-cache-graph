@@ -21,7 +21,6 @@ import io.telicent.jena.abac.core.AttributesStore;
 import io.telicent.jena.abac.fuseki.SysFusekiABAC;
 import io.telicent.jena.abac.labels.Label;
 import io.telicent.jena.abac.labels.LabelsStore;
-import io.telicent.jena.abac.labels.LabelsStoreRocksDB;
 import io.telicent.jena.abac.labels.StoreFmtByString;
 import io.telicent.jena.abac.services.SimpleAttributesStore;
 import io.telicent.smart.cache.configuration.Configurator;
@@ -148,7 +147,7 @@ class TestYamlConfigParserAuthz {
         String validToken = tokenForUser("u1");
         LibTestsSCG.uploadFile(server.serverURL() + serviceName + "/upload", DIR + "/yaml/data-and-labels.trig");
 
-        LabelsStore labelsStore = createLabelsStoreRocksDB(new File("target/labels-test"), LabelsStoreRocksDB.LabelMode.Merge, null, new StoreFmtByString());
+        LabelsStore labelsStore = createLabelsStoreRocksDB(new File("target/labels-test"), null, new StoreFmtByString());
         Model model = ModelFactory.createDefaultModel();
         model.read(DIR + "/yaml/data-and-labels.trig", "TRIG");
         StmtIterator iterator = model.listStatements();
@@ -156,12 +155,12 @@ class TestYamlConfigParserAuthz {
         if (iterator.hasNext()) {
             iterator.next();
             triple = iterator.nextStatement().asTriple();
-            assertEquals(labelsStore.labelsForTriples(triple).getFirst(), Label.fromText("manager"));
+            assertEquals(labelsStore.labelForTriple(triple), Label.fromText("manager"));
         }
         if (iterator.hasNext()) {
             iterator.next();
             triple = iterator.nextStatement().asTriple();
-            assertEquals(labelsStore.labelsForTriples(triple).getFirst(), Label.fromText("level-1"));
+            assertEquals(labelsStore.labelForTriple(triple), Label.fromText("level-1"));
         }
         iterator.close();
 

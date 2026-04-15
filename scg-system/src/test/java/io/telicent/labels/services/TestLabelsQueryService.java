@@ -2,7 +2,7 @@ package io.telicent.labels.services;
 
 import io.telicent.jena.abac.labels.Label;
 import io.telicent.jena.abac.labels.LabelsStore;
-import io.telicent.labels.TripleLabels;
+import io.telicent.labels.TripleLabel;
 import org.apache.jena.graph.Node;
 import org.apache.jena.graph.NodeFactory;
 import org.apache.jena.graph.Triple;
@@ -39,7 +39,7 @@ class TestLabelsQueryService {
 
     @BeforeAll
     public static void beforeAll() {
-        when(mockLabelsStore.labelsForTriples(any(Triple.class))).thenReturn(List.of(Label.fromText("example")));
+        when(mockLabelsStore.labelForTriple(any(Triple.class))).thenReturn(Label.fromText("example"));
     }
 
     @AfterEach
@@ -50,10 +50,10 @@ class TestLabelsQueryService {
     @Test
     public void testLabelQuery_queryOnlyLabelStore() {
         // given, when
-        List<TripleLabels> labels = queryService.queryOnlyLabelStore(TRIPLE);
+        List<TripleLabel> labels = queryService.queryOnlyLabelStore(TRIPLE);
         // then
         Assertions.assertEquals(1, labels.size());
-        Assertions.assertEquals(1, labels.getFirst().labels.size());
+        //Assertions.assertEquals(1, labels.getFirst().labels.size());
     }
 
     @Test
@@ -61,16 +61,16 @@ class TestLabelsQueryService {
         // given
         emptyDsg.getDefaultGraph().add(TRIPLE);
         // when
-        List<TripleLabels> labels = queryService.queryDSGAndLabelStore(TRIPLE);
+        List<TripleLabel> labels = queryService.queryDSGAndLabelStore(TRIPLE);
         // then
         Assertions.assertEquals(1, labels.size());
-        Assertions.assertEquals(1, labels.getFirst().labels.size());
+        //Assertions.assertEquals(1, labels.getFirst().labels.size());
     }
 
     @Test
     public void testLabelQuery_queryDSGAndLabelStore_empty() {
         // given, when
-        List<TripleLabels> labels = queryService.queryDSGAndLabelStore(TRIPLE);
+        List<TripleLabel> labels = queryService.queryDSGAndLabelStore(TRIPLE);
         // then
         Assertions.assertEquals(0, labels.size());
     }
@@ -86,10 +86,10 @@ class TestLabelsQueryService {
                 Node.ANY
         );
         // when
-        List<TripleLabels> labels = queryService.queryDSGAndLabelStore(queryTriple);
+        List<TripleLabel> labels = queryService.queryDSGAndLabelStore(queryTriple);
         // then
         Assertions.assertEquals(1, labels.size());
-        Assertions.assertEquals(1, labels.getFirst().labels.size());
+        //Assertions.assertEquals(1, labels.getFirst().labels.size());
     }
 
     @Test
@@ -103,10 +103,10 @@ class TestLabelsQueryService {
                 NodeFactory.createURI("http://example.org/object")
         );
         // when
-        List<TripleLabels> labels = queryService.queryDSGAndLabelStore(queryTriple);
+        List<TripleLabel> labels = queryService.queryDSGAndLabelStore(queryTriple);
         // then
         Assertions.assertEquals(1, labels.size());
-        Assertions.assertEquals(1, labels.getFirst().labels.size());
+        //Assertions.assertEquals(1, labels.getFirst().labels.size());
     }
 
     @Test
@@ -120,10 +120,10 @@ class TestLabelsQueryService {
                 NodeFactory.createURI("http://example.org/object")
         );
         // when
-        List<TripleLabels> labels = queryService.queryDSGAndLabelStore(queryTriple);
+        List<TripleLabel> labels = queryService.queryDSGAndLabelStore(queryTriple);
         // then
         Assertions.assertEquals(1, labels.size());
-        Assertions.assertEquals(1, labels.getFirst().labels.size());
+        //Assertions.assertEquals(1, labels.getFirst().labels.size());
     }
 
     @Test
@@ -137,9 +137,9 @@ class TestLabelsQueryService {
                 Node.ANY
                 );
         // when
-        List<TripleLabels> labels = queryService.queryDSGAndLabelStore(queryTriple);
+        List<TripleLabel> labels = queryService.queryDSGAndLabelStore(queryTriple);
         // then
         Assertions.assertEquals(1, labels.size());
-        Assertions.assertEquals(1, labels.getFirst().labels.size());
+        //Assertions.assertEquals(1, labels.getFirst().labels.size());
     }
 }

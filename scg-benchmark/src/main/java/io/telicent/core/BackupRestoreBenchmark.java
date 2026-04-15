@@ -9,7 +9,6 @@ import io.telicent.jena.abac.core.DatasetGraphABAC;
 import io.telicent.jena.abac.labels.Label;
 import io.telicent.jena.abac.labels.Labels;
 import io.telicent.jena.abac.labels.LabelsStore;
-import io.telicent.jena.abac.labels.LabelsStoreRocksDB;
 import io.telicent.jena.abac.labels.StoreFmtByString;
 import io.telicent.smart.cache.configuration.Configurator;
 import io.telicent.smart.cache.configuration.sources.PropertiesSource;
@@ -69,7 +68,6 @@ public class BackupRestoreBenchmark {
         DatasetGraph base = TDB2Factory.connectDataset(tdbDir.toString()).asDatasetGraph();
         LabelsStore labelsStore = Labels.createLabelsStoreRocksDB(
                 labelsDir.toFile(),
-                LabelsStoreRocksDB.LabelMode.Overwrite,
                 null,
                 new StoreFmtByString()
         );
