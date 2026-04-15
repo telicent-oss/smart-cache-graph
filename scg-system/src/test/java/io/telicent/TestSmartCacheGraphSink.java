@@ -58,6 +58,7 @@ import org.apache.jena.graph.NodeFactory;
 import org.apache.jena.kafka.FusekiKafka;
 import org.apache.jena.kafka.JenaKafkaException;
 import org.apache.jena.kafka.common.FusekiSink;
+import org.apache.jena.query.TxnType;
 import org.apache.jena.riot.Lang;
 import org.apache.jena.riot.RDFWriter;
 import org.apache.jena.riot.WebContent;
@@ -70,6 +71,7 @@ import org.apache.jena.sparql.exec.RowSet;
 import org.apache.jena.sparql.exec.RowSetOps;
 import org.apache.jena.system.Txn;
 import org.apache.kafka.common.utils.Bytes;
+import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.*;
 
 /**
@@ -134,10 +136,7 @@ class TestSmartCacheGraphSink {
                     // Check base has changed.
                     checkDatasetSize(dsgBase, 1);
                     // Check visibility
-                    long c1 = count(URL, queryAll, userPermit);
-                    assertEquals(1L, c1, "Count (user:permit)");
-                    long c2 = count(URL, queryAll, userOther);
-                    assertEquals(0L, c2, "Count (user:other)");
+                    verifyCounts(URL, 1L, 0L);
                 };
         runTestProcessorSCGWithAuth(action);
     }
@@ -154,10 +153,7 @@ class TestSmartCacheGraphSink {
                             """, WebContent.contentTypeTurtle, attrPermit);
 
                     checkDatasetSize(dsgBase, 1);
-                    long c1 = count(URL, queryAll, userPermit);
-                    assertEquals(1L, c1, "Count (user:permit)");
-                    long c2 = count(URL, queryAll, userOther);
-                    assertEquals(0L, c2, "Count (user:other)");
+                    verifyCounts(URL, 1L, 0L);
                 };
         runTestProcessorSCGWithAuth(action);
     }
@@ -175,10 +171,7 @@ class TestSmartCacheGraphSink {
                     // Check base has changed.
                     checkDatasetSize(dsgBase, 1);
                     // Check visibility
-                    long c1 = count(URL, queryAll, userPermit);
-                    assertEquals(1L, c1, "Count (user:permit)");
-                    long c2 = count(URL, queryAll, userOther);
-                    assertEquals(0L, c2, "Count (user:other)");
+                    verifyCounts(URL, 1L, 0L);
                 };
         runTestProcessorSCGWithAuth(action);
     }
@@ -196,10 +189,7 @@ class TestSmartCacheGraphSink {
                     // Check base has changed.
                     checkDatasetSize(dsgBase, 1);
                     // Check visibility
-                    long c1 = count(URL, queryAll, userPermit);
-                    assertEquals(1L, c1, "Count (user:permit)");
-                    long c2 = count(URL, queryAll, userOther);
-                    assertEquals(0L, c2, "Count (user:other)");
+                    verifyCounts(URL, 1L, 0L);
                 };
         runTestProcessorSCGWithAuth(action);
     }
@@ -216,10 +206,7 @@ class TestSmartCacheGraphSink {
                     // Check base has changed.
                     checkDatasetSize(dsgBase, 1);
                     // Check visibility
-                    long c1 = count(URL, queryAll, userPermit);
-                    assertEquals(1L, c1, "Count (user:permit)");
-                    long c2 = count(URL, queryAll, userOther);
-                    assertEquals(0L, c2, "Count (user:other)");
+                    verifyCounts(URL, 1L, 0L);
                 };
         runTestProcessorSCGWithAuth(action);
     }
@@ -235,10 +222,7 @@ class TestSmartCacheGraphSink {
                             """, WebContent.contentTypeNQuads, attrPermit);
 
                     checkDatasetSize(dsgBase, 1);
-                    long c1 = count(URL, queryAll, userPermit);
-                    assertEquals(1L, c1, "Count (user:permit)");
-                    long c2 = count(URL, queryAll, userOther);
-                    assertEquals(0L, c2, "Count (user:other)");
+                    verifyCounts(URL, 1L, 0L);
                 };
         runTestProcessorSCGWithAuth(action);
     }
@@ -379,15 +363,16 @@ class TestSmartCacheGraphSink {
                     String URLauthz = server.datasetURL(dsName);
                     checkDatasetSize(dsgBase, 0);
 
-                    // Warning - not an error.
                     LibTestsSCG.withLevel(FusekiKafka.LOG, "ERROR", () -> {
                         sendEvent(dsg, proc, """
                                 A <http://ex/s2> <http://ex/p> "triple2" <http://ex/namedGraph> .
                                 """, WebContent.contentTypePatch, attrPermit);
                     });
                     checkDatasetSize(dsgBase, 1);
-                    long c1 = count(URLauthz, queryAll, userPermit);
-                    assertEquals(0L, c1);
+                    if (supportsLabellingQuads()) {
+                        long c1 = count(URLauthz, queryAll, userPermit);
+                        assertEquals(1L, c1);
+                    }
 
                     // Check quads count.
                     checkDatasetSize(dsgBase, 1);
@@ -438,10 +423,7 @@ class TestSmartCacheGraphSink {
                     // Test was on a different, non-auth dataset
                     checkDatasetSize(dsgBase, 0);
 
-                    long c1 = count(URL, queryAll, userPermit);
-                    assertEquals(1L, c1, "Count (user:permit)");
-                    long c2 = count(URL, queryAll, userOther);
-                    assertEquals(1L, c2, "Count (user:other)");
+                    verifyCounts(URL, 1L, 1L);
                     // Look at the alternative dataset used in the test.
                     checkDatasetSize(server.getDataAccessPointRegistry().get(dsName).getDataService().getDataset(), 1);
                 };
@@ -537,7 +519,7 @@ class TestSmartCacheGraphSink {
     private void runTestProcessorSCGWithAuth(TestAction execTestAction) {
         // Set up a DatasetGraphABAC in a Fuseki/SCG
         DatasetGraph dsgBase = DatasetGraphFactory.createTxnMem();
-        LabelsStore labelsStore = Labels.createLabelsStoreMem();
+        LabelsStore labelsStore = createLabelsStore();
         AttributesStoreModifiable attributesStore = new AttributesStoreLocal();
         // Register - no attributes.
         attributesStore.put(userPublic, AttributeValueSet.of());
@@ -549,6 +531,10 @@ class TestSmartCacheGraphSink {
                                                   attributesStore);
         DataService dataSrv = DataService.newBuilder(dsgz).addEndpoint(Operation.Query).build();
         runTestProcessorWithGivenDSGAndService(execTestAction, dsgBase, dsgz, dataSrv);
+    }
+
+    protected LabelsStore createLabelsStore() {
+        return Labels.createLabelsStoreMem();
     }
 
     private void runTestProcessorSCGWithGivenDSG(TestAction execTestAction, DatasetGraph dsg) {
@@ -617,9 +603,15 @@ class TestSmartCacheGraphSink {
         sendEventWithExceptions(dsg, sink, body, headers);
     }
 
+    protected boolean supportsLabellingQuads() {
+        return true;
+    }
+
     private void runTestProcessorSCGWithAuthNamedGraph(TestAction execTestAction) {
+        Assumptions.assumeTrue(supportsLabellingQuads());
+
         DatasetGraph dsgBase = DatasetGraphFactory.createTxnMem();
-        LabelsStore labelsStore = Labels.createLabelsStoreMem();
+        LabelsStore labelsStore = createLabelsStore();
         AttributesStoreModifiable attributesStore = new AttributesStoreLocal();
         attributesStore.put(userPublic, AttributeValueSet.of());
         attributesStore.put(userPermit, AttributeValueSet.of("PERMIT"));
@@ -647,39 +639,51 @@ class TestSmartCacheGraphSink {
         TestAction action =
                 (Sink<Event<Bytes, RdfPayload>> proc, FusekiServer server, DatasetGraph dsgBase, DatasetGraph dsg) -> {
                     checkDatasetSize(dsgBase, 0);
+                    dsg.begin(TxnType.WRITE);
                     sendEventWithDistributionId(dsg, proc, """
                         PREFIX : <http://example/>
                         :s :p "turtle" .
                         """, WebContent.contentTypeTurtle, attrPermit, namedGraph);
+                    dsg.commit();
+
                     assertTrue(dsgBase.getDefaultGraph().isEmpty(), "Default graph should be empty");
                     assertFalse(dsgBase.getGraph(NodeFactory.createURI(namedGraph)).isEmpty(),
                             "Named graph should contain data");
+
+                    String URL = server.datasetURL(dsName);
+                    verifyCounts(URL, 1L, 0L);
                 };
         runTestProcessorSCGWithAuthNamedGraph(action);
     }
 
-    // needs updating once labels store supports named graph labelling
     @Test
     void processorSCG_namedGraph_securityLabelStillApplied() {
         String namedGraph = "http://example/graph1";
         TestAction action =
                 (Sink<Event<Bytes, RdfPayload>> proc, FusekiServer server, DatasetGraph dsgBase, DatasetGraph dsg) -> {
-                    String URL = server.datasetURL(dsName);
+                    dsg.begin(TxnType.WRITE);
                     sendEventWithDistributionId(dsg, proc, """
                         PREFIX : <http://example/>
                         :s :p "turtle" .
                         """, WebContent.contentTypeTurtle, attrPermit, namedGraph);
+                    dsg.commit();
 
                     DatasetGraphABAC abac = getDatasetABAC(server);
                     assertFalse(abac.getGraph(NodeFactory.createURI(namedGraph)).isEmpty(),
                             "Data should be in the named graph");
                     assertFalse(abac.labelsStore().isEmpty(), "Labels store should not be empty");
-//                    long c1 = count(URL, queryAll, userPermit);
-//                    assertEquals(1L, c1, "Count (user:permit)");
-//                    long c2 = count(URL, queryAll, userOther);
-//                    assertEquals(0L, c2, "Count (user:other)");
+
+                    String URL = server.datasetURL(dsName);
+                    verifyCounts(URL, 1L, 0L);
                 };
         runTestProcessorSCGWithAuthNamedGraph(action);
+    }
+
+    private void verifyCounts(String URL, long expectedWithPermitAttribute, long expectedWithOtherAttribute) {
+        long c1 = count(URL, queryAll, userPermit);
+        assertEquals(expectedWithPermitAttribute, c1, "Count (user:permit)");
+        long c2 = count(URL, queryAll, userOther);
+        assertEquals(expectedWithOtherAttribute, c2, "Count (user:other)");
     }
 
     @Test
@@ -706,17 +710,22 @@ class TestSmartCacheGraphSink {
         String namedGraph2 = "http://example/graph2";
         TestAction action =
                 (Sink<Event<Bytes, RdfPayload>> proc, FusekiServer server, DatasetGraph dsgBase, DatasetGraph dsg) -> {
+                    dsg.begin(TxnType.WRITE);
                     sendEventWithDistributionId(dsg, proc, """
                         PREFIX : <http://example/>
                         :s :p "value1" .
                         """, WebContent.contentTypeTurtle, attrPermit, namedGraph1);
                     sendEventWithDistributionId(dsg, proc, """
                         PREFIX : <http://example/>
-                        :s :p "value2" .
+                        :s :p "value1" .
                         """, WebContent.contentTypeTurtle, attrPermit, namedGraph2);
+                    dsg.commit();
 
                     assertFalse(dsgBase.getGraph(NodeFactory.createURI(namedGraph1)).isEmpty(), "Graph1 should have data");
                     assertFalse(dsgBase.getGraph(NodeFactory.createURI(namedGraph2)).isEmpty(), "Graph2 should have data");
+
+                    String URL = server.datasetURL(dsName);
+                    verifyCounts(URL, 2L, 0L);
                 };
         runTestProcessorSCGWithAuthNamedGraph(action);
     }
@@ -726,12 +735,17 @@ class TestSmartCacheGraphSink {
         TestAction action =
                 (Sink<Event<Bytes, RdfPayload>> proc, FusekiServer server, DatasetGraph dsgBase, DatasetGraph dsg) -> {
                     checkDatasetSize(dsgBase, 0);
+                    dsg.begin(TxnType.WRITE);
                     sendEventWithDistributionId(dsg, proc, """
                         PREFIX : <http://example/>
                         :s :p "turtle" .
                         """, WebContent.contentTypeTurtle, attrPermit, "http://example/graph1");
+                    dsg.commit();
                     checkDatasetSize(dsgBase, 1);
                     assertFalse(dsgBase.getDefaultGraph().isEmpty(), "Default graph should have data in normal mode");
+
+                    String URL = server.datasetURL(dsName);
+                    verifyCounts(URL, 1L, 0L);
                 };
         runTestProcessorSCGWithAuth(action);
     }
@@ -749,13 +763,43 @@ class TestSmartCacheGraphSink {
                     """, WebContent.contentTypePatch, attrPermit, namedGraph1);
                     sendEventWithDistributionId(dsg, proc, """
                     TX .
-                    A <http://example/s> <http://example/p> "value2" .
+                    A <http://example/s> <http://example/p> "value1" .
                     TC .
                     """, WebContent.contentTypePatch, attrPermit, namedGraph2);
 
                     assertFalse(dsgBase.getGraph(NodeFactory.createURI(namedGraph1)).isEmpty(), "Graph1 should have data");
                     assertFalse(dsgBase.getGraph(NodeFactory.createURI(namedGraph2)).isEmpty(), "Graph2 should have data");
                     assertTrue(dsgBase.getDefaultGraph().isEmpty(), "Default graph should be empty");
+
+                    String URL = server.datasetURL(dsName);
+                    verifyCounts(URL, 2L, 0L);
+                };
+        runTestProcessorSCGWithAuthNamedGraph(action);
+    }
+
+    @Test
+    void processorSCG_namedGraph_rdfPatch_differentDistributionIdsRouteToDifferentGraphs_andSameTripleInDifferentNamedGraphsHasIndependentLabels() {
+        String namedGraph1 = "http://example/graph1";
+        String namedGraph2 = "http://example/graph2";
+        TestAction action =
+                (Sink<Event<Bytes, RdfPayload>> proc, FusekiServer server, DatasetGraph dsgBase, DatasetGraph dsg) -> {
+                    sendEventWithDistributionId(dsg, proc, """
+                    TX .
+                    A <http://example/s> <http://example/p> "value1" .
+                    TC .
+                    """, WebContent.contentTypePatch, attrPermit, namedGraph1);
+                    sendEventWithDistributionId(dsg, proc, """
+                    TX .
+                    A <http://example/s> <http://example/p> "value1" .
+                    TC .
+                    """, WebContent.contentTypePatch, attrOther, namedGraph2);
+
+                    assertFalse(dsgBase.getGraph(NodeFactory.createURI(namedGraph1)).isEmpty(), "Graph1 should have data");
+                    assertFalse(dsgBase.getGraph(NodeFactory.createURI(namedGraph2)).isEmpty(), "Graph2 should have data");
+                    assertTrue(dsgBase.getDefaultGraph().isEmpty(), "Default graph should be empty");
+
+                    String URL = server.datasetURL(dsName);
+                    verifyCounts(URL, 1L, 1L);
                 };
         runTestProcessorSCGWithAuthNamedGraph(action);
     }
@@ -780,6 +824,7 @@ class TestSmartCacheGraphSink {
         String namedGraph = "http://example/graph1";
         TestAction action =
                 (Sink<Event<Bytes, RdfPayload>> proc, FusekiServer server, DatasetGraph dsgBase, DatasetGraph dsg) -> {
+                    String URL = server.datasetURL(dsName);
                     sendEventWithDistributionId(dsg, proc, """
                     TX .
                     A <http://example/s> <http://example/p> "value1" .
@@ -788,6 +833,7 @@ class TestSmartCacheGraphSink {
 
                     assertFalse(dsgBase.getGraph(NodeFactory.createURI(namedGraph)).isEmpty(),
                             "Graph should have data after add");
+                    verifyCounts(URL, 1L, 0L);
 
                     sendEventWithDistributionId(dsg, proc, """
                     TX .
@@ -797,6 +843,7 @@ class TestSmartCacheGraphSink {
 
                     assertTrue(dsgBase.getGraph(NodeFactory.createURI(namedGraph)).isEmpty(),
                             "Graph should be empty after delete");
+                    verifyCounts(URL, 0L, 0L);
                 };
         runTestProcessorSCGWithAuthNamedGraph(action);
     }
