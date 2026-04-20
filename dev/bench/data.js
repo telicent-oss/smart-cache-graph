@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1776675097635,
+  "lastUpdate": 1776675166667,
   "repoUrl": "https://github.com/telicent-oss/smart-cache-graph",
   "entries": {
     "ABAC Benchmark": [
@@ -1864,6 +1864,34 @@ window.BENCHMARK_DATA = {
           {
             "name": "io.telicent.core.CQRSUpdateBenchmark.benchmarkCqrsUpdate",
             "value": 0.047166746780008706,
+            "unit": "ms/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "Rob Vesse",
+            "username": "rvesse",
+            "email": "rob.vesse@telicent.io"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "8661a3241f3749d9e872aa54be3414646cedc9fe",
+          "message": "Merge pull request #384 from telicent-oss/dependabot/maven/maven-patch-group-cda64d0104\n\nBump the maven-patch-group group with 7 updates",
+          "timestamp": "2026-04-14T12:29:02Z",
+          "url": "https://github.com/telicent-oss/smart-cache-graph/commit/8661a3241f3749d9e872aa54be3414646cedc9fe"
+        },
+        "date": 1776675166397,
+        "tool": "jmh",
+        "benches": [
+          {
+            "name": "io.telicent.core.CQRSUpdateBenchmark.benchmarkCqrsUpdate",
+            "value": 0.042100667556292166,
             "unit": "ms/op",
             "extra": "iterations: 5\nforks: 1\nthreads: 1"
           }
