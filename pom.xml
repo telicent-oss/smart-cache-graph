@@ -112,8 +112,6 @@
     <dependency.yaml-config>2.0.1</dependency.yaml-config>
 
     <!-- CVE Patches -->
-    <!-- CVE-2025-48734-->
-    <dependency.commons-beanutils>1.11.0</dependency.commons-beanutils>
     <!-- CVE-2025-28976 -->
     <dependency.commons-fileupload2>2.0.0-M5</dependency.commons-fileupload2>
     <!-- CVE-2026-1605 -->
@@ -145,11 +143,6 @@
         <artifactId>jena-fuseki-main</artifactId>
         <version>${dependency.jena}</version>
         <exclusions>
-          <!-- CVE-2025-48734-->
-          <exclusion>
-            <groupId>commons-beanutils</groupId>
-            <artifactId>commons-beanutils</artifactId>
-          </exclusion>
           <exclusion>
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
@@ -480,13 +473,6 @@
       </dependency>
 
       <!-- CVE Fixes -->
-      <!-- CVE-2025-48734-->
-      <dependency>
-        <groupId>commons-beanutils</groupId>
-        <artifactId>commons-beanutils</artifactId>
-        <version>${dependency.commons-beanutils}</version>
-      </dependency>
-
       <!-- CVE-2025-28976 -->
       <dependency>
         <groupId>org.apache.commons</groupId>
