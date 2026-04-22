@@ -596,7 +596,7 @@ public abstract class AbstractSmartCacheGraphSinkTests {
     protected abstract boolean supportsLabellingQuads();
 
     private void runTestProcessorSCGWithAuthNamedGraph(TestAction execTestAction) {
-        Assumptions.assumeTrue(supportsLabellingQuads());
+        Assumptions.assumeTrue(supportsLabellingQuads(), "Test requires label store that supports labelling quads");
 
         DatasetGraph dsgBase = createBaseDataset();
         LabelsStore labelsStore = createLabelsStore();
