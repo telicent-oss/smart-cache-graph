@@ -94,6 +94,16 @@ paths:
                   error:
                     type: string
                     description: Error message.
+        '503':
+          description: Dataset temporarily unavailable during compaction.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Error message.
   /{datasetName}/access/triples:
     post:
       summary: Return a boolean value to indicate whether the requested triple(s) are visible to the user.
@@ -218,6 +228,16 @@ paths:
                     visible: true
         '400':
           description: Bad Request.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Error message.
+        '503':
+          description: Dataset temporarily unavailable during compaction.
           content:
             application/json:
               schema:
