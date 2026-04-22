@@ -95,7 +95,7 @@ paths:
                     type: string
                     description: Error message.
         '503':
-          description: Dataset temporarily unavailable during compaction.
+          description: Dataset temporarily unavailable during a maintenance operation.
           content:
             application/json:
               schema:
@@ -237,7 +237,7 @@ paths:
                     type: string
                     description: Error message.
         '503':
-          description: Dataset temporarily unavailable during compaction.
+          description: Dataset temporarily unavailable during a maintenance operation.
           content:
             application/json:
               schema:

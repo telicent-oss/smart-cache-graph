@@ -19,6 +19,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.telicent.backup.utils.BackupUtils;
+import io.telicent.core.DatasetMaintenanceRegistry;
 import io.telicent.jena.abac.ABAC;
 import io.telicent.jena.abac.core.DatasetGraphABAC;
 import io.telicent.jena.abac.labels.LabelsStoreMem;
@@ -31,6 +32,7 @@ import org.apache.jena.fuseki.server.DataAccessPointRegistry;
 import org.apache.jena.fuseki.server.DataService;
 import org.apache.jena.sparql.core.DatasetGraph;
 import org.apache.jena.sparql.core.DatasetGraphFactory;
+import org.apache.jena.tdb2.store.DatasetGraphSwitchable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -298,6 +300,39 @@ public class TestDatasetBackupService {
         assertEquals(0, result.get("datasets").size());
         assertEquals(0, DatasetBackupService_Test.getCallCount(BACKUP_TDB));
         assertEquals(0, DatasetBackupService_Test.getCallCount(BACKUP_LABELS));
+    }
+
+    @Test
+    @DisplayName("Backup rejects a managed dataset when another maintenance operation is already active")
+    public void test_backup_rejects_when_managed_dataset_under_maintenance() throws Exception {
+        // given
+        String datasetName = "dataset-name";
+        DatasetGraphSwitchable managedDataset = createPersistentSwitchableDataset();
+        DataAccessPoint dap = new DataAccessPoint(datasetName, DataService.newBuilder().dataset(managedDataset).build());
+        when(mockRegistry.accessPoints()).thenReturn(List.of(dap));
+        Optional<DatasetMaintenanceRegistry.MaintenanceHandle> maintenance =
+                DatasetMaintenanceRegistry.begin(managedDataset, datasetName,
+                                                 DatasetMaintenanceRegistry.MaintenanceOperation.RESTORE);
+        assertTrue(maintenance.isPresent());
+
+        try {
+            // when
+            ObjectNode result = OBJECT_MAPPER.createObjectNode();
+            cut.backupDataset(datasetName, result);
+
+            // then
+            assertTrue(result.has("datasets"));
+            assertEquals(1, result.get("datasets").size());
+            JsonNode dataset = result.get("datasets").get(0);
+            assertEquals(datasetName, dataset.get("dataset-name").asText());
+            assertTrue(dataset.has("success"));
+            assertFalse(dataset.get("success").asBoolean());
+            assertTrue(dataset.get("reason").asText().contains("Another maintenance operation is already in progress"));
+            assertEquals(0, DatasetBackupService_Test.getCallCount(BACKUP_TDB));
+            assertEquals(0, DatasetBackupService_Test.getCallCount(BACKUP_LABELS));
+        } finally {
+            DatasetMaintenanceRegistry.end(maintenance.get());
+        }
     }
 
 
@@ -1500,6 +1535,60 @@ public class TestDatasetBackupService {
 
         assertEquals(0, DatasetBackupService_Test.getCallCount(RESTORE_TDB));
         assertEquals(0, DatasetBackupService_Test.getCallCount(RESTORE_LABELS));
+    }
+
+    @Test
+    @DisplayName("Restore rejects a managed dataset when another maintenance operation is already active")
+    public void test_restoreDatasets_rejects_when_managed_dataset_under_maintenance() throws Exception {
+        // given
+        String restoreID = "1";
+        String datasetName = "dataset-name";
+        File newDir = new File(baseDir.toString() + "/" + restoreID);
+        assertTrue(newDir.mkdir());
+        newDir.deleteOnExit();
+
+        File newDataset = new File(newDir + "/" + datasetName);
+        assertTrue(newDataset.mkdir());
+        newDataset.deleteOnExit();
+
+        File tdbDir = new File(newDataset + "/tdb/");
+        assertTrue(tdbDir.mkdir());
+        tdbDir.deleteOnExit();
+
+        File tdbFile = new File(newDataset + "/tdb/" + datasetName + "_backup.nq.gz");
+        assertTrue(tdbFile.createNewFile());
+        tdbFile.deleteOnExit();
+
+        DatasetGraphSwitchable managedDataset = createPersistentSwitchableDataset();
+        DataAccessPoint dap = new DataAccessPoint(datasetName, DataService.newBuilder().dataset(managedDataset).build());
+        when(mockRegistry.get(datasetName)).thenReturn(dap);
+        when(mockRegistry.accessPoints()).thenReturn(List.of(dap));
+        Optional<DatasetMaintenanceRegistry.MaintenanceHandle> maintenance =
+                DatasetMaintenanceRegistry.begin(managedDataset, datasetName,
+                                                 DatasetMaintenanceRegistry.MaintenanceOperation.BACKUP);
+        assertTrue(maintenance.isPresent());
+
+        try {
+            // when
+            ObjectNode result = OBJECT_MAPPER.createObjectNode();
+            cut.restoreDatasets(restoreID, result);
+
+            // then
+            assertTrue(result.has("success"));
+            assertFalse(result.get("success").asBoolean());
+            assertTrue(result.has(datasetName));
+            JsonNode dataset = result.get(datasetName);
+            assertEquals(datasetName, dataset.get("dataset-name").asText());
+            assertTrue(dataset.has("success"));
+            assertFalse(dataset.get("success").asBoolean());
+            assertTrue(dataset.get("reason").asText().contains("Another maintenance operation is already in progress"));
+            assertTrue(result.has("backup-success"));
+            assertEquals("false", result.get("backup-success").asText());
+            assertEquals(0, DatasetBackupService_Test.getCallCount(RESTORE_TDB));
+            assertEquals(0, DatasetBackupService_Test.getCallCount(RESTORE_LABELS));
+        } finally {
+            DatasetMaintenanceRegistry.end(maintenance.get());
+        }
     }
 
 
@@ -2776,5 +2865,13 @@ public class TestDatasetBackupService {
         assertTrue(newDir.mkdir());
         newDir.deleteOnExit();
         return newDir;
+    }
+
+    private DatasetGraphSwitchable createPersistentSwitchableDataset() throws IOException {
+        Path container = Files.createTempDirectory(baseDir, "managed-dsg");
+        Path dataDir = container.resolve("Data-0001");
+        Files.createDirectories(dataDir);
+        Files.writeString(dataDir.resolve("marker.txt"), "x");
+        return new DatasetGraphSwitchable(container, null, DatasetGraphFactory.createTxnMem());
     }
 }

@@ -175,6 +175,13 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
             LOG.info("[Compaction] >>>> Start compact {}, current size is {} ({})", name,
                      humanReadableSize(sizeBefore), sizeBefore);
             Instant startedAt = Instant.now();
+            Optional<DatasetMaintenanceRegistry.MaintenanceHandle> maintenance =
+                    DatasetMaintenanceRegistry.begin(datasetGraph, name,
+                                                    DatasetMaintenanceRegistry.MaintenanceOperation.COMPACTION);
+            if (maintenance.isEmpty()) {
+                LOG.info("[Compaction] Ignoring for {} due to another maintenance operation already being in progress", name);
+                return CompactionStatus.SKIPPED_LOCK_CONTENTION;
+            }
             updateCompactionIndicator(dsg, new CompactionIndicator(CompactionIndicatorState.IN_PROGRESS, name,
                                                                    startedAt.toString(), startedAt.toString(),
                                                                    sizeBefore, -1, null));
@@ -201,6 +208,7 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
                 throw t;
             } finally {
                 dsg.finishExclusiveMode();
+                DatasetMaintenanceRegistry.end(maintenance.get());
                 if (successIndicator != null) {
                     updateCompactionIndicator(dsg, successIndicator);
                 }
@@ -308,8 +316,8 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
     }
 
     static boolean isCompactionInProgress(DatasetGraphSwitchable dsg) {
-        return findCurrentCompactionIndicator(dsg)
-                .map(indicator -> indicator.state() == CompactionIndicatorState.IN_PROGRESS)
+        return DatasetMaintenanceRegistry.findCurrentMaintenance(dsg)
+                .map(indicator -> indicator.operation() == DatasetMaintenanceRegistry.MaintenanceOperation.COMPACTION)
                 .orElse(false);
     }
 

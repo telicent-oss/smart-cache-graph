@@ -18,6 +18,7 @@ package io.telicent.backup.services;
 
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.telicent.core.DatasetMaintenanceRegistry;
 import io.telicent.backup.utils.EncryptionUtils;
 import io.telicent.jena.abac.core.DatasetGraphABAC;
 import io.telicent.jena.abac.labels.LabelsStore;
@@ -174,7 +175,26 @@ public class DatasetBackupService {
             if (requestIsEmpty(datasetName) || sanitizedDataAccessPointName.equalsIgnoreCase(datasetName)) {
                 ObjectNode datasetJSON = OBJECT_MAPPER.createObjectNode();
                 datasetJSON.put("dataset-name", sanitizedDataAccessPointName);
-                applyBackUpMethods(datasetJSON, dataAccessPoint, backupIDPath + "/" + sanitizedDataAccessPointName);
+                if (dataAccessPoint.getDataService() == null) {
+                    datasetJSON.put("reason", sanitizedDataAccessPointName + " does not exist");
+                    datasetJSON.put("success", false);
+                    datasetNodes.add(datasetJSON);
+                    continue;
+                }
+                DatasetGraph dsg = dataAccessPoint.getDataService().getDataset();
+                Optional<DatasetMaintenanceRegistry.MaintenanceHandle> maintenance =
+                        DatasetMaintenanceRegistry.begin(dsg, dataAccessPointName,
+                                                         DatasetMaintenanceRegistry.MaintenanceOperation.BACKUP);
+                if (maintenance.isEmpty()) {
+                    datasetJSON.put("reason", "Another maintenance operation is already in progress.");
+                    datasetJSON.put("success", false);
+                } else {
+                    try {
+                        applyBackUpMethods(datasetJSON, dataAccessPoint, backupIDPath + "/" + sanitizedDataAccessPointName);
+                    } finally {
+                        DatasetMaintenanceRegistry.end(maintenance.get());
+                    }
+                }
                 datasetNodes.add(datasetJSON);
             }
         }
@@ -407,11 +427,21 @@ public class DatasetBackupService {
             return false;
         }
         DatasetGraph dsg = dataAccessPoint.getDataService().getDataset();
+        Optional<DatasetMaintenanceRegistry.MaintenanceHandle> maintenance =
+                DatasetMaintenanceRegistry.begin(dsg, dataAccessPoint.getName(),
+                                                 DatasetMaintenanceRegistry.MaintenanceOperation.RESTORE);
+        if (maintenance.isEmpty()) {
+            response.put("reason", "Another maintenance operation is already in progress.");
+            response.put("success", false);
+            return false;
+        }
         try {
             Txn.executeWrite(dsg, () -> applyRestoreMethods(response, dataAccessPoint, restorePath + "/" + datasetName));
         } catch (RuntimeException ex) {
             response.put("reason", ex.getMessage());
             response.put("success", false);
+        } finally {
+            DatasetMaintenanceRegistry.end(maintenance.get());
         }
         return true;
     }

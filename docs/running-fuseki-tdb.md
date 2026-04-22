@@ -79,9 +79,10 @@ Compaction endpoints are exposed by Smart Cache Graph:
 - `POST /$/compact/<dataset>` for compaction of a single dataset
 - `POST /$/compactall` for compaction of all configured datasets
 
-These can execute on a live server. While compaction is in progress, dataset-backed requests are
-rejected with HTTP `503 Service Unavailable` before they attempt to open a transaction. Health
-check and other control endpoints such as `/$/ping` remain available during compaction.
+These can execute on a live server. While maintenance operations such as compaction, backup, or
+restore are in progress, dataset-backed requests are rejected with HTTP `503 Service Unavailable`
+before they attempt to open a transaction. Health check and other control endpoints such as
+`/$/ping` remain available during maintenance.
 
 Successful responses from both endpoints return JSON:
 ```json

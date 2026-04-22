@@ -121,12 +121,15 @@ public class FMod_DatasetAvailabilityFilter implements FusekiModule {
             Optional<String> datasetName = datasetNameForPath(request.getRequestURI(), datasetNames);
             DatasetGraphSwitchable dataset = datasetForPath(request.getRequestURI(), datasetNames, datasetsByPath)
                     .orElse(null);
-            if (datasetName.isPresent() && dataset != null && FMod_InitialCompaction.isCompactionInProgress(dataset)) {
+            Optional<DatasetMaintenanceRegistry.MaintenanceIndicator> maintenance =
+                    dataset == null ? Optional.empty() : DatasetMaintenanceRegistry.findCurrentMaintenance(dataset);
+            if (datasetName.isPresent() && maintenance.isPresent()) {
                 response.setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
                 response.setContentType("application/json");
                 response.setCharacterEncoding(StandardCharsets.UTF_8.name());
                 response.getWriter().write("{\"error\":\"Dataset " + datasetName.get()
-                        + " is temporarily unavailable while compaction is in progress.\"}");
+                        + " is temporarily unavailable while "
+                        + maintenance.get().operation().displayName() + " is in progress.\"}");
                 return;
             }
 

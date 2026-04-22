@@ -50,6 +50,7 @@ public class TestDatasetAvailabilityFilter {
     @AfterEach
     void tearDown() {
         FMod_InitialCompaction.CURRENT_COMPACTIONS.clear();
+        DatasetMaintenanceRegistry.ACTIVE_MAINTENANCE.clear();
         Configurator.reset();
         if (server != null) {
             server.stop();
@@ -59,7 +60,7 @@ public class TestDatasetAvailabilityFilter {
     @Test
     void givenDatasetQueryDuringCompaction_whenProcessingRequest_then503() throws IOException, InterruptedException {
         startServer();
-        markCompactionInProgress(dataset);
+        markMaintenanceInProgress(dataset, DatasetMaintenanceRegistry.MaintenanceOperation.COMPACTION);
 
         HttpRequest request = HttpRequest.newBuilder()
                                          .uri(URI.create(server.serverURL() + "ds/query?query="
@@ -74,13 +75,14 @@ public class TestDatasetAvailabilityFilter {
         assertEquals(503, response.statusCode());
         assertTrue(response.body().contains("temporarily unavailable"));
         assertTrue(response.body().contains(DATASET_NAME));
+        assertTrue(response.body().contains("compaction"));
         assertTrue(response.headers().firstValue("Request-ID").isPresent());
     }
 
     @Test
     void givenPingDuringCompaction_whenProcessingRequest_thenHealthCheckStillPasses() throws IOException, InterruptedException {
         startServer();
-        markCompactionInProgress(dataset);
+        markMaintenanceInProgress(dataset, DatasetMaintenanceRegistry.MaintenanceOperation.COMPACTION);
 
         HttpRequest request = HttpRequest.newBuilder()
                                          .uri(URI.create(server.serverURL() + "$/ping"))
@@ -92,6 +94,44 @@ public class TestDatasetAvailabilityFilter {
 
         assertEquals(200, response.statusCode());
         assertFalse(response.body().isBlank());
+    }
+
+    @Test
+    void givenDatasetQueryDuringRestore_whenProcessingRequest_then503() throws IOException, InterruptedException {
+        startServer();
+        markMaintenanceInProgress(dataset, DatasetMaintenanceRegistry.MaintenanceOperation.RESTORE);
+
+        HttpRequest request = HttpRequest.newBuilder()
+                                         .uri(URI.create(server.serverURL() + "ds/query?query="
+                                                 + URLEncoder.encode("SELECT * WHERE { ?s ?p ?o }",
+                                                                     StandardCharsets.UTF_8)))
+                                         .GET()
+                                         .build();
+
+        HttpResponse<String> response =
+                HttpEnv.getDftHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+
+        assertEquals(503, response.statusCode());
+        assertTrue(response.body().contains("restore"));
+    }
+
+    @Test
+    void givenDatasetQueryDuringBackup_whenProcessingRequest_then503() throws IOException, InterruptedException {
+        startServer();
+        markMaintenanceInProgress(dataset, DatasetMaintenanceRegistry.MaintenanceOperation.BACKUP);
+
+        HttpRequest request = HttpRequest.newBuilder()
+                                         .uri(URI.create(server.serverURL() + "ds/query?query="
+                                                 + URLEncoder.encode("SELECT * WHERE { ?s ?p ?o }",
+                                                                     StandardCharsets.UTF_8)))
+                                         .GET()
+                                         .build();
+
+        HttpResponse<String> response =
+                HttpEnv.getDftHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+
+        assertEquals(503, response.statusCode());
+        assertTrue(response.body().contains("backup"));
     }
 
     @Test
@@ -126,7 +166,7 @@ public class TestDatasetAvailabilityFilter {
         Set<String> datasetNames = Set.of(DATASET_NAME);
         Map<String, DatasetGraphSwitchable> serverOneDatasets = Map.of(DATASET_NAME, datasetOne);
         Map<String, DatasetGraphSwitchable> serverTwoDatasets = Map.of(DATASET_NAME, datasetTwo);
-        markCompactionInProgress(datasetOne);
+        markMaintenanceInProgress(datasetOne, DatasetMaintenanceRegistry.MaintenanceOperation.COMPACTION);
 
         Optional<DatasetGraphSwitchable> resolvedOne =
                 FMod_DatasetAvailabilityFilter.datasetForPath("/ds/query", datasetNames, serverOneDatasets);
@@ -135,22 +175,13 @@ public class TestDatasetAvailabilityFilter {
 
         assertTrue(resolvedOne.isPresent());
         assertTrue(resolvedTwo.isPresent());
-        assertTrue(FMod_InitialCompaction.isCompactionInProgress(resolvedOne.get()));
-        assertFalse(FMod_InitialCompaction.isCompactionInProgress(resolvedTwo.get()));
+        assertTrue(DatasetMaintenanceRegistry.isMaintenanceInProgress(resolvedOne.get()));
+        assertFalse(DatasetMaintenanceRegistry.isMaintenanceInProgress(resolvedTwo.get()));
     }
 
-    private static void markCompactionInProgress(DatasetGraphSwitchable dsg) {
-        Instant now = Instant.now();
-        FMod_InitialCompaction.CURRENT_COMPACTIONS.put(
-                dsg,
-                new FMod_InitialCompaction.CompactionIndicator(
-                        FMod_InitialCompaction.CompactionIndicatorState.IN_PROGRESS,
-                        DATASET_NAME,
-                        now.toString(),
-                        now.toString(),
-                        1L,
-                        -1L,
-                        null));
+    private static void markMaintenanceInProgress(DatasetGraphSwitchable dsg,
+                                                  DatasetMaintenanceRegistry.MaintenanceOperation operation) {
+        assertTrue(DatasetMaintenanceRegistry.begin(dsg, DATASET_NAME, operation).isPresent());
     }
 
     private static DatasetGraphSwitchable createPersistentSwitchableDataset() throws IOException {
