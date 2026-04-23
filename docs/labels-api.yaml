@@ -128,4 +128,13 @@ paths:
                   error:
                     type: string
                     description: Error message.
-
+        '503':
+          description: Dataset temporarily unavailable during a maintenance operation.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Error message.
