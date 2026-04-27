@@ -1,5 +1,11 @@
 # Smart Cache Graph
 
+## 0.93.5
+- Core improvements:
+  - Avoid queries during compaction/restore/back-up
+  - Updating Open Telemetry
+  - Improving performance of underlying queries
+
 ## 0.93.4
 - Build improvements
   - Addressing CVE-2026-1605
