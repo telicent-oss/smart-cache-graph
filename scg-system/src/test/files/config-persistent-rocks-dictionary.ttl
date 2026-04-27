@@ -67,7 +67,7 @@ PREFIX fk:      <http://jena.apache.org/fuseki/kafka#>
 
     ## Config item where labels are stored (only define if not in memory)
     authz:labelsStore [
-        authz:labelsStorePath "target/databases/knowledgeLabels.db" ;
+        authz:labelsStorePath "target/databases/knowledgeModernLabels.db" ;
 
         # Disable the legacy mode store in favour of the modern dictionary store introduced by RDF-ABAC 3.0.0
         # Note: the legacy store is still available and can be used if desired, but the modern store is recommended 
@@ -87,7 +87,7 @@ PREFIX fk:      <http://jena.apache.org/fuseki/kafka#>
 
 ## Storage of data on filesystem.
 :datasetAuthBase rdf:type tdb2:DatasetTDB2 ;
-    tdb2:location "target/databases/knowledge" ;
+    tdb2:location "target/databases/knowledgeModern" ;
     .
 
 ## No FusekiKafka connector - testing is done by directly injecting data into FKProcessorSCG.

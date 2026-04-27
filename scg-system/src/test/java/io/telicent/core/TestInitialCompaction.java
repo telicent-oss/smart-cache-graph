@@ -69,6 +69,20 @@ public class TestInitialCompaction {
         if (server != null) {
             server.stop();
         }
+
+    }
+
+    @AfterAll
+    public static void teardown() {
+        // NB - Have to close any open labels stores otherwise we can interfere with other tests that use the same
+        //      configuration file
+        Labels.rocks.forEach((f, labels) -> {
+            try {
+                labels.close();
+            } catch (Exception e) {
+                // Ignore
+            }
+        });
     }
 
     private static void removePreviousCompactionResults() {
