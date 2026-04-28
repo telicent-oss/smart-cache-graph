@@ -3,6 +3,7 @@ package io.telicent.core;
 import io.telicent.jena.abac.core.DatasetGraphABAC;
 import io.telicent.jena.abac.labels.LabelsStore;
 import io.telicent.jena.abac.labels.store.rocksdb.legacy.LegacyLabelsStoreRocksDB;
+import io.telicent.smart.cache.storage.CompactCapable;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -340,15 +341,17 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
     public static void compactLabels(DatasetGraph dsg) {
         if (dsg instanceof DatasetGraphABAC abac) {
             LabelsStore labelsStore = abac.labelsStore();
+            Timer timer = new Timer();
+            timer.startTimer();
+            LOG.info("[Compaction] <<<< Start label store compaction.");
             if (labelsStore instanceof LegacyLabelsStoreRocksDB rocksDB) {
-                Timer timer = new Timer();
-                timer.startTimer();
-                LOG.info("[Compaction] <<<< Start label store compaction.");
                 rocksDB.compact();
-                LOG.info("[Compaction] <<<< Finish label store compaction. Took {} seconds.",
-                         Timer.timeStr(timer.endTimer()));
-                return;
+            } else if (labelsStore instanceof CompactCapable compactCapable) {
+                compactCapable.compact();
             }
+            LOG.info("[Compaction] <<<< Finish label store compaction. Took {} seconds.",
+                     Timer.timeStr(timer.endTimer()));
+            return;
         }
         LOG.info("[Compaction] <<<< Label store compaction not needed.");
     }

@@ -51,6 +51,8 @@ public class TestInitialCompaction {
             mockStatic(DatabaseMgr.class, Mockito.CALLS_REAL_METHODS);
     private static FusekiServer server;
 
+    private static final String[] PERSISTENT_DB_DIRS = { "knowledgeLegacy", "knowledgeModern" };
+
     @BeforeAll
     static void createAndSetupServerDetails() throws Exception {
         LibTestsSCG.setupAuthentication();
@@ -86,13 +88,17 @@ public class TestInitialCompaction {
     }
 
     private static void removePreviousCompactionResults() {
-        File previousCompactionSize = Path.of("target", "databases", "knowledge", ".last-compaction").toFile();
-        if (previousCompactionSize.exists()) {
-            previousCompactionSize.delete();
-        }
-        File previousCompactionStatus = Path.of("target", "databases", "knowledge", ".compaction-status").toFile();
-        if (previousCompactionStatus.exists()) {
-            previousCompactionStatus.delete();
+        for (String db : PERSISTENT_DB_DIRS) {
+            File previousCompactionSize =
+                    Path.of("target", "databases", db, ".last-compaction").toFile();
+            if (previousCompactionSize.exists()) {
+                previousCompactionSize.delete();
+            }
+            File previousCompactionStatus =
+                    Path.of("target", "databases", db, ".compaction-status").toFile();
+            if (previousCompactionStatus.exists()) {
+                previousCompactionStatus.delete();
+            }
         }
     }
 
@@ -126,7 +132,6 @@ public class TestInitialCompaction {
     }
 
     @Test
-    @Disabled // Flaky test
     public void test_persistentDataset_sizeSame_ignoredSecondCall() {
         // given
         mockDatabaseMgr.when(() -> DatabaseMgr.compact(any(), anyBoolean())).thenAnswer(invocationOnMock -> null);
@@ -138,14 +143,35 @@ public class TestInitialCompaction {
         mockDatabaseMgr.verify(() -> DatabaseMgr.compact(any(), anyBoolean()), times(1));
         mockDatabaseMgr.clearInvocations();
         // when
-        HttpResponse<InputStream> compactResponse = makePOSTCallWithPath(server, "$/compactall");
+        HttpResponse<InputStream> compactResponse =
+                makeAuthCallWithCustomToken(server, "$/compactall", LibTestsSCG.tokenForUser("admin", "knowledge"),
+                                            "POST");
         // then
         assertEquals(200, compactResponse.statusCode());
         mockDatabaseMgr.verify(() -> DatabaseMgr.compact(any(), anyBoolean()), times(0));
     }
 
     @Test
-    @Disabled
+    public void test_persistentDataset_dictionaryStore_sizeSame_ignoredSecondCall() {
+        // given
+        mockDatabaseMgr.when(() -> DatabaseMgr.compact(any(), anyBoolean())).thenAnswer(invocationOnMock -> null);
+        String configFile = "config-persistent-rocks-dictionary.ttl";
+        // when
+        server = launchServer(configFile);
+        // then
+        assertNotNull(server.serverURL());
+        mockDatabaseMgr.verify(() -> DatabaseMgr.compact(any(), anyBoolean()), times(1));
+        mockDatabaseMgr.clearInvocations();
+        // when
+        HttpResponse<InputStream> compactResponse =
+                makeAuthCallWithCustomToken(server, "$/compactall", LibTestsSCG.tokenForUser("admin", "knowledge"),
+                                            "POST");
+        // then
+        assertEquals(200, compactResponse.statusCode());
+        mockDatabaseMgr.verify(() -> DatabaseMgr.compact(any(), anyBoolean()), times(0));
+    }
+
+    @Test
     public void test_persistentDataset_sizeDifferent_makeSecondCall() {
         // given
         mockDatabaseMgr.when(() -> DatabaseMgr.compact(any(), anyBoolean())).thenAnswer(invocationOnMock -> null);
@@ -157,7 +183,9 @@ public class TestInitialCompaction {
         mockDatabaseMgr.verify(() -> DatabaseMgr.compact(any(), anyBoolean()), times(1));
         // when
         FMod_InitialCompaction.SIZES.put("/knowledge", 500L);
-        HttpResponse<InputStream> compactResponse = makePOSTCallWithPath(server, "$/compactall");
+        HttpResponse<InputStream> compactResponse =
+                makeAuthCallWithCustomToken(server, "$/compactall", LibTestsSCG.tokenForUser("admin", "knowledge"),
+                                            "POST");
         // then
         assertEquals(200, compactResponse.statusCode());
     }
@@ -338,7 +366,8 @@ public class TestInitialCompaction {
     }
 
     @Test
-    public void givenMalformedCompactionIndicatorFile_whenLoadingPreviousIndicator_thenEmptyReturned() throws IOException {
+    public void givenMalformedCompactionIndicatorFile_whenLoadingPreviousIndicator_thenEmptyReturned() throws
+            IOException {
         // Given
         File tempDir = Files.createTempDirectory("test").toFile();
         DatasetGraphSwitchable mockDSG = mock(DatasetGraphSwitchable.class);
@@ -491,9 +520,9 @@ public class TestInitialCompaction {
 
         // When
         HttpResponse<InputStream> compactResponse = makeAuthCallWithCustomToken(server, "$/compactall",
-                                                                                 tokenForUserWithCompactPermissions(
-                                                                                         "test", "test", "mem"),
-                                                                                 "POST");
+                                                                                tokenForUserWithCompactPermissions(
+                                                                                        "test", "test", "mem"),
+                                                                                "POST");
 
         // Then
         assertEquals(200, compactResponse.statusCode());
@@ -514,9 +543,9 @@ public class TestInitialCompaction {
 
         // When
         HttpResponse<InputStream> compactResponse = makeAuthCallWithCustomToken(server, "$/compactall",
-                                                                                 tokenForUserWithCompactPermissions(
-                                                                                         "test", "test"),
-                                                                                 "POST");
+                                                                                tokenForUserWithCompactPermissions(
+                                                                                        "test", "test"),
+                                                                                "POST");
 
         // Then
         assertEquals(500, compactResponse.statusCode());
@@ -535,9 +564,9 @@ public class TestInitialCompaction {
 
         // When
         HttpResponse<InputStream> compactResponse = makeAuthCallWithCustomToken(server, "$/compactall",
-                                                                                 tokenForUserWithCompactPermissions(
-                                                                                         "test", "test"),
-                                                                                 "POST");
+                                                                                tokenForUserWithCompactPermissions(
+                                                                                        "test", "test"),
+                                                                                "POST");
 
         // Then
         assertEquals(500, compactResponse.statusCode());
@@ -604,7 +633,6 @@ public class TestInitialCompaction {
     }
 
     @Test
-    @Disabled // NB - This test is flaky, disabling it for the time being
     public void givenServer_whenPreviouslyCompacted_thenAskingToCompactAgainIsANoOp() {
         // Given
         mockDatabaseMgr.when(() -> DatabaseMgr.compact(any(), anyBoolean())).thenAnswer(invocationOnMock -> null);
@@ -612,13 +640,18 @@ public class TestInitialCompaction {
         server = launchServer(configFile);
 
         // When
-        HttpResponse<InputStream> compactResponse = makePOSTCallWithPath(server, "$/compactall");
+        HttpResponse<InputStream> compactResponse =
+                makeAuthCallWithCustomToken(server, "$/compactall", LibTestsSCG.tokenForUser("admin", "knowledge"),
+                                            "POST");
         assertEquals(200, compactResponse.statusCode());
         mockDatabaseMgr.verify(() -> DatabaseMgr.compact(any(), anyBoolean()), times(1));
 
         // Then
         assertEquals(200, compactResponse.statusCode());
-        compactResponse = makePOSTCallWithPath(server, "$/compactall");
+        compactResponse =
+                makeAuthCallWithCustomToken(server, "$/compactall", LibTestsSCG.tokenForUser("admin", "knowledge"),
+                                            "POST");
+        assertEquals(200, compactResponse.statusCode());
         mockDatabaseMgr.verify(() -> DatabaseMgr.compact(any(), anyBoolean()), times(1));
     }
 
