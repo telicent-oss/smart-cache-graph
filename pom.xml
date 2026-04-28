@@ -56,7 +56,7 @@
   <properties>
     <!-- Build properties -->
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <project.build.outputTimestamp>2026-04-22T12:45:40Z</project.build.outputTimestamp>
+    <project.build.outputTimestamp>2026-04-27T14:09:52Z</project.build.outputTimestamp>
     <java.version>21</java.version>
 
     <!-- Maven Plugin versions -->
@@ -94,7 +94,7 @@
     <dependency.jackson>2.21.2</dependency.jackson>
     <dependency.bouncycastle>1.84</dependency.bouncycastle>
     <dependency.kafka>3.9.2</dependency.kafka>
-    <dependency.kotlin>2.3.20</dependency.kotlin>
+    <dependency.kotlin>2.3.21</dependency.kotlin>
     <dependency.lz4>1.11.0</dependency.lz4>
     <dependency.otel>1.61.0</dependency.otel>
 

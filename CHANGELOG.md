@@ -1,15 +1,15 @@
 # Smart Cache Graph
 
+
 ## 1.0.0
 
-- Upgraded to RDF-ABAC 3.0.0 which enables a number of new features:
+- Upgraded to RDF-ABAC 3.1.0 which enables a number of new features:
     - When a suitable `LabelsStore` is configured it is now possible to label and query quads across many named graph.
       The same triple in different named graphs (which are different quads) can now have different labels, and thus
       visibility to queries.  This enables better partitioning of data while still retaining the strong data access
       controls that RDF-ABAC enables.
     - Note that enabling this functionality requires opt-in in order to preserve backwards compatibility with previous
-      configurations out of the box.  See [README](README.md) and [Configuration
-      Docs](docs/configuration-smart-cache-graph.md) for more information.
+      configurations out of the box.  See [README](README.md) and [Configuration Docs](docs/configuration-smart-cache-graph.md) for more information.
 - New opt-in functionality to route Kafka events into named graphs based on their `Distribution-ID` header.  This can be
   enabled by setting the `ROUTE_TO_NAMED_GRAPHS` environment variable to `true`.  Intended for use in conjunction with
   the above changes around labelling quads to enable secure data partitioning.
@@ -26,10 +26,17 @@
     - Log4j2 upgraded to 2.25.4
     - LZ4 Java upgraded to 1.11.0
     - OpenTelemetry upgraded to 1.61.0
-    - RDF ABAC upgraded to 3.0.0
+    - RDF ABAC upgraded to 3.1.0
     - Smart Caches Core upgraded to 0.36.3
     - Telicent Base Java image upgraded to 1.2.44
     - Various build and test plugins upgraded to latest available
+
+## 0.93.5
+- Core improvements:
+  - Avoid queries during compaction/restore/back-up
+  - Updating Open Telemetry
+  - Improving performance of underlying queries
+
 
 ## 0.93.4
 - Build improvements

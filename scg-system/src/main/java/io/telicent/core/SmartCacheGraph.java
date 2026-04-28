@@ -122,6 +122,7 @@ public class SmartCacheGraph {
                 , new FMod_OpenTelemetry()
                 , new FMod_TelicentGraphQL()
                 , new FMod_RequestIDFilter()
+                , new FMod_DatasetAvailabilityFilter()
                 , new FMod_BackupData()
                 , new FMod_LabelsQuery()
                 , new FMod_AccessQuery()

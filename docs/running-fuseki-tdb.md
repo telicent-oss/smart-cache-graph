@@ -71,16 +71,18 @@ happens in PostgreSQL, which provides the "vacuum" operation.
 The database can grow quite large. It should be compacted from time-to-time.
 
 Due to this problem, we have an additional module, `Initial Compaction`, has been added
-which will call the compact operation at application start-up prior to the server becoming
-available. This is automatically turned on but can be disabled by setting the 
+which will call the compact operation after the HTTP server has started. This is automatically
+turned on but can be disabled by setting the
 environment variable `DISABLE_INITIAL_COMPACTION`.
 
 Compaction endpoints are exposed by Smart Cache Graph:
 - `POST /$/compact/<dataset>` for compaction of a single dataset
 - `POST /$/compactall` for compaction of all configured datasets
 
-These can execute on a live server allowing read operations to continue to be
-processed in parallel. *Note:* write operations are held up during compaction.
+These can execute on a live server. While maintenance operations such as compaction, backup, or
+restore are in progress, dataset-backed requests are rejected with HTTP `503 Service Unavailable`
+before they attempt to open a transaction. Health check and other control endpoints such as
+`/$/ping` remain available during maintenance.
 
 Successful responses from both endpoints return JSON:
 ```json

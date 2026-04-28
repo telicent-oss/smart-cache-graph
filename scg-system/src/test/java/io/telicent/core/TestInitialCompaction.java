@@ -67,6 +67,7 @@ public class TestInitialCompaction {
         mockDatabaseMgr.clearInvocations();
         mockDatabaseMgr.reset();
         FMod_InitialCompaction.SIZES.clear();
+        FMod_InitialCompaction.CURRENT_COMPACTIONS.clear();
         removePreviousCompactionResults();
         if (server != null) {
             server.stop();
@@ -595,6 +596,37 @@ public class TestInitialCompaction {
             String body = IOUtils.toString(compactResponse.body(), StandardCharsets.UTF_8);
             assertTrue(Strings.CI.contains(body, "\"status\":\"ok\""));
         });
+    }
+
+    @Test
+    public void test_compactOne_indicatorRemainsInProgressUntilExclusiveModeReleased() throws IOException {
+        // given
+        mockDatabaseMgr.when(() -> DatabaseMgr.compact(any(), anyBoolean())).thenAnswer(invocationOnMock -> null);
+        DatasetGraphSwitchable dsgPersists = createPersistentSwitchableDataset();
+        DatasetGraphSwitchable mockedDsg = Mockito.spy(dsgPersists);
+        when(mockedDsg.tryExclusiveMode(false)).thenReturn(true);
+        doAnswer(invocation -> {
+            Optional<FMod_InitialCompaction.CompactionIndicator> indicator =
+                    FMod_InitialCompaction.findCurrentCompactionIndicator(mockedDsg);
+            assertTrue(indicator.isPresent());
+            assertEquals(FMod_InitialCompaction.CompactionIndicatorState.IN_PROGRESS, indicator.get().state());
+            invocation.callRealMethod();
+            return null;
+        }).when(mockedDsg).finishExclusiveMode();
+        server = SmartCacheGraph.smartCacheGraphBuilder().port(0).add("test", mockedDsg).build().start();
+
+        // when
+        HttpResponse<InputStream> compactResponse =
+                makeAuthCallWithCustomToken(server, "$/compact/test",
+                                            tokenForUserWithCompactPermissions("test", "test"), "POST");
+
+        // then
+        assertEquals(200, compactResponse.statusCode());
+        Optional<FMod_InitialCompaction.CompactionIndicator> indicator =
+                FMod_InitialCompaction.findCurrentCompactionIndicator(mockedDsg);
+        assertTrue(indicator.isPresent());
+        assertEquals(FMod_InitialCompaction.CompactionIndicatorState.SUCCEEDED, indicator.get().state());
+        verify(mockedDsg, times(1)).finishExclusiveMode();
     }
 
     @Test
