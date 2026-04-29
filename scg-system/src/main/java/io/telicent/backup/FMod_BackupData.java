@@ -15,6 +15,7 @@
  */
 package io.telicent.backup;
 
+import io.telicent.backup.services.BackupJobManager;
 import io.telicent.backup.services.DatasetBackupService;
 import io.telicent.backup.servlets.*;
 import io.telicent.model.KeyPair;
@@ -83,11 +84,13 @@ public class FMod_BackupData implements FusekiAutoModule {
         if (isBackupEnabled()) {
             try {
                 DatasetBackupService backupService = getBackupService(dapRegistry);
-                serverBuilder.addServlet("/$/backups/create/*", new BackupServlet(backupService));
+                BackupJobManager jobManager = new BackupJobManager();
+                serverBuilder.addServlet("/$/backups/create/*", new BackupServlet(backupService, jobManager));
                 serverBuilder.addServlet("/$/backups/datasets/list/*", new ListDatasetsServlet(backupService));
                 serverBuilder.addServlet("/$/backups/list/*", new ListBackupsServlet(backupService));
-                serverBuilder.addServlet("/$/backups/restore/*", new RestoreServlet(backupService));
+                serverBuilder.addServlet("/$/backups/restore/*", new RestoreServlet(backupService, jobManager));
                 serverBuilder.addServlet("/$/backups/delete/*", new DeleteServlet(backupService));
+                serverBuilder.addServlet("/$/backups/jobs/*", new BackupJobsServlet(jobManager));
                 serverBuilder.addServlet("/$/backups/validate/*", new ValidateServlet(backupService));
                 serverBuilder.addServlet("/$/backups/report/*", new ReportServlet(backupService));
                 serverBuilder.addServlet("/$/backups/details/*", new DetailsServlet(backupService));
