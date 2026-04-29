@@ -64,7 +64,7 @@ In this example there is one separate data service for the knowledge topic.
         fuseki:name "get"
     ] ;
      
-    ## This endpoint is only need if labelled data is loaded via HTTP
+    ## This endpoint is only needed if labelled data is loaded via HTTP
     ## and not via the Kafka 'knowledge' topic.
     ## NB authz:upload - this is the ABAC processor
     fuseki:endpoint [ 
@@ -102,7 +102,7 @@ When a data service is created, the "read data" operations `fuseki:query` and `f
 to apply ABAC label filtering.  For "write data" operations you should use the `authz:upload` or `cqrs:update`
 operations as shown above.
 
-A Smart Cache Graph server requires an already autheticated user to be provided in the JWT token in the HTTP header.
+A Smart Cache Graph server requires an already authenticated user to be provided in the JWT token in the HTTP header.
 
 ## ABAC database
 

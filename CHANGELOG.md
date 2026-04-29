@@ -4,7 +4,7 @@
 ## 1.0.0
 
 - Upgraded to RDF-ABAC 3.1.0 which enables a number of new features:
-    - When a suitable `LabelsStore` is configured it is now possible to label and query quads across many named graph.
+    - When a suitable `LabelsStore` is configured it is now possible to label and query quads across many named graphs.
       The same triple in different named graphs (which are different quads) can now have different labels, and thus
       visibility to queries.  This enables better partitioning of data while still retaining the strong data access
       controls that RDF-ABAC enables.
