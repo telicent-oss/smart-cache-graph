@@ -21,6 +21,7 @@ import java.util.concurrent.TimeUnit;
 @Measurement(iterations = 5, time = 10)
 @Fork(1)
 @State(Scope.Benchmark)
+@SuppressWarnings("deprecation")
 public class LabelsQueryServiceBenchmark {
 
     @Param({"1000", "10000"})

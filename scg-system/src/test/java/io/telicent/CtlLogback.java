@@ -32,7 +32,7 @@ public class CtlLogback {
     }
 
     private static Level name2level(String levelName) {
-        Level level = Level.ALL;
+        Level level = Level.TRACE;
         if ( levelName == null )
             level = null;
         else if ( levelName.equalsIgnoreCase("info") )

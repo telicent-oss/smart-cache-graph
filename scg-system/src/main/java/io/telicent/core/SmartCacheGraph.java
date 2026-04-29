@@ -26,6 +26,7 @@ import io.telicent.otel.FMod_OpenTelemetry;
 import io.telicent.smart.cache.configuration.Configurator;
 import io.telicent.smart.caches.configuration.auth.AuthConstants;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.apache.jena.atlas.lib.Version;
 import org.apache.jena.fuseki.main.FusekiServer;
 import org.apache.jena.fuseki.main.FusekiMain;
@@ -158,7 +159,7 @@ public class SmartCacheGraph {
         String pattern = ".*\\.(yaml|yml)$";
         Pattern regex = Pattern.compile(pattern);
         for (int i = 0; i < args.length; i++) {
-            if (StringUtils.equalsAnyIgnoreCase(args[i], "--config", "--conf") && i + 1 < args.length ) {
+            if (Strings.CI.equalsAny(args[i], "--config", "--conf") && i + 1 < args.length ) {
                 configPath = args[i + 1];
                 Matcher matcher = regex.matcher(configPath);
                 if (matcher.matches()) {

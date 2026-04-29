@@ -635,9 +635,7 @@ public class BackupUtils extends ServletUtils {
 
             ObjectNode datasetSuccess = JsonNodeFactory.instance.objectNode();
 
-            Iterator<Map.Entry<String, JsonNode>> fields = dataset.fields();
-            while (fields.hasNext()) {
-                Map.Entry<String, JsonNode> entry = fields.next();
+            for (Map.Entry<String, JsonNode> entry : dataset.properties()) {
                 String sectionName = entry.getKey();
                 JsonNode sectionValue = entry.getValue();
 
@@ -650,9 +648,7 @@ public class BackupUtils extends ServletUtils {
                     if (success) isAnyTrue = true;
                 }
 
-                Iterator<Map.Entry<String, JsonNode>> nestedFields = section.fields();
-                while (nestedFields.hasNext()) {
-                    Map.Entry<String, JsonNode> nestedEntry = nestedFields.next();
+                for (Map.Entry<String, JsonNode> nestedEntry : section.properties()) {
                     String nestedKey = nestedEntry.getKey();
                     JsonNode nestedValue = nestedEntry.getValue();
 

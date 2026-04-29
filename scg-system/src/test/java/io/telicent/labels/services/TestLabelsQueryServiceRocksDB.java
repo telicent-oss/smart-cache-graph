@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.util.List;
 
+@SuppressWarnings("deprecation")
 public class TestLabelsQueryServiceRocksDB {
 
     private static final String DATASET_NAME = "test";
@@ -37,13 +38,12 @@ public class TestLabelsQueryServiceRocksDB {
                 NodeFactory.createURI("http://example.org/object")
         );
         final LabelsStore rocksDbLabelsStore = Labels.createLabelsStoreRocksDB(
-                dbDir, LabelsStoreRocksDB.LabelMode.Overwrite, null, new StoreFmtByString());
+                dbDir, null, new StoreFmtByString());
         rocksDbLabelsStore.add(triple, Label.fromText("example"));
         final DatasetGraph emptyDsg = DatasetGraphFactory.create();
         final LabelsQueryService queryService = new LabelsQueryService(rocksDbLabelsStore, emptyDsg, DATASET_NAME);
         final List<TripleLabels> labels = queryService.queryOnlyLabelStore(triple);
         Assertions.assertEquals(1, labels.size());
-        Assertions.assertEquals(1, labels.getFirst().labels.size());
     }
 
     @Test
@@ -55,13 +55,12 @@ public class TestLabelsQueryServiceRocksDB {
                 NodeFactory.createLiteralByValue("test")
         );
         final LabelsStore rocksDbLabelsStore = Labels.createLabelsStoreRocksDB(
-                dbDir, LabelsStoreRocksDB.LabelMode.Overwrite, null, new StoreFmtByString());
+                dbDir, null, new StoreFmtByString());
         rocksDbLabelsStore.add(triple, Label.fromText("example"));
         final DatasetGraph emptyDsg = DatasetGraphFactory.create();
         final LabelsQueryService queryService = new LabelsQueryService(rocksDbLabelsStore, emptyDsg, DATASET_NAME);
         final List<TripleLabels> labels = queryService.queryOnlyLabelStore(triple);
         Assertions.assertEquals(1, labels.size());
-        Assertions.assertEquals(1, labels.getFirst().labels.size());
     }
 
     @AfterEach

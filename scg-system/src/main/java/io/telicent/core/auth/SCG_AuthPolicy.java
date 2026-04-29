@@ -181,7 +181,7 @@ public class SCG_AuthPolicy {
         addPolicy(roles, "/$/compactall", ADMIN_ROLES);
 
         // Backup/Restore - /$/backups/*
-        // All endpoints require an adminstrator role
+        // All endpoints require an administrator role
         // Endpoints require either backup.read and backup.write permissions as appropriate
         addPolicy(roles, "/$/backups/*", ADMIN_ROLES);
         addPolicy(perms, "/$/backups/create", BACKUP_CREATE);
