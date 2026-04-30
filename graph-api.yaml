@@ -35,7 +35,7 @@ paths:
         500:
           description: Internal Server Error i.e. the server failed to process the request.
         503:
-          description: Service Unavailable, i.e. the server is still in the process of starting.
+          description: Service Unavailable, i.e. the dataset is temporarily unavailable during a maintenance operation.
   /{dataset}/update:
     post:
       summary: Execute a SPARQL Update
@@ -62,7 +62,7 @@ paths:
         500:
           description: Internal Server Error i.e. the server failed to process the request.
         503:
-          description: Service Unavailable, i.e. the server is still in the process of starting.
+          description: Service Unavailable, i.e. the dataset is temporarily unavailable during a maintenance operation.
   /{dataset}/shacl:
     post:
       summary: Validate RDF data against SHACL shapes

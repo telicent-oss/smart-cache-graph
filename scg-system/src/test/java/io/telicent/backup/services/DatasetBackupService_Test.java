@@ -1,7 +1,7 @@
 package io.telicent.backup.services;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.telicent.jena.abac.labels.LabelsStoreRocksDB;
+import io.telicent.jena.abac.labels.store.rocksdb.legacy.LegacyLabelsStoreRocksDB;
 import org.apache.jena.fuseki.server.DataAccessPointRegistry;
 import org.apache.jena.sparql.core.DatasetGraph;
 
@@ -11,6 +11,7 @@ import java.util.Map;
 /**
  * Class that extends DatasetBackupService purely for testing purposes
  */
+@SuppressWarnings("deprecation")
 public class DatasetBackupService_Test extends DatasetBackupService {
     public final static String BACKUP_TDB = "executeBackupTDB";
     public final static String BACKUP_LABELS = "executeBackupLabelStore";
@@ -58,7 +59,7 @@ public class DatasetBackupService_Test extends DatasetBackupService {
     }
 
     @Override
-    void executeBackupLabelStore(LabelsStoreRocksDB rocksDB, String labelBackupPath, ObjectNode node) {
+    void executeBackupLabelStore(LegacyLabelsStoreRocksDB rocksDB, String labelBackupPath, ObjectNode node) {
         // NO-OP
         incrementMethodCall(BACKUP_LABELS);
         throwExceptionIfNeeded(BACKUP_LABELS);
@@ -73,7 +74,7 @@ public class DatasetBackupService_Test extends DatasetBackupService {
     }
 
     @Override
-    void executeRestoreLabelStore(LabelsStoreRocksDB rocksDB, String labelRestorePath, ObjectNode node) {
+    void executeRestoreLabelStore(LegacyLabelsStoreRocksDB rocksDB, String labelRestorePath, ObjectNode node) {
         // NO-OP
         incrementMethodCall(RESTORE_LABELS);
         throwExceptionIfNeeded(RESTORE_LABELS);

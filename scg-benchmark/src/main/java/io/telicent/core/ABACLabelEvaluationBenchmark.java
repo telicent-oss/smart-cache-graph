@@ -42,6 +42,7 @@ import static org.mockito.Mockito.*;
 @Measurement(iterations = 5, time = 10)
 @Fork(1)
 @State(Scope.Benchmark)
+@SuppressWarnings("deprecation")
 public class ABACLabelEvaluationBenchmark {
 
     private static final Logger LOG = LoggerFactory.getLogger(ABACLabelEvaluationBenchmark.class);

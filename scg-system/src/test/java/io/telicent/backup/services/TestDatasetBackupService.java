@@ -19,10 +19,11 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.telicent.backup.utils.BackupUtils;
+import io.telicent.core.DatasetMaintenanceRegistry;
 import io.telicent.jena.abac.ABAC;
 import io.telicent.jena.abac.core.DatasetGraphABAC;
 import io.telicent.jena.abac.labels.LabelsStoreMem;
-import io.telicent.jena.abac.labels.LabelsStoreRocksDB;
+import io.telicent.jena.abac.labels.store.rocksdb.legacy.LegacyLabelsStoreRocksDB;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -31,6 +32,7 @@ import org.apache.jena.fuseki.server.DataAccessPointRegistry;
 import org.apache.jena.fuseki.server.DataService;
 import org.apache.jena.sparql.core.DatasetGraph;
 import org.apache.jena.sparql.core.DatasetGraphFactory;
+import org.apache.jena.tdb2.store.DatasetGraphSwitchable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -57,6 +59,7 @@ import static java.util.Collections.emptyList;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+@SuppressWarnings("deprecation")
 public class TestDatasetBackupService {
 
     public final DataAccessPointRegistry mockRegistry = mock(DataAccessPointRegistry.class);
@@ -180,7 +183,7 @@ public class TestDatasetBackupService {
         String datasetName = "dataset-name";
         DatasetGraphABAC dsgABAC = ABAC.authzDataset(DatasetGraphFactory.createTxnMem(),
                 null,
-                mock(LabelsStoreRocksDB.class),
+                mock(LegacyLabelsStoreRocksDB.class),
                 null,
                 null);
         DataAccessPoint dap = new DataAccessPoint(datasetName, DataService.newBuilder().dataset(dsgABAC).build());
@@ -234,7 +237,7 @@ public class TestDatasetBackupService {
         String datasetName = "dataset-name";
         DatasetGraphABAC dsgABAC = ABAC.authzDataset(DatasetGraphFactory.createTxnMem(),
                 null,
-                mock(LabelsStoreRocksDB.class),
+                mock(LegacyLabelsStoreRocksDB.class),
                 null,
                 null);
         DataAccessPoint dap = new DataAccessPoint("dataset-name", DataService.newBuilder().dataset(dsgABAC).build());
@@ -300,6 +303,39 @@ public class TestDatasetBackupService {
         assertEquals(0, DatasetBackupService_Test.getCallCount(BACKUP_LABELS));
     }
 
+    @Test
+    @DisplayName("Backup rejects a managed dataset when another maintenance operation is already active")
+    public void test_backup_rejects_when_managed_dataset_under_maintenance() throws Exception {
+        // given
+        String datasetName = "dataset-name";
+        DatasetGraphSwitchable managedDataset = createPersistentSwitchableDataset();
+        DataAccessPoint dap = new DataAccessPoint(datasetName, DataService.newBuilder().dataset(managedDataset).build());
+        when(mockRegistry.accessPoints()).thenReturn(List.of(dap));
+        Optional<DatasetMaintenanceRegistry.MaintenanceHandle> maintenance =
+                DatasetMaintenanceRegistry.begin(managedDataset, datasetName,
+                                                 DatasetMaintenanceRegistry.MaintenanceOperation.RESTORE);
+        assertTrue(maintenance.isPresent());
+
+        try {
+            // when
+            ObjectNode result = OBJECT_MAPPER.createObjectNode();
+            cut.backupDataset(datasetName, result);
+
+            // then
+            assertTrue(result.has("datasets"));
+            assertEquals(1, result.get("datasets").size());
+            JsonNode dataset = result.get("datasets").get(0);
+            assertEquals(datasetName, dataset.get("dataset-name").asText());
+            assertTrue(dataset.has("success"));
+            assertFalse(dataset.get("success").asBoolean());
+            assertTrue(dataset.get("reason").asText().contains("Another maintenance operation is already in progress"));
+            assertEquals(0, DatasetBackupService_Test.getCallCount(BACKUP_TDB));
+            assertEquals(0, DatasetBackupService_Test.getCallCount(BACKUP_LABELS));
+        } finally {
+            DatasetMaintenanceRegistry.end(maintenance.get());
+        }
+    }
+
 
     @Test
     @DisplayName("Happy path call of backup with ABAC and RocksDB labels entries")
@@ -308,7 +344,7 @@ public class TestDatasetBackupService {
         String datasetName = "dataset-name";
         DatasetGraphABAC dsgABAC = ABAC.authzDataset(DatasetGraphFactory.createTxnMem(),
                 null,
-                mock(LabelsStoreRocksDB.class),
+                mock(LegacyLabelsStoreRocksDB.class),
                 null,
                 null);
         DataAccessPoint dap = new DataAccessPoint("dataset-name", DataService.newBuilder().dataset(dsgABAC).build());
@@ -363,7 +399,7 @@ public class TestDatasetBackupService {
         String datasetName = "dataset-name";
         DatasetGraphABAC dsgABAC = ABAC.authzDataset(DatasetGraphFactory.createTxnMem(),
                 null,
-                mock(LabelsStoreRocksDB.class),
+                mock(LegacyLabelsStoreRocksDB.class),
                 null,
                 null);
         DataAccessPoint dap = new DataAccessPoint("dataset-name", DataService.newBuilder().dataset(dsgABAC).build());
@@ -408,7 +444,7 @@ public class TestDatasetBackupService {
         String datasetName2 = "dataset-include";
         DatasetGraphABAC dsgABAC = ABAC.authzDataset(DatasetGraphFactory.createTxnMem(),
                 null,
-                mock(LabelsStoreRocksDB.class),
+                mock(LegacyLabelsStoreRocksDB.class),
                 null,
                 null);
         DataAccessPoint dap = new DataAccessPoint("dataset-name", DataService.newBuilder().dataset(dsgABAC).build());
@@ -591,7 +627,7 @@ public class TestDatasetBackupService {
         String datasetName = "dataset-name";
         DatasetGraphABAC dsgABAC = ABAC.authzDataset(DatasetGraphFactory.createTxnMem(),
                 null,
-                mock(LabelsStoreRocksDB.class),
+                mock(LegacyLabelsStoreRocksDB.class),
                 null,
                 null);
         DataAccessPoint dap = new DataAccessPoint("dataset-name", DataService.newBuilder().dataset(dsgABAC).build());
@@ -653,7 +689,7 @@ public class TestDatasetBackupService {
     @DisplayName("Happy path for executing backup of Label Store")
     public void test_executeBackupLabelStore_happyPath() throws Exception {
         // given
-        LabelsStoreRocksDB mockRocksDB = mock(LabelsStoreRocksDB.class);
+        LegacyLabelsStoreRocksDB mockRocksDB = mock(LegacyLabelsStoreRocksDB.class);
         DatasetBackupService datasetBackupService = new DatasetBackupService(null);
         // when
         datasetBackupService.executeBackupLabelStore(mockRocksDB, "doesn't matter", RESULT_NODE);
@@ -666,7 +702,7 @@ public class TestDatasetBackupService {
     @DisplayName("Happy path for executing restore of Label Store")
     public void test_executeRestoreLabelStore_happyPath() {
         // given
-        LabelsStoreRocksDB mockRocksDB = mock(LabelsStoreRocksDB.class);
+        LegacyLabelsStoreRocksDB mockRocksDB = mock(LegacyLabelsStoreRocksDB.class);
         DatasetBackupService datasetBackupService = new DatasetBackupService(null);
         // when
         datasetBackupService.executeRestoreLabelStore(mockRocksDB, "doesn't matter", RESULT_NODE);
@@ -786,7 +822,7 @@ public class TestDatasetBackupService {
         assertTrue(labelsDir.mkdir());
         labelsDir.deleteOnExit();
 
-        LabelsStoreRocksDB mockRocksDbLabelStore = mock(LabelsStoreRocksDB.class);
+        LegacyLabelsStoreRocksDB mockRocksDbLabelStore = mock(LegacyLabelsStoreRocksDB.class);
         when(mockRocksDbLabelStore.getTransactional()).thenReturn(DatasetGraphFactory.createTxnMem());
 
 
@@ -863,7 +899,7 @@ public class TestDatasetBackupService {
         assertTrue(labelsDir.mkdir());
         labelsDir.deleteOnExit();
 
-        LabelsStoreRocksDB mockRocksDbLabelStore = mock(LabelsStoreRocksDB.class);
+        LegacyLabelsStoreRocksDB mockRocksDbLabelStore = mock(LegacyLabelsStoreRocksDB.class);
         when(mockRocksDbLabelStore.getTransactional()).thenReturn(DatasetGraphFactory.createTxnMem());
 
 
@@ -963,7 +999,7 @@ public class TestDatasetBackupService {
         assertTrue(secondLabelsDir.mkdir());
         secondLabelsDir.deleteOnExit();
 
-        LabelsStoreRocksDB mockRocksDbLabelStore = mock(LabelsStoreRocksDB.class);
+        LegacyLabelsStoreRocksDB mockRocksDbLabelStore = mock(LegacyLabelsStoreRocksDB.class);
         when(mockRocksDbLabelStore.getTransactional()).thenReturn(DatasetGraphFactory.createTxnMem());
 
 
@@ -1051,7 +1087,7 @@ public class TestDatasetBackupService {
         assertTrue(labelsDir.mkdir());
         labelsDir.deleteOnExit();
 
-        LabelsStoreRocksDB mockRocksDbLabelStore = mock(LabelsStoreRocksDB.class);
+        LegacyLabelsStoreRocksDB mockRocksDbLabelStore = mock(LegacyLabelsStoreRocksDB.class);
         when(mockRocksDbLabelStore.getTransactional()).thenReturn(DatasetGraphFactory.createTxnMem());
 
 
@@ -1077,7 +1113,7 @@ public class TestDatasetBackupService {
         assertTrue(result.has(datasetName));
         JsonNode dataset = result.get(datasetName);
         assertTrue(dataset.has("dataset-name"));
-        assertEquals(dataset.get("dataset-name").asText(), datasetName);
+        assertEquals(datasetName, dataset.get("dataset-name").asText());
 
         assertTrue(dataset.has("tdb"));
         JsonNode tdb = dataset.get("tdb");
@@ -1141,7 +1177,7 @@ public class TestDatasetBackupService {
         assertTrue(result.has(datasetName));
         JsonNode dataset = result.get(datasetName);
         assertTrue(dataset.has("dataset-name"));
-        assertEquals(dataset.get("dataset-name").asText(), datasetName);
+        assertEquals(datasetName, dataset.get("dataset-name").asText());
 
         assertTrue(dataset.has("tdb"));
         JsonNode tdb = dataset.get("tdb");
@@ -1208,7 +1244,7 @@ public class TestDatasetBackupService {
         assertTrue(result.has(datasetName));
         JsonNode dataset = result.get(datasetName);
         assertTrue(dataset.has("dataset-name"));
-        assertEquals(dataset.get("dataset-name").asText(), datasetName);
+        assertEquals(datasetName, dataset.get("dataset-name").asText());
 
         assertTrue(dataset.has("tdb"));
         JsonNode tdb = dataset.get("tdb");
@@ -1287,7 +1323,7 @@ public class TestDatasetBackupService {
         assertTrue(result.has(datasetName));
         JsonNode dataset = result.get(datasetName);
         assertTrue(dataset.has("dataset-name"));
-        assertEquals(dataset.get("dataset-name").asText(), datasetName);
+        assertEquals(datasetName, dataset.get("dataset-name").asText());
 
         assertTrue(dataset.has("tdb"));
         JsonNode tdb = dataset.get("tdb");
@@ -1341,7 +1377,7 @@ public class TestDatasetBackupService {
         assertTrue(labelsDir.mkdir());
         labelsDir.deleteOnExit();
 
-        LabelsStoreRocksDB mockRocksDbLabelStore = mock(LabelsStoreRocksDB.class);
+        LegacyLabelsStoreRocksDB mockRocksDbLabelStore = mock(LegacyLabelsStoreRocksDB.class);
         when(mockRocksDbLabelStore.getTransactional()).thenReturn(DatasetGraphFactory.createTxnMem());
 
         DatasetGraphABAC dsgABAC = ABAC.authzDataset(DatasetGraphFactory.createTxnMem(),
@@ -1369,7 +1405,7 @@ public class TestDatasetBackupService {
         assertTrue(result.has(datasetName));
         JsonNode dataset = result.get(datasetName);
         assertTrue(dataset.has("dataset-name"));
-        assertEquals(dataset.get("dataset-name").asText(), datasetName);
+        assertEquals(datasetName, dataset.get("dataset-name").asText());
 
         assertTrue(result.has("backup-success"));
         JsonNode backupSuccess = result.get("backup-success");
@@ -1410,7 +1446,7 @@ public class TestDatasetBackupService {
         assertTrue(labelsDir.mkdir());
         labelsDir.deleteOnExit();
 
-        LabelsStoreRocksDB mockRocksDbLabelStore = mock(LabelsStoreRocksDB.class);
+        LegacyLabelsStoreRocksDB mockRocksDbLabelStore = mock(LegacyLabelsStoreRocksDB.class);
         when(mockRocksDbLabelStore.getTransactional()).thenReturn(DatasetGraphFactory.createTxnMem());
 
         DataAccessPoint mockDAP = mock(DataAccessPoint.class);
@@ -1433,7 +1469,7 @@ public class TestDatasetBackupService {
         assertTrue(result.has(datasetName));
         JsonNode dataset = result.get(datasetName);
         assertTrue(dataset.has("dataset-name"));
-        assertEquals(dataset.get("dataset-name").asText(), datasetName);
+        assertEquals(datasetName, dataset.get("dataset-name").asText());
 
         assertTrue(result.has("backup-success"));
         assertEquals("false", result.get("backup-success").asText());
@@ -1468,7 +1504,7 @@ public class TestDatasetBackupService {
         assertTrue(labelsDir.mkdir());
         labelsDir.deleteOnExit();
 
-        LabelsStoreRocksDB mockRocksDbLabelStore = mock(LabelsStoreRocksDB.class);
+        LegacyLabelsStoreRocksDB mockRocksDbLabelStore = mock(LegacyLabelsStoreRocksDB.class);
         when(mockRocksDbLabelStore.getTransactional()).thenReturn(DatasetGraphFactory.createTxnMem());
 
         DataAccessPoint mockDAP = mock(DataAccessPoint.class);
@@ -1493,13 +1529,67 @@ public class TestDatasetBackupService {
         assertTrue(result.has(datasetName));
         JsonNode dataset = result.get(datasetName);
         assertTrue(dataset.has("dataset-name"));
-        assertEquals(dataset.get("dataset-name").asText(), datasetName);
+        assertEquals(datasetName, dataset.get("dataset-name").asText());
 
         assertTrue(result.has("backup-success"));
         assertEquals("false", result.get("backup-success").asText());
 
         assertEquals(0, DatasetBackupService_Test.getCallCount(RESTORE_TDB));
         assertEquals(0, DatasetBackupService_Test.getCallCount(RESTORE_LABELS));
+    }
+
+    @Test
+    @DisplayName("Restore rejects a managed dataset when another maintenance operation is already active")
+    public void test_restoreDatasets_rejects_when_managed_dataset_under_maintenance() throws Exception {
+        // given
+        String restoreID = "1";
+        String datasetName = "dataset-name";
+        File newDir = new File(baseDir.toString() + "/" + restoreID);
+        assertTrue(newDir.mkdir());
+        newDir.deleteOnExit();
+
+        File newDataset = new File(newDir + "/" + datasetName);
+        assertTrue(newDataset.mkdir());
+        newDataset.deleteOnExit();
+
+        File tdbDir = new File(newDataset + "/tdb/");
+        assertTrue(tdbDir.mkdir());
+        tdbDir.deleteOnExit();
+
+        File tdbFile = new File(newDataset + "/tdb/" + datasetName + "_backup.nq.gz");
+        assertTrue(tdbFile.createNewFile());
+        tdbFile.deleteOnExit();
+
+        DatasetGraphSwitchable managedDataset = createPersistentSwitchableDataset();
+        DataAccessPoint dap = new DataAccessPoint(datasetName, DataService.newBuilder().dataset(managedDataset).build());
+        when(mockRegistry.get(datasetName)).thenReturn(dap);
+        when(mockRegistry.accessPoints()).thenReturn(List.of(dap));
+        Optional<DatasetMaintenanceRegistry.MaintenanceHandle> maintenance =
+                DatasetMaintenanceRegistry.begin(managedDataset, datasetName,
+                                                 DatasetMaintenanceRegistry.MaintenanceOperation.BACKUP);
+        assertTrue(maintenance.isPresent());
+
+        try {
+            // when
+            ObjectNode result = OBJECT_MAPPER.createObjectNode();
+            cut.restoreDatasets(restoreID, result);
+
+            // then
+            assertTrue(result.has("success"));
+            assertFalse(result.get("success").asBoolean());
+            assertTrue(result.has(datasetName));
+            JsonNode dataset = result.get(datasetName);
+            assertEquals(datasetName, dataset.get("dataset-name").asText());
+            assertTrue(dataset.has("success"));
+            assertFalse(dataset.get("success").asBoolean());
+            assertTrue(dataset.get("reason").asText().contains("Another maintenance operation is already in progress"));
+            assertTrue(result.has("backup-success"));
+            assertEquals("false", result.get("backup-success").asText());
+            assertEquals(0, DatasetBackupService_Test.getCallCount(RESTORE_TDB));
+            assertEquals(0, DatasetBackupService_Test.getCallCount(RESTORE_LABELS));
+        } finally {
+            DatasetMaintenanceRegistry.end(maintenance.get());
+        }
     }
 
 
@@ -1547,7 +1637,7 @@ public class TestDatasetBackupService {
         assertTrue(result.has(datasetName));
         JsonNode dataset = result.get(datasetName);
         assertTrue(dataset.has("dataset-name"));
-        assertEquals(dataset.get("dataset-name").asText(), datasetName);
+        assertEquals(datasetName, dataset.get("dataset-name").asText());
 
         assertTrue(dataset.has("tdb"));
         JsonNode tdb = dataset.get("tdb");
@@ -1619,7 +1709,7 @@ public class TestDatasetBackupService {
         assertTrue(result.has(datasetName));
         JsonNode dataset = result.get(datasetName);
         assertTrue(dataset.has("dataset-name"));
-        assertEquals(dataset.get("dataset-name").asText(), datasetName);
+        assertEquals(datasetName, dataset.get("dataset-name").asText());
 
         assertTrue(dataset.has("tdb"));
         JsonNode tdb = dataset.get("tdb");
@@ -1698,7 +1788,7 @@ public class TestDatasetBackupService {
         assertTrue(result.has(datasetName));
         JsonNode dataset = result.get(datasetName);
         assertTrue(dataset.has("dataset-name"));
-        assertEquals(dataset.get("dataset-name").asText(), datasetName);
+        assertEquals(datasetName, dataset.get("dataset-name").asText());
 
         assertTrue(dataset.has("tdb"));
         JsonNode tdb = dataset.get("tdb");
@@ -1752,7 +1842,7 @@ public class TestDatasetBackupService {
         assertTrue(labelsDir.mkdir());
         labelsDir.deleteOnExit();
 
-        LabelsStoreRocksDB mockRocksDbLabelStore = mock(LabelsStoreRocksDB.class);
+        LegacyLabelsStoreRocksDB mockRocksDbLabelStore = mock(LegacyLabelsStoreRocksDB.class);
         when(mockRocksDbLabelStore.getTransactional()).thenReturn(DatasetGraphFactory.createTxnMem());
 
         DatasetGraphABAC dsgABAC = ABAC.authzDataset(DatasetGraphFactory.createTxnMem(),
@@ -1780,7 +1870,7 @@ public class TestDatasetBackupService {
         assertTrue(result.has(datasetName));
         JsonNode dataset = result.get(datasetName);
         assertTrue(dataset.has("dataset-name"));
-        assertEquals(dataset.get("dataset-name").asText(), datasetName);
+        assertEquals(datasetName, dataset.get("dataset-name").asText());
 
         assertTrue(dataset.has("tdb"));
         JsonNode tdb = dataset.get("tdb");
@@ -1819,7 +1909,7 @@ public class TestDatasetBackupService {
         assertTrue(newDataset.mkdir());
         newDataset.deleteOnExit();
 
-        LabelsStoreRocksDB mockRocksDbLabelStore = mock(LabelsStoreRocksDB.class);
+        LegacyLabelsStoreRocksDB mockRocksDbLabelStore = mock(LegacyLabelsStoreRocksDB.class);
         when(mockRocksDbLabelStore.getTransactional()).thenReturn(DatasetGraphFactory.createTxnMem());
 
         DatasetGraphABAC dsgABAC = ABAC.authzDataset(DatasetGraphFactory.createTxnMem(),
@@ -1844,7 +1934,7 @@ public class TestDatasetBackupService {
         assertTrue(result.has(datasetName));
         JsonNode dataset = result.get(datasetName);
         assertTrue(dataset.has("dataset-name"));
-        assertEquals(dataset.get("dataset-name").asText(), datasetName);
+        assertEquals(datasetName, dataset.get("dataset-name").asText());
 
         assertTrue(dataset.has("tdb"));
         JsonNode tdb = dataset.get("tdb");
@@ -1887,7 +1977,7 @@ public class TestDatasetBackupService {
         assertTrue(newDataset.mkdir());
         newDataset.deleteOnExit();
 
-        LabelsStoreRocksDB mockRocksDbLabelStore = mock(LabelsStoreRocksDB.class);
+        LegacyLabelsStoreRocksDB mockRocksDbLabelStore = mock(LegacyLabelsStoreRocksDB.class);
         when(mockRocksDbLabelStore.getTransactional()).thenReturn(DatasetGraphFactory.createTxnMem());
 
         DatasetGraphABAC dsgABAC = ABAC.authzDataset(DatasetGraphFactory.createTxnMem(),
@@ -1911,7 +2001,7 @@ public class TestDatasetBackupService {
         assertTrue(result.has(datasetName));
         JsonNode dataset = result.get(datasetName);
         assertTrue(dataset.has("dataset-name"));
-        assertEquals(dataset.get("dataset-name").asText(), datasetName);
+        assertEquals(datasetName, dataset.get("dataset-name").asText());
 
         assertTrue(dataset.has("tdb"));
         JsonNode tdb = dataset.get("tdb");
@@ -1966,7 +2056,7 @@ public class TestDatasetBackupService {
         assertTrue(labelsDir.mkdir());
         labelsDir.deleteOnExit();
 
-        LabelsStoreRocksDB mockRocksDbLabelStore = mock(LabelsStoreRocksDB.class);
+        LegacyLabelsStoreRocksDB mockRocksDbLabelStore = mock(LegacyLabelsStoreRocksDB.class);
         when(mockRocksDbLabelStore.getTransactional()).thenReturn(DatasetGraphFactory.createTxnMem());
 
 
@@ -1991,7 +2081,7 @@ public class TestDatasetBackupService {
         assertTrue(result.has(datasetName));
         JsonNode dataset = result.get(datasetName);
         assertTrue(dataset.has("dataset-name"));
-        assertEquals(dataset.get("dataset-name").asText(), datasetName);
+        assertEquals(datasetName, dataset.get("dataset-name").asText());
 
         assertTrue(dataset.has("tdb"));
         JsonNode tdb = dataset.get("tdb");
@@ -2042,7 +2132,7 @@ public class TestDatasetBackupService {
         assertTrue(labelsDir.mkdir());
         labelsDir.deleteOnExit();
 
-        LabelsStoreRocksDB mockRocksDbLabelStore = mock(LabelsStoreRocksDB.class);
+        LegacyLabelsStoreRocksDB mockRocksDbLabelStore = mock(LegacyLabelsStoreRocksDB.class);
         when(mockRocksDbLabelStore.getTransactional()).thenReturn(DatasetGraphFactory.createTxnMem());
 
 
@@ -2067,7 +2157,7 @@ public class TestDatasetBackupService {
         assertTrue(result.has(datasetName));
         JsonNode dataset = result.get(datasetName);
         assertTrue(dataset.has("dataset-name"));
-        assertEquals(dataset.get("dataset-name").asText(), datasetName);
+        assertEquals(datasetName, dataset.get("dataset-name").asText());
 
         assertTrue(dataset.has("tdb"));
         JsonNode tdb = dataset.get("tdb");
@@ -2118,7 +2208,7 @@ public class TestDatasetBackupService {
         assertTrue(labelsDir.mkdir());
         labelsDir.deleteOnExit();
 
-        LabelsStoreRocksDB mockRocksDbLabelStore = mock(LabelsStoreRocksDB.class);
+        LegacyLabelsStoreRocksDB mockRocksDbLabelStore = mock(LegacyLabelsStoreRocksDB.class);
         when(mockRocksDbLabelStore.getTransactional()).thenReturn(DatasetGraphFactory.createTxnMem());
 
 
@@ -2174,7 +2264,7 @@ public class TestDatasetBackupService {
         assertTrue(labelsDir.mkdir());
         labelsDir.deleteOnExit();
 
-        LabelsStoreRocksDB mockRocksDbLabelStore = mock(LabelsStoreRocksDB.class);
+        LegacyLabelsStoreRocksDB mockRocksDbLabelStore = mock(LegacyLabelsStoreRocksDB.class);
         when(mockRocksDbLabelStore.getTransactional()).thenReturn(DatasetGraphFactory.createTxnMem());
 
 
@@ -2228,7 +2318,7 @@ public class TestDatasetBackupService {
         assertTrue(labelsDir.mkdir());
         labelsDir.deleteOnExit();
 
-        LabelsStoreRocksDB mockRocksDbLabelStore = mock(LabelsStoreRocksDB.class);
+        LegacyLabelsStoreRocksDB mockRocksDbLabelStore = mock(LegacyLabelsStoreRocksDB.class);
         when(mockRocksDbLabelStore.getTransactional()).thenReturn(DatasetGraphFactory.createTxnMem());
 
 
@@ -2671,7 +2761,7 @@ public class TestDatasetBackupService {
         // given
         DatasetGraphABAC dsgABAC = ABAC.authzDataset(DatasetGraphFactory.createTxnMem(),
                 null,
-                mock(LabelsStoreRocksDB.class),
+                mock(LegacyLabelsStoreRocksDB.class),
                 null,
                 null);
         DataAccessPoint dap = new DataAccessPoint("dataset-name", DataService.newBuilder().dataset(dsgABAC).build());
@@ -2776,5 +2866,13 @@ public class TestDatasetBackupService {
         assertTrue(newDir.mkdir());
         newDir.deleteOnExit();
         return newDir;
+    }
+
+    private DatasetGraphSwitchable createPersistentSwitchableDataset() throws IOException {
+        Path container = Files.createTempDirectory(baseDir, "managed-dsg");
+        Path dataDir = container.resolve("Data-0001");
+        Files.createDirectories(dataDir);
+        Files.writeString(dataDir.resolve("marker.txt"), "x");
+        return new DatasetGraphSwitchable(container, null, DatasetGraphFactory.createTxnMem());
     }
 }

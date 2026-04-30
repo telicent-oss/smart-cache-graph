@@ -21,8 +21,8 @@ GRAPH security:labels {
     [ security:pattern 'dbr:Munich dbo:country dbr:Germany'  ; security:label "everyone" ] .
 
     ## Multiple labels.
-    [ security:pattern 'dbr:Birmingham dbo:populationTotal 2919600'  ; security:label "admin", "census" ] .
-    [ security:pattern 'dbr:Bordeaux dbo:populationTotal 814049'  ; security:label "admin", "census" ] .
-    [ security:pattern 'dbr:Munich dbo:populationTotal 1558395'  ; security:label "admin", "census" ] .
+    [ security:pattern 'dbr:Birmingham dbo:populationTotal 2919600'  ; security:label "admin && census" ] .
+    [ security:pattern 'dbr:Bordeaux dbo:populationTotal 814049'  ; security:label "admin && census" ] .
+    [ security:pattern 'dbr:Munich dbo:populationTotal 1558395'  ; security:label "admin && census" ] .
 
 }

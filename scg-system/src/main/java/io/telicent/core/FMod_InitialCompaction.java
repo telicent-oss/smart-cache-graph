@@ -4,7 +4,8 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.telicent.jena.abac.core.DatasetGraphABAC;
 import io.telicent.jena.abac.labels.LabelsStore;
-import io.telicent.jena.abac.labels.LabelsStoreRocksDB;
+import io.telicent.jena.abac.labels.store.rocksdb.legacy.LegacyLabelsStoreRocksDB;
+import io.telicent.smart.cache.storage.CompactCapable;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -67,6 +68,7 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
      * needed or not
      */
     static final Map<String, Long> SIZES = new ConcurrentHashMap<>();
+    static final Map<DatasetGraphSwitchable, CompactionIndicator> CURRENT_COMPACTIONS = new ConcurrentHashMap<>();
 
     enum CompactionStatus {
         COMPACTED,
@@ -323,36 +325,46 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
                 LOG.info("[Compaction] Ignoring for {} due to potential deadlock operation", name);
                 return CompactionStatus.SKIPPED_LOCK_CONTENTION;
             }
+            LOG.info("[Compaction] >>>> Start compact {}, current size is {} ({})", name,
+                     humanReadableSize(sizeBefore), sizeBefore);
+            Instant startedAt = Instant.now();
+            Optional<DatasetMaintenanceRegistry.MaintenanceHandle> maintenance =
+                    DatasetMaintenanceRegistry.begin(datasetGraph, name,
+                                                    DatasetMaintenanceRegistry.MaintenanceOperation.COMPACTION);
+            if (maintenance.isEmpty()) {
+                LOG.info("[Compaction] Ignoring for {} due to another maintenance operation already being in progress", name);
+                return CompactionStatus.SKIPPED_LOCK_CONTENTION;
+            }
+            updateCompactionIndicator(dsg, new CompactionIndicator(CompactionIndicatorState.IN_PROGRESS, name,
+                                                                   startedAt.toString(), startedAt.toString(),
+                                                                   sizeBefore, -1, null));
+            Timer timer = new Timer();
+            timer.startTimer();
+            CompactionIndicator successIndicator = null;
             try {
-                LOG.info("[Compaction] >>>> Start compact {}, current size is {} ({})", name,
-                         humanReadableSize(sizeBefore), sizeBefore);
-                Instant startedAt = Instant.now();
-                updateCompactionIndicator(dsg, new CompactionIndicator(CompactionIndicatorState.IN_PROGRESS, name,
-                                                                       startedAt.toString(), startedAt.toString(),
-                                                                       sizeBefore, -1, null));
-                Timer timer = new Timer();
-                timer.startTimer();
-                try {
-                    DatabaseMgr.compact(dsg, DELETE_OLD);
-                } catch (Throwable t) {
-                    updateCompactionIndicator(dsg,
-                                              new CompactionIndicator(CompactionIndicatorState.FAILED, name,
-                                                                      startedAt.toString(), Instant.now().toString(),
-                                                                      sizeBefore, -1, summarizeThrowable(t)));
-                    throw t;
-                }
+                DatabaseMgr.compact(dsg, DELETE_OLD);
                 long sizeAfter = findDatabaseSize(dsg);
-                updateCompactionIndicator(dsg, new CompactionIndicator(CompactionIndicatorState.SUCCEEDED, name,
-                                                                       startedAt.toString(), Instant.now().toString(),
-                                                                       sizeBefore, sizeAfter, null));
                 LOG.info("[Compaction] <<<< Finish compact {}. Took {} seconds.  Compacted size is {} ({})",
                          name, Timer.timeStr(timer.endTimer()), humanReadableSize(sizeAfter), sizeAfter);
                 SIZES.put(name, sizeAfter);
                 updateCompactionResultsFile(dsg, sizeAfter);
                 compactLabels(datasetGraph);
+                successIndicator = new CompactionIndicator(CompactionIndicatorState.SUCCEEDED, name,
+                                                           startedAt.toString(), Instant.now().toString(),
+                                                           sizeBefore, sizeAfter, null);
                 return CompactionStatus.COMPACTED;
+            } catch (Throwable t) {
+                updateCompactionIndicator(dsg,
+                                          new CompactionIndicator(CompactionIndicatorState.FAILED, name,
+                                                                  startedAt.toString(), Instant.now().toString(),
+                                                                  sizeBefore, -1, summarizeThrowable(t)));
+                throw t;
             } finally {
                 dsg.finishExclusiveMode();
+                DatasetMaintenanceRegistry.end(maintenance.get());
+                if (successIndicator != null) {
+                    updateCompactionIndicator(dsg, successIndicator);
+                }
             }
         } else {
             LOG.debug("Compaction not required for {} as not TDB2", name);
@@ -452,6 +464,16 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
         return Optional.empty();
     }
 
+    static Optional<CompactionIndicator> findCurrentCompactionIndicator(DatasetGraphSwitchable dsg) {
+        return Optional.ofNullable(CURRENT_COMPACTIONS.get(dsg));
+    }
+
+    static boolean isCompactionInProgress(DatasetGraphSwitchable dsg) {
+        return DatasetMaintenanceRegistry.findCurrentMaintenance(dsg)
+                .map(indicator -> indicator.operation() == DatasetMaintenanceRegistry.MaintenanceOperation.COMPACTION)
+                .orElse(false);
+    }
+
     static File getCompactionIndicatorFile(DatasetGraphSwitchable switchable) {
         return new File(switchable.getContainerPath().toFile(), ".compaction-status");
     }
@@ -488,18 +510,21 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
         }
     }
 
+    @SuppressWarnings("deprecation")
     public static void compactLabels(DatasetGraph dsg) {
         if (dsg instanceof DatasetGraphABAC abac) {
             LabelsStore labelsStore = abac.labelsStore();
-            if (labelsStore instanceof LabelsStoreRocksDB rocksDB) {
-                Timer timer = new Timer();
-                timer.startTimer();
-                LOG.info("[Compaction] <<<< Start label store compaction.");
+            Timer timer = new Timer();
+            timer.startTimer();
+            LOG.info("[Compaction] <<<< Start label store compaction.");
+            if (labelsStore instanceof LegacyLabelsStoreRocksDB rocksDB) {
                 rocksDB.compact();
-                LOG.info("[Compaction] <<<< Finish label store compaction. Took {} seconds.",
-                         Timer.timeStr(timer.endTimer()));
-                return;
+            } else if (labelsStore instanceof CompactCapable compactCapable) {
+                compactCapable.compact();
             }
+            LOG.info("[Compaction] <<<< Finish label store compaction. Took {} seconds.",
+                     Timer.timeStr(timer.endTimer()));
+            return;
         }
         LOG.info("[Compaction] <<<< Label store compaction not needed.");
     }
@@ -523,6 +548,8 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
     }
 
     private static void updateCompactionIndicator(DatasetGraphSwitchable dsg, CompactionIndicator indicator) {
+        CURRENT_COMPACTIONS.put(dsg, indicator);
+
         Properties properties = new Properties();
         properties.setProperty("state", indicator.state().name());
         properties.setProperty("dataset", indicator.datasetName());

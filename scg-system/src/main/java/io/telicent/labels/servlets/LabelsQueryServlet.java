@@ -56,7 +56,7 @@ public class LabelsQueryServlet extends HttpServlet {
         ArrayNode resultNodeList = OBJECT_MAPPER.createArrayNode();
         tripleQueryList.forEach(triple -> {
             List<TripleLabels> results = processTriple(triple);
-            results.forEach(tripleLabel -> resultNodeList.add(tripleLabel.toJSONNode()));
+            results.forEach(r -> resultNodeList.add(r.toJSONNode()));
         });
 
         return resultNodeList;

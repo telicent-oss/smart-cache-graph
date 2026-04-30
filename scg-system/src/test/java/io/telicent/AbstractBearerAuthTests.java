@@ -1,6 +1,7 @@
 package io.telicent;
 
 import io.jsonwebtoken.Jwts;
+import io.telicent.jena.abac.labels.Labels;
 import org.apache.commons.lang3.Strings;
 import org.apache.jena.atlas.lib.FileOps;
 import org.apache.jena.fuseki.Fuseki;
@@ -43,6 +44,16 @@ public abstract class AbstractBearerAuthTests {
         if (null != server) {
             server.stop();
         }
+
+        // NB - Have to close any open labels stores otherwise we can interfere with other tests that use the same
+        //      configuration file
+        Labels.rocks.forEach((f, labels) -> {
+            try {
+                labels.close();
+            } catch (Exception e) {
+                // Ignore
+            }
+        });
     }
 
     @Test
