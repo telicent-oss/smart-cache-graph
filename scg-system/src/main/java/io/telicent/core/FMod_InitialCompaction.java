@@ -1,5 +1,7 @@
 package io.telicent.core;
 
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.telicent.jena.abac.core.DatasetGraphABAC;
 import io.telicent.jena.abac.labels.LabelsStore;
 import io.telicent.jena.abac.labels.LabelsStoreRocksDB;
@@ -35,17 +37,27 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.Instant;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+import static io.telicent.backup.utils.JsonFileUtils.OBJECT_MAPPER;
+import static io.telicent.utils.ServletUtils.processResponse;
 
 public class FMod_InitialCompaction implements FusekiAutoModule {
 
     public static final Logger LOG = LoggerFactory.getLogger(FMod_InitialCompaction.class);
+    private static final String ALL_DATASETS_SCOPE = "__ALL_DATASETS__";
+    private final CompactionJobManager jobManager = new CompactionJobManager();
     final Set<String> datasets = new HashSet<>();
     static final boolean DELETE_OLD = true;
     public static final String DISABLE_INITIAL_COMPACTION = "DISABLE_INITIAL_COMPACTION";
@@ -74,6 +86,143 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
                                       String updatedAt, long sizeBefore, long sizeAfter, String error) {
     }
 
+    record CompactionOperationResponse(int statusCode, ObjectNode body) {
+    }
+
+    private static final class CompactionJobManager {
+
+        private static final String STATUS_PENDING = "PENDING";
+        private static final String STATUS_RUNNING = "RUNNING";
+        private static final String STATUS_SUCCEEDED = "SUCCEEDED";
+        private static final String STATUS_FAILED = "FAILED";
+
+        private final Map<String, CompactionJob> jobs = new ConcurrentHashMap<>();
+        private final ExecutorService executor = Executors.newSingleThreadExecutor(r -> {
+            final Thread thread = new Thread(r, "scg-compaction-jobs");
+            thread.setDaemon(true);
+            return thread;
+        });
+
+        ObjectNode submit(final String scope,
+                          final String operation,
+                          final String statusPathPrefix,
+                          final Callable<CompactionOperationResponse> task) {
+            final CompactionJob job = new CompactionJob(scope, UUID.randomUUID().toString(), operation, statusPathPrefix);
+            this.jobs.put(job.jobId, job);
+            this.executor.submit(() -> {
+                try {
+                    job.markRunning();
+                    final CompactionOperationResponse response = task.call();
+                    if (response.statusCode() >= 200 && response.statusCode() < 300) {
+                        job.markSucceeded(response);
+                    } else {
+                        job.markFailed(response);
+                    }
+                } catch (Exception e) {
+                    LOG.error("Unhandled compaction job failure for {}", operation, e);
+                    job.markFailed(compactionFailureResponse(e.getMessage() != null ? e.getMessage() : e.getClass().getName()));
+                }
+            });
+            return job.submission();
+        }
+
+        ArrayNode listJobs(final String scope) {
+            final ArrayNode jobsArray = OBJECT_MAPPER.createArrayNode();
+            this.jobs.values()
+                     .stream()
+                     .filter(job -> job.scope.equals(scope))
+                     .sorted(Comparator.comparing((CompactionJob job) -> job.submittedAt).reversed())
+                     .map(CompactionJob::status)
+                     .forEach(jobsArray::add);
+            return jobsArray;
+        }
+
+        Optional<ObjectNode> getJob(final String scope, final String jobId) {
+            return Optional.ofNullable(this.jobs.get(jobId))
+                           .filter(job -> job.scope.equals(scope))
+                           .map(CompactionJob::status);
+        }
+
+        private static final class CompactionJob {
+            private final String scope;
+            private final String jobId;
+            private final String operation;
+            private final String statusPath;
+            private final Instant submittedAt = Instant.now();
+            private volatile String status = STATUS_PENDING;
+            private volatile String message = "Waiting to run.";
+            private volatile Instant startedAt;
+            private volatile Instant completedAt;
+            private volatile Integer httpStatus;
+            private volatile ObjectNode result;
+
+            private CompactionJob(final String scope,
+                                  final String jobId,
+                                  final String operation,
+                                  final String statusPathPrefix) {
+                this.scope = scope;
+                this.jobId = jobId;
+                this.operation = operation;
+                this.statusPath = statusPathPrefix + jobId;
+            }
+
+            private void markRunning() {
+                this.status = STATUS_RUNNING;
+                this.message = "Job is running.";
+                this.startedAt = Instant.now();
+            }
+
+            private void markSucceeded(final CompactionOperationResponse response) {
+                this.status = STATUS_SUCCEEDED;
+                this.completedAt = Instant.now();
+                this.httpStatus = response.statusCode();
+                this.result = response.body().deepCopy();
+                this.message = "Job completed successfully.";
+            }
+
+            private void markFailed(final CompactionOperationResponse response) {
+                this.status = STATUS_FAILED;
+                this.completedAt = Instant.now();
+                this.httpStatus = response.statusCode();
+                this.result = response.body().deepCopy();
+                this.message = response.body().has("error") ? response.body().get("error").asText() : "Job failed.";
+            }
+
+            private ObjectNode submission() {
+                final ObjectNode node = OBJECT_MAPPER.createObjectNode();
+                node.put("job-id", this.jobId);
+                node.put("operation", this.operation);
+                node.put("status", this.status);
+                node.put("status-path", this.statusPath);
+                node.put("message", "Job accepted for asynchronous execution.");
+                return node;
+            }
+
+            private ObjectNode status() {
+                final ObjectNode node = OBJECT_MAPPER.createObjectNode();
+                node.put("job-id", this.jobId);
+                node.put("operation", this.operation);
+                node.put("status", this.status);
+                node.put("status-path", this.statusPath);
+                node.put("message", this.message);
+                node.put("submitted-at", this.submittedAt.toString());
+                if (this.startedAt != null) {
+                    node.put("started-at", this.startedAt.toString());
+                }
+                if (this.completedAt != null) {
+                    node.put("completed-at", this.completedAt.toString());
+                }
+                if (this.httpStatus != null) {
+                    node.put("http-status", this.httpStatus);
+                }
+                if (this.result != null) {
+                    node.set("result", this.result.deepCopy());
+                }
+                return node;
+            }
+        }
+    }
+
     @Override
     public String name() {
         return "Initial Compaction";
@@ -88,7 +237,8 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
     @Override
     public void configured(FusekiServer.Builder serverBuilder, DataAccessPointRegistry dapRegistry, Model configModel) {
         // Create a new dataset endpoint for compacting all datasets
-        serverBuilder.addServlet("/$/compactall", new CompactAllServlet(dapRegistry));
+        serverBuilder.addServlet("/$/compactall", new CompactAllServlet(dapRegistry, this.jobManager));
+        serverBuilder.addServlet("/$/compaction/jobs/all/*", new CompactionJobsServlet(this.jobManager, ALL_DATASETS_SCOPE));
 
         if (dapRegistry != null) {
             // Create a new endpoint for compacting a single dataset
@@ -96,7 +246,9 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
                 DataService dataService = dataAccessPoint.getDataService();
 
                 serverBuilder.addServlet("/$/compact" + dataAccessPoint.getName(),
-                                         new CompactOneServlet(dataService.getDataset(), dataAccessPoint.getName()));
+                                         new CompactOneServlet(dataService.getDataset(), dataAccessPoint.getName(), this.jobManager));
+                serverBuilder.addServlet("/$/compaction/jobs" + dataAccessPoint.getName() + "/*",
+                                         new CompactionJobsServlet(this.jobManager, dataAccessPoint.getName()));
             }
         }
     }
@@ -430,102 +582,157 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
     private static class CompactOneServlet extends HttpServlet {
         private final DatasetGraph dsg;
         private final String datasetName;
+        private final CompactionJobManager jobManager;
 
-        public CompactOneServlet(DatasetGraph dsg, String datasetName) {
+        public CompactOneServlet(DatasetGraph dsg, String datasetName, CompactionJobManager jobManager) {
             this.dsg = dsg;
             this.datasetName = datasetName;
+            this.jobManager = jobManager;
         }
 
         @Override
         public void doPost(HttpServletRequest req, HttpServletResponse res) {
-            try {
-                CompactionStatus outcome = compactDatasetGraphDatabase(this.dsg, this.datasetName);
-                writeCompactionSummaryResponse(res, Map.of(this.datasetName, outcome));
-            } catch (Throwable t) {
-                FmtLog.error(Fuseki.configLog, "Error while compacting dataset " + this.datasetName, t);
-                String details = compactionFailureDetails(this.datasetName, t);
-                ServletOps.errorOccurred(details);
+            if (Boolean.parseBoolean(req.getParameter("async"))) {
+                res.setStatus(HttpServletResponse.SC_ACCEPTED);
+                processResponse(res,
+                                this.jobManager.submit(this.datasetName,
+                                                       "COMPACT_DATASET",
+                                                       "/$/compaction/jobs" + this.datasetName + "/",
+                                                       () -> executeCompactOne(this.dsg, this.datasetName)));
+                return;
             }
+            writeSyncResponse(res, executeCompactOne(this.dsg, this.datasetName));
         }
     }
 
     private static class CompactAllServlet extends HttpServlet {
         private final DataAccessPointRegistry dapRegistry;
+        private final CompactionJobManager jobManager;
 
-        public CompactAllServlet(DataAccessPointRegistry dapRegistry) {
+        public CompactAllServlet(DataAccessPointRegistry dapRegistry, CompactionJobManager jobManager) {
             this.dapRegistry = dapRegistry;
+            this.jobManager = jobManager;
         }
 
         @Override
         public void doPost(HttpServletRequest req, HttpServletResponse res) {
-            if (dapRegistry == null) {
-                ServletOps.errorOccurred("No DataAccessPoint registry configured");
+            if (Boolean.parseBoolean(req.getParameter("async"))) {
+                res.setStatus(HttpServletResponse.SC_ACCEPTED);
+                processResponse(res,
+                                this.jobManager.submit(ALL_DATASETS_SCOPE,
+                                                       "COMPACT_ALL_DATASETS",
+                                                       "/$/compaction/jobs/all/",
+                                                       () -> executeCompactAll(this.dapRegistry)));
                 return;
             }
-            Map<String, CompactionStatus> outcomes = new LinkedHashMap<>();
-            Map<String, String> failures = new LinkedHashMap<>();
-            // Iterate over all registered datasets
-            for (DataAccessPoint dataAccessPoint : dapRegistry.accessPoints()) {
-                DataService dataService = dataAccessPoint.getDataService();
-                String datasetName = dataAccessPoint.getName();
-                try {
-                    CompactionStatus outcome = compactDatasetGraphDatabase(dataService.getDataset(), datasetName);
-                    outcomes.put(datasetName, outcome);
-                } catch (Throwable t) {
-                    failures.put(datasetName, t.getMessage() != null ? t.getMessage() : t.getClass().getName());
-                    FmtLog.error(Fuseki.configLog, "Error while compacting dataset " + datasetName, t);
-                }
-            }
-
-            if (!failures.isEmpty()) {
-                StringBuilder details = new StringBuilder("Compaction failed for one or more datasets: ");
-                boolean first = true;
-                for (Map.Entry<String, String> entry : failures.entrySet()) {
-                    if (!first) {
-                        details.append("; ");
-                    }
-                    first = false;
-                    details.append(entry.getKey()).append("=").append(entry.getValue());
-                }
-                FmtLog.error(Fuseki.configLog, details.toString());
-                ServletOps.errorOccurred(details.toString());
-                return;
-            }
-
-            writeCompactionSummaryResponse(res, outcomes);
+            writeSyncResponse(res, executeCompactAll(this.dapRegistry));
         }
 
     }
 
-    private static void writeCompactionSummaryResponse(HttpServletResponse res, Map<String, CompactionStatus> outcomes) {
-        res.setStatus(HttpServletResponse.SC_OK);
+    private static final class CompactionJobsServlet extends HttpServlet {
+        private final CompactionJobManager jobManager;
+        private final String scope;
+
+        private CompactionJobsServlet(final CompactionJobManager jobManager, final String scope) {
+            this.jobManager = jobManager;
+            this.scope = scope;
+        }
+
+        @Override
+        protected void doGet(final HttpServletRequest req, final HttpServletResponse res) {
+            final ObjectNode resultNode = OBJECT_MAPPER.createObjectNode();
+            final String pathInfo = req.getPathInfo();
+            if (pathInfo == null || pathInfo.isBlank() || "/".equals(pathInfo)) {
+                resultNode.set("jobs", this.jobManager.listJobs(this.scope));
+                processResponse(res, resultNode);
+                return;
+            }
+
+            final String jobId = pathInfo.startsWith("/") ? pathInfo.substring(1) : pathInfo;
+            this.jobManager.getJob(this.scope, jobId).ifPresentOrElse(job -> {
+                resultNode.set("job", job);
+                processResponse(res, resultNode);
+            }, () -> {
+                res.setStatus(HttpServletResponse.SC_NOT_FOUND);
+                resultNode.put("error", "Unknown compaction job id: " + jobId);
+                processResponse(res, resultNode);
+            });
+        }
+    }
+
+    private static CompactionOperationResponse executeCompactOne(final DatasetGraph dsg, final String datasetName) {
+        try {
+            final CompactionStatus outcome = compactDatasetGraphDatabase(dsg, datasetName);
+            return new CompactionOperationResponse(HttpServletResponse.SC_OK,
+                                                   toCompactionSummaryJson(Map.of(datasetName, outcome)));
+        } catch (Throwable t) {
+            FmtLog.error(Fuseki.configLog, "Error while compacting dataset " + datasetName, t);
+            return compactionFailureResponse(compactionFailureDetails(datasetName, t));
+        }
+    }
+
+    private static CompactionOperationResponse executeCompactAll(final DataAccessPointRegistry dapRegistry) {
+        if (dapRegistry == null) {
+            return compactionFailureResponse("No DataAccessPoint registry configured");
+        }
+
+        final Map<String, CompactionStatus> outcomes = new LinkedHashMap<>();
+        final Map<String, String> failures = new LinkedHashMap<>();
+        for (DataAccessPoint dataAccessPoint : dapRegistry.accessPoints()) {
+            final DataService dataService = dataAccessPoint.getDataService();
+            final String datasetName = dataAccessPoint.getName();
+            try {
+                final CompactionStatus outcome = compactDatasetGraphDatabase(dataService.getDataset(), datasetName);
+                outcomes.put(datasetName, outcome);
+            } catch (Throwable t) {
+                failures.put(datasetName, t.getMessage() != null ? t.getMessage() : t.getClass().getName());
+                FmtLog.error(Fuseki.configLog, "Error while compacting dataset " + datasetName, t);
+            }
+        }
+
+        if (!failures.isEmpty()) {
+            StringBuilder details = new StringBuilder("Compaction failed for one or more datasets: ");
+            boolean first = true;
+            for (Map.Entry<String, String> entry : failures.entrySet()) {
+                if (!first) {
+                    details.append("; ");
+                }
+                first = false;
+                details.append(entry.getKey()).append("=").append(entry.getValue());
+            }
+            FmtLog.error(Fuseki.configLog, details.toString());
+            return compactionFailureResponse(details.toString());
+        }
+        return new CompactionOperationResponse(HttpServletResponse.SC_OK, toCompactionSummaryJson(outcomes));
+    }
+
+    private static CompactionOperationResponse compactionFailureResponse(final String details) {
+        final ObjectNode body = OBJECT_MAPPER.createObjectNode();
+        body.put("error", details != null ? details : "Compaction failed.");
+        return new CompactionOperationResponse(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, body);
+    }
+
+    private static void writeSyncResponse(final HttpServletResponse res, final CompactionOperationResponse response) {
+        if (response.statusCode() >= 400) {
+            ServletOps.errorOccurred(response.body().path("error").asText("Compaction failed."));
+            return;
+        }
+        res.setStatus(response.statusCode());
         res.setContentType("application/json");
         res.setCharacterEncoding(StandardCharsets.UTF_8.name());
         try {
-            res.getWriter().write(toCompactionSummaryJson(outcomes));
+            res.getWriter().write(OBJECT_MAPPER.writeValueAsString(response.body()));
         } catch (IOException e) {
             FmtLog.warn(Fuseki.configLog, "Error writing compaction response", e);
         }
     }
 
-    private static String toCompactionSummaryJson(Map<String, CompactionStatus> outcomes) {
-        StringBuilder builder = new StringBuilder();
-        builder.append("{\"status\":\"ok\",\"datasets\":{");
-        boolean first = true;
-        for (Map.Entry<String, CompactionStatus> entry : outcomes.entrySet()) {
-            if (!first) {
-                builder.append(',');
-            }
-            first = false;
-            builder.append('"')
-                   .append(entry.getKey())
-                   .append('"')
-                   .append(':')
-                   .append('"')
-                   .append(entry.getValue().name())
-                   .append('"');
-        }
-        builder.append("}}");
-        return builder.toString();
+    private static ObjectNode toCompactionSummaryJson(final Map<String, CompactionStatus> outcomes) {
+        final ObjectNode body = OBJECT_MAPPER.createObjectNode();
+        body.put("status", "ok");
+        final ObjectNode datasetsNode = body.putObject("datasets");
+        outcomes.forEach((datasetName, outcome) -> datasetsNode.put(datasetName, outcome.name()));
+        return body;
     }
 }

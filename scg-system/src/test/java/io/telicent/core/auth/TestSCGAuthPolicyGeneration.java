@@ -81,6 +81,8 @@ public class TestSCGAuthPolicyGeneration {
         verifyPermissions(policies, "/" + datasetName + "/access/*", readPermission);
         verifyPermissions(policies, "/$/labels/" + datasetName, readPermission);
         verifyPermissions(policies, "/$/compact/" + datasetName, compactPermission);
+        verifyPermissions(policies, "/$/compaction/jobs/" + datasetName, compactPermission);
+        verifyPermissions(policies, "/$/compaction/jobs/" + datasetName + "/*", compactPermission);
     }
 
     private void verifyRoles(Map<PathExclusion, Policy> policies, String path, String... expected) {
@@ -106,6 +108,9 @@ public class TestSCGAuthPolicyGeneration {
         // Verify roles generated for Telicent custom endpoints
         verifyRoles(policies, "/" + datasetName + "/access/*", SCG_AuthPolicy.DEFAULT_ROLES.values());
         verifyRoles(policies, "/$/labels/" + datasetName, SCG_AuthPolicy.DEFAULT_ROLES.values());
+        verifyRoles(policies, "/$/compact/" + datasetName, SCG_AuthPolicy.ADMIN_ROLES.values());
+        verifyRoles(policies, "/$/compaction/jobs/" + datasetName, SCG_AuthPolicy.ADMIN_ROLES.values());
+        verifyRoles(policies, "/$/compaction/jobs/" + datasetName + "/*", SCG_AuthPolicy.ADMIN_ROLES.values());
     }
 
     @Test
@@ -125,6 +130,8 @@ public class TestSCGAuthPolicyGeneration {
         // NB - The /$/compactall permissions are dynamically built based upon all the registered datasets so in this
         //      case will only have one permission required
         verifyPermissions(perms, "/$/compactall", TelicentPermissions.compactPermission("knowledge"));
+        verifyPermissions(perms, "/$/compaction/jobs/all", TelicentPermissions.compactPermission("knowledge"));
+        verifyPermissions(perms, "/$/compaction/jobs/all/*", TelicentPermissions.compactPermission("knowledge"));
     }
 
     @Test
@@ -148,6 +155,10 @@ public class TestSCGAuthPolicyGeneration {
         verifyDatasetPermissions(perms, "catalog");
         // NB - The /$/compactall permissions are dynamically built based upon all the registered datasets
         verifyPermissions(perms, "/$/compactall", TelicentPermissions.compactPermission("knowledge"),
+                          TelicentPermissions.compactPermission("catalog"));
+        verifyPermissions(perms, "/$/compaction/jobs/all", TelicentPermissions.compactPermission("knowledge"),
+                          TelicentPermissions.compactPermission("catalog"));
+        verifyPermissions(perms, "/$/compaction/jobs/all/*", TelicentPermissions.compactPermission("knowledge"),
                           TelicentPermissions.compactPermission("catalog"));
     }
 
@@ -180,9 +191,13 @@ public class TestSCGAuthPolicyGeneration {
         Assertions.assertFalse(roles.isEmpty());
         Assertions.assertFalse(perms.isEmpty());
         verifyRoles(roles, "/$/compactall", SCG_AuthPolicy.ADMIN_ROLES.values());
+        verifyRoles(roles, "/$/compaction/jobs/all", SCG_AuthPolicy.ADMIN_ROLES.values());
+        verifyRoles(roles, "/$/compaction/jobs/all/*", SCG_AuthPolicy.ADMIN_ROLES.values());
         // NB - Permissions for /$/compactall are dynamically built based on the datasets so will be undefined in this
         //      case
         verifyNoPolicy(perms, "/$/compactall");
+        verifyNoPolicy(perms, "/$/compaction/jobs/all");
+        verifyNoPolicy(perms, "/$/compaction/jobs/all/*");
         verifyRoles(roles, "/$/backups/*", SCG_AuthPolicy.ADMIN_ROLES.values());
         verifyPermissions(perms, "/$/backups/create", SCG_AuthPolicy.BACKUP_CREATE.values());
         verifyPermissions(perms, "/$/backups/delete", SCG_AuthPolicy.BACKUP_DELETE.values());

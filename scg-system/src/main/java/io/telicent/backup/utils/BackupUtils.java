@@ -36,10 +36,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeParseException;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.PathMatcher;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -635,7 +631,7 @@ public class BackupUtils extends ServletUtils {
 
             ObjectNode datasetSuccess = JsonNodeFactory.instance.objectNode();
 
-            Iterator<Map.Entry<String, JsonNode>> fields = dataset.fields();
+            Iterator<Map.Entry<String, JsonNode>> fields = dataset.properties().iterator();
             while (fields.hasNext()) {
                 Map.Entry<String, JsonNode> entry = fields.next();
                 String sectionName = entry.getKey();
@@ -650,7 +646,7 @@ public class BackupUtils extends ServletUtils {
                     if (success) isAnyTrue = true;
                 }
 
-                Iterator<Map.Entry<String, JsonNode>> nestedFields = section.fields();
+                Iterator<Map.Entry<String, JsonNode>> nestedFields = section.properties().iterator();
                 while (nestedFields.hasNext()) {
                     Map.Entry<String, JsonNode> nestedEntry = nestedFields.next();
                     String nestedKey = nestedEntry.getKey();

@@ -469,6 +469,7 @@ public class TestBackupData {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     public void test_listBackupJobs_containsSubmittedJob() {
         server = buildServer("--port=0", "--empty");
 

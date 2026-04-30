@@ -65,6 +65,8 @@ class TestYamlConfigParserAuthz {
     public static RowSetRewindable expectedRSRtdl;
     public static String queryStr = "SELECT * { ?s ?p ?o }";
 
+    public boolean debug = false;
+
     @BeforeAll
     public static void before() {
         Model comparisonModel = ModelFactory.createDefaultModel();
@@ -118,7 +120,8 @@ class TestYamlConfigParserAuthz {
                 .httpHeader(LibTestsSCG.tokenHeader(),
                         LibTestsSCG.tokenHeaderValue(validToken))
                 .select().rewindable();
-        RowSetOps.out(System.out, actualResponseRSR);
+        if (debug)
+            RowSetOps.out(System.out, actualResponseRSR);
         boolean equals = isomorphic(expectedRSR, actualResponseRSR);
         assertTrue(equals);
     }
@@ -135,7 +138,8 @@ class TestYamlConfigParserAuthz {
                 .httpHeader(LibTestsSCG.tokenHeader(),
                         LibTestsSCG.tokenHeaderValue(validToken))
                 .select().rewindable();
-        RowSetOps.out(System.out, actualResponseRSR);
+        if (debug)
+            RowSetOps.out(System.out, actualResponseRSR);
         boolean equals = isomorphic(expectedRSR, actualResponseRSR);
         assertTrue(equals);
     }
@@ -170,7 +174,8 @@ class TestYamlConfigParserAuthz {
                 .httpHeader(LibTestsSCG.tokenHeader(),
                         LibTestsSCG.tokenHeaderValue(validToken))
                 .select().rewindable();
-        RowSetOps.out(System.out, actualResponseRSR);
+        if (debug)
+            RowSetOps.out(System.out, actualResponseRSR);
         boolean equals = isomorphic(expectedRSR, actualResponseRSR);
         assertTrue(equals);
     }
@@ -207,7 +212,8 @@ class TestYamlConfigParserAuthz {
                 .httpHeader(LibTestsSCG.tokenHeader(),
                         LibTestsSCG.tokenHeaderValue(validToken))
                 .select().rewindable();
-        RowSetOps.out(System.out, actualResponseRSR);
+        if (debug)
+            RowSetOps.out(System.out, actualResponseRSR);
         boolean equals = isomorphic(expectedRSR, actualResponseRSR);
         assertTrue(equals);
     }
@@ -224,7 +230,8 @@ class TestYamlConfigParserAuthz {
                 .httpHeader(LibTestsSCG.tokenHeader(),
                         LibTestsSCG.tokenHeaderValue(validToken))
                 .select().rewindable();
-        RowSetOps.out(System.out, actualResponseRSR);
+        if (debug)
+            RowSetOps.out(System.out, actualResponseRSR);
         boolean equals = isomorphic(expectedRSRtdl, actualResponseRSR);
         assertTrue(equals);
     }
@@ -241,7 +248,8 @@ class TestYamlConfigParserAuthz {
                 .httpHeader(LibTestsSCG.tokenHeader(),
                         LibTestsSCG.tokenHeaderValue(validToken))
                 .select().rewindable();
-        RowSetOps.out(System.out, actualResponseRSR);
+        if (debug)
+            RowSetOps.out(System.out, actualResponseRSR);
         boolean equals = isomorphic(expectedRSR, actualResponseRSR);
         assertTrue(equals);
     }

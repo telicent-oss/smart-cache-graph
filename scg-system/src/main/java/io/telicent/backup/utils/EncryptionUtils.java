@@ -158,7 +158,7 @@ public class EncryptionUtils {
         final Iterator<PGPEncryptedData> encryptedDataItr = pgpEncryptedDataList.getEncryptedDataObjects();
         while (pgpPrivateKey == null && encryptedDataItr.hasNext()) {
             publicKeyEncryptedData = (PGPPublicKeyEncryptedData) encryptedDataItr.next();
-            pgpPrivateKey = findSecretKey(publicKeyEncryptedData.getKeyID());
+            pgpPrivateKey = findSecretKey(publicKeyEncryptedData.getKeyIdentifier().getKeyId());
         }
 
         if (Objects.isNull(publicKeyEncryptedData)) {

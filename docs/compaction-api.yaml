@@ -43,6 +43,76 @@ components:
               - SKIPPED_PREVIOUSLY_COMPACTED
               - SKIPPED_LOCK_CONTENTION
               - SKIPPED_NOT_TDB2
+    AsyncCompactionSubmission:
+      type: object
+      required:
+        - job-id
+        - operation
+        - status
+        - status-path
+        - message
+      properties:
+        job-id:
+          type: string
+        operation:
+          type: string
+          enum:
+            - COMPACT_DATASET
+            - COMPACT_ALL_DATASETS
+        status:
+          type: string
+          enum:
+            - PENDING
+            - RUNNING
+            - SUCCEEDED
+            - FAILED
+        status-path:
+          type: string
+        message:
+          type: string
+    CompactionJobStatus:
+      type: object
+      required:
+        - job-id
+        - operation
+        - status
+        - status-path
+        - message
+        - submitted-at
+      properties:
+        job-id:
+          type: string
+        operation:
+          type: string
+        status:
+          type: string
+          enum:
+            - PENDING
+            - RUNNING
+            - SUCCEEDED
+            - FAILED
+        status-path:
+          type: string
+        message:
+          type: string
+        submitted-at:
+          type: string
+          format: date-time
+        started-at:
+          type: string
+          format: date-time
+        completed-at:
+          type: string
+          format: date-time
+        http-status:
+          type: integer
+        result:
+          oneOf:
+            - $ref: '#/components/schemas/CompactionSummaryResponse'
+            - type: object
+              properties:
+                error:
+                  type: string
 security:
   - BearerAuth: []
   - AwsBearerAuth: []
@@ -60,6 +130,12 @@ paths:
           description: Dataset name (without leading slash), for example `knowledge`.
           schema:
             type: string
+        - name: async
+          in: query
+          required: false
+          description: When `true`, submit compaction as an asynchronous job and poll the returned `status-path`.
+          schema:
+            type: boolean
       responses:
         '200':
           description: Compaction request handled successfully.
@@ -67,6 +143,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CompactionSummaryResponse'
+        '202':
+          description: Compaction job accepted for asynchronous execution.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AsyncCompactionSubmission'
         '401':
           description: Unauthorized due to missing role/permission.
         '500':
@@ -83,6 +165,13 @@ paths:
       description: |
         Attempts compaction for each configured dataset and returns per-dataset outcomes.
         If one or more dataset compactions fail with exceptions, the endpoint returns 500.
+      parameters:
+        - name: async
+          in: query
+          required: false
+          description: When `true`, submit compaction as an asynchronous job and poll the returned `status-path`.
+          schema:
+            type: boolean
       responses:
         '200':
           description: Compaction request handled successfully.
@@ -90,6 +179,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CompactionSummaryResponse'
+        '202':
+          description: Compaction job accepted for asynchronous execution.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AsyncCompactionSubmission'
         '401':
           description: Unauthorized due to missing role/permission.
         '500':
@@ -99,3 +194,98 @@ paths:
               schema:
                 type: string
                 example: Compaction failed for one or more datasets: /knowledge=<reason>
+
+  /$/compaction/jobs/{datasetName}:
+    get:
+      summary: List asynchronous jobs for a dataset compaction endpoint
+      parameters:
+        - name: datasetName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Known asynchronous jobs for this dataset.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  jobs:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CompactionJobStatus'
+        '401':
+          description: Unauthorized due to missing role/permission.
+
+  /$/compaction/jobs/{datasetName}/{jobId}:
+    get:
+      summary: Get asynchronous dataset compaction job status
+      parameters:
+        - name: datasetName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Current state of the asynchronous compaction job.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  job:
+                    $ref: '#/components/schemas/CompactionJobStatus'
+        '401':
+          description: Unauthorized due to missing role/permission.
+        '404':
+          description: Unknown job id.
+
+  /$/compaction/jobs/all:
+    get:
+      summary: List asynchronous jobs for compact-all requests
+      responses:
+        '200':
+          description: Known asynchronous compact-all jobs.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  jobs:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CompactionJobStatus'
+        '401':
+          description: Unauthorized due to missing role/permission.
+
+  /$/compaction/jobs/all/{jobId}:
+    get:
+      summary: Get asynchronous compact-all job status
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Current state of the asynchronous compact-all job.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  job:
+                    $ref: '#/components/schemas/CompactionJobStatus'
+        '401':
+          description: Unauthorized due to missing role/permission.
+        '404':
+          description: Unknown job id.

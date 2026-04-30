@@ -431,7 +431,7 @@ public class DatasetBackupService {
     boolean restoreDataset(String restorePath, String datasetName, ObjectNode responseNode) {
         ObjectNode response = OBJECT_MAPPER.createObjectNode();
         response.put("dataset-name", datasetName);
-        responseNode.put(datasetName, response);
+        responseNode.set(datasetName, response);
         DataAccessPoint dataAccessPoint = getDataAccessPoint(datasetName);
         if (dataAccessPoint == null || dataAccessPoint.getDataService() == null) {
             response.put("reason", datasetName + " does not exist");
