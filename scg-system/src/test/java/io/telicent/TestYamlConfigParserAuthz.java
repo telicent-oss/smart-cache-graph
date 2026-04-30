@@ -65,6 +65,8 @@ class TestYamlConfigParserAuthz {
     public static RowSetRewindable expectedRSRtdl;
     public static String queryStr = "SELECT * { ?s ?p ?o }";
 
+    public boolean debug = false;
+
     @BeforeAll
     public static void before() {
         Model comparisonModel = ModelFactory.createDefaultModel();
@@ -117,11 +119,12 @@ class TestYamlConfigParserAuthz {
         LibTestsSCG.uploadFile(server.serverURL() + serviceName + "/upload",
                                DIR + "/yaml/data-and-labels.trig");//load(server);
         actualResponseRSR = QueryExecHTTPBuilder.service(server.serverURL() + serviceName)
-                                                .query(queryStr)
-                                                .httpHeader(LibTestsSCG.tokenHeader(),
-                                                            LibTestsSCG.tokenHeaderValue(validToken))
-                                                .select().rewindable();
-        RowSetOps.out(System.out, actualResponseRSR);
+                .query(queryStr)
+                .httpHeader(LibTestsSCG.tokenHeader(),
+                        LibTestsSCG.tokenHeaderValue(validToken))
+                .select().rewindable();
+        if (debug)
+            RowSetOps.out(System.out, actualResponseRSR);
         boolean equals = isomorphic(expectedRSR, actualResponseRSR);
         assertTrue(equals);
     }
@@ -135,11 +138,12 @@ class TestYamlConfigParserAuthz {
         LibTestsSCG.uploadFile(server.serverURL() + serviceName + "/upload",
                                DIR + "/yaml/data-and-labels.trig");//load(server);
         actualResponseRSR = QueryExecHTTPBuilder.service(server.serverURL() + serviceName)
-                                                .query(queryStr)
-                                                .httpHeader(LibTestsSCG.tokenHeader(),
-                                                            LibTestsSCG.tokenHeaderValue(validToken))
-                                                .select().rewindable();
-        RowSetOps.out(System.out, actualResponseRSR);
+                .query(queryStr)
+                .httpHeader(LibTestsSCG.tokenHeader(),
+                        LibTestsSCG.tokenHeaderValue(validToken))
+                .select().rewindable();
+        if (debug)
+            RowSetOps.out(System.out, actualResponseRSR);
         boolean equals = isomorphic(expectedRSR, actualResponseRSR);
         assertTrue(equals);
     }
@@ -171,11 +175,12 @@ class TestYamlConfigParserAuthz {
         iterator.close();
 
         actualResponseRSR = QueryExecHTTPBuilder.service(server.serverURL() + serviceName)
-                                                .query(queryStr)
-                                                .httpHeader(LibTestsSCG.tokenHeader(),
-                                                            LibTestsSCG.tokenHeaderValue(validToken))
-                                                .select().rewindable();
-        RowSetOps.out(System.out, actualResponseRSR);
+                .query(queryStr)
+                .httpHeader(LibTestsSCG.tokenHeader(),
+                        LibTestsSCG.tokenHeaderValue(validToken))
+                .select().rewindable();
+        if (debug)
+            RowSetOps.out(System.out, actualResponseRSR);
         boolean equals = isomorphic(expectedRSR, actualResponseRSR);
         assertTrue(equals);
     }
@@ -210,11 +215,12 @@ class TestYamlConfigParserAuthz {
         LibTestsSCG.uploadFile(server.serverURL() + serviceName + "/upload",
                                DIR + "/yaml/data-and-labels.trig");//load(server);
         actualResponseRSR = QueryExecHTTPBuilder.service(server.serverURL() + serviceName)
-                                                .query(queryStr)
-                                                .httpHeader(LibTestsSCG.tokenHeader(),
-                                                            LibTestsSCG.tokenHeaderValue(validToken))
-                                                .select().rewindable();
-        RowSetOps.out(System.out, actualResponseRSR);
+                .query(queryStr)
+                .httpHeader(LibTestsSCG.tokenHeader(),
+                        LibTestsSCG.tokenHeaderValue(validToken))
+                .select().rewindable();
+        if (debug)
+            RowSetOps.out(System.out, actualResponseRSR);
         boolean equals = isomorphic(expectedRSR, actualResponseRSR);
         assertTrue(equals);
     }
@@ -228,11 +234,12 @@ class TestYamlConfigParserAuthz {
         LibTestsSCG.uploadFile(server.serverURL() + serviceName + "/upload",
                                DIR + "/yaml/data-no-labels.trig");//load(server);
         actualResponseRSR = QueryExecHTTPBuilder.service(server.serverURL() + serviceName)
-                                                .query(queryStr)
-                                                .httpHeader(LibTestsSCG.tokenHeader(),
-                                                            LibTestsSCG.tokenHeaderValue(validToken))
-                                                .select().rewindable();
-        RowSetOps.out(System.out, actualResponseRSR);
+                .query(queryStr)
+                .httpHeader(LibTestsSCG.tokenHeader(),
+                        LibTestsSCG.tokenHeaderValue(validToken))
+                .select().rewindable();
+        if (debug)
+            RowSetOps.out(System.out, actualResponseRSR);
         boolean equals = isomorphic(expectedRSRtdl, actualResponseRSR);
         assertTrue(equals);
     }
@@ -246,11 +253,12 @@ class TestYamlConfigParserAuthz {
         LibTestsSCG.uploadFile(server.serverURL() + serviceName + "/upload",
                                DIR + "/yaml/data-and-labels.trig");//load(server);
         actualResponseRSR = QueryExecHTTPBuilder.service(server.serverURL() + serviceName)
-                                                .query(queryStr)
-                                                .httpHeader(LibTestsSCG.tokenHeader(),
-                                                            LibTestsSCG.tokenHeaderValue(validToken))
-                                                .select().rewindable();
-        RowSetOps.out(System.out, actualResponseRSR);
+                .query(queryStr)
+                .httpHeader(LibTestsSCG.tokenHeader(),
+                        LibTestsSCG.tokenHeaderValue(validToken))
+                .select().rewindable();
+        if (debug)
+            RowSetOps.out(System.out, actualResponseRSR);
         boolean equals = isomorphic(expectedRSR, actualResponseRSR);
         assertTrue(equals);
     }

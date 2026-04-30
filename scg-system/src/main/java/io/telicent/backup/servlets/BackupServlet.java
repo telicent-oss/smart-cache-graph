@@ -16,23 +16,48 @@
 
 package io.telicent.backup.servlets;
 
+import io.telicent.backup.services.BackupJobManager;
+import io.telicent.backup.services.BackupOperationRequest;
 import io.telicent.backup.services.DatasetBackupService;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
+import static io.telicent.backup.utils.JsonFileUtils.OBJECT_MAPPER;
+import static io.telicent.utils.ServletUtils.processResponse;
 
 /**
  * Servlet class responsible for the creation of backups.
  */
 public class BackupServlet extends HttpServlet {
     private final DatasetBackupService backupService;
+    private final BackupJobManager jobManager;
 
-    public BackupServlet(DatasetBackupService backupService) {
+    public BackupServlet(DatasetBackupService backupService, BackupJobManager jobManager) {
         this.backupService = backupService;
+        this.jobManager = jobManager;
     }
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) {
-        backupService.process(request, response, true);
+        if (Boolean.parseBoolean(request.getParameter("async"))) {
+            final BackupOperationRequest operationRequest;
+            try {
+                operationRequest = this.backupService.captureRequest(request);
+            } catch (RuntimeException e) {
+                response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+                var resultNode = OBJECT_MAPPER.createObjectNode();
+                resultNode.put("error", e.getMessage());
+                processResponse(response, resultNode);
+                return;
+            }
+            response.setStatus(HttpServletResponse.SC_ACCEPTED);
+            processResponse(response,
+                            this.jobManager.submit("CREATE_BACKUP",
+                                                   "/$/backups/jobs/",
+                                                   () -> this.backupService.execute(operationRequest, true, true)));
+            return;
+        }
+        AsyncBackupServletSupport.processAsync(backupService, request, response, true);
     }
 }

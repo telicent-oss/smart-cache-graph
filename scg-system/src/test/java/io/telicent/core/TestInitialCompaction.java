@@ -1,5 +1,6 @@
 package io.telicent.core;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import io.telicent.LibTestsSCG;
 import io.telicent.backup.TestBackupData;
 import io.telicent.jena.abac.ABAC;
@@ -41,6 +42,7 @@ import java.util.Set;
 
 import static io.telicent.TestJwtServletAuth.*;
 import static io.telicent.TestSmartCacheGraphIntegration.launchServer;
+import static io.telicent.backup.utils.JsonFileUtils.OBJECT_MAPPER;
 import static io.telicent.core.FMod_InitialCompaction.compactLabels;
 import static org.apache.jena.graph.Graph.emptyGraph;
 import static org.junit.jupiter.api.Assertions.*;
@@ -508,6 +510,67 @@ public class TestInitialCompaction {
     }
 
     @Test
+    public void test_compactOne_async_happyPath() throws IOException {
+        mockDatabaseMgr.when(() -> DatabaseMgr.compact(any(), anyBoolean())).thenAnswer(invocationOnMock -> null);
+        DatasetGraphSwitchable dsgPersists = createPersistentSwitchableDataset();
+        server = SmartCacheGraph.smartCacheGraphBuilder().port(0).add("test", dsgPersists).build().start();
+        String token = tokenForUserWithCompactPermissions("test", "test");
+
+        HttpResponse<InputStream> submitResponse =
+                makeAuthCallWithCustomToken(server, "$/compact/test?async=true", token, "POST");
+
+        assertEquals(202, submitResponse.statusCode());
+        Map<String, Object> submit = convertToMap(submitResponse);
+        assertEquals("COMPACT_DATASET", submit.get("operation"));
+        String statusPath = (String) submit.get("status-path");
+        assertTrue(statusPath.contains("/$/compaction/jobs/test/"));
+
+        Map<String, Object> job = waitForJob(statusPath, token);
+        assertEquals("SUCCEEDED", job.get("status"));
+        assertEquals(200, job.get("http-status"));
+        Map<?, ?> result = asMap(job.get("result"));
+        assertEquals("ok", result.get("status"));
+        Map<?, ?> datasets = asMap(result.get("datasets"));
+        assertTrue(Set.of("COMPACTED", "SKIPPED_ALREADY_COMPACTED", "SKIPPED_PREVIOUSLY_COMPACTED")
+                      .contains(datasets.get("/test")));
+    }
+
+    @Test
+    public void test_compactOne_async_unknownJobId() {
+        server = SmartCacheGraph.smartCacheGraphBuilder().port(0).add("test", DatasetGraphFactory.createTxnMem()).build().start();
+
+        HttpResponse<InputStream> jobResponse =
+                makeAuthCallWithCustomToken(server, "$/compaction/jobs/test/unknown-job-id",
+                                            tokenForUserWithCompactPermissions("test", "test"), "GET");
+
+        assertEquals(404, jobResponse.statusCode());
+        Map<String, Object> responseMap = convertToMap(jobResponse);
+        assertEquals("Unknown compaction job id: unknown-job-id", responseMap.get("error"));
+    }
+
+    @Test
+    public void test_compactOne_async_listJobs() throws IOException {
+        mockDatabaseMgr.when(() -> DatabaseMgr.compact(any(), anyBoolean())).thenAnswer(invocationOnMock -> null);
+        DatasetGraphSwitchable dsgPersists = createPersistentSwitchableDataset();
+        server = SmartCacheGraph.smartCacheGraphBuilder().port(0).add("test", dsgPersists).build().start();
+        String token = tokenForUserWithCompactPermissions("test", "test");
+
+        HttpResponse<InputStream> submitResponse =
+                makeAuthCallWithCustomToken(server, "$/compact/test?async=true", token, "POST");
+        Map<String, Object> submit = convertToMap(submitResponse);
+        String statusPath = (String) submit.get("status-path");
+        waitForJob(statusPath, token);
+
+        HttpResponse<InputStream> listResponse =
+                makeAuthCallWithCustomToken(server, "$/compaction/jobs/test", token, "GET");
+
+        assertEquals(200, listResponse.statusCode());
+        Map<String, Object> responseMap = convertToMap(listResponse);
+        List<?> jobs = asList(responseMap.get("jobs"));
+        assertFalse(jobs.isEmpty());
+    }
+
+    @Test
     public void test_compactAll_mixedOutcomesReturnsSummary() throws IOException {
         // Given
         DatasetGraphSwitchable dsgPersists = createPersistentSwitchableDataset();
@@ -580,6 +643,53 @@ public class TestInitialCompaction {
         assertTrue(indicator.isPresent());
         assertEquals(FMod_InitialCompaction.CompactionIndicatorState.FAILED, indicator.get().state());
         assertNotNull(indicator.get().error());
+    }
+
+    @Test
+    public void test_compactAll_async_happyPath() throws IOException {
+        mockDatabaseMgr.when(() -> DatabaseMgr.compact(any(), anyBoolean())).thenAnswer(invocationOnMock -> null);
+        DatasetGraphSwitchable dsgPersists = createPersistentSwitchableDataset();
+        server = SmartCacheGraph.smartCacheGraphBuilder().port(0).add("test", dsgPersists).build().start();
+        String token = tokenForUserWithCompactPermissions("test", "test");
+
+        HttpResponse<InputStream> submitResponse =
+                makeAuthCallWithCustomToken(server, "$/compactall?async=true", token, "POST");
+
+        assertEquals(202, submitResponse.statusCode());
+        Map<String, Object> submit = convertToMap(submitResponse);
+        assertEquals("COMPACT_ALL_DATASETS", submit.get("operation"));
+        String statusPath = (String) submit.get("status-path");
+        assertTrue(statusPath.contains("/$/compaction/jobs/all/"));
+
+        Map<String, Object> job = waitForJob(statusPath, token);
+        assertEquals("SUCCEEDED", job.get("status"));
+        assertEquals(200, job.get("http-status"));
+        Map<?, ?> result = asMap(job.get("result"));
+        Map<?, ?> datasets = asMap(result.get("datasets"));
+        assertTrue(Set.of("COMPACTED", "SKIPPED_ALREADY_COMPACTED", "SKIPPED_PREVIOUSLY_COMPACTED")
+                      .contains(datasets.get("/test")));
+    }
+
+    @Test
+    public void test_compactAll_async_listJobs() throws IOException {
+        mockDatabaseMgr.when(() -> DatabaseMgr.compact(any(), anyBoolean())).thenAnswer(invocationOnMock -> null);
+        DatasetGraphSwitchable dsgPersists = createPersistentSwitchableDataset();
+        server = SmartCacheGraph.smartCacheGraphBuilder().port(0).add("test", dsgPersists).build().start();
+        String token = tokenForUserWithCompactPermissions("test", "test");
+
+        HttpResponse<InputStream> submitResponse =
+                makeAuthCallWithCustomToken(server, "$/compactall?async=true", token, "POST");
+        Map<String, Object> submit = convertToMap(submitResponse);
+        String statusPath = (String) submit.get("status-path");
+        waitForJob(statusPath, token);
+
+        HttpResponse<InputStream> listResponse =
+                makeAuthCallWithCustomToken(server, "$/compaction/jobs/all", token, "GET");
+
+        assertEquals(200, listResponse.statusCode());
+        Map<String, Object> responseMap = convertToMap(listResponse);
+        List<?> jobs = asList(responseMap.get("jobs"));
+        assertFalse(jobs.isEmpty());
     }
 
     @Test
@@ -694,7 +804,7 @@ public class TestInitialCompaction {
     @SuppressWarnings("removal")
     public void test_compactLabels_notABAC() {
         // given
-        DatasetGraph dsgNotABAC = TDB1Factory.createDatasetGraph(Location.mem());
+        DatasetGraph dsgNotABAC = DatasetGraphFactory.createTxnMem();
         // when
         // then
         compactLabels(dsgNotABAC);
@@ -721,17 +831,20 @@ public class TestInitialCompaction {
         // then
         FusekiServer.Builder mockBuilder = mock(FusekiServer.Builder.class);
 
+        ArgumentCaptor<String> pathCaptor = ArgumentCaptor.forClass(String.class);
         ArgumentCaptor<HttpServlet> servletCaptor = ArgumentCaptor.forClass(HttpServlet.class);
-        when(mockBuilder.addServlet(any(), servletCaptor.capture())).thenReturn(mockBuilder);
+        when(mockBuilder.addServlet(pathCaptor.capture(), servletCaptor.capture())).thenReturn(mockBuilder);
 
         fModInitialCompaction.configured(mockBuilder, null, null);
 
         verify(mockBuilder).addServlet(eq("/$/compactall"), any(HttpServlet.class));
-        HttpServlet capturedServlet = servletCaptor.getValue();
+        int compactAllIndex = pathCaptor.getAllValues().indexOf("/$/compactall");
+        HttpServlet capturedServlet = servletCaptor.getAllValues().get(compactAllIndex);
 
 
         HttpServletRequest request = mock(HttpServletRequest.class);
         when(request.getMethod()).thenReturn("POST");
+        when(request.getProtocol()).thenReturn("HTTP/1.1");
 
         HttpServletResponse response = mock(HttpServletResponse.class);
         assertThrows(ActionErrorException.class, () -> capturedServlet.service(request, response));
@@ -745,6 +858,61 @@ public class TestInitialCompaction {
                           .claims(Map.of("roles", List.of("ADMIN_SYSTEM"),
                                          "permissions", compactPermissions))
                           .compact();
+    }
+
+    private Map<String, Object> convertToMap(HttpResponse<InputStream> response) {
+        try {
+            InputStreamReader reader = new InputStreamReader(response.body(), StandardCharsets.UTF_8);
+            return OBJECT_MAPPER.readValue(reader, new TypeReference<>() {});
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private Map<String, Object> waitForJob(String jobPath, String jwt) {
+        String requestPath = jobPath.startsWith("/") ? jobPath.substring(1) : jobPath;
+        for (int i = 0; i < 20; i++) {
+            HttpResponse<InputStream> jobResponse = makeAuthCallWithCustomToken(server, requestPath, jwt, "GET");
+            if (jobResponse.statusCode() != 200) {
+                try {
+                    fail("Unexpected status " + jobResponse.statusCode() + " for " + requestPath + ": "
+                         + IOUtils.toString(jobResponse.body(), StandardCharsets.UTF_8));
+                } catch (IOException e) {
+                    fail("Unexpected status " + jobResponse.statusCode() + " for " + requestPath
+                         + " and failed to read body: " + e.getMessage());
+                }
+            }
+            Map<String, Object> responseMap = convertToMap(jobResponse);
+            Map<String, Object> job = asTypedMap(responseMap.get("job"));
+            if ("SUCCEEDED".equals(job.get("status")) || "FAILED".equals(job.get("status"))) {
+                return job;
+            }
+            try {
+                Thread.sleep(50L);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                fail("Interrupted while waiting for async compaction job");
+            }
+        }
+        fail("Timed out waiting for async compaction job completion");
+        return null;
+    }
+
+    private static Map<?, ?> asMap(Object value) {
+        assertInstanceOf(Map.class, value);
+        return (Map<?, ?>) value;
+    }
+
+    private static Map<String, Object> asTypedMap(Object value) {
+        assertInstanceOf(Map.class, value);
+        @SuppressWarnings("unchecked")
+        Map<String, Object> typed = (Map<String, Object>) value;
+        return typed;
+    }
+
+    private static List<?> asList(Object value) {
+        assertInstanceOf(List.class, value);
+        return (List<?>) value;
     }
 
     private static DatasetGraphSwitchable createPersistentSwitchableDataset() throws IOException {

@@ -100,6 +100,8 @@ public class SCG_AuthPolicy {
 
         // Compact endpoint for this dataset
         addPolicy(policies, "/$/compact/" + datasetName, ADMIN_ROLES);
+        addPolicy(policies, "/$/compaction/jobs/" + datasetName, ADMIN_ROLES);
+        addPolicy(policies, "/$/compaction/jobs/" + datasetName + "/*", ADMIN_ROLES);
 
         // Fuseki will also capture requests to the root dataset path and try to dynamically route them based on the
         // request method and body, allow this provided users have the default roles
@@ -130,7 +132,11 @@ public class SCG_AuthPolicy {
         Policy compactPolicy =
                 Policy.requireAll("permissions", TelicentPermissions.compactPermission(datasetName));
         addPolicy(policies, "/$/compact/" + datasetName, compactPolicy);
+        addPolicy(policies, "/$/compaction/jobs/" + datasetName, compactPolicy);
+        addPolicy(policies, "/$/compaction/jobs/" + datasetName + "/*", compactPolicy);
         addOrUpdatePolicy(policies, "/$/compactall", compactPolicy);
+        addOrUpdatePolicy(policies, "/$/compaction/jobs/all", compactPolicy);
+        addOrUpdatePolicy(policies, "/$/compaction/jobs/all/*", compactPolicy);
 
         // Fuseki will also capture requests to the root dataset path and try to dynamically route them based on the
         // request method and body, since we won't know what kind of request is arriving in advance have to enforce both
@@ -179,6 +185,8 @@ public class SCG_AuthPolicy {
 
         // Compact All - /$/compactall
         addPolicy(roles, "/$/compactall", ADMIN_ROLES);
+        addPolicy(roles, "/$/compaction/jobs/all", ADMIN_ROLES);
+        addPolicy(roles, "/$/compaction/jobs/all/*", ADMIN_ROLES);
 
         // Backup/Restore - /$/backups/*
         // All endpoints require an administrator role

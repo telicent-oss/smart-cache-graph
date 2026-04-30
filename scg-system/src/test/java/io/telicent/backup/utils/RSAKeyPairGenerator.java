@@ -46,6 +46,7 @@ public class RSAKeyPairGenerator
             CompressionAlgorithmTags.ZLIB, CompressionAlgorithmTags.BZIP2, CompressionAlgorithmTags.ZLIB, CompressionAlgorithmTags.UNCOMPRESSED
     };
 
+    @SuppressWarnings("deprecation")
     public static void generateAndExportKeyRing(
             OutputStream secretOut,
             OutputStream publicOut,

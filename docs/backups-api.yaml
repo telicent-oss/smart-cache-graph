@@ -7,6 +7,46 @@ servers:
   - url: http://localhost:3030/
     description: Base path for dataset backup operations.
 components:
+  schemas:
+    AsyncJobSubmission:
+      type: object
+      properties:
+        job-id:
+          type: string
+        operation:
+          type: string
+        status:
+          type: string
+        status-path:
+          type: string
+        message:
+          type: string
+    AsyncJobStatus:
+      type: object
+      properties:
+        job-id:
+          type: string
+        operation:
+          type: string
+        status:
+          type: string
+        status-path:
+          type: string
+        message:
+          type: string
+        submitted-at:
+          type: string
+          format: date-time
+        started-at:
+          type: string
+          format: date-time
+        completed-at:
+          type: string
+          format: date-time
+        http-status:
+          type: integer
+        result:
+          type: object
   responses:
     RestoreResponse:
       description: Dataset restored successfully.
@@ -78,6 +118,13 @@ paths:
           description: A description of the back-up (i.e. "Daily backup")
           schema:
             type: string
+        - name: async
+          in: query
+          required: false
+          description: When `true`, submit the backup as an asynchronous job and poll `/$/backups/jobs/{jobId}` for completion.
+          schema:
+            type: boolean
+            default: false
       responses:
         '200':
           description: Backup created successfully.
@@ -96,6 +143,12 @@ paths:
                   backup:
                     type: object
                     description: Details of the backup operation.
+        '202':
+          description: Backup job accepted.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AsyncJobSubmission'
         '500':
           description: Internal server error.
           content:
@@ -117,6 +170,13 @@ paths:
           description: A description of the back-up (i.e. "Daily backup")
           schema:
             type: string
+        - name: async
+          in: query
+          required: false
+          description: When `true`, submit the backup as an asynchronous job and poll `/$/backups/jobs/{jobId}` for completion.
+          schema:
+            type: boolean
+            default: false
       responses:
         '200':
           description: Backup created successfully.
@@ -135,6 +195,12 @@ paths:
                   backup:
                     type: object
                     description: Details of the backup operation.
+        '202':
+          description: Backup job accepted.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AsyncJobSubmission'
         '500':
           description: Internal server error.
           content:
@@ -245,9 +311,23 @@ paths:
     post:
       summary: Restore the latest backup
       description: Restores the latest snapshot.
+      parameters:
+        - name: async
+          in: query
+          required: false
+          description: When `true`, submit the restore as an asynchronous job and poll `/$/backups/jobs/{jobId}` for completion.
+          schema:
+            type: boolean
+            default: false
       responses:
         '200':
           $ref: '#/components/responses/RestoreResponse'
+        '202':
+          description: Restore job accepted.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AsyncJobSubmission'
         '404':
           $ref: '#/components/responses/NotFoundError'
         '500':
@@ -264,13 +344,77 @@ paths:
           description: ID of the backup to restore.
           schema:
             type: string
+        - name: async
+          in: query
+          required: false
+          description: When `true`, submit the restore as an asynchronous job and poll `/$/backups/jobs/{jobId}` for completion.
+          schema:
+            type: boolean
+            default: false
       responses:
         '200':
           $ref: '#/components/responses/RestoreResponse'
+        '202':
+          description: Restore job accepted.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AsyncJobSubmission'
         '404':
           $ref: '#/components/responses/NotFoundError'
         '500':
           $ref: '#/components/responses/InternalServerError'
+  /$/backups/jobs:
+    get:
+      summary: List asynchronous backup jobs
+      description: Retrieves running and completed async backup/restore jobs known to this server instance.
+      responses:
+        '200':
+          description: Backup jobs retrieved successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  date:
+                    type: string
+                    format: date-time
+                  jobs:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AsyncJobStatus'
+  /$/backups/jobs/{jobId}:
+    get:
+      summary: Get asynchronous backup job status
+      description: Retrieves the current status of one async backup/restore job.
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Backup job retrieved successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  date:
+                    type: string
+                    format: date-time
+                  job:
+                    $ref: '#/components/schemas/AsyncJobStatus'
+        '404':
+          description: Backup job not found.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
 
   /$/backups/restore/{datasetName}:
     post:
