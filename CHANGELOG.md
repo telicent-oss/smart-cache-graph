@@ -9,12 +9,16 @@
       visibility to queries.  This enables better partitioning of data while still retaining the strong data access
       controls that RDF-ABAC enables.
     - Note that enabling this functionality requires opt-in in order to preserve backwards compatibility with previous
-      configurations out of the box.  See [README](README.md) and [Configuration Docs](docs/configuration-smart-cache-graph.md) for more information.
+      configurations out of the box.  See [README](README.md) and [Configuration
+      Docs](docs/configuration-smart-cache-graph.md) for more information.
 - New opt-in functionality to route Kafka events into named graphs based on their `Distribution-ID` header.  This can be
   enabled by setting the `ROUTE_TO_NAMED_GRAPHS` environment variable to `true`.  Intended for use in conjunction with
   the above changes around labelling quads to enable secure data partitioning.
-- Backup improvements:
+- Admin improvements:
     - Improved listing existing backups
+    - Backup, Restore and Compact operations on datasets can now optionally be carried out asynchronously when the new
+      `async` parameter is set to `true` on those requests.  The server will respond with a `202 Accepted` and an
+      initial status response, this includes a URL that can be polled to check job status.
 - Build improvements:
     - Some logging output improved
     - Bouncy Castle upgraded to 1.84
