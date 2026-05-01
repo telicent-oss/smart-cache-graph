@@ -1,7 +1,15 @@
 # Smart Cache Graph
 
+## 1.0.1
 
-## 1.0.0
+This is a maintenance release to force Docker images to be republished as the 1.0.0 release did not publish images
+as it failed at the Maven Central publishing step due to a Maven Central outage
+
+- Build improvements
+    - Changed Maven Central publishing plugin to waitUntil validated since waitUntil published can take longer than
+      our configured waitMaxTime
+
+### 1.0.0
 
 - Upgraded to RDF-ABAC 3.1.0 which enables a number of new features:
     - When a suitable `LabelsStore` is configured it is now possible to label and query quads across many named graphs.
