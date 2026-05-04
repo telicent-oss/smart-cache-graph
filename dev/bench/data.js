@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1777889970466,
+  "lastUpdate": 1777892558289,
   "repoUrl": "https://github.com/telicent-oss/smart-cache-graph",
   "entries": {
     "ABAC Benchmark": [
@@ -4972,6 +4972,58 @@ window.BENCHMARK_DATA = {
           {
             "name": "io.telicent.core.SCGBenchmark.test_executeQuery ( {\"arraySize\":\"1000000\"} )",
             "value": 506.73313780296644,
+            "unit": "ms/op",
+            "extra": "iterations: 5\nforks: 5\nthreads: 1"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "Paul Gallagher",
+            "username": "TelicentPaul",
+            "email": "132362215+TelicentPaul@users.noreply.github.com"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "45fe3fac4d6464a6df9d42ebff0ab1cdfdb77248",
+          "message": "Merge pull request #392 from telicent-oss/release/1.0.1\n\nComplete Release 1.0.1",
+          "timestamp": "2026-05-01T08:54:53Z",
+          "url": "https://github.com/telicent-oss/smart-cache-graph/commit/45fe3fac4d6464a6df9d42ebff0ab1cdfdb77248"
+        },
+        "date": 1777892557681,
+        "tool": "jmh",
+        "benches": [
+          {
+            "name": "io.telicent.core.SCGBenchmark.test_executeQuery ( {\"arraySize\":\"10\"} )",
+            "value": 0.2706706361157474,
+            "unit": "ms/op",
+            "extra": "iterations: 5\nforks: 5\nthreads: 1"
+          },
+          {
+            "name": "io.telicent.core.SCGBenchmark.test_executeQuery ( {\"arraySize\":\"100\"} )",
+            "value": 0.30372490416244546,
+            "unit": "ms/op",
+            "extra": "iterations: 5\nforks: 5\nthreads: 1"
+          },
+          {
+            "name": "io.telicent.core.SCGBenchmark.test_executeQuery ( {\"arraySize\":\"1000\"} )",
+            "value": 0.616120337494455,
+            "unit": "ms/op",
+            "extra": "iterations: 5\nforks: 5\nthreads: 1"
+          },
+          {
+            "name": "io.telicent.core.SCGBenchmark.test_executeQuery ( {\"arraySize\":\"10000\"} )",
+            "value": 4.230280064245335,
+            "unit": "ms/op",
+            "extra": "iterations: 5\nforks: 5\nthreads: 1"
+          },
+          {
+            "name": "io.telicent.core.SCGBenchmark.test_executeQuery ( {\"arraySize\":\"1000000\"} )",
+            "value": 531.228377945409,
             "unit": "ms/op",
             "extra": "iterations: 5\nforks: 5\nthreads: 1"
           }
