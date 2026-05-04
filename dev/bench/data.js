@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1777889281853,
+  "lastUpdate": 1777889548057,
   "repoUrl": "https://github.com/telicent-oss/smart-cache-graph",
   "entries": {
     "ABAC Benchmark": [
@@ -6118,6 +6118,52 @@ window.BENCHMARK_DATA = {
           {
             "name": "io.telicent.core.LabelsQueryServiceBenchmark.benchmarkQueryOnlyLabelStore ( {\"tripleCount\":\"10000\"} )",
             "value": 0.000017747806863843657,
+            "unit": "ms/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "Paul Gallagher",
+            "username": "TelicentPaul",
+            "email": "132362215+TelicentPaul@users.noreply.github.com"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "45fe3fac4d6464a6df9d42ebff0ab1cdfdb77248",
+          "message": "Merge pull request #392 from telicent-oss/release/1.0.1\n\nComplete Release 1.0.1",
+          "timestamp": "2026-05-01T08:54:53Z",
+          "url": "https://github.com/telicent-oss/smart-cache-graph/commit/45fe3fac4d6464a6df9d42ebff0ab1cdfdb77248"
+        },
+        "date": 1777889547412,
+        "tool": "jmh",
+        "benches": [
+          {
+            "name": "io.telicent.core.LabelsQueryServiceBenchmark.benchmarkQueryDSGAndLabelStore ( {\"tripleCount\":\"1000\"} )",
+            "value": 0.3981326632374827,
+            "unit": "ms/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "io.telicent.core.LabelsQueryServiceBenchmark.benchmarkQueryDSGAndLabelStore ( {\"tripleCount\":\"10000\"} )",
+            "value": 4.763698986682479,
+            "unit": "ms/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "io.telicent.core.LabelsQueryServiceBenchmark.benchmarkQueryOnlyLabelStore ( {\"tripleCount\":\"1000\"} )",
+            "value": 0.00002548112096506727,
+            "unit": "ms/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "io.telicent.core.LabelsQueryServiceBenchmark.benchmarkQueryOnlyLabelStore ( {\"tripleCount\":\"10000\"} )",
+            "value": 0.00002498026974137537,
             "unit": "ms/op",
             "extra": "iterations: 5\nforks: 1\nthreads: 1"
           }
