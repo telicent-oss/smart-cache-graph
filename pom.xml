@@ -86,12 +86,12 @@
     <dependency.jena>6.0.0</dependency.jena>
 
     <dependency.graphql>0.12.0</dependency.graphql>
-    <dependency.jwt-servlet-auth>4.0.1</dependency.jwt-servlet-auth>
+    <dependency.jwt-servlet-auth>4.1.0</dependency.jwt-servlet-auth>
     <dependency.smart-caches-core>0.36.3</dependency.smart-caches-core>
 
     <!-- External dependencies -->
     <dependency.awaitility>4.3.0</dependency.awaitility>
-    <dependency.jackson>2.21.2</dependency.jackson>
+    <dependency.jackson>2.21.3</dependency.jackson>
     <dependency.bouncycastle>1.84</dependency.bouncycastle>
     <dependency.kafka>3.9.2</dependency.kafka>
     <dependency.kotlin>2.3.21</dependency.kotlin>
