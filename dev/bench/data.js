@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1778490823275,
+  "lastUpdate": 1778490893553,
   "repoUrl": "https://github.com/telicent-oss/smart-cache-graph",
   "entries": {
     "ABAC Benchmark": [
@@ -2122,6 +2122,34 @@ window.BENCHMARK_DATA = {
           {
             "name": "io.telicent.core.CQRSUpdateBenchmark.benchmarkCqrsUpdate",
             "value": 0.04162822561464934,
+            "unit": "ms/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "Paul Gallagher",
+            "username": "TelicentPaul",
+            "email": "132362215+TelicentPaul@users.noreply.github.com"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "6d0fef8cdb97670d697f2764e14e87b7f01a2428",
+          "message": "Merge pull request #394 from telicent-oss/dependabot/docker/scg-docker/telicent/telicent-java21-1.2.46\n\nBump telicent/telicent-java21 from 1.2.45 to 1.2.46 in /scg-docker",
+          "timestamp": "2026-05-07T07:18:30Z",
+          "url": "https://github.com/telicent-oss/smart-cache-graph/commit/6d0fef8cdb97670d697f2764e14e87b7f01a2428"
+        },
+        "date": 1778490892800,
+        "tool": "jmh",
+        "benches": [
+          {
+            "name": "io.telicent.core.CQRSUpdateBenchmark.benchmarkCqrsUpdate",
+            "value": 0.041596215138573235,
             "unit": "ms/op",
             "extra": "iterations: 5\nforks: 1\nthreads: 1"
           }
