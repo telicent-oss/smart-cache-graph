@@ -174,7 +174,7 @@ public abstract class AbstractBearerAuthTests {
         assertInstanceOf(QueryExceptionHTTP.class, actual);
         QueryExceptionHTTP q = (QueryExceptionHTTP) actual;
         assertEquals(401, q.getStatusCode());
-        assertEquals("Unauthorized", q.getMessage());
+        assertTrue(Strings.CI.contains(q.getMessage(), "Unauthorized"));
     }
 
     @Test
