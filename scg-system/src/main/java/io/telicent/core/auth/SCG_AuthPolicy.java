@@ -193,8 +193,11 @@ public class SCG_AuthPolicy {
         // Endpoints require either backup.read and backup.write permissions as appropriate
         addPolicy(roles, "/$/backups/*", ADMIN_ROLES);
         addPolicy(perms, "/$/backups/create", BACKUP_CREATE);
+        addPolicy(perms, "/$/backups/create/*", BACKUP_CREATE);
         addPolicy(perms, "/$/backups/delete", BACKUP_DELETE);
+        addPolicy(perms, "/$/backups/delete/*", BACKUP_DELETE);
         addPolicy(perms, "/$/backups/restore", BACKUP_RESTORE);
+        addPolicy(perms, "/$/backups/restore/*", BACKUP_RESTORE);
         addPolicy(perms, "/$/backups/*", BACKUP_READ_ONLY);
     }
 

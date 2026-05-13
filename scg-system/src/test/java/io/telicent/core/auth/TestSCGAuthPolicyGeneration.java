@@ -200,8 +200,11 @@ public class TestSCGAuthPolicyGeneration {
         verifyNoPolicy(perms, "/$/compaction/jobs/all/*");
         verifyRoles(roles, "/$/backups/*", SCG_AuthPolicy.ADMIN_ROLES.values());
         verifyPermissions(perms, "/$/backups/create", SCG_AuthPolicy.BACKUP_CREATE.values());
+        verifyPermissions(perms, "/$/backups/create/*", SCG_AuthPolicy.BACKUP_CREATE.values());
         verifyPermissions(perms, "/$/backups/delete", SCG_AuthPolicy.BACKUP_DELETE.values());
+        verifyPermissions(perms, "/$/backups/delete/*", SCG_AuthPolicy.BACKUP_DELETE.values());
         verifyPermissions(perms, "/$/backups/restore", SCG_AuthPolicy.BACKUP_RESTORE.values());
+        verifyPermissions(perms, "/$/backups/restore/*", SCG_AuthPolicy.BACKUP_RESTORE.values());
         verifyPermissions(perms, "/$/backups/*", SCG_AuthPolicy.BACKUP_READ_ONLY.values());
     }
 }
