@@ -411,6 +411,11 @@ public class TestBackupData {
     }
 
     @Test
+    public void givenInsufficientPermissions_whenDeletingBackupById_thenUnauthorized() throws IOException {
+        verifyUnauthorized(tokenWithBackupReadPermission(), "$/backups/delete/1", "POST", "requires permissions");
+    }
+
+    @Test
     public void test_restoreBackup_emptyGraph_no_arg() {
         // given
         server = buildServer("--port=0", "--empty");
@@ -444,6 +449,17 @@ public class TestBackupData {
     @Test
     public void givenInsufficientPermissions_whenRestoreBackup_thenUnauthorized() throws IOException {
         verifyUnauthorized(tokenWithBackupReadPermission(), "$/backups/restore", "POST", "requires permissions");
+    }
+
+    @Test
+    public void givenInsufficientPermissions_whenRestoreSpecificBackup_thenUnauthorized() throws IOException {
+        verifyUnauthorized(tokenWithBackupReadPermission(), "$/backups/restore/1", "POST", "requires permissions");
+    }
+
+    @Test
+    public void givenInsufficientPermissions_whenCreatingNamedBackup_thenUnauthorized() throws IOException {
+        verifyUnauthorized(tokenWithBackupReadPermission(), "$/backups/create/new-backup", "POST",
+                           "requires permissions");
     }
 
     @Test
