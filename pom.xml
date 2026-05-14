@@ -22,7 +22,7 @@
   <groupId>io.telicent.smart-caches.graph</groupId>
   <artifactId>scg-base</artifactId>
   <packaging>pom</packaging>
-  <version>1.0.2-SNAPSHOT</version>
+  <version>1.0.3-SNAPSHOT</version>
 
   <name>Telicent Smart Cache Graph - Parent</name>
   <description>Telicent Smart Cache Graph</description>
@@ -56,7 +56,7 @@
   <properties>
     <!-- Build properties -->
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <project.build.outputTimestamp>2026-05-01T08:32:40Z</project.build.outputTimestamp>
+    <project.build.outputTimestamp>2026-05-14T10:50:30Z</project.build.outputTimestamp>
     <java.version>21</java.version>
 
     <!-- Maven Plugin versions -->
@@ -81,13 +81,13 @@
 
     <!-- Dependency versions -->
     <!-- Internal dependencies -->
-    <dependency.rdf-abac>3.1.0</dependency.rdf-abac>
-    <dependency.fuseki-kafka>3.0.1</dependency.fuseki-kafka>
+    <dependency.rdf-abac>3.1.1</dependency.rdf-abac>
+    <dependency.fuseki-kafka>3.0.2</dependency.fuseki-kafka>
     <dependency.jena>6.1.0</dependency.jena>
 
-    <dependency.graphql>0.12.0</dependency.graphql>
+    <dependency.graphql>0.12.2</dependency.graphql>
     <dependency.jwt-servlet-auth>4.1.0</dependency.jwt-servlet-auth>
-    <dependency.smart-caches-core>0.37.0</dependency.smart-caches-core>
+    <dependency.smart-caches-core>0.38.0</dependency.smart-caches-core>
 
     <!-- External dependencies -->
     <dependency.awaitility>4.3.0</dependency.awaitility>
@@ -101,7 +101,7 @@
     <!-- Logging dependencies -->
     <dependency.log4j2>2.26.0</dependency.log4j2>
     <dependency.logback>1.5.32</dependency.logback>
-    <dependency.slf4j>2.0.17</dependency.slf4j>
+    <dependency.slf4j>2.0.18</dependency.slf4j>
 
     <!-- Test dependencies -->
     <dependency.jmh>1.37</dependency.jmh>
