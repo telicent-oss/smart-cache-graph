@@ -1,0 +1,13 @@
+server:
+  port: 8080
+
+deletion-worker:
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+  topic: ${KAFKA_TOPIC:RDF}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
