@@ -21,7 +21,7 @@ public class DeletionJobController {
 
     @PostMapping("/delete-distribution")
     public ResponseEntity<Map<String, String>> deleteDistribution(@RequestParam("distribution-id") String distributionId) {
-        if (distributionId == null) {
+        if (distributionId.isBlank()) {
             return ResponseEntity.badRequest()
                     .body(Map.of("error", "distributionId is required"));
         }
