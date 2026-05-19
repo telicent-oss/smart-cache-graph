@@ -105,8 +105,8 @@
 
     <!-- Test dependencies -->
     <dependency.jmh>1.37</dependency.jmh>
-    <dependency.junit5>6.0.3</dependency.junit5>
-    <dependency.junit5-platform>6.0.3</dependency.junit5-platform>
+    <dependency.junit5>6.1.0</dependency.junit5>
+    <dependency.junit5-platform>6.1.0</dependency.junit5-platform>
     <dependency.mockito>5.23.0</dependency.mockito>
     <dependency.testcontainers>1.21.4</dependency.testcontainers>
     <dependency.yaml-config>2.0.1</dependency.yaml-config>
