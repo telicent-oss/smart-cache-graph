@@ -466,7 +466,7 @@ public class DatasetBackupService {
      * @param responseNode the results of the operation
      * @return the success of the operation
      */
-    static final Duration KAFKA_PAUSE_TIMEOUT = Duration.ofSeconds(30);
+    static Duration KAFKA_PAUSE_TIMEOUT = Duration.ofSeconds(30);
 
     boolean restoreDataset(String restorePath, String datasetName, ObjectNode responseNode) {
         ObjectNode response = OBJECT_MAPPER.createObjectNode();
