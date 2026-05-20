@@ -490,21 +490,17 @@ public class DatasetBackupService {
 
         // Pause Kafka ingest for this dataset before touching the on-disk stores.
         String fksKey = dataAccessPoint.getName();
-        LOG.info("Pausing Kafka ingest for {} before restore", fksKey);
-        FKS.pauseProjectors(fksKey);
-        boolean paused = FKS.waitForPause(fksKey, KAFKA_PAUSE_TIMEOUT);
-        if (!paused) {
-            response.put("reason", "Timed out after " + KAFKA_PAUSE_TIMEOUT
-                                    + " waiting for Kafka projectors on " + fksKey
-                                    + " to reach a safe pause point; aborting restore");
-            response.put("success", false);
-            // Resume so we don't leave the projector in a half-paused state.
-            FKS.resumeProjectors(fksKey);
-            DatasetMaintenanceRegistry.end(maintenance.get());
-            return false;
-        }
-
         try {
+            LOG.info("Pausing Kafka ingest for {} before restore", fksKey);
+            FKS.pauseProjectors(fksKey);
+            boolean paused = FKS.waitForPause(fksKey, KAFKA_PAUSE_TIMEOUT);
+            if (!paused) {
+                response.put("reason", "Timed out after " + KAFKA_PAUSE_TIMEOUT
+                                        + " waiting for Kafka projectors on " + fksKey
+                                        + " to reach a safe pause point; aborting restore");
+                response.put("success", false);
+                return false;
+            }
             Txn.executeWrite(dsg, () -> applyRestoreMethods(response, dataAccessPoint, restorePath + "/" + datasetName));
         } catch (RuntimeException ex) {
             response.put("reason", ex.getMessage());
