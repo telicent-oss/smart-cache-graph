@@ -30,6 +30,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.apache.commons.io.FileUtils;
 import org.apache.jena.atlas.lib.DateTimeUtils;
+import org.apache.jena.fuseki.kafka.FKS;
 import org.apache.jena.fuseki.mgt.Backup;
 import org.apache.jena.fuseki.server.DataAccessPoint;
 import org.apache.jena.fuseki.server.DataAccessPointRegistry;
@@ -465,6 +466,8 @@ public class DatasetBackupService {
      * @param responseNode the results of the operation
      * @return the success of the operation
      */
+    static Duration KAFKA_PAUSE_TIMEOUT = Duration.ofSeconds(30);
+
     boolean restoreDataset(String restorePath, String datasetName, ObjectNode responseNode) {
         ObjectNode response = OBJECT_MAPPER.createObjectNode();
         response.put("dataset-name", datasetName);
@@ -484,13 +487,32 @@ public class DatasetBackupService {
             response.put("success", false);
             return false;
         }
+
+        // Pause Kafka ingest for this dataset before touching the on-disk stores.
+        String fksKey = dataAccessPoint.getName();
         try {
+            LOG.info("Pausing Kafka ingest for {} before restore", fksKey);
+            FKS.pauseProjectors(fksKey);
+            boolean paused = FKS.waitForPause(fksKey, KAFKA_PAUSE_TIMEOUT);
+            if (!paused) {
+                response.put("reason", "Timed out after " + KAFKA_PAUSE_TIMEOUT
+                                        + " waiting for Kafka projectors on " + fksKey
+                                        + " to reach a safe pause point; aborting restore");
+                response.put("success", false);
+                return false;
+            }
             Txn.executeWrite(dsg, () -> applyRestoreMethods(response, dataAccessPoint, restorePath + "/" + datasetName));
         } catch (RuntimeException ex) {
             response.put("reason", ex.getMessage());
             response.put("success", false);
         } finally {
-            DatasetMaintenanceRegistry.end(maintenance.get());
+            // ALWAYS resume Kafka ingest -- even if the restore threw
+            try {
+                LOG.info("Resuming Kafka ingest for {} after restore", fksKey);
+                FKS.resumeProjectors(fksKey);
+            } finally {
+                DatasetMaintenanceRegistry.end(maintenance.get());
+            }
         }
         return true;
     }
