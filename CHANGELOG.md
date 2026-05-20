@@ -1,5 +1,19 @@
 # Smart Cache Graph
 
+## 1.0.2
+
+- Build improvements:
+    - Apache Jena upgraded to 6.1.0
+    - Fuseki Kafka upgraded to 3.0.2
+    - GraphQL Jena upgraded to 0.12.2
+    - Jackson upgraded to 2.21.3
+    - JWT Servlet Auth upgraded to 4.1.0
+    - Log4j2 upgraded to 2.26.0
+    - OpenTelemetry SDK upgraded to 1.62.0
+    - RDF-ABAC upgraded to 3.1.1
+    - SLF4J upgraded to 2.0.18
+    - Smart Caches Core upgraded to 0.38.0
+
 ## 1.0.1
 
 This is a maintenance release to force Docker images to be republished as the 1.0.0 release did not publish images
