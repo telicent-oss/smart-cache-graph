@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1779705969058,
+  "lastUpdate": 1779706119401,
   "repoUrl": "https://github.com/telicent-oss/smart-cache-graph",
   "entries": {
     "ABAC Benchmark": [
@@ -8670,6 +8670,52 @@ window.BENCHMARK_DATA = {
           {
             "name": "io.telicent.core.BackupRestoreBenchmark.benchmarkRestoreDataset ( {\"tripleCount\":\"10000\"} )",
             "value": 133.9653370673684,
+            "unit": "ms/op",
+            "extra": "iterations: 3\nforks: 1\nthreads: 1"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "Paul Gallagher",
+            "username": "TelicentPaul",
+            "email": "132362215+TelicentPaul@users.noreply.github.com"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "41ad46de0c3e7d05b435a4ecddb9b18be23f0ed6",
+          "message": "Merge pull request #399 from telicent-oss/core_656_pause_kafka_processing_during_resotre\n\n[CORE-656] Pause kafka processing during restore operation",
+          "timestamp": "2026-05-20T14:06:48Z",
+          "url": "https://github.com/telicent-oss/smart-cache-graph/commit/41ad46de0c3e7d05b435a4ecddb9b18be23f0ed6"
+        },
+        "date": 1779706119161,
+        "tool": "jmh",
+        "benches": [
+          {
+            "name": "io.telicent.core.BackupRestoreBenchmark.benchmarkBackupDataset ( {\"tripleCount\":\"1000\"} )",
+            "value": 13.239203224564568,
+            "unit": "ms/op",
+            "extra": "iterations: 3\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "io.telicent.core.BackupRestoreBenchmark.benchmarkBackupDataset ( {\"tripleCount\":\"10000\"} )",
+            "value": 38.27051129165877,
+            "unit": "ms/op",
+            "extra": "iterations: 3\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "io.telicent.core.BackupRestoreBenchmark.benchmarkRestoreDataset ( {\"tripleCount\":\"1000\"} )",
+            "value": 35.45720170600581,
+            "unit": "ms/op",
+            "extra": "iterations: 3\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "io.telicent.core.BackupRestoreBenchmark.benchmarkRestoreDataset ( {\"tripleCount\":\"10000\"} )",
+            "value": 132.8594249114035,
             "unit": "ms/op",
             "extra": "iterations: 3\nforks: 1\nthreads: 1"
           }
