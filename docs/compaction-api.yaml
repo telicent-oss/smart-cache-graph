@@ -151,6 +151,8 @@ paths:
                 $ref: '#/components/schemas/AsyncCompactionSubmission'
         '401':
           description: Unauthorized due to missing role/permission.
+        '403':
+          description: Forbidden due to missing role/permission.
         '500':
           description: Compaction failed while handling the request.
           content:
@@ -187,6 +189,8 @@ paths:
                 $ref: '#/components/schemas/AsyncCompactionSubmission'
         '401':
           description: Unauthorized due to missing role/permission.
+        '403':
+          description: Forbidden due to missing role/permission.
         '500':
           description: One or more dataset compactions failed.
           content:
@@ -216,8 +220,8 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/CompactionJobStatus'
-        '401':
-          description: Unauthorized due to missing role/permission.
+        '403':
+          description: Forbidden due to missing role/permission.
 
   /$/compaction/jobs/{datasetName}/{jobId}:
     get:
@@ -243,8 +247,8 @@ paths:
                 properties:
                   job:
                     $ref: '#/components/schemas/CompactionJobStatus'
-        '401':
-          description: Unauthorized due to missing role/permission.
+        '403':
+          description: Forbidden due to missing role/permission.
         '404':
           description: Unknown job id.
 
@@ -263,8 +267,8 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/CompactionJobStatus'
-        '401':
-          description: Unauthorized due to missing role/permission.
+        '403':
+          description: Forbidden due to missing role/permission.
 
   /$/compaction/jobs/all/{jobId}:
     get:
@@ -285,7 +289,7 @@ paths:
                 properties:
                   job:
                     $ref: '#/components/schemas/CompactionJobStatus'
-        '401':
-          description: Unauthorized due to missing role/permission.
+        '403':
+          description: Forbidden due to missing role/permission.
         '404':
           description: Unknown job id.

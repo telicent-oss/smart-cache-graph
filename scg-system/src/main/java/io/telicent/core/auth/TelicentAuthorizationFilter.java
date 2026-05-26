@@ -42,9 +42,9 @@ final class TelicentAuthorizationFilter implements Filter {
         String loggingReasons = StringUtils.join(result.loggingReasons(), ", ");
         switch (result.status()) {
             case DENIED:
-                // Send a 401 Unauthorized
+                // The user is authenticated but fails authorization, so return 403 Forbidden.
                 LOGGER.warn("Request to {} rejected: {}", context.request().getRequestURI(), loggingReasons);
-                unauthorized(httpResponse, "Rejected due to servers authorization policy: " + clientReasons);
+                forbidden(httpResponse, "Rejected due to servers authorization policy: " + clientReasons);
                 break;
             case ALLOWED:
                 // Success, pass request onwards
@@ -68,6 +68,12 @@ final class TelicentAuthorizationFilter implements Filter {
     private static void unauthorized(HttpServletResponse httpResponse, String message) throws IOException {
         httpResponse.setContentType("text/plain");
         httpResponse.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        httpResponse.getWriter().write(message);
+    }
+
+    private static void forbidden(HttpServletResponse httpResponse, String message) throws IOException {
+        httpResponse.setContentType("text/plain");
+        httpResponse.setStatus(HttpServletResponse.SC_FORBIDDEN);
         httpResponse.getWriter().write(message);
     }
 
