@@ -132,23 +132,23 @@ public abstract class AbstractBearerAuthTests {
     }
 
     @Test
-    void givenNoRoles_whenMakingARequest_thenUnauthorized() {
+    void givenNoRoles_whenMakingARequest_thenForbidden() {
         // Given and When
         String error = verifyRequestFailure(LibTestsSCG.tokenBuilder("u1").compact(), LibTestsSCG.tokenHeader(),
-                                            HttpSC.UNAUTHORIZED_401);
+                                            HttpSC.FORBIDDEN_403);
 
         // Then
         Assertions.assertTrue(Strings.CI.contains(error, "requires roles"));
     }
 
     @Test
-    void givenWrongPermissions_whenMakingARequest_thenUnauthorized() {
+    void givenWrongPermissions_whenMakingARequest_thenForbidden() {
         // Given and When
         String error = verifyRequestFailure(
                 LibTestsSCG.tokenBuilder("u1")
                            .claims(Map.of("roles", List.of("USER"), "permissions", List.of("api.other.read")))
                            .compact(),
-                LibTestsSCG.tokenHeader(), HttpSC.UNAUTHORIZED_401);
+                LibTestsSCG.tokenHeader(), HttpSC.FORBIDDEN_403);
 
         // Then
         Assertions.assertTrue(Strings.CI.contains(error, "requires permissions"));

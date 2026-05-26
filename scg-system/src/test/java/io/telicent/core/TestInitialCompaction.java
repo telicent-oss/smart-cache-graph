@@ -742,7 +742,7 @@ public class TestInitialCompaction {
     }
 
     @Test
-    public void givenWrongRoles_whenCompactAll_thenUnauthorized() throws IOException {
+    public void givenWrongRoles_whenCompactAll_thenForbidden() throws IOException {
         // Given
         mockDatabaseMgr.when(() -> DatabaseMgr.compact(any(), anyBoolean())).thenAnswer(invocationOnMock -> null);
         String configFile = "config-persistent.ttl";
@@ -753,13 +753,13 @@ public class TestInitialCompaction {
                 makeAuthCallWithCustomToken(server, "$/compactall", TestBackupData.tokenWithUserRoleOnly(), "POST");
 
         // Then
-        assertEquals(401, compactResponse.statusCode());
+        assertEquals(403, compactResponse.statusCode());
         String error = IOUtils.toString(compactResponse.body(), StandardCharsets.UTF_8);
         assertTrue(Strings.CI.contains(error, "requires roles"));
     }
 
     @Test
-    public void givenInsufficientPermissions_whenCompactAll_thenUnauthorized() throws IOException {
+    public void givenInsufficientPermissions_whenCompactAll_thenForbidden() throws IOException {
         // Given
         mockDatabaseMgr.when(() -> DatabaseMgr.compact(any(), anyBoolean())).thenAnswer(invocationOnMock -> null);
         String configFile = "config-persistent.ttl";
@@ -771,7 +771,7 @@ public class TestInitialCompaction {
                                             "POST");
 
         // Then
-        assertEquals(401, compactResponse.statusCode());
+        assertEquals(403, compactResponse.statusCode());
         String error = IOUtils.toString(compactResponse.body(), StandardCharsets.UTF_8);
         assertTrue(Strings.CI.contains(error, "requires permissions"));
     }

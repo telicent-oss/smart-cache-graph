@@ -103,7 +103,7 @@ public class TestBackupData {
                 .build().start();
     }
 
-    private void verifyUnauthorized(String jwt, String path, String method, String expectedReason) throws IOException {
+    private void verifyForbidden(String jwt, String path, String method, String expectedReason) throws IOException {
         // Given
         server = buildServer("--port=0", "--empty");
 
@@ -113,7 +113,7 @@ public class TestBackupData {
         String body = IOUtils.toString(createBackupResponse.body(), StandardCharsets.UTF_8);
 
         // Then
-        assertEquals(401, createBackupResponse.statusCode());
+        assertEquals(403, createBackupResponse.statusCode());
         assertTrue(Strings.CI.contains(body, expectedReason));
     }
 
@@ -282,14 +282,14 @@ public class TestBackupData {
     }
 
     @Test
-    public void givenUserWithWrongRoles_whenCreatingBackup_thenUnauthorized() throws IOException {
-        verifyUnauthorized(tokenWithUserRoleOnly(),
+    public void givenUserWithWrongRoles_whenCreatingBackup_thenForbidden() throws IOException {
+        verifyForbidden(tokenWithUserRoleOnly(),
                            "$/backups/create", "POST", "requires roles");
     }
 
     @Test
-    public void givenUserWithInsufficientPermissions_whenCreatingBackup_thenUnauthorized() throws IOException {
-        verifyUnauthorized(tokenWithBackupReadPermission(), "$/backups/create", "POST", "requires permissions");
+    public void givenUserWithInsufficientPermissions_whenCreatingBackup_thenForbidden() throws IOException {
+        verifyForbidden(tokenWithBackupReadPermission(), "$/backups/create", "POST", "requires permissions");
     }
 
     @Test
@@ -352,14 +352,14 @@ public class TestBackupData {
     }
 
     @Test
-    public void givenUserWithWrongRoles_whenListBackups_thenUnauthorized() throws IOException {
-        verifyUnauthorized(tokenWithUserRoleOnly(),
+    public void givenUserWithWrongRoles_whenListBackups_thenForbidden() throws IOException {
+        verifyForbidden(tokenWithUserRoleOnly(),
                            "$/backups/list", "GET", "requires roles");
     }
 
     @Test
-    public void givenUserWithWrongRoles_whenListDatasets_thenUnauthorized() throws IOException {
-        verifyUnauthorized(tokenWithUserRoleOnly(),
+    public void givenUserWithWrongRoles_whenListDatasets_thenForbidden() throws IOException {
+        verifyForbidden(tokenWithUserRoleOnly(),
                            "$/backups/datasets/list", "GET", "requires roles");
     }
 
@@ -401,18 +401,18 @@ public class TestBackupData {
     }
 
     @Test
-    public void givenWrongRoles_whenDeletingBackup_thenUnauthorized() throws IOException {
-        verifyUnauthorized(tokenWithUserRoleOnly(), "$/backups/delete", "POST", "requires roles");
+    public void givenWrongRoles_whenDeletingBackup_thenForbidden() throws IOException {
+        verifyForbidden(tokenWithUserRoleOnly(), "$/backups/delete", "POST", "requires roles");
     }
 
     @Test
-    public void givenInsufficientPermissions_whenDeletingBackup_thenUnauthorized() throws IOException {
-        verifyUnauthorized(tokenWithBackupReadPermission(), "$/backups/delete", "POST", "requires permissions");
+    public void givenInsufficientPermissions_whenDeletingBackup_thenForbidden() throws IOException {
+        verifyForbidden(tokenWithBackupReadPermission(), "$/backups/delete", "POST", "requires permissions");
     }
 
     @Test
-    public void givenInsufficientPermissions_whenDeletingBackupById_thenUnauthorized() throws IOException {
-        verifyUnauthorized(tokenWithBackupReadPermission(), "$/backups/delete/1", "POST", "requires permissions");
+    public void givenInsufficientPermissions_whenDeletingBackupById_thenForbidden() throws IOException {
+        verifyForbidden(tokenWithBackupReadPermission(), "$/backups/delete/1", "POST", "requires permissions");
     }
 
     @Test
@@ -442,23 +442,23 @@ public class TestBackupData {
     }
 
     @Test
-    public void givenWrongRoles_whenRestoreBackup_thenUnauthorized() throws IOException {
-        verifyUnauthorized(tokenWithUserRoleOnly(), "$/backups/restore", "POST", "requires roles");
+    public void givenWrongRoles_whenRestoreBackup_thenForbidden() throws IOException {
+        verifyForbidden(tokenWithUserRoleOnly(), "$/backups/restore", "POST", "requires roles");
     }
 
     @Test
-    public void givenInsufficientPermissions_whenRestoreBackup_thenUnauthorized() throws IOException {
-        verifyUnauthorized(tokenWithBackupReadPermission(), "$/backups/restore", "POST", "requires permissions");
+    public void givenInsufficientPermissions_whenRestoreBackup_thenForbidden() throws IOException {
+        verifyForbidden(tokenWithBackupReadPermission(), "$/backups/restore", "POST", "requires permissions");
     }
 
     @Test
-    public void givenInsufficientPermissions_whenRestoreSpecificBackup_thenUnauthorized() throws IOException {
-        verifyUnauthorized(tokenWithBackupReadPermission(), "$/backups/restore/1", "POST", "requires permissions");
+    public void givenInsufficientPermissions_whenRestoreSpecificBackup_thenForbidden() throws IOException {
+        verifyForbidden(tokenWithBackupReadPermission(), "$/backups/restore/1", "POST", "requires permissions");
     }
 
     @Test
-    public void givenInsufficientPermissions_whenCreatingNamedBackup_thenUnauthorized() throws IOException {
-        verifyUnauthorized(tokenWithBackupReadPermission(), "$/backups/create/new-backup", "POST",
+    public void givenInsufficientPermissions_whenCreatingNamedBackup_thenForbidden() throws IOException {
+        verifyForbidden(tokenWithBackupReadPermission(), "$/backups/create/new-backup", "POST",
                            "requires permissions");
     }
 
