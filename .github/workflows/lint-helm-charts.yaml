@@ -1,0 +1,30 @@
+name: Lint Helm Charts
+run-name: Lint Helm Charts
+
+on:
+  push:
+    branches-ignore:
+      - main
+    paths:
+      - charts/**
+
+# Revoke almost all permissions by default and grant only those needed to each job.
+# https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#permissions
+permissions:
+  contents: read
+
+jobs:
+  lint-helm-charts:
+    name: Lint Helm charts
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        chart:
+          - telicent-document-loader
+    steps:
+      - name: Lint charts
+        id: build-and-push-dev-image
+        uses: telicent-oss/shared-workflows/.github/actions/lint-helm-charts@main
+        with:
+          chart: charts/${{ matrix.chart }}

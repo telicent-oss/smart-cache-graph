@@ -1,0 +1,40 @@
+name: Metadata Updater
+run-name: Metadata Updater
+
+on:
+  push:
+    branches-ignore:
+      - main
+    paths:
+      - charts/**
+
+# Revoke almost all permissions by default and grant only those needed to each job.
+# https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#permissions
+permissions:
+  contents: read
+
+jobs:
+  values-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Run metadata updater
+        id: metadata-updater
+        run: |
+          python .dev/metadata-updater.py --ci
+      - name: Check for uncommitted changes
+        run: |
+          has_diff=$(git diff || true)
+          if [[ -z "$has_diff" ]]; then
+            echo "✓ All documentation is up to date"
+          else
+            echo "[ERROR]✗ README files and schemas are out of sync with values.yaml"
+            echo "[ERROR]Please run 'python3 .dev/metadata-updater.py' locally and commit the changes"
+            git diff
+            exit 1
+          fi
