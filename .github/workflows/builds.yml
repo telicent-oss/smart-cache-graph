@@ -51,7 +51,7 @@ jobs:
       id-token: write
     steps:
       - name: Build and push image to ECR
-        uses: telicent-oss/shared-workflows/.github/actions/push-container-image@fix/caching
+        uses: telicent-oss/shared-workflows/.github/actions/push-container-image@main
         with:
           app-name: ${{ matrix.image }}
           app-name-prefix: ""
