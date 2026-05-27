@@ -1,0 +1,153 @@
+name: Promote to Quay
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to promote (defaults to latest release)
+        required: false
+        type: string
+
+jobs:
+  get-version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.resolve.outputs.version }}
+    steps:
+      - name: Resolve version
+        id: resolve
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="${{ inputs.version }}"
+          if [[ -z "$VERSION" ]]; then
+            VERSION=$(gh release view --repo "${{ github.repository }}" --json tagName -q '.tagName')
+            VERSION="${VERSION#v}"
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Promoting version: $VERSION"
+
+  promote-image:
+    name: Promote Docker image (${{ matrix.image }})
+    needs: get-version
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    strategy:
+      matrix:
+        image: [smart-cache-graph]
+      fail-fast: false
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::098669589541:role/GitHubDeploymentRole
+          aws-region: eu-west-2
+          mask-aws-account-id: true
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+        with:
+          mask-password: true
+
+      - name: Login to Quay
+        uses: docker/login-action@v3
+        with:
+          registry: quay.io
+          username: ${{ secrets.QUAY_USERNAME }}
+          password: ${{ secrets.QUAY_TOKEN }}
+
+      - name: Pull from ECR, retag and push to Quay
+        id: push-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          VERSION: ${{ needs.get-version.outputs.version }}
+          IMAGE: ${{ matrix.image }}
+        run: |
+          docker pull "$ECR_REGISTRY/$IMAGE:$VERSION"
+          docker tag "$ECR_REGISTRY/$IMAGE:$VERSION" "quay.io/telicent/$IMAGE:$VERSION"
+          docker push "quay.io/telicent/$IMAGE:$VERSION"
+          DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' "quay.io/telicent/$IMAGE:$VERSION" | cut -d'@' -f2)
+          echo "digest=$DIGEST" >> "$GITHUB_OUTPUT"
+
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v3
+
+      - name: Sign image on Quay
+        env:
+          VERSION: ${{ needs.get-version.outputs.version }}
+          IMAGE: ${{ matrix.image }}
+          DIGEST: ${{ steps.push-image.outputs.digest }}
+        run: cosign sign --yes "quay.io/telicent/$IMAGE:$VERSION@$DIGEST"
+
+  promote-chart:
+    name: Promote Helm chart (${{ matrix.chartName }})
+    needs: get-version
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    strategy:
+      matrix:
+        chartName: [graph]
+      fail-fast: false
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::098669589541:role/GitHubDeploymentRole
+          aws-region: eu-west-2
+          mask-aws-account-id: true
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+        with:
+          mask-password: true
+
+      - name: Install Helm
+        uses: azure/setup-helm@v5
+        with:
+          version: latest
+
+      - name: Login to Quay (Helm)
+        env:
+          QUAY_USERNAME: ${{ secrets.QUAY_USERNAME }}
+          QUAY_TOKEN: ${{ secrets.QUAY_TOKEN }}
+        run: echo "$QUAY_TOKEN" | helm registry login quay.io --username "$QUAY_USERNAME" --password-stdin
+
+      - name: Login to Quay (Docker)
+        uses: docker/login-action@v3
+        with:
+          registry: quay.io
+          username: ${{ secrets.QUAY_USERNAME }}
+          password: ${{ secrets.QUAY_TOKEN }}
+
+      - name: Pull chart from ECR and push to Quay
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          VERSION: ${{ needs.get-version.outputs.version }}
+          CHART: ${{ matrix.chartName }}
+        run: |
+          mkdir -p /tmp/charts/
+          helm pull "oci://$ECR_REGISTRY/charts/$CHART" --version "$VERSION" --destination /tmp/charts/
+          set -o pipefail
+          helm push "/tmp/charts/$CHART-$VERSION.tgz" oci://quay.io/telicent/charts 2>&1 | tee /tmp/helm-push-output.txt
+          echo "## Helm Push Summary" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          cat /tmp/helm-push-output.txt >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          PUSHED=$(grep "^Pushed:" /tmp/helm-push-output.txt | awk '{print $2}')
+          DIGEST=$(grep "^Digest:" /tmp/helm-push-output.txt | awk '{print $2}')
+          echo "$PUSHED@$DIGEST" > /tmp/chart-ref.txt
+
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v3
+
+      - name: Sign chart on Quay
+        run: |
+          REF=$(cat /tmp/chart-ref.txt)
+          echo "Signing $REF"
+          cosign sign --yes "$REF"
