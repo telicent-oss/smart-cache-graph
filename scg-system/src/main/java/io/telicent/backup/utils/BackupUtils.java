@@ -144,7 +144,7 @@ public class BackupUtils extends ServletUtils {
             throw new BackupException(
                     "Backup dir path " + context + " '" + path + "' exists but isn't a directory");
         }
-        if (!dir.mkdir()) {
+        if (!dir.mkdirs()) {
             throw new BackupException(
                     "Failed to create backup directory " + context + " at '" + path + "'");
         }
