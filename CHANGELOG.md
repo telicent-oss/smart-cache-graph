@@ -1,5 +1,10 @@
 # Smart Cache Graph
 
+## 1.0.3
+- Build improvements:
+  - improved error response on failed backup creation
+  - pause kafka processing during restoration.
+
 ## 1.0.2
 
 - Build improvements:
