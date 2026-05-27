@@ -80,10 +80,6 @@ public class SPARQL_Update_CQRS extends SPARQL_Update implements ABAC_Processor 
         this.onAbort = onAbort;
     }
 
-    // This can be a read-end action because the base dataset is only ever read.
-    // In CQRS.setup, there is a buffering dataset that stores the mutations.
-    private static final boolean executeAsWrite = true;
-
     /**
      * Gets the configured Kafka producer for this endpoint
      *
@@ -96,13 +92,7 @@ public class SPARQL_Update_CQRS extends SPARQL_Update implements ABAC_Processor 
     @Override
     protected void execute(HttpAction action, InputStream input) {
         UsingList usingList = processProtocol(action.getRequest());
-        if (executeAsWrite) {
-            action.beginWrite();
-        } else
-        // Need BufferingDatasetGraph to report "write txn" even if base DSG is read.
-        {
-            action.beginRead();
-        }
+        action.beginWrite();
         try {
             // Get the ABAC Dataset to use
             DatasetGraph dsgRequest;
@@ -117,9 +107,7 @@ public class SPARQL_Update_CQRS extends SPARQL_Update implements ABAC_Processor 
             UpdateAction.parseExecute(usingList, updateCtl.dataset(), input, UpdateParseBase, Syntax.syntaxARQ);
             // Don't make the changes until read back from Kafka.
             CQRS.finishOperation(action, updateCtl);
-            if (executeAsWrite) {
-                action.abort();
-            }
+            action.abort();
             // Finished with this - it might have a large buffering dataset so clearly release it.
             updateCtl = null;
             /* ---- */

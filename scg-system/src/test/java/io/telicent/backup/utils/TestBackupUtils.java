@@ -95,11 +95,12 @@ public class TestBackupUtils {
     public void test_generateBackUpDirPath_invalidProperty() {
         // given
         setBackUpDirProperty("/non/existent/directory");
-        // when
-        String dirPath = generateBackUpDirPath();
-        // then
-        assertEquals(EXPECTED_DEFAULT_DIR, dirPath);
-        assertTrue(new File(dirPath).exists());
+        // when / then
+        BackupException ex = assertThrows(BackupException.class, BackupUtils::generateBackUpDirPath);
+        assertTrue(ex.getMessage().contains("/non/existent/directory"),
+                "Exception should name the failing path; got: " + ex.getMessage());
+        assertTrue(ex.getMessage().contains("ENV_BACKUPS_DIR"),
+                "Exception should mention the env var so the operator knows what to change; got: " + ex.getMessage());
     }
 
     @Test
