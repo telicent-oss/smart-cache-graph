@@ -11,6 +11,8 @@ on:
 jobs:
   get-version:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     outputs:
       version: ${{ steps.resolve.outputs.version }}
     steps:
