@@ -1,0 +1,320 @@
+# Copyright (C) 2026 Telicent Limited
+# Telicent *Graph* stand-alone chart
+
+#
+# @section Global Parameters
+#
+# @descStart
+# Contains global parameters; these parameters are mirrored within the Telicent core umbrella chart.
+# Note: Only global parameters used within this chart will be listed below.
+# @descEnd
+global:
+  ## Current available global image parameters: imageRegistry and imagePullSecrets
+  ## Please, note that this will override the image parameters
+  # @key global.imageRegistry Global image registry
+  imageRegistry: ""
+  # E.g.
+  # imagePullSecrets:
+  #   - myRegistryKeySecretName
+  # @key global.imagePullSecrets Global registry secret names as an array
+  imagePullSecrets: []
+
+  # @key global.releaseNameTelicentPreview Release name used during the Telicent Preview chart installation. Note: ensure the value is correct, otherwise there will be no access to data-catalog, user-portal & paperback-writer
+  # If installed through the parent-chart this value needs to reflect the name of the release name used when 'telicent-preview' chart was installed.
+  # If all applications were installed through sub-charts, leaving this value empty will provide the correct behavior.
+  releaseNameTelicentPreview: ""
+
+  # @key global.enterprise Enable enterprise mode, adding additional features and configurations
+  enterprise: false
+
+  # @key global.appHostDomain Domain associated with Telicent application/ui services. This value cannot be changed after it is set
+  appHostDomain: ""
+  # @key global.apiHostDomain Domain associated with Telicent Api services. This value cannot be changed after it is set
+  apiHostDomain: ""
+  # @key global.authHostDomain Domain associated with Telicent authentication services, including OIDC providers. This value cannot be changed after it is set
+  authHostDomain: ""
+
+  kafka:
+    # @key global.kafka.bootstrapServers Comma separated list containing Kafka bootstrap servers
+    bootstrapServers: "kafka-bootstrap.kafka.svc.cluster.local:9092"
+    # @key global.kafka.existingConfigSecretName Name of an existing secret containing Kafka configuration (preferred over individual settings below for security)
+    existingConfigSecretName: ""
+    # @key global.kafka.username Username for Kafka authentication
+    username: "your.kafka.username.here"
+    # @key global.kafka.password Password for Kafka authentication
+    password: "your.kafka.password.here"
+    # @key global.kafka.protocol Protocol used for Kafka communication
+    protocol: "SASL_SSL"
+    # @key global.kafka.mechanism SASL mechanism used for Kafka authentication
+    mechanism: "SCRAM-SHA-512"
+
+  truststore:
+    # @key global.truststore.existingSecret Name of an existing secret containing the truststore
+    existingSecret: ""
+    # @key global.truststore.mountPath The mount path for the truststore in the container
+    mountPath: /app/config/truststore
+
+#
+# @section Application Parameters - Java
+#
+# @descStart
+# Contains Java configuration parameters to be used by the *Graph* application
+# @descEnd
+java:
+  # @key java.jvmOptions JVM options for the application
+  jvmOptions: "-XX:MaxRAMPercentage=80.0"
+
+#
+# @section Application Parameters - Graph
+#
+# @descStart
+# Contains configuration parameters that configure aspects of the *Graph* application behaviour.
+# @descEnd
+graph:
+  # @key graph.routeToNamedGraphs Enable or disable routing to named graphs. When set to true, data will be routed into named graphs based on the Distribution-ID header set on the incoming Kafka events.
+  routeToNamedGraphs: false
+  # @key graph.legacyLabels Enable or disable legacy label store format.  When set to false then the new label store format will be used, which allows for more efficient storage and querying of labels.  If a pre-existing store exists in the legacy format it will be automatically migrated forwards to the new format.
+  legacyLabels: false
+
+#
+# @section ConfigMap Parameters
+#
+configMap:
+  # @key configMap.existingEnvConfigMap Name of existing configmap containing *Graph* Environment Configuration
+  # Note: When it's set it will disable configmap creation.
+  existingEnvConfigMap: ""
+  # @key configMap.existingFusekiConfigMap Name of existing configmap containing Fuseki Configuration
+  # Note: When it's set it will disable the fuseki configmap creation.
+  existingFusekiConfigMap: ""
+
+#
+# @section Common Parameters
+#
+# @key nameOverride String to partially override fullname (will maintain the release name)
+nameOverride: ""
+# @key fullnameOverride String to fully override the generated release name
+fullnameOverride: ""
+# @key namespaceOverride String to fully override all deployed resources namespace
+namespaceOverride: ""
+# @key commonLabels Add labels to all the deployed resources
+commonLabels: {}
+
+#
+# @section Statefulset Parameters
+#
+# @key replicas Number of *Graph* replicas to deploy
+replicas: 1
+# @key revisionHistoryLimit Number of controller revisions to keep
+revisionHistoryLimit: 5
+
+# @key annotations Add extra annotations to the Statefulset object
+annotations: {}
+# @key podLabels Add extra labels to the *Graph* pod
+podLabels: {}
+# @key podAnnotations Add extra annotations to the *Graph* pod
+podAnnotations: {}
+# @key extraEnvVars Array with extra environment variables to add to *Graph* pod
+# Example:
+# extraEnvVars:
+# - name: FOO
+#   value: instance
+extraEnvVars: []
+# @key extraVolumes Optionally specify extra list of additional volumes
+extraVolumes: []
+# @key extraVolumeMounts Optionally specify extra list of additional volumeMounts
+extraVolumeMounts: []
+# @key initContainers Add init containers to the pod
+initContainers: []
+# Example:
+# sidecars:
+# - name: your-image-name
+#   image: your-image
+#   ports:
+#   - name: portname
+#     containerPort: 1234
+# @key sidecars Add sidecars to the pod
+sidecars: []
+
+#
+# @section Statefulset Image Parameters
+#
+image:
+  # @key image.registry *Graph* image registry
+  registry: quay.io
+  # @key image.repository *Graph* image name
+  repository: telicent/smart-cache-graph
+  # @key image.tag *Graph* image tag. If not set, a tag is generated using the appVersion
+  tag: ""
+  # @key image.pullPolicy *Graph* image pull policy
+  pullPolicy: IfNotPresent
+  # @key image.pullSecrets Specify registry secret names as an array
+  pullSecrets: []
+
+#
+# @section Statefulset Probe Parameters
+#
+# @key readinessProbe.initialDelaySeconds Number of seconds before readiness probe is initiated
+# @key readinessProbe.periodSeconds How often (in seconds) to perform the readiness probe
+# @key readinessProbe.timeoutSeconds Number of seconds after which the readiness probe times out
+# @key readinessProbe.failureThreshold Number of failures before the pod is marked unready
+# @key readinessProbe.successThreshold Minimum consecutive successes for the probe to be considered successful
+readinessProbe:
+  initialDelaySeconds: 120
+  periodSeconds: 60
+  timeoutSeconds: 10
+  failureThreshold: 3
+  successThreshold: 1
+
+# @key livenessProbe.initialDelaySeconds Number of seconds before liveness probe is initiated
+# @key livenessProbe.periodSeconds How often (in seconds) to perform the liveness probe
+# @key livenessProbe.timeoutSeconds Number of seconds after which the liveness probe times out
+# @key livenessProbe.failureThreshold Number of failures before the pod is restarted
+livenessProbe:
+  initialDelaySeconds: 120
+  periodSeconds: 60
+  timeoutSeconds: 10
+  failureThreshold: 3
+
+#
+# @section Statefulset Resources Parameters - Requests and Limits
+#
+# @key resources Resources for *Graph* containers
+resources: {}
+#  requests:
+#    # @key resources.requests.cpu Set containers' CPU request
+#    cpu: "1200m"
+#    # @key resources.requests.memory Set containers' memory request
+#    memory: "8000Mi"
+#  limits:
+#    # @key resources.limits.cpu Set containers' CPU limit
+#    cpu: "1500m"
+#    # @key resources.limits.memory Set containers' memory limit
+#    memory: "12000Mi"
+
+#
+# @section Statefulset Security Context Parameters - Default Security Context
+#
+podSecurityContext:
+  # @key podSecurityContext.runAsUser Set the provisioning pod's Security Context runAsUser User ID
+  runAsUser: 185
+  # @key podSecurityContext.runAsGroup Set the provisioning pod's Security Context runAsGroup Group ID
+  runAsGroup: 185
+  # @key podSecurityContext.runAsNonRoot Set the provisioning pod's Security Context runAsNonRoot
+  runAsNonRoot: true
+  # @key podSecurityContext.fsGroup Set the provisioning pod's Group ID for the mounted volumes' filesystem
+  fsGroup: 185
+  seccompProfile:
+    # @key podSecurityContext.seccompProfile.type Set the provisioning pod's Security Context seccomp profile
+    type: RuntimeDefault
+containerSecurityContext:
+  # @key containerSecurityContext.runAsUser Set containers' Security Context runAsUser User ID
+  runAsUser: 185
+  # @key containerSecurityContext.runAsGroup Set containers' Security Context runAsGroup Group ID
+  runAsGroup: 185
+  # @key containerSecurityContext.runAsNonRoot Set container's Security Context runAsNonRoot
+  runAsNonRoot: true
+  # @key containerSecurityContext.allowPrivilegeEscalation Set container's Security Context allowPrivilegeEscalation
+  allowPrivilegeEscalation: false
+  capabilities:
+    # @key containerSecurityContext.capabilities.drop List of capabilities to be dropped
+    drop:
+      - ALL
+  seccompProfile:
+    # @key containerSecurityContext.seccompProfile.type Set container's Security Context seccomp profile
+    type: RuntimeDefault
+
+#
+# @section Statefulset Affinity Parameters
+#
+# @key affinity Affinity for pod assignment
+# Ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity
+affinity: {}
+# @key nodeSelector Node labels for pod assignment
+# Ref: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/
+nodeSelector: {}
+# @key tolerations Tolerations for pod assignment
+# Ref: https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/
+tolerations: []
+
+#
+# @section Persistent Volume Claim Parameters
+#
+persistentVolumeClaims:
+  backupsVolume:
+    # @key persistentVolumeClaims.backupsVolume.size PVC Storage Request for the Backup volume
+    size: 25Gi
+    # @key persistentVolumeClaims.backupsVolume.storageClass PVC Storage Class for the Backup data volume
+    storageClass: gp3
+  datasetsVolume:
+    # @key persistentVolumeClaims.datasetsVolume.size PVC Storage Request for the *Graph* volume
+    size: 25Gi
+    # @key persistentVolumeClaims.datasetsVolume.storageClass PVC Storage Class for the *Graph* data volume
+    storageClass: gp3
+
+#
+# @section Service Account Parameters
+#
+serviceAccount:
+  # @key serviceAccount.create Specifies whether a service account should be created
+  create: true
+  # @key serviceAccount.name Name of the ServiceAccount to use. If not set, a name is generated using the fullname
+  name: ""
+  # @key serviceAccount.annotations Additional custom annotations for the ServiceAccount
+  annotations: {}
+  # @key serviceAccount.automount Automatically mount a ServiceAccount's API credentials
+  automount: true
+
+#
+# @section Traffic Exposure Parameters
+#
+service:
+  # @key service.name *Graph* service name. If not set, a name is generated using the fullname
+  name: ""
+  # @key service.port *Graph* service port
+  port: 8080
+  # @key service.type *Graph* service type
+  type: ClusterIP
+
+#
+# @section Metrics (Prometheus) Exposure Parameters
+#
+metrics:
+  # @key metrics.enabled Enable Prometheus metrics
+  enabled: true
+  service:
+    # @key metrics.service.name Name for the Prometheus service
+    name: metrics
+    # @key metrics.service.port Port for the Prometheus service
+    port: 9464
+
+#
+# @section Host(s) Parameters - Contains host information for applications deployed via *telicent-core* chart.
+#
+# @descStart
+# *Graph* interacts directly with other Telicent Applications using their default service/serviceAccount and port.
+# If either of those details changes, you can use this section to correctly refer to those applications.
+# @descEnd
+hosts:
+  # @key hosts.enableAutoCorrect Allow for the release name to be automatically pre-fixed to each host value when required (default behavior when installing through the parent chart). Alternatively, the host value will be used as is, without any modification.
+  enableAutoCorrect: true
+  # @key hosts.auth Auth application default host value, as defined by 'service/serviceAccount:port'
+  auth: "auth:8080"
+  # @key hosts.traefikProxy Traefik Proxy application default host value, as defined by 'service/serviceAccount:port'
+  traefikProxy: "traefik-proxy:8080"
+  # @key hosts.search Search application default host value, as defined by 'service/serviceAccount:port'
+  search: "search:8080"
+
+#
+# @section Host(s) Preview Parameters - Contains host information for applications deployed via *telicent-preview* chart
+#
+# @descStart
+# *Graph* interacts with applications deployed via *telicent-preview* using their default service/serviceAccount and port.
+# If either of those details changes, you can use this section to correctly refer to those applications.
+# @descEnd
+hostsPreview:
+  # @key hostsPreview.enableAutoCorrect Prefix 'global.releaseNameTelicentPreview' value to each host value. Alternatively, the host value will be used as it is, without any modification
+  enableAutoCorrect: true
+  # @key hostsPreview.paperbackWriter Paperback Writer application host value, as defined by 'service/serviceAccount:port'
+  paperbackWriter: "paperback-writer:8080"
+  # @key hostsPreview.aiSparqlBuilder AI SPARQL Builder application host value, as defined by 'service/serviceAccount:port'
+  aiSparqlBuilder: "ai-sparql-builder:8080"

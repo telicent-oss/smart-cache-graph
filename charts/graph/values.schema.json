@@ -1,0 +1,554 @@
+{
+    "title": "Chart Values",
+    "type": "object",
+    "properties": {
+        "global": {
+            "type": "object",
+            "properties": {
+                "imageRegistry": {
+                    "type": "string",
+                    "description": "Global image registry",
+                    "default": ""
+                },
+                "imagePullSecrets": {
+                    "type": "array",
+                    "description": "Global registry secret names as an array",
+                    "default": [],
+                    "items": {}
+                },
+                "releaseNameTelicentPreview": {
+                    "type": "string",
+                    "description": "Release name used during the Telicent Preview chart installation. Note: ensure the value is correct, otherwise there will be no access to data-catalog, user-portal & paperback-writer",
+                    "default": ""
+                },
+                "enterprise": {
+                    "type": "boolean",
+                    "description": "Enable enterprise mode, adding additional features and configurations",
+                    "default": false
+                },
+                "appHostDomain": {
+                    "type": "string",
+                    "description": "Domain associated with Telicent application/ui services. This value cannot be changed after it is set",
+                    "default": ""
+                },
+                "apiHostDomain": {
+                    "type": "string",
+                    "description": "Domain associated with Telicent Api services. This value cannot be changed after it is set",
+                    "default": ""
+                },
+                "authHostDomain": {
+                    "type": "string",
+                    "description": "Domain associated with Telicent authentication services, including OIDC providers. This value cannot be changed after it is set",
+                    "default": ""
+                },
+                "kafka": {
+                    "type": "object",
+                    "properties": {
+                        "bootstrapServers": {
+                            "type": "string",
+                            "description": "Comma separated list containing Kafka bootstrap servers",
+                            "default": "kafka-bootstrap.kafka.svc.cluster.local:9092"
+                        },
+                        "existingConfigSecretName": {
+                            "type": "string",
+                            "description": "Name of an existing secret containing Kafka configuration (preferred over individual settings below for security)",
+                            "default": ""
+                        },
+                        "username": {
+                            "type": "string",
+                            "description": "Username for Kafka authentication",
+                            "default": "your.kafka.username.here"
+                        },
+                        "password": {
+                            "type": "string",
+                            "description": "Password for Kafka authentication",
+                            "default": "your.kafka.password.here"
+                        },
+                        "protocol": {
+                            "type": "string",
+                            "description": "Protocol used for Kafka communication",
+                            "default": "SASL_SSL"
+                        },
+                        "mechanism": {
+                            "type": "string",
+                            "description": "SASL mechanism used for Kafka authentication",
+                            "default": "SCRAM-SHA-512"
+                        }
+                    }
+                },
+                "truststore": {
+                    "type": "object",
+                    "properties": {
+                        "existingSecret": {
+                            "type": "string",
+                            "description": "Name of an existing secret containing the truststore",
+                            "default": ""
+                        },
+                        "mountPath": {
+                            "type": "string",
+                            "description": "The mount path for the truststore in the container",
+                            "default": "/app/config/truststore"
+                        }
+                    }
+                }
+            }
+        },
+        "java": {
+            "type": "object",
+            "properties": {
+                "jvmOptions": {
+                    "type": "string",
+                    "description": "JVM options for the application",
+                    "default": "-XX:MaxRAMPercentage=80.0"
+                }
+            }
+        },
+        "graph": {
+            "type": "object",
+            "properties": {
+                "routeToNamedGraphs": {
+                    "type": "boolean",
+                    "description": "Enable or disable routing to named graphs. When set to true, data will be routed into named graphs based on the Distribution-ID header set on the incoming Kafka events.",
+                    "default": false
+                },
+                "legacyLabels": {
+                    "type": "boolean",
+                    "description": "Enable or disable legacy label store format.  When set to false then the new label store format will be used, which allows for more efficient storage and querying of labels.  If a pre-existing store exists in the legacy format it will be automatically migrated forwards to the new format.",
+                    "default": false
+                }
+            }
+        },
+        "configMap": {
+            "type": "object",
+            "properties": {
+                "existingEnvConfigMap": {
+                    "type": "string",
+                    "description": "Name of existing configmap containing *Graph* Environment Configuration",
+                    "default": ""
+                },
+                "existingFusekiConfigMap": {
+                    "type": "string",
+                    "description": "Name of existing configmap containing Fuseki Configuration",
+                    "default": ""
+                }
+            }
+        },
+        "nameOverride": {
+            "type": "string",
+            "description": "String to partially override fullname (will maintain the release name)",
+            "default": ""
+        },
+        "fullnameOverride": {
+            "type": "string",
+            "description": "String to fully override the generated release name",
+            "default": ""
+        },
+        "namespaceOverride": {
+            "type": "string",
+            "description": "String to fully override all deployed resources namespace",
+            "default": ""
+        },
+        "commonLabels": {
+            "type": "object",
+            "description": "Add labels to all the deployed resources",
+            "default": {}
+        },
+        "replicas": {
+            "type": "number",
+            "description": "Number of *Graph* replicas to deploy",
+            "default": 1
+        },
+        "revisionHistoryLimit": {
+            "type": "number",
+            "description": "Number of controller revisions to keep",
+            "default": 5
+        },
+        "annotations": {
+            "type": "object",
+            "description": "Add extra annotations to the Statefulset object",
+            "default": {}
+        },
+        "podLabels": {
+            "type": "object",
+            "description": "Add extra labels to the *Graph* pod",
+            "default": {}
+        },
+        "podAnnotations": {
+            "type": "object",
+            "description": "Add extra annotations to the *Graph* pod",
+            "default": {}
+        },
+        "extraEnvVars": {
+            "type": "array",
+            "description": "Array with extra environment variables to add to *Graph* pod",
+            "default": [],
+            "items": {}
+        },
+        "extraVolumes": {
+            "type": "array",
+            "description": "Optionally specify extra list of additional volumes",
+            "default": [],
+            "items": {}
+        },
+        "extraVolumeMounts": {
+            "type": "array",
+            "description": "Optionally specify extra list of additional volumeMounts",
+            "default": [],
+            "items": {}
+        },
+        "initContainers": {
+            "type": "array",
+            "description": "Add init containers to the pod",
+            "default": [],
+            "items": {}
+        },
+        "sidecars": {
+            "type": "array",
+            "description": "Add sidecars to the pod",
+            "default": [],
+            "items": {}
+        },
+        "image": {
+            "type": "object",
+            "properties": {
+                "registry": {
+                    "type": "string",
+                    "description": "*Graph* image registry",
+                    "default": "quay.io"
+                },
+                "repository": {
+                    "type": "string",
+                    "description": "*Graph* image name",
+                    "default": "telicent/smart-cache-graph"
+                },
+                "tag": {
+                    "type": "string",
+                    "description": "*Graph* image tag. If not set, a tag is generated using the appVersion",
+                    "default": ""
+                },
+                "pullPolicy": {
+                    "type": "string",
+                    "description": "*Graph* image pull policy",
+                    "default": "IfNotPresent"
+                },
+                "pullSecrets": {
+                    "type": "array",
+                    "description": "Specify registry secret names as an array",
+                    "default": [],
+                    "items": {}
+                }
+            }
+        },
+        "readinessProbe": {
+            "type": "object",
+            "properties": {
+                "initialDelaySeconds": {
+                    "type": "number",
+                    "description": "Number of seconds before readiness probe is initiated",
+                    "default": 120
+                },
+                "periodSeconds": {
+                    "type": "number",
+                    "description": "How often (in seconds) to perform the readiness probe",
+                    "default": 60
+                },
+                "timeoutSeconds": {
+                    "type": "number",
+                    "description": "Number of seconds after which the readiness probe times out",
+                    "default": 10
+                },
+                "failureThreshold": {
+                    "type": "number",
+                    "description": "Number of failures before the pod is marked unready",
+                    "default": 3
+                },
+                "successThreshold": {
+                    "type": "number",
+                    "description": "Minimum consecutive successes for the probe to be considered successful",
+                    "default": 1
+                }
+            }
+        },
+        "livenessProbe": {
+            "type": "object",
+            "properties": {
+                "initialDelaySeconds": {
+                    "type": "number",
+                    "description": "Number of seconds before liveness probe is initiated",
+                    "default": 120
+                },
+                "periodSeconds": {
+                    "type": "number",
+                    "description": "How often (in seconds) to perform the liveness probe",
+                    "default": 60
+                },
+                "timeoutSeconds": {
+                    "type": "number",
+                    "description": "Number of seconds after which the liveness probe times out",
+                    "default": 10
+                },
+                "failureThreshold": {
+                    "type": "number",
+                    "description": "Number of failures before the pod is restarted",
+                    "default": 3
+                }
+            }
+        },
+        "resources": {
+            "type": "object",
+            "description": "Resources for *Graph* containers",
+            "default": {}
+        },
+        "podSecurityContext": {
+            "type": "object",
+            "properties": {
+                "runAsUser": {
+                    "type": "number",
+                    "description": "Set the provisioning pod's Security Context runAsUser User ID",
+                    "default": 185
+                },
+                "runAsGroup": {
+                    "type": "number",
+                    "description": "Set the provisioning pod's Security Context runAsGroup Group ID",
+                    "default": 185
+                },
+                "runAsNonRoot": {
+                    "type": "boolean",
+                    "description": "Set the provisioning pod's Security Context runAsNonRoot",
+                    "default": true
+                },
+                "fsGroup": {
+                    "type": "number",
+                    "description": "Set the provisioning pod's Group ID for the mounted volumes' filesystem",
+                    "default": 185
+                },
+                "seccompProfile": {
+                    "type": "object",
+                    "properties": {
+                        "type": {
+                            "type": "string",
+                            "description": "Set the provisioning pod's Security Context seccomp profile",
+                            "default": "RuntimeDefault"
+                        }
+                    }
+                }
+            }
+        },
+        "containerSecurityContext": {
+            "type": "object",
+            "properties": {
+                "runAsUser": {
+                    "type": "number",
+                    "description": "Set containers' Security Context runAsUser User ID",
+                    "default": 185
+                },
+                "runAsGroup": {
+                    "type": "number",
+                    "description": "Set containers' Security Context runAsGroup Group ID",
+                    "default": 185
+                },
+                "runAsNonRoot": {
+                    "type": "boolean",
+                    "description": "Set container's Security Context runAsNonRoot",
+                    "default": true
+                },
+                "allowPrivilegeEscalation": {
+                    "type": "boolean",
+                    "description": "Set container's Security Context allowPrivilegeEscalation",
+                    "default": false
+                },
+                "capabilities": {
+                    "type": "object",
+                    "properties": {
+                        "drop": {
+                            "type": "array",
+                            "description": "List of capabilities to be dropped",
+                            "default": [
+                                "ALL"
+                            ],
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                },
+                "seccompProfile": {
+                    "type": "object",
+                    "properties": {
+                        "type": {
+                            "type": "string",
+                            "description": "Set container's Security Context seccomp profile",
+                            "default": "RuntimeDefault"
+                        }
+                    }
+                }
+            }
+        },
+        "affinity": {
+            "type": "object",
+            "description": "Affinity for pod assignment",
+            "default": {}
+        },
+        "nodeSelector": {
+            "type": "object",
+            "description": "Node labels for pod assignment",
+            "default": {}
+        },
+        "tolerations": {
+            "type": "array",
+            "description": "Tolerations for pod assignment",
+            "default": [],
+            "items": {}
+        },
+        "persistentVolumeClaims": {
+            "type": "object",
+            "properties": {
+                "backupsVolume": {
+                    "type": "object",
+                    "properties": {
+                        "size": {
+                            "type": "string",
+                            "description": "PVC Storage Request for the Backup volume",
+                            "default": "25Gi"
+                        },
+                        "storageClass": {
+                            "type": "string",
+                            "description": "PVC Storage Class for the Backup data volume",
+                            "default": "gp3"
+                        }
+                    }
+                },
+                "datasetsVolume": {
+                    "type": "object",
+                    "properties": {
+                        "size": {
+                            "type": "string",
+                            "description": "PVC Storage Request for the *Graph* volume",
+                            "default": "25Gi"
+                        },
+                        "storageClass": {
+                            "type": "string",
+                            "description": "PVC Storage Class for the *Graph* data volume",
+                            "default": "gp3"
+                        }
+                    }
+                }
+            }
+        },
+        "serviceAccount": {
+            "type": "object",
+            "properties": {
+                "create": {
+                    "type": "boolean",
+                    "description": "Specifies whether a service account should be created",
+                    "default": true
+                },
+                "name": {
+                    "type": "string",
+                    "description": "Name of the ServiceAccount to use. If not set, a name is generated using the fullname",
+                    "default": ""
+                },
+                "annotations": {
+                    "type": "object",
+                    "description": "Additional custom annotations for the ServiceAccount",
+                    "default": {}
+                },
+                "automount": {
+                    "type": "boolean",
+                    "description": "Automatically mount a ServiceAccount's API credentials",
+                    "default": true
+                }
+            }
+        },
+        "service": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "*Graph* service name. If not set, a name is generated using the fullname",
+                    "default": ""
+                },
+                "port": {
+                    "type": "number",
+                    "description": "*Graph* service port",
+                    "default": 8080
+                },
+                "type": {
+                    "type": "string",
+                    "description": "*Graph* service type",
+                    "default": "ClusterIP"
+                }
+            }
+        },
+        "metrics": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean",
+                    "description": "Enable Prometheus metrics",
+                    "default": true
+                },
+                "service": {
+                    "type": "object",
+                    "properties": {
+                        "name": {
+                            "type": "string",
+                            "description": "Name for the Prometheus service",
+                            "default": "metrics"
+                        },
+                        "port": {
+                            "type": "number",
+                            "description": "Port for the Prometheus service",
+                            "default": 9464
+                        }
+                    }
+                }
+            }
+        },
+        "hosts": {
+            "type": "object",
+            "properties": {
+                "enableAutoCorrect": {
+                    "type": "boolean",
+                    "description": "Allow for the release name to be automatically pre-fixed to each host value when required (default behavior when installing through the parent chart). Alternatively, the host value will be used as is, without any modification.",
+                    "default": true
+                },
+                "auth": {
+                    "type": "string",
+                    "description": "Auth application default host value, as defined by 'service/serviceAccount:port'",
+                    "default": "auth:8080"
+                },
+                "traefikProxy": {
+                    "type": "string",
+                    "description": "Traefik Proxy application default host value, as defined by 'service/serviceAccount:port'",
+                    "default": "traefik-proxy:8080"
+                },
+                "search": {
+                    "type": "string",
+                    "description": "Search application default host value, as defined by 'service/serviceAccount:port'",
+                    "default": "search:8080"
+                }
+            }
+        },
+        "hostsPreview": {
+            "type": "object",
+            "properties": {
+                "enableAutoCorrect": {
+                    "type": "boolean",
+                    "description": "Prefix 'global.releaseNameTelicentPreview' value to each host value. Alternatively, the host value will be used as it is, without any modification",
+                    "default": true
+                },
+                "paperbackWriter": {
+                    "type": "string",
+                    "description": "Paperback Writer application host value, as defined by 'service/serviceAccount:port'",
+                    "default": "paperback-writer:8080"
+                },
+                "aiSparqlBuilder": {
+                    "type": "string",
+                    "description": "AI SPARQL Builder application host value, as defined by 'service/serviceAccount:port'",
+                    "default": "ai-sparql-builder:8080"
+                }
+            }
+        }
+    }
+}

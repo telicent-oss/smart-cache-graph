@@ -71,3 +71,7 @@ scg-benchmark/*.json
 *.cid
 ## MacOS only
 .DS_Store
+
+# Metadata updater python script
+.dev/metadata-updater.py
+.dev/readme-generator-for-helm

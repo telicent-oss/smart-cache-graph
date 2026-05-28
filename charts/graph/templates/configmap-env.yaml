@@ -1,0 +1,35 @@
+{{- /*
+Copyright (C) 2026 Telicent Limited
+*/}}
+{{- if not .Values.configMap.existingEnvConfigMap -}}
+apiVersion: v1
+kind: ConfigMap
+
+metadata:
+  name: {{ include "graph.envConfigMapName" . }}
+  namespace: {{ include "graph.namespace" . | quote }}
+  labels:
+    {{- include "graph.labels" . | nindent 4 }}
+       
+data:
+  FEATURE_FLAG_AUTHZ: "true"
+  ENABLE_BACKUPS: "true"
+  ENABLE_LABELS_QUERY: "true"
+  
+  KAFKA_CONFIG_FILE_PATH: /app/config/kafka-auth/kafka-config.properties
+  JAVA_OPTIONS: {{ .Values.java.jvmOptions | quote }}
+  JWKS_URL: {{ printf "https://%s%s" .Values.global.authHostDomain "/oauth2/jwks" | quote }}
+  USERINFO_URL: {{ printf "http://%s%s" (include "graph.hostAuth" . ) "/userinfo" | quote }}
+
+  ROUTE_TO_NAMED_GRAPHS: {{ .Values.graph.routeToNamedGraphs | quote }}
+
+  {{- if .Values.global.enterprise }}
+  SEARCH_API_URL: {{  printf "http://%s" (include "graph.hostSearch" .) | quote }}
+  {{- end }}
+
+  {{- if .Values.metrics.enabled }}
+  OTEL_METRICS_EXPORTER: "prometheus"
+  OTEL_TRACES_EXPORTER: "none"
+  OTEL_LOGS_EXPORTER: "none"
+  {{- end }}
+{{- end }}

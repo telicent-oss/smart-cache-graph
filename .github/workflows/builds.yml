@@ -4,9 +4,9 @@ on:
   # Run workflow for any push to a branch or a tag
   push:
     branches:
-      - '**'
+      - "**"
     tags:
-      - '**'
+      - "**"
   # Allow manual triggering of the workflow
   workflow_dispatch:
 
@@ -15,7 +15,7 @@ on:
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref_name }}
   cancel-in-progress: ${{ !contains(github.ref_name, 'release/') }}
-    
+
 jobs:
   maven-build:
     uses: telicent-oss/shared-workflows/.github/workflows/maven.yml@main
@@ -39,29 +39,42 @@ jobs:
     secrets: inherit
 
   docker-build:
+    name: Build and push to ECR (${{ matrix.image }})
     strategy:
       matrix:
-        image: [ smart-cache-graph ]
+        image: [smart-cache-graph]
+        chartName: [graph]
       fail-fast: false
     needs: maven-build
-    uses: telicent-oss/shared-workflows/.github/workflows/docker-push-to-registries.yml@main
+    runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: read
       id-token: write
-      issues: write
-      packages: write
-      pull-requests: write
-    with:
-      APP_NAME: ${{ matrix.image }}
-      APP_NAME_PREFIX: ""
-      PATH: .
-      DOCKERFILE: scg-docker/Dockerfile
-      VERSION: ${{ needs.maven-build.outputs.version }}
-      TARGET: ${{ matrix.image }}
-      JAVA_VERSION: 21
-      USES_MAVEN: true
-      DOWNLOAD_SBOM: false
-      GRYPE_SECURITY_ISSUES_BLOCK_ONLY_IF_FIX_AVAILABLE: true
-      BUILD_ARGS: |
-        PROJECT_VERSION=${{ needs.maven-build.outputs.version }}
-    secrets: inherit
+    steps:
+      - name: Build and push image to ECR
+        uses: telicent-oss/shared-workflows/.github/actions/push-container-image@main
+        with:
+          app-name: ${{ matrix.image }}
+          app-name-prefix: ""
+          dockerfile: scg-docker/Dockerfile
+          version: ${{ needs.maven-build.outputs.version }}
+          target: ${{ matrix.image }}
+          java-version: 21
+          uses-maven: true
+          registry: aws
+          fail-on-unfixed: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          enable-buildkit-cache: "true"
+          build-args: |
+            PROJECT_VERSION=${{ needs.maven-build.outputs.version }}
+
+      - name: Package and push Helm charts to ECR
+        uses: telicent-oss/shared-workflows/.github/actions/push-helm-chart@main
+        with:
+          app-name: ${{ matrix.chartName }}
+          app-name-prefix: ""
+          chart: charts/${{ matrix.chartName}}
+          registry: aws
+          version: ${{ needs.maven-build.outputs.version }}
+          appVersion: ${{ needs.maven-build.outputs.version }}
+          replace-chart-versions: true

@@ -1,0 +1,31 @@
+{{- /*
+Copyright (C) 2026 Telicent Limited
+*/}}
+
+apiVersion: v1
+kind: Service
+
+metadata:
+  name: {{ include "graph.serviceName" . }}
+  namespace: {{ include "graph.namespace" . | quote }}
+  labels:
+    {{- include "graph.labels" . | nindent 4 }}
+
+spec:
+  type: {{ .Values.service.type }}
+  selector:
+    {{- include "graph.selectorLabels" . | nindent 4 }}
+  ports:
+  - name: http
+    appProtocol: http
+    protocol: TCP
+    targetPort: http
+    port: {{ .Values.service.port }}
+
+  {{- if .Values.metrics.enabled }}
+  - name: {{ .Values.metrics.service.name | default "metrics" }}
+    appProtocol: http
+    protocol: TCP
+    targetPort: metrics
+    port: {{ .Values.metrics.service.port }}
+   {{- end }}

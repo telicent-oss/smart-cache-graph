@@ -1,0 +1,16 @@
+{{- /*
+Copyright (C) 2026 Telicent Limited
+*/}}
+{{- if not .Values.configMap.existingFusekiConfigMap }}
+apiVersion: v1
+kind: ConfigMap
+
+metadata:
+  name: {{ include "graph.fusekiConfigMapName" . }}
+  namespace: {{ include "graph.namespace" . | quote }}
+  labels:
+    {{- include "graph.labels" . | nindent 4 }}
+
+data:
+  config.ttl: {{- (include "graph.fuseki" . ) | toYaml | indent 6 }}
+{{- end }}
