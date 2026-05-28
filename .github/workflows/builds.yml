@@ -43,6 +43,7 @@ jobs:
     strategy:
       matrix:
         image: [smart-cache-graph]
+        chartName: [graph]
       fail-fast: false
     needs: maven-build
     runs-on: ubuntu-latest
@@ -55,7 +56,6 @@ jobs:
         with:
           app-name: ${{ matrix.image }}
           app-name-prefix: ""
-          path: .
           dockerfile: scg-docker/Dockerfile
           version: ${{ needs.maven-build.outputs.version }}
           target: ${{ matrix.image }}
@@ -68,21 +68,6 @@ jobs:
           build-args: |
             PROJECT_VERSION=${{ needs.maven-build.outputs.version }}
 
-  helm-build:
-    name: Build and push to ECR
-    needs:
-      - maven-build
-      - docker-build
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      id-token: write
-    strategy:
-      fail-fast: false
-      matrix:
-        chartName: [graph]
-
-    steps:
       - name: Package and push Helm charts to ECR
         uses: telicent-oss/shared-workflows/.github/actions/push-helm-chart@main
         with:
