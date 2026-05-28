@@ -48,7 +48,7 @@ jobs:
     needs: maven-build
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
       id-token: write
     steps:
       - name: Build and push image to ECR
