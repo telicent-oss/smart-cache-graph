@@ -73,8 +73,8 @@ public class DistributionLifecycleStateFile {
     private List<Path> candidateFiles() {
         List<Path> candidates = new ArrayList<>(3);
         addCandidate(candidates, this.stateFile);
-        addCandidate(candidates, Path.of(this.stateFile.toString() + TMP_EXTENSION));
-        addCandidate(candidates, Path.of(this.stateFile.toString() + BAK_EXTENSION));
+        addCandidate(candidates, Path.of(this.stateFile + TMP_EXTENSION));
+        addCandidate(candidates, Path.of(this.stateFile + BAK_EXTENSION));
         return candidates;
     }
 
