@@ -103,6 +103,51 @@ Graph then you can disable this via the aforementioned [`FEATURE_FLAG_AUTHZ`](#f
 If you disable this you may wish to limit access to these endpoints via other mechanisms available in your deployment
 environment, e.g. service mesh policy, proxy server rules etc.
 
+### `ROUTE_TO_NAMED_GRAPHS`
+
+When set to `true` the Smart Cache Graph Kafka sink routes each incoming event into a named graph whose URI is the
+`Distribution-ID` header from the event. All event data is written into the corresponding named graph; the default graph
+is left empty. Events that lack a `Distribution-ID` header are rejected. When unset, or set to `false`, events are
+applied to the dataset as authored, and the `Distribution-ID` header is ignored.
+
+This is the prerequisite for distribution lifecycle filtering described below.
+
+### `DISTRIBUTION_LIFECYCLE_STATE_FILE`
+
+Path to a JSON file that describes the lifecycle state of each known distribution. When set (and
+[`ROUTE_TO_NAMED_GRAPHS`](#route_to_named_graphs) is also `true`) the server filters every ABAC-enabled dataset so that
+only named graphs whose corresponding distribution is currently in the `Active` state are visible to queries.
+Distributions in any other state (`Unregistered`, `Registered`, `Withdrawn`, `Deleted`, or any unrecognised value) are
+hidden from query results regardless of the user's attributes.
+
+The file is expected to be written by an external lifecycle manager (see the
+[CORE-1275 `distribution-lifecycle` module](https://github.com/telicent-oss/smart-caches-core)) and is re-read on demand
+whenever its modification time or size changes. Atomic update via a sibling `<file>.tmp` file is supported, and a
+`<file>.bak` is used as a fallback if the primary file is unreadable. The expected JSON shape is:
+
+```json
+{
+  "application": "my-scg-instance",
+  "distributions": {
+    "http://example/distribution/1": "Active",
+    "http://example/distribution/2": "Withdrawn"
+  }
+}
+```
+
+If the file is missing, malformed, or refers to a different application (see
+[`DISTRIBUTION_LIFECYCLE_APP_ID`](#distribution_lifecycle_app_id)), no graphs are exposed — the filter fails closed.
+
+Has no effect when `ROUTE_TO_NAMED_GRAPHS` is not enabled; a warning will be logged at server startup in that case.
+
+### `DISTRIBUTION_LIFECYCLE_APP_ID`
+
+Optional. The application identifier expected to appear in the `application` field of
+[`DISTRIBUTION_LIFECYCLE_STATE_FILE`](#distribution_lifecycle_state_file). When set, a state file whose `application`
+field does not match this value is rejected (and no graphs are exposed) — this prevents an SC-Graph instance from
+accidentally consuming a lifecycle state file intended for a different application. When unset, the `application` field
+in the state file is not checked.
+
 ### `ENABLE_LABELS_QUERY`
 
 Setting this to `true` will enable the security label query endpoint at `http://{hostname}/$/labels/{datasetName}`. More

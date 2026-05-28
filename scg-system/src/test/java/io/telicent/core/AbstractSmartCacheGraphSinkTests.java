@@ -3,6 +3,7 @@ package io.telicent.core;
 import io.telicent.LibTestsSCG;
 import io.telicent.jena.abac.ABAC;
 import io.telicent.jena.abac.AttributeValueSet;
+import io.telicent.jena.abac.DefaultDatasetFilterProvider;
 import io.telicent.jena.abac.SysABAC;
 import io.telicent.jena.abac.attributes.Attribute;
 import io.telicent.jena.abac.attributes.AttributeValue;
@@ -14,6 +15,7 @@ import io.telicent.jena.abac.core.AttributesStoreModifiable;
 import io.telicent.jena.abac.core.DatasetGraphABAC;
 import io.telicent.jena.abac.labels.LabelsStore;
 import io.telicent.smart.cache.configuration.Configurator;
+import io.telicent.smart.cache.configuration.sources.SystemPropertiesSource;
 import io.telicent.smart.cache.payloads.RdfPayload;
 import io.telicent.smart.cache.projectors.Sink;
 import io.telicent.smart.cache.sources.Event;
@@ -42,13 +44,18 @@ import org.apache.jena.sparql.exec.RowSet;
 import org.apache.jena.sparql.exec.RowSetOps;
 import org.apache.jena.system.Txn;
 import org.apache.kafka.common.utils.Bytes;
-import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -524,6 +531,41 @@ public abstract class AbstractSmartCacheGraphSinkTests {
         sink.send(event);
     }
 
+    private static void withDistributionLifecycleConfig(Path stateFile, String applicationId, ThrowingRunnable action)
+            throws IOException {
+        String previousRouteToNamedGraphs = System.getProperty("ROUTE_TO_NAMED_GRAPHS");
+        String previousStateFile = System.getProperty(FMod_DistributionLifecycleFilter.DISTRIBUTION_LIFECYCLE_STATE_FILE);
+        String previousAppId = System.getProperty(FMod_DistributionLifecycleFilter.DISTRIBUTION_LIFECYCLE_APP_ID);
+        try {
+            Configurator.addSource(SystemPropertiesSource.INSTANCE);
+            System.setProperty("ROUTE_TO_NAMED_GRAPHS", "true");
+            System.setProperty(FMod_DistributionLifecycleFilter.DISTRIBUTION_LIFECYCLE_STATE_FILE, stateFile.toString());
+            if (applicationId != null) {
+                System.setProperty(FMod_DistributionLifecycleFilter.DISTRIBUTION_LIFECYCLE_APP_ID, applicationId);
+            } else {
+                System.clearProperty(FMod_DistributionLifecycleFilter.DISTRIBUTION_LIFECYCLE_APP_ID);
+            }
+            action.run();
+        } finally {
+            restoreProperty("ROUTE_TO_NAMED_GRAPHS", previousRouteToNamedGraphs);
+            restoreProperty(FMod_DistributionLifecycleFilter.DISTRIBUTION_LIFECYCLE_STATE_FILE, previousStateFile);
+            restoreProperty(FMod_DistributionLifecycleFilter.DISTRIBUTION_LIFECYCLE_APP_ID, previousAppId);
+            Files.deleteIfExists(stateFile);
+        }
+    }
+
+    private static void writeLifecycleStateFile(Path lifecycleState, String content) throws IOException {
+        Files.writeString(lifecycleState, content, StandardCharsets.UTF_8);
+    }
+
+    private static void restoreProperty(String key, String value) {
+        if (value != null) {
+            System.setProperty(key, value);
+        } else {
+            System.clearProperty(key);
+        }
+    }
+
     private void runTestProcessorSCGWithAuth(TestAction execTestAction) {
         // Set up a DatasetGraphABAC in a Fuseki/SCG
         DatasetGraph dsgBase = createBaseDataset();
@@ -596,6 +638,10 @@ public abstract class AbstractSmartCacheGraphSinkTests {
     protected abstract boolean supportsLabellingQuads();
 
     private void runTestProcessorSCGWithAuthNamedGraph(TestAction execTestAction) {
+        runTestProcessorSCGWithAuthNamedGraph(null, execTestAction);
+    }
+
+    private void runTestProcessorSCGWithAuthNamedGraph(DatasetConfigurer datasetConfigurer, TestAction execTestAction) {
         Assumptions.assumeTrue(supportsLabellingQuads(), "Test requires label store that supports labelling quads");
 
         DatasetGraph dsgBase = createBaseDataset();
@@ -607,6 +653,9 @@ public abstract class AbstractSmartCacheGraphSinkTests {
 
         DatasetGraphABAC dsgz =
                 ABAC.authzDataset(dsgBase, AEX.strALLOW, labelsStore, SysABAC.denyLabel, attributesStore);
+        if (datasetConfigurer != null) {
+            datasetConfigurer.configure(dsgz);
+        }
         DataService dataSrv = DataService.newBuilder(dsgz).addEndpoint(Operation.Query).build();
 
         FusekiServer server = SmartCacheGraph.serverBuilder().port(0).add(dsName, dataSrv).add(dsBase, dsgBase).build();
@@ -778,6 +827,281 @@ public abstract class AbstractSmartCacheGraphSinkTests {
     }
 
     @Test
+    final void processorSCG_namedGraph_onlyActiveDistributionsVisible() throws IOException {
+        String activeGraph = "http://example/active";
+        String inactiveGraph = "http://example/inactive";
+        Path lifecycleState = Files.createTempFile("distribution-lifecycle", ".json");
+        writeLifecycleStateFile(lifecycleState, """
+                {
+                  "application" : "scg-test",
+                  "distributions" : {
+                    "%s" : "Active",
+                    "%s" : "Withdrawn"
+                  }
+                }
+                """.formatted(activeGraph, inactiveGraph));
+
+        TestAction action =
+                (Sink<Event<Bytes, RdfPayload>> proc, FusekiServer server, DatasetGraph dsgBase, DatasetGraph dsg) -> {
+                    dsg.begin(TxnType.WRITE);
+                    sendEventWithDistributionId(dsg, proc, """
+                            PREFIX : <http://example/>
+                            :s :p "value1" .
+                            """, WebContent.contentTypeTurtle, attrPermit, activeGraph);
+                    sendEventWithDistributionId(dsg, proc, """
+                            PREFIX : <http://example/>
+                            :s :p "value2" .
+                            """, WebContent.contentTypeTurtle, attrPermit, inactiveGraph);
+                    dsg.commit();
+
+                    verifyNamedGraphsHaveData(dsgBase, activeGraph, inactiveGraph);
+
+                    String URL = server.datasetURL(dsName);
+                    verifyCounts(URL, queryAll, 1L, 0L);
+                    verifyCounts(URL, queryUnion, 1L, 0L);
+                };
+
+        withDistributionLifecycleConfig(lifecycleState, "scg-test", () -> runTestProcessorSCGWithAuthNamedGraph(action));
+    }
+
+    @Test
+    final void processorSCG_namedGraph_lifecycleFilterComposesWithExistingDatasetFilterProvider() throws IOException {
+        String activeGraph = "http://example/active";
+        String inactiveGraph = "http://example/inactive";
+        Path lifecycleState = Files.createTempFile("distribution-lifecycle", ".json");
+        writeLifecycleStateFile(lifecycleState, """
+                {
+                  "distributions" : {
+                    "%s" : "Active",
+                    "%s" : "Deleted"
+                  }
+                }
+                """.formatted(activeGraph, inactiveGraph));
+
+        TestAction action =
+                (Sink<Event<Bytes, RdfPayload>> proc, FusekiServer server, DatasetGraph dsgBase, DatasetGraph dsg) -> {
+                    dsg.begin(TxnType.WRITE);
+                    sendEventWithDistributionId(dsg, proc, """
+                            PREFIX : <http://example/>
+                            :s :p "value1" .
+                            """, WebContent.contentTypeTurtle, attrPermit, activeGraph);
+                    sendEventWithDistributionId(dsg, proc, """
+                            PREFIX : <http://example/>
+                            :s :p "value2" .
+                            """, WebContent.contentTypeTurtle, attrPermit, inactiveGraph);
+                    dsg.commit();
+
+                    verifyNamedGraphsHaveData(dsgBase, activeGraph, inactiveGraph);
+
+                    String URL = server.datasetURL(dsName);
+                    verifyCounts(URL, queryAll, 1L, 0L);
+                    verifyCounts(URL, queryUnion, 1L, 0L);
+                };
+
+        withDistributionLifecycleConfig(lifecycleState, null,
+                                        () -> runTestProcessorSCGWithAuthNamedGraph(
+                                                dataset -> dataset.setFilterProvider(new DefaultDatasetFilterProvider()),
+                                                action));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"Unregistered", "Registered", "Withdrawn", "Deleted", "Unrecognised"})
+    final void processorSCG_namedGraph_inactiveDistributionsAreHidden(String state) throws IOException {
+        String graph = "http://example/graph1";
+        Path lifecycleState = Files.createTempFile("distribution-lifecycle", ".json");
+        writeLifecycleStateFile(lifecycleState, """
+                {
+                  "distributions" : {
+                    "%s" : "%s"
+                  }
+                }
+                """.formatted(graph, state));
+
+        TestAction action =
+                (Sink<Event<Bytes, RdfPayload>> proc, FusekiServer server, DatasetGraph dsgBase, DatasetGraph dsg) -> {
+                    dsg.begin(TxnType.WRITE);
+                    sendEventWithDistributionId(dsg, proc, """
+                            PREFIX : <http://example/>
+                            :s :p "value" .
+                            """, WebContent.contentTypeTurtle, attrPermit, graph);
+                    dsg.commit();
+
+                    // Data is physically present in the underlying store...
+                    verifyNamedGraphsHaveData(dsgBase, graph);
+
+                    // ...but invisible through SCG because the distribution isn't Active, even for the permitted user.
+                    String URL = server.datasetURL(dsName);
+                    verifyCounts(URL, queryAll, 0L, 0L);
+                    verifyCounts(URL, queryUnion, 0L, 0L);
+                };
+
+        withDistributionLifecycleConfig(lifecycleState, null, () -> runTestProcessorSCGWithAuthNamedGraph(action));
+    }
+
+    @Test
+    final void processorSCG_namedGraph_applicationIdMismatchHidesAllGraphs() throws IOException {
+        String graph = "http://example/graph1";
+        Path lifecycleState = Files.createTempFile("distribution-lifecycle", ".json");
+        writeLifecycleStateFile(lifecycleState, """
+                {
+                  "application" : "some-other-app",
+                  "distributions" : {
+                    "%s" : "Active"
+                  }
+                }
+                """.formatted(graph));
+
+        TestAction action =
+                (Sink<Event<Bytes, RdfPayload>> proc, FusekiServer server, DatasetGraph dsgBase, DatasetGraph dsg) -> {
+                    dsg.begin(TxnType.WRITE);
+                    sendEventWithDistributionId(dsg, proc, """
+                            PREFIX : <http://example/>
+                            :s :p "value" .
+                            """, WebContent.contentTypeTurtle, attrPermit, graph);
+                    dsg.commit();
+
+                    verifyNamedGraphsHaveData(dsgBase, graph);
+
+                    // App id mismatch -> reader treats the file as unreadable -> empty active set -> nothing visible.
+                    String URL = server.datasetURL(dsName);
+                    verifyCounts(URL, queryAll, 0L, 0L);
+                    verifyCounts(URL, queryUnion, 0L, 0L);
+                };
+
+        withDistributionLifecycleConfig(lifecycleState, "scg-test",
+                                        () -> runTestProcessorSCGWithAuthNamedGraph(action));
+    }
+
+    @Test
+    final void processorSCG_namedGraph_lifecycleFilterDoesNotBypassDenyingLabel() throws IOException {
+        String activeGraph = "http://example/active";
+        Path lifecycleState = Files.createTempFile("distribution-lifecycle", ".json");
+        writeLifecycleStateFile(lifecycleState, """
+                {
+                  "distributions" : {
+                    "%s" : "Active"
+                  }
+                }
+                """.formatted(activeGraph));
+
+        TestAction action =
+                (Sink<Event<Bytes, RdfPayload>> proc, FusekiServer server, DatasetGraph dsgBase, DatasetGraph dsg) -> {
+                    dsg.begin(TxnType.WRITE);
+                    sendEventWithDistributionId(dsg, proc, """
+                            PREFIX : <http://example/>
+                            :s :p "denied" .
+                            """, WebContent.contentTypeTurtle, attrNotPermitted, activeGraph);
+                    dsg.commit();
+
+                    // Distribution is Active so the graph passes the lifecycle filter, but the security label
+                    // denies access regardless of attribute presence.
+                    verifyNamedGraphsHaveData(dsgBase, activeGraph);
+
+                    String URL = server.datasetURL(dsName);
+                    verifyCounts(URL, queryAll, 0L, 0L);
+                    verifyCounts(URL, queryUnion, 0L, 0L);
+                };
+
+        withDistributionLifecycleConfig(lifecycleState, null, () -> runTestProcessorSCGWithAuthNamedGraph(action));
+    }
+
+    @Test
+    final void processorSCG_namedGraph_distributionVisibilityReloadsWhenStateFileChanges() throws IOException {
+        String graph = "http://example/graph1";
+        Path lifecycleState = Files.createTempFile("distribution-lifecycle", ".json");
+        writeLifecycleStateFile(lifecycleState, """
+                {
+                  "distributions" : {
+                    "%s" : "Active"
+                  }
+                }
+                """.formatted(graph));
+
+        TestAction action =
+                (Sink<Event<Bytes, RdfPayload>> proc, FusekiServer server, DatasetGraph dsgBase, DatasetGraph dsg) -> {
+                    dsg.begin(TxnType.WRITE);
+                    sendEventWithDistributionId(dsg, proc, """
+                            PREFIX : <http://example/>
+                            :s :p "value1" .
+                            """, WebContent.contentTypeTurtle, attrPermit, graph);
+                    dsg.commit();
+
+                    String URL = server.datasetURL(dsName);
+                    verifyCounts(URL, queryAll, 1L, 0L);
+
+                    try {
+                        writeLifecycleStateFile(lifecycleState, """
+                                {
+                                  "distributions" : {
+                                    "%s" : "Deleted"
+                                  }
+                                }
+                                """.formatted(graph));
+                    } catch (IOException e) {
+                        fail("Failed to update lifecycle state file", e);
+                    }
+
+                    verifyCounts(URL, queryAll, 0L, 0L);
+                    verifyCounts(URL, queryUnion, 0L, 0L);
+                };
+
+        withDistributionLifecycleConfig(lifecycleState, null, () -> runTestProcessorSCGWithAuthNamedGraph(action));
+    }
+
+    @Test
+    final void processorSCG_namedGraph_distributionVisibilityReloadsSameSizeSameTimestampStateChange()
+            throws IOException {
+        String graph = "http://example/graph1";
+        Path lifecycleState = Files.createTempFile("distribution-lifecycle", ".json");
+        String activeState = """
+                {
+                  "distributions" : {
+                    "%s" : "Active"
+                  }
+                }
+                """.formatted(graph);
+        String hiddenState = """
+                {
+                  "distributions" : {
+                    "%s" : "Hidden"
+                  }
+                }
+                """.formatted(graph);
+        assertEquals(activeState.length(), hiddenState.length(), "Test fixture must keep the JSON size unchanged");
+
+        writeLifecycleStateFile(lifecycleState, activeState);
+        FileTime originalTimestamp = Files.getLastModifiedTime(lifecycleState);
+        long originalSize = Files.size(lifecycleState);
+
+        TestAction action =
+                (Sink<Event<Bytes, RdfPayload>> proc, FusekiServer server, DatasetGraph dsgBase, DatasetGraph dsg) -> {
+                    dsg.begin(TxnType.WRITE);
+                    sendEventWithDistributionId(dsg, proc, """
+                            PREFIX : <http://example/>
+                            :s :p "value1" .
+                            """, WebContent.contentTypeTurtle, attrPermit, graph);
+                    dsg.commit();
+
+                    String URL = server.datasetURL(dsName);
+                    verifyCounts(URL, queryAll, 1L, 0L);
+
+                    try {
+                        writeLifecycleStateFile(lifecycleState, hiddenState);
+                        assertEquals(originalSize, Files.size(lifecycleState),
+                                     "Test fixture must preserve the JSON byte size");
+                        Files.setLastModifiedTime(lifecycleState, originalTimestamp);
+                    } catch (IOException e) {
+                        fail("Failed to update lifecycle state file", e);
+                    }
+
+                    verifyCounts(URL, queryAll, 0L, 0L);
+                    verifyCounts(URL, queryUnion, 0L, 0L);
+                };
+
+        withDistributionLifecycleConfig(lifecycleState, null, () -> runTestProcessorSCGWithAuthNamedGraph(action));
+    }
+
+    @Test
     final void processorSCG_normalMode_distributionIdIgnored() {
         TestAction action =
                 (Sink<Event<Bytes, RdfPayload>> proc, FusekiServer server, DatasetGraph dsgBase, DatasetGraph dsg) -> {
@@ -913,5 +1237,15 @@ public abstract class AbstractSmartCacheGraphSinkTests {
     // The test - directly send requests to the sink and check by making HTTP requests to the Fuseki server.
     interface TestAction {
         void execTest(Sink<Event<Bytes, RdfPayload>> sink, FusekiServer server, DatasetGraph dsgBase, DatasetGraph dsg);
+    }
+
+    @FunctionalInterface
+    private interface ThrowingRunnable {
+        void run() throws IOException;
+    }
+
+    @FunctionalInterface
+    private interface DatasetConfigurer {
+        void configure(DatasetGraphABAC dataset);
     }
 }

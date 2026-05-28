@@ -133,6 +133,11 @@
             <groupId>io.telicent.smart-caches</groupId>
             <artifactId>jwt-auth-common</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.telicent.smart-caches</groupId>
+            <artifactId>distribution-lifecycle</artifactId>
+            <version>${dependency.smart-caches-core}</version>
+        </dependency>
         <!-- GraphQL -->
         <dependency>
             <groupId>io.telicent.jena.graphql</groupId>
