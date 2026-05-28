@@ -68,6 +68,9 @@ public class DistributionLifecycleStateFile {
                 LOGGER.warn("Failed to load distribution lifecycle state from {}", candidate, e);
             }
         }
+        LOGGER.warn("All candidate lifecycle state files for {} failed to parse - dropping cached active set",
+                    this.stateFile);
+        this.cache = EMPTY_CACHE;
     }
 
     private List<Path> candidateFiles() {

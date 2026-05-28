@@ -18,16 +18,16 @@ public class DistributionLifecycleFilters {
     private DistributionLifecycleFilters() {
     }
 
-    public static boolean installIfConfigured(DatasetGraphABAC dataset, boolean routeToNamedGraphs) {
-        if (!routeToNamedGraphs) {
-            return false;
-        }
+    public static boolean installIfConfigured(DatasetGraphABAC dataset) {
         if (dataset.getFilterProvider() instanceof DistributionLifecycleDatasetFilterProvider) {
+            LOGGER.info("Lifecycle-aware dataset filter already installed for this dataset; skipping");
             return false;
         }
 
         String stateFile = Configurator.get(FMod_DistributionLifecycleFilter.DISTRIBUTION_LIFECYCLE_STATE_FILE);
         if (StringUtils.isBlank(stateFile)) {
+            LOGGER.info("Lifecycle-aware dataset filter not installed: {} is not configured",
+                        FMod_DistributionLifecycleFilter.DISTRIBUTION_LIFECYCLE_STATE_FILE);
             return false;
         }
 

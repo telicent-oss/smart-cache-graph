@@ -49,7 +49,7 @@ public class FMod_DistributionLifecycleFilter implements FusekiAutoModule {
             if (!(dap.getDataService().getDataset() instanceof DatasetGraphABAC abacDataset)) {
                 continue;
             }
-            DistributionLifecycleFilters.installIfConfigured(abacDataset, routeToNamedGraphs);
+            DistributionLifecycleFilters.installIfConfigured(abacDataset);
         }
     }
 }
