@@ -86,7 +86,7 @@
     <dependency.jena>6.1.0</dependency.jena>
     <dependency.graphql>0.12.2</dependency.graphql>
     <dependency.jwt-servlet-auth>4.1.0</dependency.jwt-servlet-auth>
-    <dependency.smart-caches-core>0.39.0</dependency.smart-caches-core>
+    <dependency.smart-caches-core>0.40.0</dependency.smart-caches-core>
 
     <!-- External dependencies -->
     <dependency.awaitility>4.3.0</dependency.awaitility>
@@ -294,6 +294,11 @@
       <dependency>
         <groupId>io.telicent.smart-caches</groupId>
         <artifactId>jwt-auth-common</artifactId>
+        <version>${dependency.smart-caches-core}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.telicent.smart-caches</groupId>
+        <artifactId>distribution-lifecycle</artifactId>
         <version>${dependency.smart-caches-core}</version>
       </dependency>
 
