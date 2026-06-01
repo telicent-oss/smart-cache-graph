@@ -88,7 +88,7 @@ public class DistributionGraphDeletionListener implements DistributionLifecycleL
             try {
                 deleteDistributionGraph(dataset, graphName);
             } catch (RuntimeException e) {
-                LOGGER.error("Failed to delete named graph {} for deleted distribution {}", distributionId,
+                LOGGER.error("Failed to delete named graph {} for deleted distribution {}", graphName,
                              distributionId, e);
                 failures.add(e);
             }
