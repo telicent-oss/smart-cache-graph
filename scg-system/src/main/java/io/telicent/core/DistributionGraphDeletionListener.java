@@ -107,22 +107,25 @@ public class DistributionGraphDeletionListener implements DistributionLifecycleL
      * Deletes the named graph corresponding to a distribution, and any associated ABAC security labels, for the given dataset.
      * @param dataset   ABAC dataset to delete from
      * @param graphName Named graph to delete
+     *
+     * Note: Commented out code to remove corresponding security labels until
+     * it is address as part of wider work
      */
     static void deleteDistributionGraph(DatasetGraphABAC dataset, Node graphName) {
         Txn.executeWrite(dataset, () -> {
             DatasetGraph base = dataset.getBase();
-            LabelsStore labels = dataset.labelsStore();
-            if (labels != null) {
-                List<Quad> quads = Iter.toList(base.find(graphName, Node.ANY, Node.ANY, Node.ANY));
-                for (Quad quad : quads) {
-                    try {
-                        labels.remove(quad);
-                    } catch (RuntimeException e) {
-                        LOGGER.warn("Failed to remove security labels for quad {} while deleting named graph {}", quad,
-                                    graphName, e);
-                    }
-                }
-            }
+//            LabelsStore labels = dataset.labelsStore();
+//            if (labels != null) {
+//                List<Quad> quads = Iter.toList(base.find(graphName, Node.ANY, Node.ANY, Node.ANY));
+//                for (Quad quad : quads) {
+//                    try {
+//                        labels.remove(quad);
+//                    } catch (RuntimeException e) {
+//                        LOGGER.warn("Failed to remove security labels for quad {} while deleting named graph {}", quad,
+//                                    graphName, e);
+//                    }
+//                }
+//            }
             base.removeGraph(graphName);
             LOGGER.info("Deleted named graph {} for deleted distribution", graphName.getURI());
         });
