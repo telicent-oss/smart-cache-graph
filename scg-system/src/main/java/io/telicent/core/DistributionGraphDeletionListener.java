@@ -69,13 +69,13 @@ public class DistributionGraphDeletionListener implements DistributionLifecycleL
 
         String distributionId = action.getDistributionId();
         if (StringUtils.isBlank(distributionId)) {
-            LOGGER.debug("Ignoring distribution deletion event {} with no distribution id", action.getEventId());
+            LOGGER.info("Ignoring distribution deletion event {} with no distribution id", action.getEventId());
             return;
         }
 
         Collection<DatasetGraphABAC> datasets = this.datasetSupplier.get();
         if (datasets == null || datasets.isEmpty()) {
-            LOGGER.debug("No ABAC datasets to delete named graph {} from", distributionId);
+            LOGGER.info("No ABAC datasets to delete named graph {} from", distributionId);
             return;
         }
 
