@@ -111,12 +111,12 @@ class DeletionJobProducerIntegrationTest {
         }
 
         List<ConsumerRecord<Bytes, Bytes>> handled = new ArrayList<>();
-        try (DeletionJobConsumer consumer = new DeletionJobConsumer(kafka.getBootstrapServers(), topic, DISTRIBUTION_ID, jobId))
+        try (DeletionJobConsumer consumer = new DeletionJobConsumer(kafka.getBootstrapServers(), null,  topic, DISTRIBUTION_ID, jobId))
         {
             consumer.process(handled::add);
         }
 
-        try (DeletionJobProducer producer = new DeletionJobProducer(kafka.getBootstrapServers(), rdfPatchInverter, topic, DISTRIBUTION_ID, jobId)) {
+        try (DeletionJobProducer producer = new DeletionJobProducer(kafka.getBootstrapServers(), null, rdfPatchInverter, topic, DISTRIBUTION_ID, jobId)) {
             for (ConsumerRecord<Bytes, Bytes> record : handled) {
                 producer.sendDeletePatch(record);
             }
@@ -161,12 +161,12 @@ class DeletionJobProducerIntegrationTest {
 
         List<ConsumerRecord<Bytes, Bytes>> handled = new ArrayList<>();
         try (DeletionJobConsumer consumer = new DeletionJobConsumer(
-                kafka.getBootstrapServers(), topic, DISTRIBUTION_ID, jobId)) {
+                kafka.getBootstrapServers(), null, topic, DISTRIBUTION_ID, jobId)) {
             consumer.process(handled::add);
         }
 
         try (DeletionJobProducer producer = new DeletionJobProducer(
-                kafka.getBootstrapServers(), rdfPatchInverter, topic, DISTRIBUTION_ID, jobId)) {
+                kafka.getBootstrapServers(), null, rdfPatchInverter, topic, DISTRIBUTION_ID, jobId)) {
             for (ConsumerRecord<Bytes, Bytes> record : handled) {
                 producer.sendDeletePatch(record);
             }
@@ -183,12 +183,12 @@ class DeletionJobProducerIntegrationTest {
     void noDeletePatchesSentWhenTopicIsEmpty() {
         List<ConsumerRecord<Bytes, Bytes>> handled = new ArrayList<>();
         try (DeletionJobConsumer consumer = new DeletionJobConsumer(
-                kafka.getBootstrapServers(), topic, DISTRIBUTION_ID, jobId)) {
+                kafka.getBootstrapServers(), null, topic, DISTRIBUTION_ID, jobId)) {
             consumer.process(handled::add);
         }
 
         try (DeletionJobProducer producer = new DeletionJobProducer(
-                kafka.getBootstrapServers(), rdfPatchInverter, topic, DISTRIBUTION_ID, jobId)) {
+                kafka.getBootstrapServers(), null, rdfPatchInverter, topic, DISTRIBUTION_ID, jobId)) {
             for (ConsumerRecord<Bytes, Bytes> record : handled) {
                 producer.sendDeletePatch(record);
             }
@@ -208,12 +208,12 @@ class DeletionJobProducerIntegrationTest {
 
         List<ConsumerRecord<Bytes, Bytes>> handled = new ArrayList<>();
         try (DeletionJobConsumer consumer = new DeletionJobConsumer(
-                kafka.getBootstrapServers(), topic, DISTRIBUTION_ID, jobId)) {
+                kafka.getBootstrapServers(), null, topic, DISTRIBUTION_ID, jobId)) {
             consumer.process(handled::add);
         }
 
         try (DeletionJobProducer producer = new DeletionJobProducer(
-                kafka.getBootstrapServers(), rdfPatchInverter, topic, DISTRIBUTION_ID, jobId)) {
+                kafka.getBootstrapServers(), null, rdfPatchInverter, topic, DISTRIBUTION_ID, jobId)) {
             for (ConsumerRecord<Bytes, Bytes> record : handled) {
                 producer.sendDeletePatch(record);
             }
@@ -250,12 +250,12 @@ class DeletionJobProducerIntegrationTest {
 
         List<ConsumerRecord<Bytes, Bytes>> handled = new ArrayList<>();
         try (DeletionJobConsumer consumer = new DeletionJobConsumer(
-                kafka.getBootstrapServers(), topic, DISTRIBUTION_ID, jobId)) {
+                kafka.getBootstrapServers(), null, topic, DISTRIBUTION_ID, jobId)) {
             consumer.process(handled::add);
         }
 
         try (DeletionJobProducer producer = new DeletionJobProducer(
-                kafka.getBootstrapServers(), rdfPatchInverter, topic, DISTRIBUTION_ID, jobId)) {
+                kafka.getBootstrapServers(), null, rdfPatchInverter, topic, DISTRIBUTION_ID, jobId)) {
             for (ConsumerRecord<Bytes, Bytes> record : handled) {
                 producer.sendDeletePatch(record);
             }
@@ -285,12 +285,12 @@ class DeletionJobProducerIntegrationTest {
 
         List<ConsumerRecord<Bytes, Bytes>> handled = new ArrayList<>();
         try (DeletionJobConsumer consumer = new DeletionJobConsumer(
-                kafka.getBootstrapServers(), topic, DISTRIBUTION_ID, jobId)) {
+                kafka.getBootstrapServers(), null, topic, DISTRIBUTION_ID, jobId)) {
             consumer.process(handled::add);
         }
 
         try (DeletionJobProducer producer = new DeletionJobProducer(
-                kafka.getBootstrapServers(), rdfPatchInverter, topic, DISTRIBUTION_ID, jobId)) {
+                kafka.getBootstrapServers(), null, rdfPatchInverter, topic, DISTRIBUTION_ID, jobId)) {
             for (ConsumerRecord<Bytes, Bytes> record : handled) {
                 producer.sendDeletePatch(record);
             }
@@ -311,12 +311,12 @@ class DeletionJobProducerIntegrationTest {
 
         List<ConsumerRecord<Bytes, Bytes>> handled = new ArrayList<>();
         try (DeletionJobConsumer consumer = new DeletionJobConsumer(
-                kafka.getBootstrapServers(), topic, DISTRIBUTION_ID, jobId)) {
+                kafka.getBootstrapServers(), null, topic, DISTRIBUTION_ID, jobId)) {
             consumer.process(handled::add);
         }
 
         try (DeletionJobProducer producer = new DeletionJobProducer(
-                kafka.getBootstrapServers(), rdfPatchInverter, topic, DISTRIBUTION_ID, jobId)) {
+                kafka.getBootstrapServers(), null, rdfPatchInverter, topic, DISTRIBUTION_ID, jobId)) {
             for (ConsumerRecord<Bytes, Bytes> record : handled) {
                 producer.sendDeletePatch(record);
             }

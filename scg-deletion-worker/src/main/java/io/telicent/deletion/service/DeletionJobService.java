@@ -36,9 +36,9 @@ public class DeletionJobService {
         LOGGER.info("[{}] Starting deletion job for distribution '{}'", jobId, distributionId);
 
         try (DeletionJobConsumer consumer = new DeletionJobConsumer(
-                bootstrapServers, topic, distributionId, jobId);
+                bootstrapServers, properties.kafka().configFilePath(), topic, distributionId, jobId);
              DeletionJobProducer producer = new DeletionJobProducer(
-                     bootstrapServers, new RDFPatchInverter(), topic, distributionId, jobId)) {
+                     bootstrapServers, properties.kafka().configFilePath(), new RDFPatchInverter(), topic, distributionId, jobId)) {
 
             //TODO
             // handling exceptions on send

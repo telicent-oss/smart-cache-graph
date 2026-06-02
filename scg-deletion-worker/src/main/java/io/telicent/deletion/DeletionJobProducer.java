@@ -18,8 +18,7 @@ import org.apache.kafka.common.utils.Bytes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 import java.util.Properties;
@@ -45,12 +44,12 @@ public class DeletionJobProducer implements AutoCloseable {
     private final String distributionId;
     private final String jobId;
 
-    public DeletionJobProducer(String bootstrapServers, RDFPatchInverter inverter, String topic, String distributionId, String jobId) {
+    public DeletionJobProducer(String bootstrapServers, String configFilePath, RDFPatchInverter inverter, String topic, String distributionId, String jobId) {
         this.inverter = inverter;
         this.topic = topic;
         this.distributionId = distributionId;
         this.jobId = jobId;
-        this.producer = createProducer(bootstrapServers);
+        this.producer = createProducer(bootstrapServers, configFilePath);
     }
 
     /**
@@ -65,9 +64,17 @@ public class DeletionJobProducer implements AutoCloseable {
         this.producer = producer;
     }
 
-    private KafkaProducer<Bytes, Bytes> createProducer(String bootstrapServers) {
+    private KafkaProducer<Bytes, Bytes> createProducer(String bootstrapServers, String configFilePath) {
         Properties props = new Properties();
         props.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+        if (configFilePath != null && !configFilePath.isBlank()) {
+            try (InputStream is = new FileInputStream(configFilePath)) {
+                props.load(is);
+                LOGGER.info("Loaded Kafka config from {}", configFilePath);
+            } catch (IOException e) {
+                LOGGER.warn("Could not load Kafka config file {}: {}", configFilePath, e.getMessage());
+            }
+        }
         props.setProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG,
                 BytesSerializer.class.getName());
         props.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,

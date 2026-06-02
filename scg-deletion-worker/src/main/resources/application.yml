@@ -4,6 +4,7 @@ server:
 deletion-worker:
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    config-file-path: ${KAFKA_CONFIG_FILE_PATH:}
   topic: ${KAFKA_TOPIC:RDF}
 
 management:

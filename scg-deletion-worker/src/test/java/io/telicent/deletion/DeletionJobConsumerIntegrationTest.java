@@ -74,7 +74,7 @@ class DeletionJobConsumerIntegrationTest {
 
         List<ConsumerRecord<Bytes, Bytes>> handled = new ArrayList<>();
         try (DeletionJobConsumer consumer = new DeletionJobConsumer(
-                kafka.getBootstrapServers(), topic, DISTRIBUTION_ID, jobId)) {
+                kafka.getBootstrapServers(), null, topic, DISTRIBUTION_ID, jobId)) {
             consumer.process(handled::add);
         }
         assertEquals(2, handled.size());
@@ -89,7 +89,7 @@ class DeletionJobConsumerIntegrationTest {
 
         List<ConsumerRecord<Bytes, Bytes>> handled = new ArrayList<>();
         try (DeletionJobConsumer consumer = new DeletionJobConsumer(
-                kafka.getBootstrapServers(), topic, DISTRIBUTION_ID, jobId)) {
+                kafka.getBootstrapServers(), null, topic, DISTRIBUTION_ID, jobId)) {
             consumer.process(handled::add);
         }
         assertEquals(2, handled.size());
@@ -99,7 +99,7 @@ class DeletionJobConsumerIntegrationTest {
     void handlesEmptyTopicGracefully() {
         List<ConsumerRecord<Bytes, Bytes>> handled = new ArrayList<>();
         try (DeletionJobConsumer consumer = new DeletionJobConsumer(
-                kafka.getBootstrapServers(), topic, DISTRIBUTION_ID, jobId)) {
+                kafka.getBootstrapServers(), null, topic, DISTRIBUTION_ID, jobId)) {
             consumer.process(handled::add);
         }
         assertEquals(0, handled.size());

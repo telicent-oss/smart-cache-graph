@@ -39,6 +39,7 @@ public class ManualTestMain {
     private static final String TARGET_DISTRIBUTION = "dist-test-001";
     private static final String OTHER_DISTRIBUTION = "dist-test-002";
 
+
     public static void main(String[] args) throws Exception {
 
         System.out.println("Publishing test records...");
@@ -57,7 +58,7 @@ public class ManualTestMain {
 
         List<String> handled = new ArrayList<>();
         try (DeletionJobConsumer consumer = new DeletionJobConsumer(
-                BOOTSTRAP_SERVERS, TOPIC, TARGET_DISTRIBUTION, jobId)) {
+                BOOTSTRAP_SERVERS, null, TOPIC, TARGET_DISTRIBUTION, jobId)) {
             consumer.process(record -> {
                 String payload = new String(record.value().get(), StandardCharsets.UTF_8);
                 System.out.println("  -> Handled record at offset " + record.offset() + ": " + payload);

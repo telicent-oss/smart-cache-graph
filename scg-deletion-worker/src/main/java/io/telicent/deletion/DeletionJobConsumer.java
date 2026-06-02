@@ -20,11 +20,15 @@ import io.telicent.smart.cache.sources.TelicentHeaders;
 import org.apache.kafka.clients.consumer.*;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.header.Header;
+import org.apache.kafka.common.protocol.types.Field;
 import org.apache.kafka.common.serialization.BytesDeserializer;
 import org.apache.kafka.common.utils.Bytes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.List;
@@ -46,11 +50,11 @@ public class DeletionJobConsumer implements AutoCloseable {
     private final String distributionId;
     private final String jobId;
 
-    public DeletionJobConsumer(String bootstrapServers, String topic, String distributionId, String jobId) {
+    public DeletionJobConsumer(String bootstrapServers, String configFilePath, String topic, String distributionId, String jobId) {
         this.topic = topic;
         this.distributionId = distributionId;
         this.jobId = jobId;
-        this.consumer = createConsumer(bootstrapServers);
+        this.consumer = createConsumer(bootstrapServers, configFilePath);
         seekToBeginning();
     }
 
@@ -66,9 +70,18 @@ public class DeletionJobConsumer implements AutoCloseable {
         seekToBeginning();
     }
 
-    private KafkaConsumer<Bytes, Bytes> createConsumer(String bootstrapServers) {
+    private KafkaConsumer<Bytes, Bytes> createConsumer(String bootstrapServers, String configFilePath) {
         Properties props = new Properties();
         props.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+        if (configFilePath != null && !configFilePath.isBlank()) {
+            try (InputStream is = new FileInputStream(configFilePath)) {
+                props.load(is);
+            } catch (IOException e) {
+                LoggerFactory.getLogger(DeletionJobConsumer.class)
+                        .warn("Could not load Kafka config file {}: {}",
+                                configFilePath, e.getMessage());
+            }
+        }
         props.setProperty(ConsumerConfig.GROUP_ID_CONFIG, "deletion-worker-" + UUID.randomUUID());
         props.setProperty(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
         props.setProperty(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, "100");

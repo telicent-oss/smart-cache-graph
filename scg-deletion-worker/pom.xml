@@ -208,6 +208,11 @@
             </exclusions>
         </dependency>
 
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+
         <!-- Logging -->
         <dependency>
             <groupId>ch.qos.logback</groupId>
