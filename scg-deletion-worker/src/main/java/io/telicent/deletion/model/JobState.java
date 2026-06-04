@@ -7,13 +7,14 @@ public record JobState(
         String distributionId,
         JobStatus status,
         Instant startedAt,
-        String errorMessage
+        String errorMessage,
+        Integer patchesSent
 ) {
-    public JobState withStatus(JobStatus newStatus) {
-        return new JobState(jobId, distributionId, newStatus, startedAt, null);
+    public JobState withStatus(JobStatus newStatus, Integer patchesSent) {
+        return new JobState(jobId, distributionId, newStatus, startedAt, null, patchesSent);
     }
 
     public JobState withFailure(String error) {
-        return new JobState(jobId, distributionId, JobStatus.FAILED, startedAt, error);
+        return new JobState(jobId, distributionId, JobStatus.FAILED, startedAt, error, null);
     }
 }

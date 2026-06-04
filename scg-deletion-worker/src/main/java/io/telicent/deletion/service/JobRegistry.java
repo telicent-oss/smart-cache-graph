@@ -2,7 +2,6 @@ package io.telicent.deletion.service;
 
 import io.telicent.deletion.model.JobState;
 import io.telicent.deletion.model.JobStatus;
-import jdk.jfr.Category;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
@@ -16,7 +15,7 @@ public class JobRegistry {
 
     public JobState register(String distributionId) {
         String jobId = UUID.randomUUID().toString();
-        JobState state = new JobState(jobId, distributionId, JobStatus.RUNNING, Instant.now(), null);
+        JobState state = new JobState(jobId, distributionId, JobStatus.RUNNING, Instant.now(), null, 0);
         jobs.put(jobId, state);
         return state;
     }

@@ -31,9 +31,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.util.List;
-import java.util.Properties;
-import java.util.UUID;
+import java.util.*;
 
 public class DeletionJobConsumer implements AutoCloseable {
 
@@ -118,34 +116,33 @@ public class DeletionJobConsumer implements AutoCloseable {
      * @param handler decides what is being done with the records.
      */
     public void process(RecordHandler handler) {
+        Map<Long, ConsumerRecord<Bytes, Bytes>> candidates = new LinkedHashMap<>();
+        Set<Long> deletedOffsets = new HashSet<>();
         int emptyPolls = 0;
+
         while (true) {
             ConsumerRecords<Bytes, Bytes> records = consumer.poll(POLL_TIMEOUT);
             if (records.isEmpty()) {
                 emptyPolls++;
-                LOGGER.debug("[{}] Empty poll {}/{}", jobId, emptyPolls, MAX_EMPTY_POLLS);
-                if (emptyPolls >= MAX_EMPTY_POLLS) {
-                    LOGGER.info("[{}] Topic exhausted after {} consecutive empty polls, job complete",
-                            jobId, MAX_EMPTY_POLLS);
-                    return;
-                }
+                if (emptyPolls >= MAX_EMPTY_POLLS) break;
                 continue;
             }
             emptyPolls = 0;
 
             for (ConsumerRecord<Bytes, Bytes> record : records) {
-                String incomingJobId = headerValue(record, /*TelicentHeaders.DELETION_JOB_ID*/ DELETION_JOB_ID);
+                String incomingJobId = headerValue(record, DELETION_JOB_ID);
                 if (jobId.equals(incomingJobId)) {
                     LOGGER.info("[{}] Encountered own events at offset {}, job complete",
                             jobId, record.offset());
+                    candidates.entrySet().stream()
+                            .filter(e -> !deletedOffsets.contains(e.getKey()))
+                            .forEach(e -> handler.handle(e.getValue()));
                     return;
                 }
 
-                //TODO
-                // not sure if necessary, the distributionId is different every time
-                String existingJobId = headerValue(record, DELETION_JOB_ID);
-                if (existingJobId != null && !existingJobId.equals(jobId)) {
-                    // This is a delete patch from a previous job — skip it
+                String originalOffset = headerValue(record, "Original-Offset");
+                if (originalOffset != null) {
+                    deletedOffsets.add(Long.parseLong(originalOffset));
                     continue;
                 }
 
@@ -153,13 +150,16 @@ public class DeletionJobConsumer implements AutoCloseable {
                 if (!distributionId.equals(recordDistributionId)) {
                     continue;
                 }
-                LOGGER.debug("[{}] Found matching record at offset {} for distribution '{}'",
-                        jobId, record.offset(), distributionId);
 
-                handler.handle(record);
+                candidates.put(record.offset(), record);
             }
         }
+
+        candidates.entrySet().stream()
+                .filter(e -> !deletedOffsets.contains(e.getKey()))
+                .forEach(e -> handler.handle(e.getValue()));
     }
+
 
     /**
      * Helper method that extracts a String header value from a record's given header.

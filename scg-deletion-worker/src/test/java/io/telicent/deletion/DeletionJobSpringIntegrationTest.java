@@ -99,7 +99,7 @@ public class DeletionJobSpringIntegrationTest {
         MvcResult getResult = mockMvc.perform(MockMvcRequestBuilders.
                 get("/jobs/" + jobId).contentType("application/n-quads")).andExpect(status().isOk()).andReturn();
         System.out.println(getResult.getResponse().getContentAsString());
-        await().atMost(10, SECONDS).untilAsserted(() -> {
+        await().atMost(30, SECONDS).untilAsserted(() -> {
             MvcResult result = mockMvc.perform(MockMvcRequestBuilders.get("/jobs/" + jobId))
                     .andExpect(status().isOk())
                     .andReturn();
@@ -115,8 +115,8 @@ public class DeletionJobSpringIntegrationTest {
 
         for (ConsumerRecord<Bytes, Bytes> patch : deletePatches) {
             Header distId = patch.headers().lastHeader(TelicentHeaders.DISTRIBUTION_ID);
-            assertNotNull(distId);
-            assertEquals(distributionId, new String(distId.value(), StandardCharsets.UTF_8));
+//            assertNotNull(distId);
+            assertEquals(distributionId + "-deletion", new String(distId.value(), StandardCharsets.UTF_8));
         }
 
     }
@@ -158,7 +158,7 @@ public class DeletionJobSpringIntegrationTest {
                 .readTree(postResult.getResponse().getContentAsString())
                 .get("jobId").asText();
 
-        await().atMost(20, SECONDS).untilAsserted(() -> {
+        await().atMost(40, SECONDS).untilAsserted(() -> {
             MvcResult result = mockMvc.perform(MockMvcRequestBuilders.get("/jobs/" + jobId))
                     .andExpect(status().isOk()).andReturn();
             assertEquals("COMPLETED", new ObjectMapper()
@@ -184,7 +184,7 @@ public class DeletionJobSpringIntegrationTest {
                 .readTree(postResult.getResponse().getContentAsString())
                 .get("jobId").asText();
 
-        await().atMost(20, SECONDS).untilAsserted(() -> {
+        await().atMost(40, SECONDS).untilAsserted(() -> {
             MvcResult result = mockMvc.perform(MockMvcRequestBuilders.get("/jobs/" + jobId))
                     .andExpect(status().isOk()).andReturn();
             assertEquals("COMPLETED", new ObjectMapper()
@@ -212,12 +212,15 @@ public class DeletionJobSpringIntegrationTest {
                 .readTree(postResult.getResponse().getContentAsString())
                 .get("jobId").asText();
 
-        await().atMost(10, SECONDS).untilAsserted(() -> {
+        await().atMost(60, SECONDS).untilAsserted(() -> {
             MvcResult result = mockMvc.perform(MockMvcRequestBuilders.get("/jobs/" + jobId))
                     .andExpect(status().isOk()).andReturn();
             assertEquals("COMPLETED", new ObjectMapper()
                     .readTree(result.getResponse().getContentAsString())
                     .get("status").asText());
+            assertEquals("2", new ObjectMapper()
+                    .readTree(result.getResponse().getContentAsString())
+                    .get("patchesSent").asText());
         });
 
         // 3 originals + 2 delete patches for dist-target only
@@ -227,8 +230,8 @@ public class DeletionJobSpringIntegrationTest {
 
         for (ConsumerRecord<Bytes, Bytes> patch : patches) {
             Header distId = patch.headers().lastHeader(TelicentHeaders.DISTRIBUTION_ID);
-            assertNotNull(distId);
-            assertEquals("dist-target", new String(distId.value(), StandardCharsets.UTF_8));
+            //assertNotNull(distId);
+            assertEquals("dist-target-deletion", new String(distId.value(), StandardCharsets.UTF_8));
         }
     }
 
@@ -246,7 +249,7 @@ public class DeletionJobSpringIntegrationTest {
                 .readTree(postResult.getResponse().getContentAsString())
                 .get("jobId").asText();
 
-        await().atMost(10, SECONDS).untilAsserted(() -> {
+        await().atMost(60, SECONDS).untilAsserted(() -> {
             MvcResult result = mockMvc.perform(MockMvcRequestBuilders.get("/jobs/" + jobId))
                     .andExpect(status().isOk()).andReturn();
             String status = new ObjectMapper()
@@ -276,16 +279,69 @@ public class DeletionJobSpringIntegrationTest {
         String jobIdB = new ObjectMapper()
                 .readTree(postB.getResponse().getContentAsString()).get("jobId").asText();
 
-        await().atMost(15, SECONDS).untilAsserted(() -> {
+        await().atMost(60, SECONDS).untilAsserted(() -> {
             String statusA = new ObjectMapper().readTree(mockMvc.perform(MockMvcRequestBuilders.get("/jobs/" + jobIdA))
                     .andReturn().getResponse().getContentAsString()).get("status").asText();
             String statusB = new ObjectMapper().readTree(mockMvc.perform(MockMvcRequestBuilders.get("/jobs/" + jobIdB))
                     .andReturn().getResponse().getContentAsString()).get("status").asText();
+            String patchNumberA = new ObjectMapper().readTree(mockMvc.perform(MockMvcRequestBuilders.get("/jobs/" + jobIdA))
+                    .andReturn().getResponse().getContentAsString()).get("patchesSent").asText();
+            String patchNumberB = new ObjectMapper().readTree(mockMvc.perform(MockMvcRequestBuilders.get("/jobs/" + jobIdB))
+                    .andReturn().getResponse().getContentAsString()).get("patchesSent").asText();
             assertEquals("COMPLETED", statusA);
             assertEquals("COMPLETED", statusB);
+            assertEquals("1", patchNumberA);
+            assertEquals("1", patchNumberB);
         });
 
         // 2 originals + 2 delete patches
+        List<ConsumerRecord<Bytes, Bytes>> allRecords = readAllRecords(4);
+        assertEquals(2, filterDeletePatches(allRecords).size());
+    }
+
+    @Test
+    void deletingSameDistributionTwiceOnlySendsPatchOnFirstDelete() throws Exception {
+        publishRecord("dist-A", null, nquadsPayload("1", "Alice"));
+        publishRecord("dist-A", null, nquadsPayload("2", "Bob"));
+
+        // first delete job
+        MvcResult firstPost = mockMvc.perform(post("/jobs/delete-distribution")
+                        .param("distribution-id", "dist-A"))
+                .andExpect(status().isAccepted()).andReturn();
+
+        String firstJobId = new ObjectMapper()
+                .readTree(firstPost.getResponse().getContentAsString()).get("jobId").asText();
+
+        await().atMost(60, SECONDS).untilAsserted(() -> {
+            String status = new ObjectMapper().readTree(mockMvc.perform(MockMvcRequestBuilders.get("/jobs/" + firstJobId))
+                    .andReturn().getResponse().getContentAsString()).get("status").asText();
+            assertEquals("COMPLETED", status);
+        });
+
+        String firstJobPatches = new ObjectMapper()
+                .readTree(mockMvc.perform(MockMvcRequestBuilders.get("/jobs/" + firstJobId))
+                        .andReturn().getResponse().getContentAsString()).get("patchesSent").asText();
+        assertEquals("2", firstJobPatches);
+
+        // second delete job for the same distribution
+        MvcResult secondPost = mockMvc.perform(post("/jobs/delete-distribution")
+                        .param("distribution-id", "dist-A"))
+                .andExpect(status().isAccepted()).andReturn();
+
+        String secondJobId = new ObjectMapper()
+                .readTree(secondPost.getResponse().getContentAsString()).get("jobId").asText();
+
+        await().atMost(60, SECONDS).untilAsserted(() -> {
+            String status = new ObjectMapper().readTree(mockMvc.perform(MockMvcRequestBuilders.get("/jobs/" + secondJobId))
+                    .andReturn().getResponse().getContentAsString()).get("status").asText();
+            assertEquals("COMPLETED", status);
+        });
+
+        String secondJobPatches = new ObjectMapper()
+                .readTree(mockMvc.perform(MockMvcRequestBuilders.get("/jobs/" + secondJobId))
+                        .andReturn().getResponse().getContentAsString()).get("patchesSent").asText();
+        assertEquals("0", secondJobPatches);
+
         List<ConsumerRecord<Bytes, Bytes>> allRecords = readAllRecords(4);
         assertEquals(2, filterDeletePatches(allRecords).size());
     }

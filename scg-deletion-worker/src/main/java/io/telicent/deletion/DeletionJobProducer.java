@@ -24,6 +24,7 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 
+import static io.telicent.smart.cache.sources.TelicentHeaders.DISTRIBUTION_ID;
 import static org.apache.jena.riot.Lang.NQUADS;
 
 // KafkaProducer that sends the patch event back to knowledge with
@@ -150,9 +151,17 @@ public class DeletionJobProducer implements AutoCloseable {
         );
 
         output.headers().add(
+                "Original-Offset",
+                String.valueOf(record.offset()).getBytes(StandardCharsets.UTF_8)
+        );
+
+        output.headers().add(
                 DELETION_JOB_ID,
                 jobId.getBytes(StandardCharsets.UTF_8)
         );
+        String newDistributionId = distributionId + "-deletion";
+        output.headers().remove(DISTRIBUTION_ID);
+        output.headers().add(DISTRIBUTION_ID, newDistributionId.getBytes(StandardCharsets.UTF_8));
 
         try {
             RecordMetadata metadata = producer.send(output).get();

@@ -150,7 +150,7 @@ class DeletionJobProducerIntegrationTest {
 
             Header distId = patch.headers().lastHeader(TelicentHeaders.DISTRIBUTION_ID);
             assertNotNull(distId);
-            assertEquals(DISTRIBUTION_ID, new String(distId.value(), StandardCharsets.UTF_8));
+            assertEquals(DISTRIBUTION_ID + "-deletion", new String(distId.value(), StandardCharsets.UTF_8));
         }
     }
 
@@ -236,7 +236,7 @@ class DeletionJobProducerIntegrationTest {
 
             Header distId = patch.headers().lastHeader(TelicentHeaders.DISTRIBUTION_ID);
             assertNotNull(distId);
-            assertEquals(DISTRIBUTION_ID, new String(distId.value(), StandardCharsets.UTF_8));
+            assertEquals(DISTRIBUTION_ID + "-deletion", new String(distId.value(), StandardCharsets.UTF_8));
 
             Header operation = patch.headers().lastHeader(OPERATION);
             assertNotNull(operation);
@@ -331,7 +331,7 @@ class DeletionJobProducerIntegrationTest {
         for (ConsumerRecord<Bytes, Bytes> patch : deletePatches) {
             Header distId = patch.headers().lastHeader(TelicentHeaders.DISTRIBUTION_ID);
             assertNotNull(distId);
-            assertEquals(DISTRIBUTION_ID, new String(distId.value(), StandardCharsets.UTF_8));
+            assertEquals(DISTRIBUTION_ID  + "-deletion", new String(distId.value(), StandardCharsets.UTF_8));
         }
     }
 

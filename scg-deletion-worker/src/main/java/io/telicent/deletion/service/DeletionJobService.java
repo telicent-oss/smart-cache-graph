@@ -6,12 +6,15 @@ import io.telicent.deletion.RDFPatchInverter;
 import io.telicent.deletion.config.DeletionWorkerProperties;
 import io.telicent.deletion.model.JobState;
 import io.telicent.deletion.model.JobStatus;
+import org.apache.kafka.clients.producer.RecordMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Service
 public class DeletionJobService {
@@ -32,6 +35,7 @@ public class DeletionJobService {
         String distributionId = jobState.distributionId();
         String bootstrapServers = properties.kafka().bootstrapServers();
         String topic = properties.topic();
+        AtomicInteger patchesSent = new AtomicInteger();
 
         LOGGER.info("[{}] Starting deletion job for distribution '{}'", jobId, distributionId);
 
@@ -44,14 +48,17 @@ public class DeletionJobService {
             // handling exceptions on send
             consumer.process(record -> {
                 try {
-                    producer.sendDeletePatch(record);
+                    Optional<RecordMetadata> sentRecord = producer.sendDeletePatch(record);
+                    if (sentRecord.isPresent()) {
+                        patchesSent.getAndIncrement();
+                    }
                 } catch (ExecutionException | InterruptedException e) {
                     throw new RuntimeException(e);
                 }
             });
 
             registry.update(jobState.withStatus(
-                    JobStatus.COMPLETED));
+                    JobStatus.COMPLETED, patchesSent.get()));
             LOGGER.info("[{}] Deletion job completed", jobId);
 
         } catch (Exception e) {

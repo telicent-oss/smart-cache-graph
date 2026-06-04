@@ -92,7 +92,7 @@ class DeletionJobProducerTest {
         ProducerRecord<Bytes, Bytes> sent = mockProducer.history().getFirst();
         Header distId = sent.headers().lastHeader(TelicentHeaders.DISTRIBUTION_ID);
         assertNotNull(distId);
-        assertEquals(DISTRIBUTION_ID, new String(distId.value(), StandardCharsets.UTF_8));
+        assertEquals(DISTRIBUTION_ID + "-deletion", new String(distId.value(), StandardCharsets.UTF_8));
     }
 
     @Test
