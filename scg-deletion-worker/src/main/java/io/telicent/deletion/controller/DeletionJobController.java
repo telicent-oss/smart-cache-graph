@@ -30,23 +30,6 @@ public class DeletionJobController {
         return ResponseEntity.accepted()
                 .body(Map.of("jobId", jobState.jobId()));
     }
-// or with Body: { "distributionId": "dist-abc-123" } instead of just distributionId param
-//    @PostMapping("/delete-distribution")
-//    public ResponseEntity<Map<String, String>> triggerDeletion(
-//            @RequestBody Map<String, String> body) {
-//
-//        String distributionId = body.get("distributionId");
-//        if (distributionId == null || distributionId.isBlank()) {
-//            return ResponseEntity.badRequest()
-//                    .body(Map.of("error", "distributionId is required"));
-//        }
-//
-//        JobState jobState = registry.register(distributionId);
-//        jobService.runDeletionJob(jobState);
-//
-//        return ResponseEntity.accepted()
-//                .body(Map.of("jobId", jobState.jobId()));
-//    }
 
     @GetMapping("/{jobId}")
     public ResponseEntity<JobState> getJobStatus(@PathVariable("jobId") String jobId) {
