@@ -1,6 +1,7 @@
 # syntax=docker/dockerfile:1.7
 
-FROM telicent/telicent-java21:1.2.47 AS smart-cache-graph
+ARG JAVA_BASE_IMAGE=telicent/telicent-java21:1.2.47
+FROM ${JAVA_BASE_IMAGE} AS smart-cache-graph
 
 USER root
 
@@ -10,6 +11,7 @@ ARG FUSEKI_DIR="/fuseki"
 
 # Define environment variables for Java, Fuseki, and logging
 ENV JAVA_OPTIONS="-Xmx2048m -Xms2048m" \
+    MALLOC_ARENA_MAX="2" \
     FUSEKI_JAR="default-fuseki.jar" \
     FUSEKI_DIR="${FUSEKI_DIR}" \
     ROCKSDB_MUSL_LIBC="false" \

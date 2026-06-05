@@ -25,6 +25,41 @@ Smart Cache Graph is configured using a Fuseki configuration file
 
 You can find further example configurations later under [Try It Out](#try-it-out).
 
+## Debug / Performance Image Builds
+
+The container build now accepts a `JAVA_BASE_IMAGE` build argument so local
+diagnostic images can be produced without editing the Dockerfile.
+
+Examples:
+
+```bash
+docker build \
+  --build-arg JAVA_BASE_IMAGE=telicent/telicent-java21-debug:latest \
+  -f scg-docker/Dockerfile \
+  -t telicent/smart-cache-graph:debug .
+```
+
+```bash
+docker build \
+  --build-arg JAVA_BASE_IMAGE=telicent/telicent-java21-perf:latest \
+  -f scg-docker/Dockerfile \
+  -t telicent/smart-cache-graph:perf .
+```
+
+Use `debug` when you want richer live inspection tools inside the container.
+Use `perf` when you want profiling tools in addition to the debug utilities.
+
+The container image now also defaults `MALLOC_ARENA_MAX=2`. This is a
+runtime-level `glibc` allocator mitigation that reduced native anonymous memory
+growth in the Pi lab runs without hurting observed graph throughput. Override
+it at deployment time if you need to compare other values.
+
+For CI-built diagnostic variants, use the manual GitHub Actions workflow
+`SC Graph Runtime Variant Build`. It publishes:
+
+- `telicent/smart-cache-graph:<version>-DEBUG` built from `telicent/telicent-java21-debug`
+- `telicent/smart-cache-graph:<version>-PERF` built from `telicent/telicent-java21-perf`
+
 ## API Specifications
 
 - [Graph API](graph-api.yaml)
