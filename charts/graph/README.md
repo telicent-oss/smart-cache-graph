@@ -108,9 +108,10 @@ Note: Only global parameters used within this chart will be listed below.
 
 Contains Java configuration parameters to be used by the *Graph* application
 
-| Name              | Description                     | Value                       |
-| ----------------- | ------------------------------- | --------------------------- |
-| `java.jvmOptions` | JVM options for the application | `-XX:MaxRAMPercentage=80.0` |
+| Name                  | Description                                                                | Value                       |
+| --------------------- | -------------------------------------------------------------------------- | --------------------------- |
+| `java.jvmOptions`     | JVM options for the application                                            | `-XX:MaxRAMPercentage=80.0` |
+| `java.mallocArenaMax` | glibc malloc arena cap used to limit native memory fragmentation/retention | `2`                         |
 
 ### Application Parameters - Graph
 

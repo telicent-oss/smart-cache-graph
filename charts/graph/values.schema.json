@@ -103,7 +103,7 @@
                 },
                 "mallocArenaMax": {
                     "type": "string",
-                    "description": "glibc malloc arena cap used to limit native memory fragmentation and retention",
+                    "description": "glibc malloc arena cap used to limit native memory fragmentation/retention",
                     "default": "2"
                 }
             }
