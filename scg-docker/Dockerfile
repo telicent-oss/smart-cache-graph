@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.7
 
-ARG JAVA_BASE_IMAGE=telicent/telicent-java21:1.2.47
+ARG JAVA_BASE_IMAGE=telicent/telicent-java21:1.2.49
 FROM ${JAVA_BASE_IMAGE} AS smart-cache-graph
 
 USER root
