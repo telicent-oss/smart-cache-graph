@@ -1,10 +1,7 @@
 package io.telicent.distribution;
 
-import io.telicent.core.FMod_DistributionLifecycleFilter;
 import io.telicent.jena.abac.DatasetFilterProvider;
 import io.telicent.jena.abac.core.DatasetGraphABAC;
-import io.telicent.smart.cache.configuration.Configurator;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,20 +15,12 @@ public class DistributionLifecycleFilters {
     private DistributionLifecycleFilters() {
     }
 
-    public static boolean installIfConfigured(DatasetGraphABAC dataset) {
+    public static boolean installIfConfigured(DatasetGraphABAC dataset, String applicationId, String stateFile) {
         if (dataset.getFilterProvider() instanceof DistributionLifecycleDatasetFilterProvider) {
             LOGGER.info("Lifecycle-aware dataset filter already installed for this dataset; skipping");
             return false;
         }
 
-        String stateFile = Configurator.get(FMod_DistributionLifecycleFilter.DISTRIBUTION_LIFECYCLE_STATE_FILE);
-        if (StringUtils.isBlank(stateFile)) {
-            LOGGER.info("Lifecycle-aware dataset filter not installed: {} is not configured",
-                        FMod_DistributionLifecycleFilter.DISTRIBUTION_LIFECYCLE_STATE_FILE);
-            return false;
-        }
-
-        String applicationId = Configurator.get(FMod_DistributionLifecycleFilter.DISTRIBUTION_LIFECYCLE_APP_ID);
         DatasetFilterProvider delegate = dataset.getFilterProvider();
         dataset.setFilterProvider(new DistributionLifecycleDatasetFilterProvider(
                 new DistributionLifecycleStateFile(Path.of(stateFile), applicationId), delegate));
