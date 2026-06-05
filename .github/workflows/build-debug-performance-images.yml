@@ -1,0 +1,91 @@
+name: SC Graph Debug and Performance Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      variant:
+        description: "Debug or Performance image to build/deploy"
+        required: true
+        default: both
+        type: choice
+        options:
+          - both
+          - debug
+          - perf
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref_name }}-${{ github.event.inputs.variant }}
+  cancel-in-progress: false
+
+jobs:
+  maven-build:
+    uses: telicent-oss/shared-workflows/.github/workflows/maven.yml@main
+    permissions:
+      contents: write
+      id-token: write
+      issues: write
+      packages: write
+      pull-requests: write
+    with:
+      USES_DOCKERHUB_IMAGES: true
+      PUBLISH_SNAPSHOTS: true
+      MAIN_BRANCH: main
+      MAVEN_DEBUG_ARGS: -Dlogback.configurationFile=logback-debug.xml
+      RUN_WINDOWS_BUILD: false
+      JAVA_VERSION: 21
+      PUBLISH_JACOCO_REPORT: true
+    secrets: inherit
+
+  docker-build-debug:
+    name: Build and push smart-cache-graph DEBUG
+    needs: maven-build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+    if: ${{ github.event.inputs.variant == 'both' || github.event.inputs.variant == 'debug' }}
+    steps:
+      - name: Build and push image to ECR
+        uses: telicent-oss/shared-workflows/.github/actions/push-container-image@main
+        with:
+          app-name: smart-cache-graph
+          app-name-prefix: ""
+          dockerfile: scg-docker/Dockerfile
+          version: ${{ needs.maven-build.outputs.version }}-DEBUG
+          target: smart-cache-graph
+          java-version: 21
+          uses-maven: true
+          registry: aws
+          fail-on-unfixed: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          enable-buildkit-cache: "true"
+          build-args: |
+            PROJECT_VERSION=${{ needs.maven-build.outputs.version }}
+            JAVA_BASE_IMAGE=telicent/telicent-java21-debug:latest
+
+  docker-build-perf:
+    name: Build and push smart-cache-graph PERF
+    needs: maven-build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+    if: ${{ github.event.inputs.variant == 'both' || github.event.inputs.variant == 'perf' }}
+    steps:
+      - name: Build and push image to ECR
+        uses: telicent-oss/shared-workflows/.github/actions/push-container-image@main
+        with:
+          app-name: smart-cache-graph
+          app-name-prefix: ""
+          dockerfile: scg-docker/Dockerfile
+          version: ${{ needs.maven-build.outputs.version }}-PERF
+          target: smart-cache-graph
+          java-version: 21
+          uses-maven: true
+          registry: aws
+          fail-on-unfixed: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          enable-buildkit-cache: "true"
+          build-args: |
+            PROJECT_VERSION=${{ needs.maven-build.outputs.version }}
+            JAVA_BASE_IMAGE=telicent/telicent-java21-perf:latest

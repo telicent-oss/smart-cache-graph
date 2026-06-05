@@ -100,6 +100,11 @@
                     "type": "string",
                     "description": "JVM options for the application",
                     "default": "-XX:MaxRAMPercentage=80.0"
+                },
+                "mallocArenaMax": {
+                    "type": "string",
+                    "description": "glibc malloc arena cap used to limit native memory fragmentation/retention",
+                    "default": "2"
                 }
             }
         },
