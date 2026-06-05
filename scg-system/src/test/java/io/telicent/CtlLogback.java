@@ -32,24 +32,24 @@ public class CtlLogback {
     }
 
     private static Level name2level(String levelName) {
-        Level level = Level.ALL;
-        if ( levelName == null )
-            level = null;
-        else if ( levelName.equalsIgnoreCase("info") )
-            level = Level.INFO;
-        else if ( levelName.equalsIgnoreCase("debug") )
-            level = Level.DEBUG;
-        else if ( levelName.equalsIgnoreCase("warn") || levelName.equalsIgnoreCase("warning") )
-            level = Level.WARN;
-        else if ( levelName.equalsIgnoreCase("error") || levelName.equalsIgnoreCase("severe") )
-            level = Level.ERROR;
-        else if ( levelName.equalsIgnoreCase("trace") )
-            level = Level.TRACE;
-        else if ( levelName.equalsIgnoreCase("fatal") )
-            // Logback-ism.
-            level = Level.OFF;
-        else if ( levelName.equalsIgnoreCase("OFF") )
-            level = Level.OFF;
+        Level level = null;
+        if ( levelName != null ) {
+            if (levelName.equalsIgnoreCase("info"))
+                level = Level.INFO;
+            else if (levelName.equalsIgnoreCase("debug"))
+                level = Level.DEBUG;
+            else if (levelName.equalsIgnoreCase("warn") || levelName.equalsIgnoreCase("warning"))
+                level = Level.WARN;
+            else if (levelName.equalsIgnoreCase("error") || levelName.equalsIgnoreCase("severe"))
+                level = Level.ERROR;
+            else if (levelName.equalsIgnoreCase("trace"))
+                level = Level.TRACE;
+            else if (levelName.equalsIgnoreCase("fatal"))
+                // Logback-ism.
+                level = Level.OFF;
+            else if (levelName.equalsIgnoreCase("OFF"))
+                level = Level.OFF;
+        }
         return level;
     }
 

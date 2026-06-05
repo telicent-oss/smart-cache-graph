@@ -1,0 +1,22 @@
+name: Metadata Updater
+run-name: Metadata Updater
+
+on:
+  push:
+    branches-ignore:
+      - main
+    paths:
+      - charts/**
+
+# Revoke almost all permissions by default and grant only those needed to each job.
+# https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#permissions
+permissions:
+  contents: read
+
+jobs:
+  metadata-updater:
+    name: Check Helm chart metadata is up to date
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run metadata updater
+        uses: telicent-oss/shared-workflows/.github/actions/helm-metadata-updater@main

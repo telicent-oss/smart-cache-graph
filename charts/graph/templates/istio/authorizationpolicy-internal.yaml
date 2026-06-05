@@ -1,0 +1,41 @@
+{{- /*
+Copyright (C) 2026 Telicent Limited
+*/}}
+{{- if .Values.global.enterprise -}}
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+
+metadata:
+  name: {{ include "graph.fullname" . }}-internal-ingress
+  namespace: {{ include "graph.namespace" . | quote }}
+  labels:
+    {{- include "graph.labels" . | nindent 4 }}
+
+spec:
+  selector:
+    matchLabels:
+      {{- include "graph.selectorLabels" . | nindent 6 }}
+  action: ALLOW
+  rules:
+  - from:
+    - source:
+        principals:
+          {{- include "graph.paperbackWriterPrincipal" . | nindent 8 }}
+          {{- include "graph.aiSparqlBuilderPrincipal" . | nindent 8 }}
+    to:
+    - operation:
+        paths:
+        - /knowledge/update
+        - /knowledge/update/*
+        - /knowledge/query
+        - /knowledge/query/*
+        - /ontology/update
+        - /ontology/update/*
+        - /catalog/query
+        - /catalog/query/*
+        - /catalog/update
+        - /catalog/update/*
+        - /$/labels/catalog
+        - /$/labels/catalog/*
+        methods: ["GET", "POST"]
+{{- end -}}

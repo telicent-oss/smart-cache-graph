@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.apache.jena.fuseki.server.DataAccessPoint;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -74,7 +75,10 @@ public class TestServletAuthorizationEngine {
                 Arguments.of("/knowledge", null),
                 // Administrative endpoints
                 Arguments.of("/$/backups/create", null),
+                Arguments.of("/$/backups/create", "/named-backup"),
                 Arguments.of("/$/backups/restore", null),
+                Arguments.of("/$/backups/restore", "/25"),
+                Arguments.of("/$/backups/delete", "/25"),
                 Arguments.of("/$/compactall", null)
         );
         //@formatter:on
@@ -139,5 +143,18 @@ public class TestServletAuthorizationEngine {
         Assertions.assertNotNull(permissions);
         Assertions.assertEquals(Policy.DENY_ALL, roles);
         Assertions.assertEquals(Policy.DENY_ALL, permissions);
+    }
+
+    @Test
+    public void givenSuffixedDeletePath_whenFindingPermissions_thenDeletePolicyIsFound() {
+        // Given
+        ServletAuthorizationContext context = prepareContext("/$/backups/delete", "/25");
+        InspectableServletAuthorizationEngine engine = createEngine();
+
+        // When
+        Policy permissions = engine.findPermissions(context);
+
+        // Then
+        Assertions.assertArrayEquals(SCG_AuthPolicy.BACKUP_DELETE.values(), permissions.values());
     }
 }

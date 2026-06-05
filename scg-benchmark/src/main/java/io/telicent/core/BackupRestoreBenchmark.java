@@ -9,7 +9,7 @@ import io.telicent.jena.abac.core.DatasetGraphABAC;
 import io.telicent.jena.abac.labels.Label;
 import io.telicent.jena.abac.labels.Labels;
 import io.telicent.jena.abac.labels.LabelsStore;
-import io.telicent.jena.abac.labels.LabelsStoreRocksDB;
+import io.telicent.jena.abac.labels.store.rocksdb.legacy.LegacyLabelsStoreRocksDB;
 import io.telicent.jena.abac.labels.StoreFmtByString;
 import io.telicent.smart.cache.configuration.Configurator;
 import io.telicent.smart.cache.configuration.sources.PropertiesSource;
@@ -39,6 +39,7 @@ import static io.telicent.backup.utils.JsonFileUtils.OBJECT_MAPPER;
 @Measurement(iterations = 3, time = 10)
 @Fork(1)
 @State(Scope.Benchmark)
+@SuppressWarnings("deprecation")
 public class BackupRestoreBenchmark {
 
     @Param({"1000", "10000"})
@@ -69,7 +70,6 @@ public class BackupRestoreBenchmark {
         DatasetGraph base = TDB2Factory.connectDataset(tdbDir.toString()).asDatasetGraph();
         LabelsStore labelsStore = Labels.createLabelsStoreRocksDB(
                 labelsDir.toFile(),
-                LabelsStoreRocksDB.LabelMode.Overwrite,
                 null,
                 new StoreFmtByString()
         );

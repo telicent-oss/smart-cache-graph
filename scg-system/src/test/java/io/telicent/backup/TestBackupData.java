@@ -103,7 +103,7 @@ public class TestBackupData {
                 .build().start();
     }
 
-    private void verifyUnauthorized(String jwt, String path, String method, String expectedReason) throws IOException {
+    private void verifyForbidden(String jwt, String path, String method, String expectedReason) throws IOException {
         // Given
         server = buildServer("--port=0", "--empty");
 
@@ -113,7 +113,7 @@ public class TestBackupData {
         String body = IOUtils.toString(createBackupResponse.body(), StandardCharsets.UTF_8);
 
         // Then
-        assertEquals(401, createBackupResponse.statusCode());
+        assertEquals(403, createBackupResponse.statusCode());
         assertTrue(Strings.CI.contains(body, expectedReason));
     }
 
@@ -282,14 +282,49 @@ public class TestBackupData {
     }
 
     @Test
-    public void givenUserWithWrongRoles_whenCreatingBackup_thenUnauthorized() throws IOException {
-        verifyUnauthorized(tokenWithUserRoleOnly(),
+    public void givenUserWithWrongRoles_whenCreatingBackup_thenForbidden() throws IOException {
+        verifyForbidden(tokenWithUserRoleOnly(),
                            "$/backups/create", "POST", "requires roles");
     }
 
     @Test
-    public void givenUserWithInsufficientPermissions_whenCreatingBackup_thenUnauthorized() throws IOException {
-        verifyUnauthorized(tokenWithBackupReadPermission(), "$/backups/create", "POST", "requires permissions");
+    public void givenUserWithInsufficientPermissions_whenCreatingBackup_thenForbidden() throws IOException {
+        verifyForbidden(tokenWithBackupReadPermission(), "$/backups/create", "POST", "requires permissions");
+    }
+
+    @Test
+    public void test_createBackup_async_emptyGraph() {
+        server = buildServer("--port=0", "--empty");
+
+        HttpResponse<InputStream> submitResponse =
+                makeAuthPOSTCallWithPath(server, "$/backups/create?async=true&description=abc&backup-name=new-backup",
+                                         "test");
+        assertEquals(202, submitResponse.statusCode());
+
+        Map submit = convertToMap(submitResponse);
+        assertEquals("CREATE_BACKUP", submit.get("operation"));
+        assertTrue(submit.containsKey("job-id"));
+
+        Map job = waitForJob((String) submit.get("job-id"));
+        assertEquals("SUCCEEDED", job.get("status"));
+        assertEquals(200, job.get("http-status"));
+        Map result = (Map) job.get("result");
+        assertEquals("FULL", result.get("backup-type"));
+        assertEquals("test", result.get("user"));
+        assertEquals("abc", result.get("description"));
+        assertEquals("new-backup", result.get("backup-name"));
+    }
+
+    @Test
+    public void test_getBackupJob_unknownJobId() {
+        server = buildServer("--port=0", "--empty");
+
+        HttpResponse<InputStream> jobResponse =
+                makeAuthGETCallWithPath(server, "$/backups/jobs/unknown-job-id", "test");
+        assertEquals(404, jobResponse.statusCode());
+
+        Map responseMap = convertToMap(jobResponse);
+        assertEquals("Unknown backup job id: unknown-job-id", responseMap.get("error"));
     }
 
     @Test
@@ -317,14 +352,14 @@ public class TestBackupData {
     }
 
     @Test
-    public void givenUserWithWrongRoles_whenListBackups_thenUnauthorized() throws IOException {
-        verifyUnauthorized(tokenWithUserRoleOnly(),
+    public void givenUserWithWrongRoles_whenListBackups_thenForbidden() throws IOException {
+        verifyForbidden(tokenWithUserRoleOnly(),
                            "$/backups/list", "GET", "requires roles");
     }
 
     @Test
-    public void givenUserWithWrongRoles_whenListDatasets_thenUnauthorized() throws IOException {
-        verifyUnauthorized(tokenWithUserRoleOnly(),
+    public void givenUserWithWrongRoles_whenListDatasets_thenForbidden() throws IOException {
+        verifyForbidden(tokenWithUserRoleOnly(),
                            "$/backups/datasets/list", "GET", "requires roles");
     }
 
@@ -366,13 +401,18 @@ public class TestBackupData {
     }
 
     @Test
-    public void givenWrongRoles_whenDeletingBackup_thenUnauthorized() throws IOException {
-        verifyUnauthorized(tokenWithUserRoleOnly(), "$/backups/delete", "POST", "requires roles");
+    public void givenWrongRoles_whenDeletingBackup_thenForbidden() throws IOException {
+        verifyForbidden(tokenWithUserRoleOnly(), "$/backups/delete", "POST", "requires roles");
     }
 
     @Test
-    public void givenInsufficientPermissions_whenDeletingBackup_thenUnauthorized() throws IOException {
-        verifyUnauthorized(tokenWithBackupReadPermission(), "$/backups/delete", "POST", "requires permissions");
+    public void givenInsufficientPermissions_whenDeletingBackup_thenForbidden() throws IOException {
+        verifyForbidden(tokenWithBackupReadPermission(), "$/backups/delete", "POST", "requires permissions");
+    }
+
+    @Test
+    public void givenInsufficientPermissions_whenDeletingBackupById_thenForbidden() throws IOException {
+        verifyForbidden(tokenWithBackupReadPermission(), "$/backups/delete/1", "POST", "requires permissions");
     }
 
     @Test
@@ -402,13 +442,65 @@ public class TestBackupData {
     }
 
     @Test
-    public void givenWrongRoles_whenRestoreBackup_thenUnauthorized() throws IOException {
-        verifyUnauthorized(tokenWithUserRoleOnly(), "$/backups/restore", "POST", "requires roles");
+    public void givenWrongRoles_whenRestoreBackup_thenForbidden() throws IOException {
+        verifyForbidden(tokenWithUserRoleOnly(), "$/backups/restore", "POST", "requires roles");
     }
 
     @Test
-    public void givenInsufficientPermissions_whenRestoreBackup_thenUnauthorized() throws IOException {
-        verifyUnauthorized(tokenWithBackupReadPermission(), "$/backups/restore", "POST", "requires permissions");
+    public void givenInsufficientPermissions_whenRestoreBackup_thenForbidden() throws IOException {
+        verifyForbidden(tokenWithBackupReadPermission(), "$/backups/restore", "POST", "requires permissions");
+    }
+
+    @Test
+    public void givenInsufficientPermissions_whenRestoreSpecificBackup_thenForbidden() throws IOException {
+        verifyForbidden(tokenWithBackupReadPermission(), "$/backups/restore/1", "POST", "requires permissions");
+    }
+
+    @Test
+    public void givenInsufficientPermissions_whenCreatingNamedBackup_thenForbidden() throws IOException {
+        verifyForbidden(tokenWithBackupReadPermission(), "$/backups/create/new-backup", "POST",
+                           "requires permissions");
+    }
+
+    @Test
+    public void test_restoreBackup_async_emptyGraph() {
+        server = buildServer("--port=0", "--empty");
+
+        HttpResponse<InputStream> createBackupResponse = makeAuthPOSTCallWithPath(server, "$/backups/create/", "test");
+        assertEquals(200, createBackupResponse.statusCode());
+
+        HttpResponse<InputStream> submitResponse =
+                makeAuthPOSTCallWithPath(server, "$/backups/restore?async=true", "test");
+        assertEquals(202, submitResponse.statusCode());
+
+        Map submit = convertToMap(submitResponse);
+        assertEquals("RESTORE_BACKUP", submit.get("operation"));
+        Map job = waitForJob((String) submit.get("job-id"));
+        assertEquals("SUCCEEDED", job.get("status"));
+        assertEquals(200, job.get("http-status"));
+        Map result = (Map) job.get("result");
+        assertEquals("test", result.get("user"));
+        assertEquals("FULL", result.get("backup-type"));
+        assertTrue(result.containsKey("restorePath"));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    public void test_listBackupJobs_containsSubmittedJob() {
+        server = buildServer("--port=0", "--empty");
+
+        HttpResponse<InputStream> submitResponse =
+                makeAuthPOSTCallWithPath(server, "$/backups/create?async=true", "test");
+        assertEquals(202, submitResponse.statusCode());
+
+        Map submit = convertToMap(submitResponse);
+        HttpResponse<InputStream> jobsResponse =
+                makeAuthGETCallWithPath(server, "$/backups/jobs", "test");
+        assertEquals(200, jobsResponse.statusCode());
+
+        Map jobsMap = convertToMap(jobsResponse);
+        List<Map<String, Object>> jobs = (List<Map<String, Object>>) jobsMap.get("jobs");
+        assertTrue(jobs.stream().anyMatch(job -> submit.get("job-id").equals(job.get("job-id"))));
     }
 
     @Test
@@ -514,6 +606,28 @@ public class TestBackupData {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @SuppressWarnings("rawtypes")
+    private Map waitForJob(String jobId) {
+        for (int i = 0; i < 20; i++) {
+            HttpResponse<InputStream> jobResponse =
+                    makeAuthGETCallWithPath(server, "$/backups/jobs/" + jobId, "test");
+            assertEquals(200, jobResponse.statusCode());
+            Map responseMap = convertToMap(jobResponse);
+            Map job = (Map) responseMap.get("job");
+            if ("SUCCEEDED".equals(job.get("status")) || "FAILED".equals(job.get("status"))) {
+                return job;
+            }
+            try {
+                Thread.sleep(50L);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                fail("Interrupted while waiting for async backup job");
+            }
+        }
+        fail("Timed out waiting for async backup job completion");
+        return null;
     }
 
 

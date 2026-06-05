@@ -1,0 +1,68 @@
+{{- /*
+Copyright (C) 2026 Telicent Limited
+*/}}
+
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+
+metadata:
+  name: {{ include "graph.fullname" . }}-ingress
+  namespace: {{ include "graph.namespace" . | quote }}
+  labels:
+    {{- include "graph.labels" . | nindent 4 }}
+
+spec:
+  selector:
+    matchLabels:
+      {{- include "graph.selectorLabels" . | nindent 6 }}
+  action: ALLOW
+  rules:
+  - from:
+    - source:
+        principals:
+          {{- include "graph.ingressPrincipal" . | nindent 8 }}
+    to:
+    - operation:
+        paths:
+        - /knowledge/sparql
+        - /knowledge/sparql/*
+        - /knowledge/query
+        - /knowledge/query/*
+        - /ontology/sparql
+        - /ontology/sparql/*
+        - /ontology/query
+        - /ontology/query/*
+        - /catalog/sparql
+        - /catalog/sparql/*
+        - /catalog/query
+        - /catalog/query/*
+        - /$/backups/create
+        - /$/backups/create/*
+        - /$/backups/restore/*
+        - /$/backups/restore
+        - /$/backups/details/*
+        - /$/backups/delete/*
+        - /$/backups/validate/*
+        - /$/backups/report/*
+        - /$/backups/list
+        - /$/backups/list/*
+        - /$/backups/jobs
+        - /$/backups/jobs/*
+        - /$/compact/*
+        - /$/compactall
+        - /$/compaction/jobs
+        - /$/compaction/jobs/*
+        - /$/compaction/jobs/all
+        - /$/compaction/jobs/all/*
+        methods: ["GET", "POST"]
+    - operation:
+        paths:
+        - /knowledge/graphql
+        - /knowledge/graphql/*
+        - /knowledge/shacl
+        - /knowledge/shacl/*
+        - /ontology/shacl
+        - /ontology/shacl/*
+        - /catalog/shacl
+        - /catalog/shacl/*
+        methods: ["POST"]

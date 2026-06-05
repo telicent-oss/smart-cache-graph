@@ -22,13 +22,15 @@ import io.telicent.core.DatasetMaintenanceRegistry;
 import io.telicent.backup.utils.EncryptionUtils;
 import io.telicent.jena.abac.core.DatasetGraphABAC;
 import io.telicent.jena.abac.labels.LabelsStore;
-import io.telicent.jena.abac.labels.LabelsStoreRocksDB;
+import io.telicent.jena.abac.labels.store.rocksdb.legacy.LegacyLabelsStoreRocksDB;
 import io.telicent.jena.abac.labels.node.LabelToNodeGenerator;
 import io.telicent.model.KeyPair;
+import io.telicent.smart.cache.storage.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.apache.commons.io.FileUtils;
 import org.apache.jena.atlas.lib.DateTimeUtils;
+import org.apache.jena.fuseki.kafka.FKS;
 import org.apache.jena.fuseki.mgt.Backup;
 import org.apache.jena.fuseki.server.DataAccessPoint;
 import org.apache.jena.fuseki.server.DataAccessPointRegistry;
@@ -58,6 +60,7 @@ import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -71,6 +74,7 @@ import static io.telicent.backup.utils.JsonFileUtils.OBJECT_MAPPER;
 import static io.telicent.backup.utils.JsonFileUtils.writeObjectNodeToFile;
 import static org.apache.jena.riot.Lang.NQUADS;
 
+@SuppressWarnings("deprecation")
 public class DatasetBackupService {
 
     public static final Logger LOG = LoggerFactory.getLogger(DatasetBackupService.class);
@@ -116,39 +120,70 @@ public class DatasetBackupService {
      * @param backup   flag indicating backup or restore
      */
     public void process(HttpServletRequest request, HttpServletResponse response, boolean backup) {
-        // Try to acquire the lock without blocking
+        final BackupOperationResponse operationResponse = execute(() -> captureRequest(request), backup, false);
+        response.setStatus(operationResponse.statusCode());
+        processResponse(response, operationResponse.body());
+    }
+
+    public BackupOperationRequest captureRequest(final HttpServletRequest request) {
+        return new BackupOperationRequest(request.getPathInfo(),
+                                          request.getRemoteUser(),
+                                          request.getParameter("description"),
+                                          request.getParameter("backup-name"));
+    }
+
+    public BackupOperationResponse execute(final BackupOperationRequest request, final boolean backup,
+                                           final boolean waitForLock) {
+        return execute(() -> request, backup, waitForLock);
+    }
+
+    private BackupOperationResponse execute(final Supplier<BackupOperationRequest> requestSupplier,
+                                            final boolean backup,
+                                            final boolean waitForLock) {
         final ObjectNode resultNode = OBJECT_MAPPER.createObjectNode();
-        if (!lock.tryLock()) {
-            response.setStatus(HttpServletResponse.SC_CONFLICT);
-            resultNode.put("error", "Another conflicting operation is already in progress. Please try again later.");
-            processResponse(response, resultNode);
-        } else {
-            try {
-                String id = sanitiseName(request.getPathInfo());
-                if (!id.isEmpty()) {
-                    resultNode.put("backup-type", id);
-                } else {
-                    resultNode.put("backup-type", "FULL");
-                }
-                resultNode.put("date", DateTimeUtils.nowAsString(DATE_FORMAT));
-                resultNode.put("user", request.getRemoteUser());
-                String description = request.getParameter("description");
-                if (description != null) {
-                    resultNode.put("description", description);
-                }
-                String backupName = request.getParameter("backup-name");
-                if (backupName != null) {
-                    resultNode.put("backup-name", backupName);
-                }
-                if (backup) {
-                    backupDataset(id, resultNode);
-                } else {
-                    restoreDatasets(id, resultNode);
-                }
-                processResponse(response, resultNode);
-            } catch (Exception exception) {
-                handleError(response, resultNode, exception);
-            } finally {
+        boolean lockAcquired = false;
+        try {
+            if (waitForLock) {
+                lock.lockInterruptibly();
+                lockAcquired = true;
+            } else {
+                lockAcquired = lock.tryLock();
+            }
+            if (!lockAcquired) {
+                resultNode.put("error", "Another conflicting operation is already in progress. Please try again later.");
+                return new BackupOperationResponse(HttpServletResponse.SC_CONFLICT, resultNode);
+            }
+
+            final BackupOperationRequest request = requestSupplier.get();
+            final String id = sanitiseName(request.pathInfo());
+            if (!id.isEmpty()) {
+                resultNode.put("backup-type", id);
+            } else {
+                resultNode.put("backup-type", "FULL");
+            }
+            resultNode.put("date", DateTimeUtils.nowAsString(DATE_FORMAT));
+            resultNode.put("user", request.remoteUser());
+            if (request.description() != null) {
+                resultNode.put("description", request.description());
+            }
+            if (request.backupName() != null) {
+                resultNode.put("backup-name", request.backupName());
+            }
+            if (backup) {
+                backupDataset(id, resultNode);
+            } else {
+                restoreDatasets(id, resultNode);
+            }
+            return new BackupOperationResponse(HttpServletResponse.SC_OK, resultNode);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            resultNode.put("error", "Interrupted while waiting to perform backup operation.");
+            return new BackupOperationResponse(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, resultNode);
+        } catch (Exception exception) {
+            resultNode.put("error", exception.getMessage());
+            return new BackupOperationResponse(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, resultNode);
+        } finally {
+            if (lockAcquired) {
                 lock.unlock();
             }
         }
@@ -266,9 +301,16 @@ public class DatasetBackupService {
         DatasetGraph dsg = dataAccessPoint.getDataService().getDataset();
         if (dsg instanceof DatasetGraphABAC abac) {
             LabelsStore labelsStore = abac.labelsStore();
-            if (labelsStore instanceof LabelsStoreRocksDB rocksDB) {
+            if (labelsStore instanceof LegacyLabelsStoreRocksDB rocksDB) {
                 try {
                     executeBackupLabelStore(rocksDB, backupPath, node);
+                } catch (RuntimeException e) {
+                    node.put("reason", e.getMessage());
+                    node.put("success", false);
+                }
+            } else if (labelsStore instanceof BackupRestoreCapable backupCapable) {
+                try {
+                    executeBackup(backupCapable, backupPath, node);
                 } catch (RuntimeException e) {
                     node.put("reason", e.getMessage());
                     node.put("success", false);
@@ -290,9 +332,17 @@ public class DatasetBackupService {
      * @param labelBackupPath path to use
      * @param node            to collect the results
      */
-    void executeBackupLabelStore(LabelsStoreRocksDB rocksDB, String labelBackupPath, ObjectNode node) {
+    void executeBackupLabelStore(LegacyLabelsStoreRocksDB rocksDB, String labelBackupPath, ObjectNode node) {
         rocksDB.backup(labelBackupPath);
         node.put("success", true);
+    }
+
+    void executeBackup(BackupRestoreCapable backupCapable, String backupPath, ObjectNode node) {
+        BackupStatus status = backupCapable.backup(BackupConfig.builder().backupLocation(backupPath).build());
+        node.put("success", status.isSuccess());
+        if (status.getErrorMessage().isPresent()) {
+            node.put("reason", status.getErrorMessage().get());
+        }
     }
 
     /**
@@ -311,7 +361,7 @@ public class DatasetBackupService {
      */
     public ArrayNode listDatasets() {
         ArrayNode datasets = OBJECT_MAPPER.createArrayNode();
-        StreamSupport.stream(dapRegistry.accessPoints().spliterator(), false)
+        dapRegistry.accessPoints().stream()
                      .map(DataAccessPoint::getName)
                      .map(DatasetBackupService::sanitiseName)
                      .filter(name -> !name.isEmpty())
@@ -416,10 +466,12 @@ public class DatasetBackupService {
      * @param responseNode the results of the operation
      * @return the success of the operation
      */
+    static Duration KAFKA_PAUSE_TIMEOUT = Duration.ofSeconds(30);
+
     boolean restoreDataset(String restorePath, String datasetName, ObjectNode responseNode) {
         ObjectNode response = OBJECT_MAPPER.createObjectNode();
         response.put("dataset-name", datasetName);
-        responseNode.put(datasetName, response);
+        responseNode.set(datasetName, response);
         DataAccessPoint dataAccessPoint = getDataAccessPoint(datasetName);
         if (dataAccessPoint == null || dataAccessPoint.getDataService() == null) {
             response.put("reason", datasetName + " does not exist");
@@ -435,13 +487,32 @@ public class DatasetBackupService {
             response.put("success", false);
             return false;
         }
+
+        // Pause Kafka ingest for this dataset before touching the on-disk stores.
+        String fksKey = dataAccessPoint.getName();
         try {
+            LOG.info("Pausing Kafka ingest for {} before restore", fksKey);
+            FKS.pauseProjectors(fksKey);
+            boolean paused = FKS.waitForPause(fksKey, KAFKA_PAUSE_TIMEOUT);
+            if (!paused) {
+                response.put("reason", "Timed out after " + KAFKA_PAUSE_TIMEOUT
+                                        + " waiting for Kafka projectors on " + fksKey
+                                        + " to reach a safe pause point; aborting restore");
+                response.put("success", false);
+                return false;
+            }
             Txn.executeWrite(dsg, () -> applyRestoreMethods(response, dataAccessPoint, restorePath + "/" + datasetName));
         } catch (RuntimeException ex) {
             response.put("reason", ex.getMessage());
             response.put("success", false);
         } finally {
-            DatasetMaintenanceRegistry.end(maintenance.get());
+            // ALWAYS resume Kafka ingest -- even if the restore threw
+            try {
+                LOG.info("Resuming Kafka ingest for {} after restore", fksKey);
+                FKS.resumeProjectors(fksKey);
+            } finally {
+                DatasetMaintenanceRegistry.end(maintenance.get());
+            }
         }
         return true;
     }
@@ -530,7 +601,7 @@ public class DatasetBackupService {
         DatasetGraph dsg = dataAccessPoint.getDataService().getDataset();
         if (dsg instanceof DatasetGraphABAC abac) {
             LabelsStore labelsStore = abac.labelsStore();
-            if (labelsStore instanceof LabelsStoreRocksDB rocksDB) {
+            if (labelsStore instanceof LegacyLabelsStoreRocksDB rocksDB) {
                 if (!checkPathExistsAndIsDir(restorePath)) {
                     node.put("reason", "Restore directory not found: " + restorePath);
                     node.put("success", false);
@@ -541,6 +612,13 @@ public class DatasetBackupService {
                         node.put("reason", e.getMessage());
                         node.put("success", false);
                     }
+                }
+            } else if (labelsStore instanceof BackupRestoreCapable restoreCapable) {
+                try {
+                    executeRestore(restoreCapable, restorePath, node);
+                } catch (RuntimeException e) {
+                    node.put("reason", e.getMessage());
+                    node.put("success", false);
                 }
             } else {
                 node.put("reason", "No Label Store to restore (not RocksDB)");
@@ -559,9 +637,17 @@ public class DatasetBackupService {
      * @param labelRestorePath the location of the recovery files
      * @param node             the results of the operation
      */
-    void executeRestoreLabelStore(LabelsStoreRocksDB rocksDB, String labelRestorePath, ObjectNode node) {
+    void executeRestoreLabelStore(LegacyLabelsStoreRocksDB rocksDB, String labelRestorePath, ObjectNode node) {
         rocksDB.restore(labelRestorePath);
         node.put("success", true);
+    }
+
+    void executeRestore(BackupRestoreCapable restoreCapable, String labelRestorePath, ObjectNode node) {
+        RestoreStatus status = restoreCapable.restore(RestoreConfig.builder().backupLocation(labelRestorePath).build());
+        node.put("success", status.isSuccess());
+        if (status.getErrorMessage().isPresent()) {
+            node.put("reason", status.getErrorMessage().get());
+        }
     }
 
     /**

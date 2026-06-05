@@ -23,12 +23,14 @@ import static io.telicent.LibTestsSCG.tokenHeaderValue;
 import static org.apache.jena.atlas.lib.Lib.concatPaths;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Map;
 
 import io.telicent.core.MainSmartCacheGraph;
 import io.telicent.core.SmartCacheGraphSink;
+import io.telicent.core.TestSmartCacheGraphSink;
 import io.telicent.jena.abac.AttributeValueSet;
 import io.telicent.jena.abac.SysABAC;
 import io.telicent.jena.abac.attributes.Attribute;
@@ -36,6 +38,7 @@ import io.telicent.jena.abac.attributes.ValueTerm;
 import io.telicent.jena.abac.core.Attributes;
 import io.telicent.jena.abac.core.AttributesStore;
 import io.telicent.jena.abac.core.DatasetGraphABAC;
+import io.telicent.jena.abac.labels.Labels;
 import io.telicent.smart.cache.configuration.Configurator;
 import io.telicent.smart.cache.payloads.RdfPayload;
 import io.telicent.smart.cache.sources.Event;
@@ -55,6 +58,7 @@ import org.apache.jena.sparql.exec.RowSetRewindable;
 import org.apache.jena.sparql.exec.http.QueryExecHTTPBuilder;
 import org.apache.jena.system.Txn;
 import org.apache.kafka.common.utils.Bytes;
+import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.*;
 
 /**
@@ -70,25 +74,28 @@ public class TestPersistentSetup {
         LibTestsSCG.disableInitialCompaction();
         FusekiLogging.setLogging();
         FileOps.ensureDir(testArea);
+        Labels.rocks.clear();
     }
 
     @BeforeEach
     public void beforeEach() {
         FileOps.clearAll(testArea);
+        Labels.rocks.clear();
     }
 
     @AfterAll
     public static void afterAll() {
         FileOps.clearAll(testArea);
         Configurator.reset();
+        Labels.rocks.clear();
     }
 
     @Test
-    public void persistentSetup() {
+    public void persistentSetup() throws Exception {
 
         //CxtABAC.systemTrace(Track.DEBUG);
         final String DIR = "src/test/files/";
-        final String CONFIG = concatPaths(DIR, "config-persistent.ttl");
+        final String CONFIG = concatPaths(DIR, getPersistentConfigurationFile());
 
         final String FILES = "src/test/files/Data";
         final String TOPIC = "knowledge";
@@ -148,7 +155,26 @@ public class TestPersistentSetup {
             Assertions.fail("Unexpected error: " + ex.getMessage());
         } finally {
             server.stop();
+            dsg.close();
+
+            // Ensure we close the labels store otherwise the process might still be holding onto the
+            // storage location which prevents other tests from running successfully
+            dsgz.labelsStore().close();
         }
+    }
+
+    /**
+     * Gets the persistent storage configuration we want to test, derived test classes can just override this method
+     * in order to test alternative persistent storage configurations
+     * <p>
+     * By default, returns {@code config-persistent.ttl}, the returned file <strong>MUST</strong> be a configuration
+     * file found under the {@code src/test/files/} directory
+     * </p>
+     *
+     * @return Persistent storage configuration file
+     */
+    protected String getPersistentConfigurationFile() {
+        return "config-persistent.ttl";
     }
 
     private void sendFile(DatasetGraph dsg, SmartCacheGraphSink sink, String path, Map<String, String> headers) throws

@@ -70,18 +70,17 @@ public class SmartCacheGraphSink extends FusekiSink<DatasetGraphABAC> {
                 return;
             }
             if (routeToNamedGraphs) {
-                Quad rerouted = new Quad(targetGraph, q.getSubject(), q.getPredicate(), q.getObject());
+                Quad rerouted = Quad.create(targetGraph, q.getSubject(), q.getPredicate(), q.getObject());
                 this.dataset.add(rerouted);
                 if (eventSecurityLabel != null) {
-                    // Currently works only on the default graph, needs updating once labels store supports named graph labelling
-                    labelsStore.add(rerouted.asTriple(), eventSecurityLabel);
+                    labelsStore.add(rerouted, eventSecurityLabel);
                 }
             }
             else {
                 this.dataset.add(q);
                 if (eventSecurityLabel != null) {
                     // Specific label for this event
-                    labelsStore.add(q.asTriple(), eventSecurityLabel);
+                    labelsStore.add(q, eventSecurityLabel);
                 }
             }
             // NB - If no specific label for this event, dataset default will apply at read time, no need to set

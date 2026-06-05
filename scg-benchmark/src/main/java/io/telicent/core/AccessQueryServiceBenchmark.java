@@ -16,6 +16,7 @@ import org.apache.jena.fuseki.system.ActionCategory;
 import org.apache.jena.graph.NodeFactory;
 import org.apache.jena.graph.Triple;
 import org.apache.jena.sparql.core.DatasetGraphFactory;
+import org.apache.jena.sparql.core.Quad;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
 import org.slf4j.Logger;
@@ -69,7 +70,7 @@ public class AccessQueryServiceBenchmark {
                     NodeFactory.createLiteralString("o-" + i)
             );
             datasetGraph.getDefaultGraph().add(triple);
-            datasetGraph.labelsStore().add(triple.getSubject(), triple.getPredicate(), triple.getObject(), dataLabel);
+            datasetGraph.labelsStore().add(Quad.defaultGraphIRI, triple.getSubject(), triple.getPredicate(), triple.getObject(), dataLabel);
         }
         accessQueryService = new AccessQueryService(datasetGraph);
         allTriples = datasetGraph.getDefaultGraph().find(Triple.ANY).toList();

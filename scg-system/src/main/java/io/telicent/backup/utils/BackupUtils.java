@@ -36,10 +36,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeParseException;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.PathMatcher;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -63,7 +59,15 @@ public class BackupUtils extends ServletUtils {
      */
     public static final String ENV_BACKUPS_DIR = "ENV_BACKUPS_DIR";
 
+    /**
+     * Cached backup directory path.
+     */
     public static String dirBackups;
+
+    /**
+     * Lock used to serialise lazy initialisation of {@link #dirBackups}
+     */
+    private static final Object DIR_BACKUPS_LOCK = new Object();
 
     private BackupUtils() {
     }
@@ -79,10 +83,17 @@ public class BackupUtils extends ServletUtils {
      * @return path of back-up directory
      */
     public static String getBackUpDir() {
-        if (dirBackups == null) {
-            dirBackups = generateBackUpDirPath();
+        String local = dirBackups;
+        if (local == null) {
+            synchronized (DIR_BACKUPS_LOCK) {
+                local = dirBackups;
+                if (local == null) {
+                    local = generateBackUpDirPath();
+                    dirBackups = local;
+                }
+            }
         }
-        return dirBackups;
+        return local;
     }
 
     /**
@@ -92,29 +103,51 @@ public class BackupUtils extends ServletUtils {
      * @return the Path of the back-up directory location.
      */
     public static String generateBackUpDirPath() {
-        String dirBackupStr = getBackUpDirProperty();
-
-        if (dirBackupStr == null) {
-            dirBackupStr = System.getenv("PWD") + "/backups";
-            File dir = new File(dirBackupStr);
-            dir.mkdir();
-            LOG.warn("ENV_BACKUPS_DIR not set. Backups folder set to [default]: /backups");
-            return dirBackupStr;
+        String configured = getBackUpDirProperty();
+        if (configured == null) {
+            String defaultDir = System.getenv("PWD") + "/backups";
+            ensureDirectoryExists(defaultDir, "default (ENV_BACKUPS_DIR not set)");
+            LOG.warn("ENV_BACKUPS_DIR not set. Backups folder set to [default]: {}", defaultDir);
+            return defaultDir;
         }
 
-        File dir = new File(dirBackupStr);
-        if (!dir.exists()) {
-            if (dir.mkdir()) {
-                LOG.info("ENV_BACKUPS_DIR: /{}", dirBackupStr);
-            } else {
-                LOG.warn("ENV_BACKUPS_DIR invalid. Backups folder set to [default]: /backups");
-                dirBackupStr = System.getenv("PWD") + "/backups";
+        File dir = new File(configured);
+        if (dir.exists()) {
+            if (!dir.isDirectory()) {
+                throw new BackupException(
+                        "ENV_BACKUPS_DIR points at a path that exists but isn't a directory: " + configured);
             }
-            return dirBackupStr;
+            LOG.info("ENV_BACKUPS_DIR already exists. Backups folder set to {}", configured);
+            return configured;
         }
 
-        LOG.info("ENV_BACKUPS_DIR already exists. Backups folder set to /{}", dirBackupStr);
-        return dirBackupStr;
+        if (dir.mkdir()) {
+            LOG.info("ENV_BACKUPS_DIR created at {}", configured);
+            return configured;
+        }
+
+        throw new BackupException(
+                "ENV_BACKUPS_DIR is set to '" + configured + "' but the directory does not exist "
+                        + "and cannot be created (check parent directory permissions). "
+                        + "Either fix the path or unset ENV_BACKUPS_DIR to use the $PWD/backups default.");
+    }
+
+    /**
+     * Ensures the directory at {@code path} exists, creating it if necessary.
+     */
+    private static void ensureDirectoryExists(String path, String context) {
+        File dir = new File(path);
+        if (dir.isDirectory()) {
+            return;
+        }
+        if (dir.exists()) {
+            throw new BackupException(
+                    "Backup dir path " + context + " '" + path + "' exists but isn't a directory");
+        }
+        if (!dir.mkdirs()) {
+            throw new BackupException(
+                    "Failed to create backup directory " + context + " at '" + path + "'");
+        }
     }
 
     public static int getHighestDirectoryNumber(String directoryPath) {
@@ -635,7 +668,7 @@ public class BackupUtils extends ServletUtils {
 
             ObjectNode datasetSuccess = JsonNodeFactory.instance.objectNode();
 
-            Iterator<Map.Entry<String, JsonNode>> fields = dataset.fields();
+            Iterator<Map.Entry<String, JsonNode>> fields = dataset.properties().iterator();
             while (fields.hasNext()) {
                 Map.Entry<String, JsonNode> entry = fields.next();
                 String sectionName = entry.getKey();
@@ -650,7 +683,7 @@ public class BackupUtils extends ServletUtils {
                     if (success) isAnyTrue = true;
                 }
 
-                Iterator<Map.Entry<String, JsonNode>> nestedFields = section.fields();
+                Iterator<Map.Entry<String, JsonNode>> nestedFields = section.properties().iterator();
                 while (nestedFields.hasNext()) {
                     Map.Entry<String, JsonNode> nestedEntry = nestedFields.next();
                     String nestedKey = nestedEntry.getKey();

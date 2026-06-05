@@ -21,8 +21,8 @@ GRAPH security:labels {
     [ security:pattern 'dbr:Berlin dbo:country dbr:Germany'  ; security:label "everyone" ] .
 
     ## Multiple labels.
-    [ security:pattern 'dbr:London dbo:populationTotal 8799800'  ; security:label "admin", "census" ] .
-    [ security:pattern 'dbr:Paris dbo:populationTotal 2165423'  ; security:label "admin", "census" ] .
-    [ security:pattern 'dbr:Berlin dbo:populationTotal 3677472'  ; security:label "admin", "census" ] .
+    [ security:pattern 'dbr:London dbo:populationTotal 8799800'  ; security:label "admin && census" ] .
+    [ security:pattern 'dbr:Paris dbo:populationTotal 2165423'  ; security:label "admin && census" ] .
+    [ security:pattern 'dbr:Berlin dbo:populationTotal 3677472'  ; security:label "admin && census" ] .
 
 }

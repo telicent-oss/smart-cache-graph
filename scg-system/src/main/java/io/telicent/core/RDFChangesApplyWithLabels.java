@@ -7,6 +7,7 @@ import org.apache.jena.graph.Node;
 import org.apache.jena.graph.NodeFactory;
 import org.apache.jena.kafka.utils.RDFChangesApplyExternalTransaction;
 import org.apache.jena.query.TxnType;
+import org.apache.jena.sparql.core.Quad;
 import org.apache.jena.sparql.graph.GraphFactory;
 import org.apache.jena.sparql.graph.GraphTxn;
 
@@ -44,13 +45,15 @@ class RDFChangesApplyWithLabels extends RDFChangesApplyExternalTransaction {
         } else {
             if (this.targetGraph != null) {
                 g = targetGraph;
+            } else if (g == null) {
+                g = Quad.defaultGraphIRI;
             }
             super.add(g, s, p, o);
 
             // Apply specific security label if there is one, if not we're relying on the dataset default label applying
             // at read time
             if (securityLabel != null) {
-                this.datasetABAC.labelsStore().add(s, p, o, securityLabel);
+                this.datasetABAC.labelsStore().add(g, s, p, o, securityLabel);
             }
         }
     }

@@ -1,0 +1,7 @@
+{{- $_ := required ".Values.global.appHostDomain is required" .Values.global.appHostDomain }}
+{{- $_ := required ".Values.global.apiHostDomain is required" .Values.global.apiHostDomain }}
+{{- $_ := required ".Values.global.authHostDomain is required" .Values.global.authHostDomain }}
+
+{{- if and .Values.graph.routeToNamedGraphs .Values.graph.legacyLabels }}
+{{- $_ := required "graph.legacyLabels MUST be false when graph.routeToNamedGraphs is enabled" "" }}
+{{- end }}

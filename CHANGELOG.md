@@ -1,5 +1,78 @@
 # Smart Cache Graph
 
+## 1.0.5
+## 1.0.4
+This is a maintenance release due to changes to the underlying CI/CD pipeline.
+
+## 1.0.3
+- Build improvements:
+  - improved error response on failed backup creation
+  - pause kafka processing during restoration.
+
+## 1.0.2
+
+- Build improvements:
+    - Apache Jena upgraded to 6.1.0
+    - Fuseki Kafka upgraded to 3.0.2
+    - GraphQL Jena upgraded to 0.12.2
+    - Jackson upgraded to 2.21.3
+    - JWT Servlet Auth upgraded to 4.1.0
+    - Log4j2 upgraded to 2.26.0
+    - OpenTelemetry SDK upgraded to 1.62.0
+    - RDF-ABAC upgraded to 3.1.1
+    - SLF4J upgraded to 2.0.18
+    - Smart Caches Core upgraded to 0.38.0
+
+## 1.0.1
+
+This is a maintenance release to force Docker images to be republished as the 1.0.0 release did not publish images
+as it failed at the Maven Central publishing step due to a Maven Central outage
+
+- Build improvements
+    - Changed Maven Central publishing plugin to waitUntil validated since waitUntil published can take longer than
+      our configured waitMaxTime
+
+### 1.0.0
+
+- Upgraded to RDF-ABAC 3.1.0 which enables a number of new features:
+    - When a suitable `LabelsStore` is configured it is now possible to label and query quads across many named graphs.
+      The same triple in different named graphs (which are different quads) can now have different labels, and thus
+      visibility to queries.  This enables better partitioning of data while still retaining the strong data access
+      controls that RDF-ABAC enables.
+    - Note that enabling this functionality requires opt-in in order to preserve backwards compatibility with previous
+      configurations out of the box.  See [README](README.md) and [Configuration
+      Docs](docs/configuration-smart-cache-graph.md) for more information.
+- New opt-in functionality to route Kafka events into named graphs based on their `Distribution-ID` header.  This can be
+  enabled by setting the `ROUTE_TO_NAMED_GRAPHS` environment variable to `true`.  Intended for use in conjunction with
+  the above changes around labelling quads to enable secure data partitioning.
+- Admin improvements:
+    - Improved listing existing backups
+    - Backup, Restore and Compact operations on datasets can now optionally be carried out asynchronously when the new
+      `async` parameter is set to `true` on those requests.  The server will respond with a `202 Accepted` and an
+      initial status response, this includes a URL that can be polled to check job status.
+- Build improvements:
+    - Some logging output improved
+    - Bouncy Castle upgraded to 1.84
+    - Fuseki Kafka upgraded to 3.0.1
+    - GraphQL Jena upgraded to 0.12.0
+    - Jackson upgraded to 2.21.1
+    - Jetty upgraded to 12.1.8
+    - JWT Servlet Auth upgraded to 4.0.1
+    - Log4j2 upgraded to 2.25.4
+    - LZ4 Java upgraded to 1.11.0
+    - OpenTelemetry upgraded to 1.61.0
+    - RDF ABAC upgraded to 3.1.0
+    - Smart Caches Core upgraded to 0.36.3
+    - Telicent Base Java image upgraded to 1.2.44
+    - Various build and test plugins upgraded to latest available
+
+## 0.93.5
+- Core improvements:
+  - Avoid queries during compaction/restore/back-up
+  - Updating Open Telemetry
+  - Improving performance of underlying queries
+
+
 ## 0.93.4
 - Build improvements
   - Addressing CVE-2026-1605
