@@ -35,6 +35,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 
+import static io.telicent.deletion.DeletionWorkerConstants.DELETION_JOB_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
@@ -120,7 +121,7 @@ class DeletionJobConsumerIntegrationTest {
         }
         if (deletionJobId != null) {
             record.headers().add(
-                    DeletionJobConsumer.DELETION_JOB_ID,
+                    DELETION_JOB_ID,
                     deletionJobId.getBytes(StandardCharsets.UTF_8)
             );
         }

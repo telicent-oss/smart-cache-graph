@@ -40,6 +40,8 @@ import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
+import static io.telicent.deletion.DeletionWorkerConstants.DELETION_JOB_SUFFIX;
+import static io.telicent.deletion.DeletionWorkerConstants.OPERATION;
 import static org.junit.jupiter.api.Assertions.*;
 
 
@@ -92,7 +94,7 @@ class DeletionJobProducerTest {
         ProducerRecord<Bytes, Bytes> sent = mockProducer.history().getFirst();
         Header distId = sent.headers().lastHeader(TelicentHeaders.DISTRIBUTION_ID);
         assertNotNull(distId);
-        assertEquals(DISTRIBUTION_ID + "-deletion", new String(distId.value(), StandardCharsets.UTF_8));
+        assertEquals(DISTRIBUTION_ID + DELETION_JOB_SUFFIX, new String(distId.value(), StandardCharsets.UTF_8));
     }
 
     @Test
@@ -105,7 +107,7 @@ class DeletionJobProducerTest {
             throw new RuntimeException(e);
         }
         ProducerRecord<Bytes, Bytes> sent = mockProducer.history().getFirst();
-        Header operation = sent.headers().lastHeader(DeletionJobProducer.OPERATION);
+        Header operation = sent.headers().lastHeader(OPERATION);
         assertNotNull(operation);
         assertEquals("delete", new String(operation.value(), StandardCharsets.UTF_8));
     }

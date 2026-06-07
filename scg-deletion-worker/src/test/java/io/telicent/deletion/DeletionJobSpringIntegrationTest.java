@@ -43,7 +43,8 @@ import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 
-import static io.telicent.deletion.DeletionJobConsumer.DELETION_JOB_ID;
+import static io.telicent.deletion.DeletionWorkerConstants.DELETION_JOB_ID;
+import static io.telicent.deletion.DeletionWorkerConstants.DELETION_JOB_SUFFIX;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -116,7 +117,7 @@ public class DeletionJobSpringIntegrationTest {
         for (ConsumerRecord<Bytes, Bytes> patch : deletePatches) {
             Header distId = patch.headers().lastHeader(TelicentHeaders.DISTRIBUTION_ID);
 //            assertNotNull(distId);
-            assertEquals(distributionId + "-deletion", new String(distId.value(), StandardCharsets.UTF_8));
+            assertEquals(distributionId + DELETION_JOB_SUFFIX, new String(distId.value(), StandardCharsets.UTF_8));
         }
 
     }

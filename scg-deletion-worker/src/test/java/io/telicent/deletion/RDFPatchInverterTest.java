@@ -69,7 +69,7 @@ public class RDFPatchInverterTest {
         assertEquals(0, changes.adds.size());
         assertTrue(changes.hasTransaction);
 
-        DeletedQuad deleted = changes.deletes.get(0);
+        DeletedQuad deleted = changes.deletes.getFirst();
         assertEquals(G, deleted.g);
         assertEquals(S, deleted.s);
         assertEquals(P, deleted.p);
@@ -105,7 +105,7 @@ public class RDFPatchInverterTest {
         patch.apply(changes);
 
         assertEquals(1, changes.deletes.size());
-        assertEquals(Quad.defaultGraphIRI, changes.deletes.get(0).g);
+        assertEquals(Quad.defaultGraphIRI, changes.deletes.getFirst().g);
     }
 
     @Test
@@ -120,7 +120,7 @@ public class RDFPatchInverterTest {
         patch.apply(changes);
 
         assertEquals(1, changes.deletes.size());
-        assertEquals(LITERAL, changes.deletes.get(0).o);
+        assertEquals(LITERAL, changes.deletes.getFirst().o);
     }
 
     @Test
@@ -135,7 +135,7 @@ public class RDFPatchInverterTest {
         patch.apply(changes);
 
         assertEquals(1, changes.deletes.size());
-        assertEquals(TYPED_LITERAL, changes.deletes.get(0).o);
+        assertEquals(TYPED_LITERAL, changes.deletes.getFirst().o);
     }
 
     @Test
@@ -150,7 +150,7 @@ public class RDFPatchInverterTest {
         patch.apply(changes);
 
         assertEquals(1, changes.deletes.size());
-        assertEquals(LANG_LITERAL, changes.deletes.get(0).o);
+        assertEquals(LANG_LITERAL, changes.deletes.getFirst().o);
     }
 
     @Test
@@ -204,7 +204,7 @@ public class RDFPatchInverterTest {
         assertTrue(changes.deletes.stream().anyMatch(d -> g2.equals(d.g)));
     }
 
-    // records what operations were replayed onto it, for assertion in tests.
+    // records what operations were replayed onto it
     static class RecordingChanges implements RDFChanges {
 
         final List<DeletedQuad> deletes = new ArrayList<>();

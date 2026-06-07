@@ -1,6 +1,7 @@
 package io.telicent.deletion.service;
 
 import io.telicent.deletion.DeletionJobConsumer;
+import io.telicent.deletion.DeletionJobException;
 import io.telicent.deletion.DeletionJobProducer;
 import io.telicent.deletion.RDFPatchInverter;
 import io.telicent.deletion.config.DeletionWorkerProperties;
@@ -44,16 +45,19 @@ public class DeletionJobService {
              DeletionJobProducer producer = new DeletionJobProducer(
                      bootstrapServers, properties.kafka().configFilePath(), new RDFPatchInverter(), topic, distributionId, jobId)) {
 
-            //TODO
-            // handling exceptions on send
             consumer.process(record -> {
                 try {
                     Optional<RecordMetadata> sentRecord = producer.sendDeletePatch(record);
                     if (sentRecord.isPresent()) {
                         patchesSent.getAndIncrement();
                     }
-                } catch (ExecutionException | InterruptedException e) {
-                    throw new RuntimeException(e);
+                } catch (ExecutionException e) {
+                    throw new DeletionJobException(
+                            "Failed to send delete patch for offset " + record.offset(), e.getCause());
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw new DeletionJobException(
+                            "Deletion job interrupted at offset " + record.offset(), e);
                 }
             });
 

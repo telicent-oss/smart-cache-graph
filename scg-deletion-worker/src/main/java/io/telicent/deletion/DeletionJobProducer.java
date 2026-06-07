@@ -24,20 +24,17 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 
+import static io.telicent.deletion.DeletionWorkerConstants.*;
 import static io.telicent.smart.cache.sources.TelicentHeaders.DISTRIBUTION_ID;
-import static org.apache.jena.riot.Lang.NQUADS;
 
-// KafkaProducer that sends the patch event back to knowledge with
-// Content-Type: application/rdf-patch, the original Distribution-ID,
-// and X-Deletion-Job-ID set to this run's ID
-
+/**
+ * KafkaProducer that sends the patch event back to knowledge with
+ * Content-Type: application/rdf-patch, the original Distribution-ID,
+ * and X-Deletion-Job-ID set to this run's ID
+ */
 public class DeletionJobProducer implements AutoCloseable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DeletionJobProducer.class);
-    //TODO
-    // move to TelicentHeaders
-    static final String DELETION_JOB_ID = "Deletion-Job-Id";
-    static final String OPERATION = "Operation";
 
     private final Producer<Bytes, Bytes> producer;
     private final RDFPatchInverter inverter;
@@ -151,7 +148,7 @@ public class DeletionJobProducer implements AutoCloseable {
         );
 
         output.headers().add(
-                "Original-Offset",
+                ORIGINAL_OFFSET,
                 String.valueOf(record.offset()).getBytes(StandardCharsets.UTF_8)
         );
 
@@ -159,7 +156,7 @@ public class DeletionJobProducer implements AutoCloseable {
                 DELETION_JOB_ID,
                 jobId.getBytes(StandardCharsets.UTF_8)
         );
-        String newDistributionId = distributionId + "-deletion";
+        String newDistributionId = distributionId + DELETION_JOB_SUFFIX;
         output.headers().remove(DISTRIBUTION_ID);
         output.headers().add(DISTRIBUTION_ID, newDistributionId.getBytes(StandardCharsets.UTF_8));
 
@@ -177,6 +174,8 @@ public class DeletionJobProducer implements AutoCloseable {
         }
     }
 
+    //TODO
+    // need any others?
     private Lang resolveLang(String contentType) {
         if (contentType == null) return null;
         String normalised = contentType.split(";")[0].trim().toLowerCase();
@@ -194,8 +193,6 @@ public class DeletionJobProducer implements AutoCloseable {
         if (header == null) return null;
         return new String(header.value(), StandardCharsets.UTF_8);
     }
-
-
 
         @Override
     public void close() throws Exception {

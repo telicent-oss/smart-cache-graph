@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import static io.telicent.deletion.DeletionWorkerConstants.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
@@ -143,8 +144,8 @@ class DeletionJobConsumerTest {
         addRecord(0L, DISTRIBUTION_ID, null, null, "original one");
         addRecord(1L, DISTRIBUTION_ID, null, null, "original two");
         // delete patches from a previous job
-        addRecord(2L, DISTRIBUTION_ID + "-deletion", "previous-job-001", "0", "delete patch one");
-        addRecord(3L, DISTRIBUTION_ID + "-deletion", "previous-job-001", "1", "delete patch two");
+        addRecord(2L, DISTRIBUTION_ID + DELETION_JOB_SUFFIX, "previous-job-001", "0", "delete patch one");
+        addRecord(3L, DISTRIBUTION_ID + DELETION_JOB_SUFFIX, "previous-job-001", "1", "delete patch two");
         addEndOfTopic(4L);
 
         List<ConsumerRecord<Bytes, Bytes>> handled = new ArrayList<>();
@@ -173,12 +174,12 @@ class DeletionJobConsumerTest {
         }
         if (deletionJobId != null) {
             record.headers().add(
-                    DeletionJobConsumer.DELETION_JOB_ID,
+                    DELETION_JOB_ID,
                     deletionJobId.getBytes(StandardCharsets.UTF_8)
             );
         }
         if (originalOffset != null) {
-            record.headers().add("Original-Offset",
+            record.headers().add(ORIGINAL_OFFSET,
                     originalOffset.getBytes(StandardCharsets.UTF_8));
         }
         mockConsumer.addRecord(record);

@@ -53,8 +53,7 @@ import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 
-import static io.telicent.deletion.DeletionJobConsumer.DELETION_JOB_ID;
-import static io.telicent.deletion.DeletionJobProducer.OPERATION;
+import static io.telicent.deletion.DeletionWorkerConstants.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 
@@ -150,7 +149,7 @@ class DeletionJobProducerIntegrationTest {
 
             Header distId = patch.headers().lastHeader(TelicentHeaders.DISTRIBUTION_ID);
             assertNotNull(distId);
-            assertEquals(DISTRIBUTION_ID + "-deletion", new String(distId.value(), StandardCharsets.UTF_8));
+            assertEquals(DISTRIBUTION_ID + DELETION_JOB_SUFFIX, new String(distId.value(), StandardCharsets.UTF_8));
         }
     }
 
@@ -236,7 +235,7 @@ class DeletionJobProducerIntegrationTest {
 
             Header distId = patch.headers().lastHeader(TelicentHeaders.DISTRIBUTION_ID);
             assertNotNull(distId);
-            assertEquals(DISTRIBUTION_ID + "-deletion", new String(distId.value(), StandardCharsets.UTF_8));
+            assertEquals(DISTRIBUTION_ID + DELETION_JOB_SUFFIX, new String(distId.value(), StandardCharsets.UTF_8));
 
             Header operation = patch.headers().lastHeader(OPERATION);
             assertNotNull(operation);
@@ -331,7 +330,7 @@ class DeletionJobProducerIntegrationTest {
         for (ConsumerRecord<Bytes, Bytes> patch : deletePatches) {
             Header distId = patch.headers().lastHeader(TelicentHeaders.DISTRIBUTION_ID);
             assertNotNull(distId);
-            assertEquals(DISTRIBUTION_ID  + "-deletion", new String(distId.value(), StandardCharsets.UTF_8));
+            assertEquals(DISTRIBUTION_ID  + DELETION_JOB_SUFFIX, new String(distId.value(), StandardCharsets.UTF_8));
         }
     }
 

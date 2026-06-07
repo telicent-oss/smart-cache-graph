@@ -33,15 +33,14 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.*;
 
+import static io.telicent.deletion.DeletionWorkerConstants.DELETION_JOB_ID;
+import static io.telicent.deletion.DeletionWorkerConstants.ORIGINAL_OFFSET;
+
 public class DeletionJobConsumer implements AutoCloseable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DeletionJobConsumer.class);
     private static final Duration POLL_TIMEOUT = Duration.ofSeconds(5);
     private static final int MAX_EMPTY_POLLS = 3;
-
-    //TODO
-    // move to TelicentHeaders
-    static final String DELETION_JOB_ID = "Deletion-Job-Id";
 
     private final Consumer<Bytes, Bytes> consumer;
     private final String topic;
@@ -115,6 +114,8 @@ public class DeletionJobConsumer implements AutoCloseable {
      *
      * @param handler decides what is being done with the records.
      */
+    //TODO
+    // rethink double pass
     public void process(RecordHandler handler) {
         Map<Long, ConsumerRecord<Bytes, Bytes>> candidates = new LinkedHashMap<>();
         Set<Long> deletedOffsets = new HashSet<>();
@@ -140,7 +141,7 @@ public class DeletionJobConsumer implements AutoCloseable {
                     return;
                 }
 
-                String originalOffset = headerValue(record, "Original-Offset");
+                String originalOffset = headerValue(record, ORIGINAL_OFFSET);
                 if (originalOffset != null) {
                     deletedOffsets.add(Long.parseLong(originalOffset));
                     continue;
