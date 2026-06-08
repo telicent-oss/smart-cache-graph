@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1780916479739,
+  "lastUpdate": 1780916630272,
   "repoUrl": "https://github.com/telicent-oss/smart-cache-graph",
   "entries": {
     "ABAC Benchmark": [
@@ -9216,6 +9216,52 @@ window.BENCHMARK_DATA = {
           {
             "name": "io.telicent.core.BackupRestoreBenchmark.benchmarkRestoreDataset ( {\"tripleCount\":\"10000\"} )",
             "value": 132.8594249114035,
+            "unit": "ms/op",
+            "extra": "iterations: 3\nforks: 1\nthreads: 1"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "Paul Gallagher",
+            "username": "TelicentPaul",
+            "email": "132362215+TelicentPaul@users.noreply.github.com"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "970e3ec9158b90e9c4f4a75cbbcf1319d9cced67",
+          "message": "Merge pull request #412 from telicent-oss/core_1318_minor_performance_tweak\n\n[CORE-1318]  Improve performance by setting MALLOC_ARENA_MAX",
+          "timestamp": "2026-06-05T15:11:17Z",
+          "url": "https://github.com/telicent-oss/smart-cache-graph/commit/970e3ec9158b90e9c4f4a75cbbcf1319d9cced67"
+        },
+        "date": 1780916629917,
+        "tool": "jmh",
+        "benches": [
+          {
+            "name": "io.telicent.core.BackupRestoreBenchmark.benchmarkBackupDataset ( {\"tripleCount\":\"1000\"} )",
+            "value": 12.638768972938182,
+            "unit": "ms/op",
+            "extra": "iterations: 3\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "io.telicent.core.BackupRestoreBenchmark.benchmarkBackupDataset ( {\"tripleCount\":\"10000\"} )",
+            "value": 38.093974391045315,
+            "unit": "ms/op",
+            "extra": "iterations: 3\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "io.telicent.core.BackupRestoreBenchmark.benchmarkRestoreDataset ( {\"tripleCount\":\"1000\"} )",
+            "value": 32.74911348261868,
+            "unit": "ms/op",
+            "extra": "iterations: 3\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "io.telicent.core.BackupRestoreBenchmark.benchmarkRestoreDataset ( {\"tripleCount\":\"10000\"} )",
+            "value": 132.25813630921053,
             "unit": "ms/op",
             "extra": "iterations: 3\nforks: 1\nthreads: 1"
           }
