@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1780307999685,
+  "lastUpdate": 1780911653530,
   "repoUrl": "https://github.com/telicent-oss/smart-cache-graph",
   "entries": {
     "ABAC Benchmark": [
@@ -1622,6 +1622,64 @@ window.BENCHMARK_DATA = {
           {
             "name": "io.telicent.core.ABACLabelEvaluationBenchmark.benchmarkAbacQuery ( {\"labelComplexity\":\"complex\",\"tripleCount\":\"10000\"} )",
             "value": 0.10897223989369183,
+            "unit": "ms/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "Paul Gallagher",
+            "username": "TelicentPaul",
+            "email": "132362215+TelicentPaul@users.noreply.github.com"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "970e3ec9158b90e9c4f4a75cbbcf1319d9cced67",
+          "message": "Merge pull request #412 from telicent-oss/core_1318_minor_performance_tweak\n\n[CORE-1318]  Improve performance by setting MALLOC_ARENA_MAX",
+          "timestamp": "2026-06-05T15:11:17Z",
+          "url": "https://github.com/telicent-oss/smart-cache-graph/commit/970e3ec9158b90e9c4f4a75cbbcf1319d9cced67"
+        },
+        "date": 1780911652307,
+        "tool": "jmh",
+        "benches": [
+          {
+            "name": "io.telicent.core.ABACLabelEvaluationBenchmark.benchmarkAbacQuery ( {\"labelComplexity\":\"simple\",\"tripleCount\":\"1000\"} )",
+            "value": 0.1106702603821137,
+            "unit": "ms/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "io.telicent.core.ABACLabelEvaluationBenchmark.benchmarkAbacQuery ( {\"labelComplexity\":\"simple\",\"tripleCount\":\"10000\"} )",
+            "value": 0.11192081052917746,
+            "unit": "ms/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "io.telicent.core.ABACLabelEvaluationBenchmark.benchmarkAbacQuery ( {\"labelComplexity\":\"medium\",\"tripleCount\":\"1000\"} )",
+            "value": 0.11553963584750404,
+            "unit": "ms/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "io.telicent.core.ABACLabelEvaluationBenchmark.benchmarkAbacQuery ( {\"labelComplexity\":\"medium\",\"tripleCount\":\"10000\"} )",
+            "value": 0.11492451328198974,
+            "unit": "ms/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "io.telicent.core.ABACLabelEvaluationBenchmark.benchmarkAbacQuery ( {\"labelComplexity\":\"complex\",\"tripleCount\":\"1000\"} )",
+            "value": 0.11348193265462066,
+            "unit": "ms/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "io.telicent.core.ABACLabelEvaluationBenchmark.benchmarkAbacQuery ( {\"labelComplexity\":\"complex\",\"tripleCount\":\"10000\"} )",
+            "value": 0.11215201951052707,
             "unit": "ms/op",
             "extra": "iterations: 5\nforks: 1\nthreads: 1"
           }
