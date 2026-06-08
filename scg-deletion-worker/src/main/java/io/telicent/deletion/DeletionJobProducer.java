@@ -174,8 +174,6 @@ public class DeletionJobProducer implements AutoCloseable {
         }
     }
 
-    //TODO
-    // need any others?
     private Lang resolveLang(String contentType) {
         if (contentType == null) return null;
         String normalised = contentType.split(";")[0].trim().toLowerCase();
@@ -183,6 +181,7 @@ public class DeletionJobProducer implements AutoCloseable {
             case "nquads", "application/n-quads", "text/x-nquads" -> Lang.NQUADS;
             case "text/turtle", "application/turtle"              -> Lang.TURTLE;
             case "application/trig"                               -> Lang.TRIG;
+            case "application/n-triples"                         -> Lang.NTRIPLES;
             case "application/rdf+xml"                            -> Lang.RDFXML;
             default                                               -> null;
         };

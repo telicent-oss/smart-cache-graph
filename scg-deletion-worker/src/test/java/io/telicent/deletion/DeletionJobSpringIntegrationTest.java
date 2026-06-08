@@ -122,17 +122,40 @@ public class DeletionJobSpringIntegrationTest {
 
     }
 
-    // invalid records don't get patches
-    // TODO
+    @Test
+    void invalidRecordsDoNotGetPatches() throws Exception {
+        publishRecord("dist-001", null, nquadsPayload("1", "Alice"));
+        publishRawRecord("dist-001", "this is not valid nquads".getBytes(StandardCharsets.UTF_8));
+        publishRecord("dist-001", null, nquadsPayload("3", "Carol"));
 
-    // missing distributionId — should return 400
+        MvcResult postResult = mockMvc.perform(post("/jobs/delete-distribution")
+                        .param("distribution-id", "dist-001"))
+                .andExpect(status().isAccepted())
+                .andReturn();
+
+        String jobId = new ObjectMapper()
+                .readTree(postResult.getResponse().getContentAsString())
+                .get("jobId").asText();
+
+        await().atMost(60, SECONDS).untilAsserted(() -> {
+            MvcResult result = mockMvc.perform(MockMvcRequestBuilders.get("/jobs/" + jobId))
+                    .andExpect(status().isOk()).andReturn();
+            assertEquals("COMPLETED", new ObjectMapper()
+                    .readTree(result.getResponse().getContentAsString())
+                    .get("status").asText());
+        });
+
+        List<ConsumerRecord<Bytes, Bytes>> allRecords = readAllRecords(5);
+        List<ConsumerRecord<Bytes, Bytes>> patches = filterDeletePatches(allRecords);
+        assertEquals(2, patches.size());
+    }
+
     @Test
     void triggerWithMissingDistributionIdReturns400() throws Exception {
         mockMvc.perform(post("/jobs/delete-distribution"))
                 .andExpect(status().isBadRequest());
     }
 
-    // empty distributionId — should return 400
     @Test
     void triggerWithEmptyDistributionIdReturns400() throws Exception {
         mockMvc.perform(post("/jobs/delete-distribution")
@@ -140,14 +163,12 @@ public class DeletionJobSpringIntegrationTest {
                 .andExpect(status().isBadRequest());
     }
 
-    // non-existent job — should return 404
     @Test
     void getStatusOfNonExistentJobReturns404() throws Exception {
         mockMvc.perform(MockMvcRequestBuilders.get("/jobs/does-not-exist"))
                 .andExpect(status().isNotFound());
     }
 
-    // empty topic — job should complete with no delete patches
     @Test
     void deletionOnEmptyTopicCompletesWithNoPatches() throws Exception {
         MvcResult postResult = mockMvc.perform(post("/jobs/delete-distribution")
@@ -171,7 +192,6 @@ public class DeletionJobSpringIntegrationTest {
         assertEquals(0, filterDeletePatches(allRecords).size());
     }
 
-    // no matching distribution — job completes but no patches sent
     @Test
     void deletionWithNoMatchingDistributionSendsNoPatches() throws Exception {
         publishRecord("dist-other", null, nquadsPayload("1", "Alice"));
@@ -197,7 +217,6 @@ public class DeletionJobSpringIntegrationTest {
         assertEquals(0, filterDeletePatches(allRecords).size());
     }
 
-    // multiple distributions — only target distribution gets patches
     @Test
     void deletionOnlyAffectsTargetDistribution() throws Exception {
         publishRecord("dist-target", null, nquadsPayload("1", "Alice"));
@@ -224,7 +243,6 @@ public class DeletionJobSpringIntegrationTest {
                     .get("patchesSent").asText());
         });
 
-        // 3 originals + 2 delete patches for dist-target only
         List<ConsumerRecord<Bytes, Bytes>> allRecords = readAllRecords(5);
         List<ConsumerRecord<Bytes, Bytes>> patches = filterDeletePatches(allRecords);
         assertEquals(2, patches.size());
@@ -236,7 +254,6 @@ public class DeletionJobSpringIntegrationTest {
         }
     }
 
-    // status transitions from RUNNING to COMPLETED
     @Test
     void jobStatusTransitionsToCompleted() throws Exception {
         publishRecord("dist-001", null, nquadsPayload("1", "Alice"));
@@ -261,7 +278,6 @@ public class DeletionJobSpringIntegrationTest {
         });
     }
 
-    // two concurrent jobs for different distributions
     @Test
     void twoConcurrentJobsForDifferentDistributions() throws Exception {
         publishRecord("dist-A", null, nquadsPayload("1", "Alice"));
@@ -410,6 +426,26 @@ public class DeletionJobSpringIntegrationTest {
             record.headers().add(
                     DELETION_JOB_ID,
                     deletionJobId.getBytes(StandardCharsets.UTF_8)
+            );
+        }
+        setUpProducer.send(record).get();
+    }
+
+    private void publishRawRecord(String distributionId, byte[] payload)
+            throws ExecutionException, InterruptedException {
+        ProducerRecord<Bytes, Bytes> record = new ProducerRecord<>(
+                TOPIC,
+                Bytes.wrap("key".getBytes(StandardCharsets.UTF_8)),
+                Bytes.wrap(payload)
+        );
+        record.headers().add(
+                TelicentHeaders.CONTENT_TYPE,
+                "application/n-quads".getBytes(StandardCharsets.UTF_8)
+        );
+        if (distributionId != null) {
+            record.headers().add(
+                    TelicentHeaders.DISTRIBUTION_ID,
+                    distributionId.getBytes(StandardCharsets.UTF_8)
             );
         }
         setUpProducer.send(record).get();
