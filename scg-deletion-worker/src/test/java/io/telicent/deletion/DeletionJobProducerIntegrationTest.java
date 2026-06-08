@@ -9,15 +9,9 @@ import org.apache.jena.riot.Lang;
 import org.apache.jena.riot.RDFDataMgr;
 import org.apache.jena.sparql.core.DatasetGraph;
 import org.apache.jena.sparql.core.DatasetGraphFactory;
-import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
-import org.apache.kafka.clients.producer.ProducerConfig;
-import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.header.Header;
-import org.apache.kafka.common.serialization.BytesDeserializer;
-import org.apache.kafka.common.serialization.BytesSerializer;
 import org.apache.kafka.common.utils.Bytes;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -30,20 +24,34 @@ import org.testcontainers.utility.DockerImageName;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
-import java.time.Duration;
 import java.util.*;
 
 import static io.telicent.deletion.DeletionWorkerConstants.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 @Testcontainers
-class DeletionJobProducerIntegrationTest {
+class DeletionJobProducerIntegrationTest extends KafkaIntegrationTestBase{
 
     private String topic;
     private RDFPatchInverter rdfPatchInverter;
     private KafkaProducer<Bytes, Bytes> setUpProducer;
     private static final String DISTRIBUTION_ID = "dist-integration-001";
     private String jobId;
+
+    @Override
+    protected String getBootstrapServers() {
+        return kafka.getBootstrapServers();
+    }
+
+    @Override
+    protected String getTopic() {
+        return topic;
+    }
+
+    @Override
+    protected KafkaProducer<Bytes, Bytes> getSetUpProducer() {
+        return setUpProducer;
+    }
 
     @Container
     static final KafkaContainer kafka = new KafkaContainer(
@@ -54,7 +62,7 @@ class DeletionJobProducerIntegrationTest {
     void setUp() {
         jobId = "test-job-" + UUID.randomUUID();
         topic = "knowledge-" + UUID.randomUUID();
-        createTopic();
+        createTopic(topic);
         rdfPatchInverter = new RDFPatchInverter();
         setUpProducer = createProducer();
     }
@@ -178,17 +186,17 @@ class DeletionJobProducerIntegrationTest {
         }
     }
 
-    private byte[] nquadsPayload(String subject, String name) {
-        DatasetGraph dsg = DatasetGraphFactory.createTxnMem();
-        Node g = NodeFactory.createURI("http://example.org/graph");
-        Node s = NodeFactory.createURI("http://example.org/emp/" + subject);
-        Node p = NodeFactory.createURI("http://xmlns.com/foaf/0.1/name");
-        Node o = NodeFactory.createLiteralString(name);
-        dsg.add(g, s, p, o);
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        RDFDataMgr.write(baos, dsg, Lang.NQUADS);
-        return baos.toByteArray();
-    }
+//    private byte[] nquadsPayload(String subject, String name) {
+//        DatasetGraph dsg = DatasetGraphFactory.createTxnMem();
+//        Node g = NodeFactory.createURI("http://example.org/graph");
+//        Node s = NodeFactory.createURI("http://example.org/emp/" + subject);
+//        Node p = NodeFactory.createURI("http://xmlns.com/foaf/0.1/name");
+//        Node o = NodeFactory.createLiteralString(name);
+//        dsg.add(g, s, p, o);
+//        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+//        RDFDataMgr.write(baos, dsg, Lang.NQUADS);
+//        return baos.toByteArray();
+//    }
 
     private ConsumerRecord<Bytes, Bytes> buildRecord(long offset, String distributionId, byte[] payload) {
         return buildRecordWithContentType(offset, distributionId, "application/n-quads", payload);
@@ -220,51 +228,6 @@ class DeletionJobProducerIntegrationTest {
         record.headers().add(TelicentHeaders.CONTENT_TYPE,
                 "application/n-quads".getBytes(StandardCharsets.UTF_8));
         return record;
-    }
-
-    private KafkaProducer<Bytes, Bytes> createProducer() {
-        Properties props = new Properties();
-        props.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, kafka.getBootstrapServers());
-        props.setProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, BytesSerializer.class.getName());
-        props.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, BytesSerializer.class.getName());
-        return new KafkaProducer<>(props);
-    }
-
-    private KafkaConsumer<Bytes, Bytes> createConsumer() {
-        Properties props = new Properties();
-        props.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, kafka.getBootstrapServers());
-        props.setProperty(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, BytesDeserializer.class.getName());
-        props.setProperty(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, BytesDeserializer.class.getName());
-        props.setProperty(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
-        props.setProperty(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, "100");
-        props.setProperty(ConsumerConfig.ALLOW_AUTO_CREATE_TOPICS_CONFIG, "false");
-        return new KafkaConsumer<>(props);
-    }
-
-    private void createTopic() {
-        try (var admin = org.apache.kafka.clients.admin.AdminClient.create(
-                Map.of(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, kafka.getBootstrapServers()))) {
-            admin.createTopics(List.of(
-                    new org.apache.kafka.clients.admin.NewTopic(topic, 1, (short) 1)
-            )).all().get();
-        } catch (Exception e) {
-            // topic may already exist
-        }
-    }
-
-    private List<ConsumerRecord<Bytes, Bytes>> readAllRecords(int expectedCount) {
-        List<ConsumerRecord<Bytes, Bytes>> allRecords = new ArrayList<>();
-        try (KafkaConsumer<Bytes, Bytes> verifier = createConsumer()) {
-            verifier.assign(List.of(new TopicPartition(topic, 0)));
-            verifier.seekToBeginning(List.of(new TopicPartition(topic, 0)));
-            long deadline = System.currentTimeMillis() + 20_000;
-            while (allRecords.size() < expectedCount && System.currentTimeMillis() < deadline) {
-                for (ConsumerRecord<Bytes, Bytes> r : verifier.poll(Duration.ofSeconds(1))) {
-                    allRecords.add(r);
-                }
-            }
-        }
-        return allRecords;
     }
 
     @Test

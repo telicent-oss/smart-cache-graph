@@ -16,12 +16,8 @@
 
 package io.telicent.deletion;
 
-import io.telicent.smart.cache.sources.TelicentHeaders;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.producer.KafkaProducer;
-import org.apache.kafka.clients.producer.ProducerConfig;
-import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.kafka.common.serialization.BytesSerializer;
 import org.apache.kafka.common.utils.Bytes;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -31,20 +27,32 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.kafka.KafkaContainer;
 import org.testcontainers.utility.DockerImageName;
 
-import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.concurrent.ExecutionException;
 
-import static io.telicent.deletion.DeletionWorkerConstants.DELETION_JOB_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
 @Testcontainers
-class DeletionJobConsumerIntegrationTest {
+class DeletionJobConsumerIntegrationTest extends KafkaIntegrationTestBase{
 
     private String topic;
     private static final String DISTRIBUTION_ID = "dist-integration-001";
     private static final String OTHER_DISTRIBUTION_ID = "dist-other-002";
+
+    @Override
+    protected String getBootstrapServers() {
+        return kafka.getBootstrapServers();
+    }
+
+    @Override
+    protected String getTopic() {
+        return topic;
+    }
+
+    @Override
+    protected KafkaProducer<Bytes, Bytes> getSetUpProducer() {
+        return producer;
+    }
 
     @Container
     static final KafkaContainer kafka = new KafkaContainer(
@@ -58,7 +66,7 @@ class DeletionJobConsumerIntegrationTest {
     void setUp() {
         jobId = "test-job-" + UUID.randomUUID();
         topic = "knowledge-" + UUID.randomUUID();
-        createTopic();
+        createTopic(topic);
         producer = createProducer();
     }
 
@@ -104,47 +112,5 @@ class DeletionJobConsumerIntegrationTest {
             consumer.process(handled::add);
         }
         assertEquals(0, handled.size());
-    }
-
-    private void publishRecord(String distributionId, String deletionJobId, String payload)
-            throws ExecutionException, InterruptedException {
-        ProducerRecord<Bytes, Bytes> record = new ProducerRecord<>(
-                topic,
-                Bytes.wrap("key".getBytes(StandardCharsets.UTF_8)),
-                Bytes.wrap(payload.getBytes(StandardCharsets.UTF_8))
-        );
-        if (distributionId != null) {
-            record.headers().add(
-                    TelicentHeaders.DISTRIBUTION_ID,
-                    distributionId.getBytes(StandardCharsets.UTF_8)
-            );
-        }
-        if (deletionJobId != null) {
-            record.headers().add(
-                    DELETION_JOB_ID,
-                    deletionJobId.getBytes(StandardCharsets.UTF_8)
-            );
-        }
-        // synchronous — ensures ordering
-        producer.send(record).get();
-    }
-
-    private KafkaProducer<Bytes, Bytes> createProducer() {
-        Properties props = new Properties();
-        props.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, kafka.getBootstrapServers());
-        props.setProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, BytesSerializer.class.getName());
-        props.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, BytesSerializer.class.getName());
-        return new KafkaProducer<>(props);
-    }
-
-    private void createTopic() {
-        try (var admin = org.apache.kafka.clients.admin.AdminClient.create(
-                Map.of(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, kafka.getBootstrapServers()))) {
-            admin.createTopics(List.of(
-                    new org.apache.kafka.clients.admin.NewTopic(topic, 1, (short) 1)
-            )).all().get();
-        } catch (Exception e) {
-            // topic may already exist, that's fine
-        }
     }
 }

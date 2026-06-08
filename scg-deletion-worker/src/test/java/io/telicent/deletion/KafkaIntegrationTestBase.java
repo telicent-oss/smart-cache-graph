@@ -93,12 +93,12 @@ public abstract class KafkaIntegrationTestBase {
         }
     }
 
-    protected void publishRecord(String distributionId, String deletionJobId, byte[] payload)
+    protected void publishRecord(String distributionId, String deletionJobId, String payload)
             throws ExecutionException, InterruptedException {
         ProducerRecord<Bytes, Bytes> record = new ProducerRecord<>(
                 getTopic(),
                 Bytes.wrap("key".getBytes(StandardCharsets.UTF_8)),
-                Bytes.wrap(payload)
+                Bytes.wrap(payload.getBytes(StandardCharsets.UTF_8))
         );
         if (distributionId != null) {
             record.headers().add(
