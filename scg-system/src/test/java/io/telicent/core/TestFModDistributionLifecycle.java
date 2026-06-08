@@ -23,7 +23,6 @@ import io.telicent.jena.abac.core.DatasetGraphABAC;
 import io.telicent.jena.abac.labels.Labels;
 import io.telicent.smart.cache.configuration.Configurator;
 import io.telicent.smart.cache.configuration.sources.PropertiesSource;
-import io.telicent.smart.cache.configuration.sources.SystemPropertiesSource;
 import org.apache.jena.fuseki.main.FusekiServer;
 import org.apache.jena.fuseki.server.DataAccessPoint;
 import org.apache.jena.fuseki.server.DataAccessPointRegistry;
@@ -283,13 +282,5 @@ public class TestFModDistributionLifecycle {
         // when, then
         assertEquals("/tmp/custom.state", FMod_DistributionLifecycle.stateFilePath(),
                      "State file should be configurable");
-    }
-
-    private static void restoreProperty(String key, String value) {
-        if (value != null) {
-            System.setProperty(key, value);
-        } else {
-            System.clearProperty(key);
-        }
     }
 }
