@@ -16,9 +16,7 @@
 
 package io.telicent.core;
 
-import io.telicent.distribution.DistributionLifecycleFilters;
 import io.telicent.distribution.DistributionLifecycleStateFile;
-import io.telicent.jena.abac.core.DatasetGraphABAC;
 import io.telicent.smart.cache.configuration.Configurator;
 import io.telicent.smart.cache.distribution.lifecycle.events.listeners.AcknowledgingListener;
 import io.telicent.smart.cache.distribution.lifecycle.events.listeners.DistributionLifecycleListener;
@@ -27,6 +25,9 @@ import io.telicent.smart.cache.distribution.lifecycle.store.apps.AppDistribution
 import io.telicent.smart.cache.distribution.lifecycle.tracker.DistributionLifecycleTracker;
 import io.telicent.smart.cache.payloads.LazyEnvelope;
 import io.telicent.smart.cache.projectors.Sink;
+import io.telicent.smart.cache.security.data.distribution.DistributionLifecycleFilters;
+import io.telicent.smart.cache.security.data.plugins.DataSecurityPlugin;
+import io.telicent.smart.cache.security.data.plugins.DataSecurityPluginLoader;
 import io.telicent.smart.cache.sources.Event;
 import io.telicent.smart.cache.sources.EventSource;
 import io.telicent.smart.cache.sources.kafka.KafkaEventSource;
@@ -42,6 +43,8 @@ import org.apache.jena.fuseki.server.DataAccessPoint;
 import org.apache.jena.fuseki.server.DataAccessPointRegistry;
 import org.apache.jena.kafka.KConnectorDesc;
 import org.apache.jena.rdf.model.Model;
+import org.apache.jena.sparql.core.DatasetGraph;
+import org.apache.jena.sparql.core.DatasetGraphWrapper;
 import org.apache.kafka.common.serialization.UUIDDeserializer;
 import org.apache.kafka.common.serialization.UUIDSerializer;
 import org.slf4j.Logger;
@@ -49,13 +52,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Properties;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -116,13 +113,19 @@ public class FMod_DistributionLifecycle implements FusekiModule {
         //      file's application when an id has been explicitly configured, otherwise it is lenient and accepts any
         //      state file.  The tracker (write side) uses applicationId() as it must tag the file with a concrete id,
         //      and its default keeps the two sides consistent when an id is explicitly configured or left unset.
-        String application = Configurator.get(DISTRIBUTION_LIFECYCLE_APP_ID);
-        String stateFile = stateFilePath();
-        for (DataAccessPoint dap : dapRegistry.accessPoints()) {
-            if (dap.getDataService().getDataset() instanceof DatasetGraphABAC abacDataset) {
-                DistributionLifecycleFilters.installIfConfigured(abacDataset, application, stateFile);
+        final String application = Configurator.get(DISTRIBUTION_LIFECYCLE_APP_ID);
+        final String stateFile = stateFilePath();
+        final DataSecurityPlugin dataSecurityPlugin = DataSecurityPluginLoader.load();
+        final Optional<DistributionLifecycleFilters> distributionLifecycleFilters = dataSecurityPlugin.prepareDistributionLifecycleFilters();
+        if(distributionLifecycleFilters.isPresent()) {
+            final DistributionLifecycleFilters dlfs = distributionLifecycleFilters.get();
+            for (DataAccessPoint dap : dapRegistry.accessPoints()) {
+                dlfs.installIfConfigured(dap.getDataService().getDataset(), application, stateFile);
             }
+        } else {
+            LOGGER.info("No distribution lifecycle filters configured.");
         }
+
     }
 
     @Override
@@ -159,6 +162,7 @@ public class FMod_DistributionLifecycle implements FusekiModule {
         String consumerGroup = consumerGroup();
         String stateFile = stateFilePath();
 
+//<<<<<<< HEAD
         this.readiness.markStarting("Distribution lifecycle tracker is starting or catching up.");
         ExecutorService starter = Executors.newSingleThreadExecutor(r -> {
             Thread thread = new Thread(r, "distribution-lifecycle-startup-"
@@ -169,6 +173,55 @@ public class FMod_DistributionLifecycle implements FusekiModule {
         this.trackerStarter = starter;
         starter.submit(() -> startupTracker(starter, server, bootstrapServers, kafkaProperties, application, topic,
                                             dlqTopic, consumerGroup, stateFile));
+//=======
+//        try {
+//            this.stateStore = AppDistributionLifecycleStoreFile.builder()
+//                                                               .app(application)
+//                                                               .stateFile(new File(stateFile))
+//                                                               .build();
+//
+//            DistributionLifecycleListener graphDeletion =
+//                    new DistributionGraphDeletionListener(() -> getDatasets(server));
+//            DistributionLifecycleListener listener =
+//                    AcknowledgingListener.builder()
+//                                         .application(application)
+//                                         .version(SmartCacheGraph.VERSION)
+//                                         .listener(graphDeletion)
+//                                         .sink(lifecycleSink(bootstrapServers, topic, kafkaProperties))
+//                                         .stateStore(this.stateStore)
+//                                         .build();
+//
+//            EventSource<UUID, LazyEnvelope> source = KafkaEventSource.<UUID, LazyEnvelope>create()
+//                                                                     .bootstrapServers(bootstrapServers)
+//                                                                     .consumerConfig(kafkaProperties)
+//                                                                     .topic(topic)
+//                                                                     .consumerGroup(consumerGroup)
+//                                                                     .readPolicy(KafkaReadPolicies.fromEarliest())
+//                                                                     .commitOnProcessed()
+//                                                                     .keyDeserializer(UUIDDeserializer.class)
+//                                                                     .valueDeserializer(LazyEnvelopeDeserializer.class)
+//                                                                     .build();
+//
+//            Sink<Event<UUID, LazyEnvelope>> dlq =
+//                    StringUtils.isBlank(dlqTopic) ? null : lifecycleSink(bootstrapServers, dlqTopic, kafkaProperties);
+//
+//            this.tracker = DistributionLifecycleTracker.builder()
+//                                                       .application(application)
+//                                                       .eventSource(source)
+//                                                       .dlq(dlq)
+//                                                       .listenerThreads(1)
+//                                                       .listeners(List.of(listener))
+//                                                       .stateStore(this.stateStore)
+//                                                       .build();
+//
+//            LOGGER.info(
+//                    "Distribution lifecycle tracker enabled: consuming topic '{}' from {} (consumer group '{}', application '{}')",
+//                    topic, bootstrapServers, consumerGroup, application);
+//        } catch (RuntimeException e) {
+//            LOGGER.error("Failed to start distribution lifecycle tracker; lifecycle events will NOT be processed", e);
+//            closeTracker();
+//        }
+//>>>>>>> 64d10c1 (CORE-762: connect up DataSecurityPlugin)
     }
 
     @Override
@@ -270,7 +323,7 @@ public class FMod_DistributionLifecycle implements FusekiModule {
                                                            .build();
 
         DistributionLifecycleListener graphDeletion =
-                new DistributionGraphDeletionListener(() -> abacDatasets(server));
+                new DistributionGraphDeletionListener(() -> getDatasets(server));
         DistributionLifecycleListener listener =
                 AcknowledgingListener.builder()
                                      .application(application)
@@ -340,16 +393,33 @@ public class FMod_DistributionLifecycle implements FusekiModule {
      * @param server Fuseki server
      * @return ABAC datasets
      */
-    static Collection<DatasetGraphABAC> abacDatasets(FusekiServer server) {
-        List<DatasetGraphABAC> datasets = new ArrayList<>();
+    static Collection<DatasetGraphWrapper> wrappedDatasets(FusekiServer server) {
+        List<DatasetGraphWrapper> datasets = new ArrayList<>();
         DataAccessPointRegistry registry = server.getDataAccessPointRegistry();
         if (registry == null) {
             return datasets;
         }
         for (DataAccessPoint dataAccessPoint : registry.accessPoints()) {
-            if (dataAccessPoint.getDataService().getDataset() instanceof DatasetGraphABAC abac) {
-                datasets.add(abac);
+            if (dataAccessPoint.getDataService().getDataset() instanceof DatasetGraphWrapper wrapped) {
+                datasets.add(wrapped);
             }
+        }
+        return datasets;
+    }
+
+    /**
+     * Returns the current set of datasets registered with the server.
+     * @param server Fuseki server
+     * @return datasets
+     */
+    static Collection<DatasetGraph> getDatasets(FusekiServer server) {
+        final List<DatasetGraph> datasets = new ArrayList<>();
+        final DataAccessPointRegistry registry = server.getDataAccessPointRegistry();
+        if (registry == null) {
+            return datasets;
+        }
+        for (DataAccessPoint dataAccessPoint : registry.accessPoints()) {
+            datasets.add(dataAccessPoint.getDataService().getDataset());
         }
         return datasets;
     }

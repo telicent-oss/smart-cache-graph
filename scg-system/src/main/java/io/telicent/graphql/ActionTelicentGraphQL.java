@@ -16,29 +16,35 @@
 
 package io.telicent.graphql;
 
-import io.telicent.jena.abac.ABAC;
-import io.telicent.jena.abac.fuseki.ABAC_Processor;
-import io.telicent.jena.abac.fuseki.ABAC_Request;
 import io.telicent.jena.graphql.execution.GraphQLOverDatasetExecutor;
 import io.telicent.jena.graphql.fuseki.ActionGraphQL;
 import io.telicent.jena.graphql.schemas.telicent.graph.TelicentGraphSchema;
 import io.telicent.jena.graphql.server.model.GraphQLRequest;
 import io.telicent.servlet.auth.jwt.JwtServletConstants;
+import io.telicent.servlet.auth.jwt.servlet5.AuthenticatedHttpServletRequest;
+import io.telicent.smart.cache.security.data.DataAccessAuthorizer;
+import io.telicent.smart.cache.security.data.plugins.DataSecurityPlugin;
+import io.telicent.smart.cache.security.data.requests.MinimalRequestContext;
+import io.telicent.smart.cache.security.data.requests.RequestContext;
+import io.telicent.smart.caches.configuration.auth.UserInfo;
+import jakarta.servlet.http.HttpServletRequest;
 import org.apache.jena.fuseki.servlets.HttpAction;
 import org.apache.jena.sparql.core.DatasetGraph;
+import org.apache.jena.sparql.core.DatasetGraphFactory;
 
-import java.util.Objects;
-import java.util.function.Function;
+import java.util.Optional;
+
+import static io.telicent.utils.ServletUtils.requestContextFrom;
 
 /**
  * A Fuseki action that evaluates GraphQL Requests that use the Telicent Graph schema
  */
-public class ActionTelicentGraphQL extends ActionGraphQL implements ABAC_Processor {
-    private final Function<HttpAction, String> getUser;
+public class ActionTelicentGraphQL extends ActionGraphQL { //implements ABAC_Processor {
+    private final DataSecurityPlugin dataSecurityPlugin;
 
-    public ActionTelicentGraphQL(GraphQLOverDatasetExecutor executor, Function<HttpAction, String> getUser) {
+    public ActionTelicentGraphQL(GraphQLOverDatasetExecutor executor, DataSecurityPlugin dataSecurityPlugin) {
         super(executor);
-        this.getUser = Objects.requireNonNull(getUser, "getUser function cannot be null");
+        this.dataSecurityPlugin = dataSecurityPlugin;
     }
 
     @Override
@@ -48,18 +54,22 @@ public class ActionTelicentGraphQL extends ActionGraphQL implements ABAC_Process
         // into the execution because, depending on the query, we may need to call
         // out to other CORE services which will require the authentication token
         // for access.
-
-        DatasetGraph dsgRequest;
-        if (ABAC.isDatasetABAC(dsg)) {
-            dsgRequest = ABAC_Request.decideDataset(action, dsg, getUser);
-            String token = findAuthToken(action);
-            if (token != null) {
-                request.getExtensions().put(TelicentGraphSchema.EXTENSION_AUTH_TOKEN, token);
+        try (DataAccessAuthorizer authorizer = dataSecurityPlugin.prepareAuthorizer(requestContextFrom(action))) {
+            if (authorizer != null) {
+                final Optional<DatasetGraph> authDsg = authorizer.decideDataset(action, dsg);
+                if (authDsg.isPresent()) {
+                    final String token = findAuthToken(action);
+                    if (token != null) {
+                        request.getExtensions().put(TelicentGraphSchema.EXTENSION_AUTH_TOKEN, token);
+                    }
+                    return authDsg.get();
+                } else {
+                    return DatasetGraphFactory.empty();
+                }
+            } else {
+                return dsg;
             }
-        } else {
-            dsgRequest = dsg;
         }
-        return dsgRequest;
     }
 
     /**
@@ -77,4 +87,5 @@ public class ActionTelicentGraphQL extends ActionGraphQL implements ABAC_Process
         }
         return null;
     }
+
 }

@@ -19,6 +19,7 @@ import io.telicent.smart.cache.configuration.Configurator;
 import io.telicent.smart.cache.configuration.sources.SystemPropertiesSource;
 import io.telicent.smart.cache.payloads.RdfPayload;
 import io.telicent.smart.cache.projectors.Sink;
+import io.telicent.smart.cache.security.data.plugins.rdf.abac.RdfAbacSink;
 import io.telicent.smart.cache.sources.Event;
 import io.telicent.smart.cache.sources.EventHeader;
 import io.telicent.smart.cache.sources.Header;
@@ -604,7 +605,7 @@ public abstract class AbstractSmartCacheGraphSinkTests {
         server.start();
         try {
             if (dsg instanceof DatasetGraphABAC abac) {
-                try (SmartCacheGraphSink sink = new SmartCacheGraphSink(abac, false)) {
+                try (FusekiSink<?> sink = new RdfAbacSink(abac, false)) {
                     execTestAction.execTest(sink, server, dsgBase, dsg);
                 }
             } else {
@@ -663,7 +664,7 @@ public abstract class AbstractSmartCacheGraphSinkTests {
         FusekiServer server = SmartCacheGraph.serverBuilder().port(0).add(dsName, dataSrv).add(dsBase, dsgBase).build();
         server.start();
         try {
-            try (SmartCacheGraphSink sink = createNamedGraphSink(dsgz)) {
+            try (FusekiSink<?> sink = new RdfAbacSink(dsgz, true)) {
                 execTestAction.execTest(sink, server, dsgBase, dsgz);
             }
         } finally {

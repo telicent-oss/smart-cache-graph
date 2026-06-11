@@ -16,7 +16,6 @@
 
 package io.telicent.core;
 
-import io.telicent.jena.abac.fuseki.ABAC_ChangeDispatch;
 import org.apache.jena.riot.web.HttpNames;
 
 /**
@@ -36,7 +35,7 @@ public class TelicentKafka {
      * Content-Type : Syntax of the message value.
      * <p>
      * If this does not agree with {@link HttpNames#hContentType},
-     * check {@link ABAC_ChangeDispatch}.
+     * check {@code io.telicent.jena.abac.fuseki.ABAC_ChangeDispatch}.
      * and {@code HttpServletRequestMinimal}
      * so the Fuseki-Kafka connector so {@code HttpAction.getRequestContentType()} works.
      */
@@ -46,7 +45,7 @@ public class TelicentKafka {
      * Content-Encoding : The form of compression.
      * <p>
      * If this does not agree with {@link HttpNames#hContentType},
-     * check {@link ABAC_ChangeDispatch}.
+     * check {@code io.telicent.jena.abac.fuseki.ABAC_ChangeDispatch}.
      */
     public static final String TF_ContentEncoding = HttpNames.hContentEncoding; // "Content-Encoding"
 

@@ -5,6 +5,8 @@ import io.telicent.jena.abac.ABAC;
 import io.telicent.jena.abac.SysABAC;
 import io.telicent.jena.abac.core.DatasetGraphABAC;
 import io.telicent.jena.abac.labels.LabelsStoreMem;
+import io.telicent.smart.cache.security.data.plugins.DataSecurityPlugin;
+import io.telicent.smart.cache.security.data.plugins.rdf.abac.RdfAbacPlugin;
 import org.apache.jena.atlas.lib.FileOps;
 import org.apache.jena.graph.Node;
 import org.apache.jena.graph.NodeFactory;
@@ -34,11 +36,13 @@ public class TestBackupAndRestore {
 
     private static DatasetGraphABAC dsgABAC;
 
+    private static DataSecurityPlugin dataSecurityPlugin = new RdfAbacPlugin();
+
 
     @BeforeAll
     public static void beforeAll() {
         FileOps.ensureDir(TEST_BACKUP_DIR);
-        datasetBackupService = new DatasetBackupService(null);
+        datasetBackupService = new DatasetBackupService(null, dataSecurityPlugin);
         dsgABAC = ABAC.authzDataset(DatasetGraphFactory.createTxnMem(),
                 null,
                 LabelsStoreMem.create(),

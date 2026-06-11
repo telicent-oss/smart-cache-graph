@@ -5,6 +5,8 @@ import io.telicent.jena.abac.labels.Labels;
 import io.telicent.jena.abac.labels.LabelsStore;
 import io.telicent.labels.TripleLabels;
 import io.telicent.labels.services.LabelsQueryService;
+import io.telicent.smart.cache.security.data.plugins.DataSecurityPlugin;
+import io.telicent.smart.cache.security.data.plugins.DataSecurityPluginLoader;
 import org.apache.jena.graph.NodeFactory;
 import org.apache.jena.graph.Triple;
 import org.apache.jena.sparql.core.DatasetGraph;
@@ -49,7 +51,8 @@ public class LabelsQueryServiceBenchmark {
             }
         }
 
-        labelsQueryService = new LabelsQueryService(labelsStore, datasetGraph, "bench");
+        DataSecurityPlugin dataSecurityPlugin = DataSecurityPluginLoader.load();
+        labelsQueryService = new LabelsQueryService(dataSecurityPlugin, datasetGraph, "bench");
     }
 
     @Benchmark

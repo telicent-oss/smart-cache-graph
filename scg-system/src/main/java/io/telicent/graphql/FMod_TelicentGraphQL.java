@@ -18,9 +18,9 @@ package io.telicent.graphql;
 
 import java.util.Set;
 
-import io.telicent.jena.abac.fuseki.ServerABAC;
 import io.telicent.jena.graphql.execution.GraphQLOverDatasetExecutor;
 import io.telicent.jena.graphql.fuseki.FMod_GraphQL;
+import io.telicent.smart.cache.security.data.plugins.DataSecurityPluginLoader;
 import org.apache.jena.atlas.lib.Version;
 import org.apache.jena.atlas.logging.FmtLog;
 import org.apache.jena.fuseki.Fuseki;
@@ -54,6 +54,7 @@ public class FMod_TelicentGraphQL extends FMod_GraphQL {
 
     @Override
     protected ActionProcessor createActionProcessor(GraphQLOverDatasetExecutor executor) {
-        return new ActionTelicentGraphQL(executor, ServerABAC.userForRequest());
+        return new ActionTelicentGraphQL(executor, DataSecurityPluginLoader.load());
     }
+
 }

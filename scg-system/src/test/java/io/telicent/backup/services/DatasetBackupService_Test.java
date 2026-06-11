@@ -1,17 +1,21 @@
 package io.telicent.backup.services;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.telicent.jena.abac.labels.store.rocksdb.legacy.LegacyLabelsStoreRocksDB;
+import io.telicent.smart.cache.security.data.plugins.DataSecurityPlugin;
 import org.apache.jena.fuseki.server.DataAccessPointRegistry;
 import org.apache.jena.sparql.core.DatasetGraph;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * Class that extends DatasetBackupService purely for testing purposes
  */
-@SuppressWarnings("deprecation")
 public class DatasetBackupService_Test extends DatasetBackupService {
     public final static String BACKUP_TDB = "executeBackupTDB";
     public final static String BACKUP_LABELS = "executeBackupLabelStore";
@@ -21,6 +25,21 @@ public class DatasetBackupService_Test extends DatasetBackupService {
 
     public static Map<String, Integer> callCounts = new HashMap<>();
     public static Map<String, String> throwExceptions = new HashMap<>();
+
+    private static DataSecurityPlugin mockDataSecurityPlugin = mock(DataSecurityPlugin.class);
+
+    static {
+        when(mockDataSecurityPlugin.prepareLabelsBackup()).thenReturn(Optional.of((dsg, path, node) -> {
+            incrementMethodCall(BACKUP_LABELS);
+            throwExceptionIfNeeded(BACKUP_LABELS);
+            node.put("success", true);
+        }));
+        when(mockDataSecurityPlugin.prepareLabelsRestore()).thenReturn(Optional.of((dsg, path, node) -> {
+            incrementMethodCall(RESTORE_LABELS);
+            throwExceptionIfNeeded(RESTORE_LABELS);
+            node.put("success", true);
+        }));
+    }
 
     public static void setupExceptionForMethod(String method, String message) {
         throwExceptions.put(method, message);
@@ -42,7 +61,7 @@ public class DatasetBackupService_Test extends DatasetBackupService {
 
     // Review and replace with a mock
     public DatasetBackupService_Test(DataAccessPointRegistry dapRegistry) {
-        super(dapRegistry);
+        super(dapRegistry, mockDataSecurityPlugin);
     }
 
     public static void clear() {
@@ -59,26 +78,10 @@ public class DatasetBackupService_Test extends DatasetBackupService {
     }
 
     @Override
-    void executeBackupLabelStore(LegacyLabelsStoreRocksDB rocksDB, String labelBackupPath, ObjectNode node) {
-        // NO-OP
-        incrementMethodCall(BACKUP_LABELS);
-        throwExceptionIfNeeded(BACKUP_LABELS);
-        node.put("success", true);
-    }
-
-    @Override
     void executeRestoreTDB(DatasetGraph dsg, String tdbRestoreFile) {
         // NO-OP
         incrementMethodCall(RESTORE_TDB);
         throwExceptionIfNeeded(RESTORE_TDB);
-    }
-
-    @Override
-    void executeRestoreLabelStore(LegacyLabelsStoreRocksDB rocksDB, String labelRestorePath, ObjectNode node) {
-        // NO-OP
-        incrementMethodCall(RESTORE_LABELS);
-        throwExceptionIfNeeded(RESTORE_LABELS);
-        node.put("success", true);
     }
 
     @Override
