@@ -1,7 +1,8 @@
 package io.telicent.labels.services;
 
-import io.telicent.jena.abac.labels.LabelsStore;
 import io.telicent.labels.TripleLabels;
+import io.telicent.smart.cache.security.data.labels.SecurityLabelsApplicator;
+import io.telicent.smart.cache.security.data.plugins.DataSecurityPlugin;
 import org.apache.jena.graph.Graph;
 import org.apache.jena.graph.NodeFactory;
 import org.apache.jena.graph.Triple;
@@ -12,11 +13,9 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 
-@SuppressWarnings("deprecation")
 class TestLabelsQueryServiceIteratorClose {
 
     @Test
@@ -36,10 +35,13 @@ class TestLabelsQueryServiceIteratorClose {
         when(iter.next()).thenReturn(triple);
         when(graph.find(triple)).thenReturn(iter);
 
-        LabelsStore labelsStore = mock(LabelsStore.class);
-        when(labelsStore.labelForTriple(triple)).thenReturn(null);
+        //LabelsStore labelsStore = mock(LabelsStore.class);
+        DataSecurityPlugin mockDataSecurityPlugin = mock(DataSecurityPlugin.class);
+        SecurityLabelsApplicator mockSecurityLabelsApplicator = mock(SecurityLabelsApplicator.class);
+        when(mockDataSecurityPlugin.prepareLabelsApplicator(any(),any())).thenReturn(mockSecurityLabelsApplicator);
+        when(mockSecurityLabelsApplicator.labelForTriple(triple)).thenReturn(null);
 
-        LabelsQueryService service = new LabelsQueryService(labelsStore, datasetGraph, "dataset");
+        LabelsQueryService service = new LabelsQueryService(mockDataSecurityPlugin, datasetGraph, "dataset");
         List<TripleLabels> results = service.queryDSGAndLabelStore(triple);
 
         assertEquals(1, results.size());

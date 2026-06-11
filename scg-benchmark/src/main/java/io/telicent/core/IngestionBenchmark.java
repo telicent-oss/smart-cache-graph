@@ -5,6 +5,7 @@ import io.telicent.jena.abac.core.AttributesStoreLocal;
 import io.telicent.jena.abac.core.DatasetGraphABAC;
 import io.telicent.jena.abac.labels.Label;
 import io.telicent.jena.abac.labels.Labels;
+import io.telicent.smart.cache.security.data.plugins.rdf.abac.RdfAbacChangesApplyWithLabels;
 import org.apache.jena.graph.Node;
 import org.apache.jena.graph.NodeFactory;
 import org.apache.jena.sparql.core.DatasetGraphFactory;
@@ -55,8 +56,7 @@ public class IngestionBenchmark {
     @Benchmark
     public void benchmarkIngestWithLabels(Blackhole bh) {
         DatasetGraphABAC dataset = createDatasetGraphABAC();
-
-        RDFChangesApplyWithLabels changes = new RDFChangesApplyWithLabels(dataset, eventSecurityLabel);
+        RdfAbacChangesApplyWithLabels changes = new RdfAbacChangesApplyWithLabels(dataset, eventSecurityLabel);
 
         changes.txnBegin();
         for (int i = 0; i < batchSize; i++) {

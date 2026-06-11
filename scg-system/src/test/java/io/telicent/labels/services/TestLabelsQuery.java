@@ -3,6 +3,7 @@ package io.telicent.labels.services;
 import io.telicent.core.MainSmartCacheGraph;
 import io.telicent.labels.FMod_LabelsQuery;
 import io.telicent.smart.cache.configuration.Configurator;
+import io.telicent.smart.cache.sources.TelicentHeaders;
 import org.apache.jena.fuseki.main.FusekiServer;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -106,7 +107,7 @@ public class TestLabelsQuery {
                     "subject" : "http://dbpedia.org/resource/London",
                     "predicate" : "http://dbpedia.org/ontology/populationTotal",
                     "object" : "\\"8799800\\"",
-                    "labels" : [ "admin && census" ]
+                    "labels" : [ "(&& admin census)" ]
                   } ]
                 }""";
         callAndAssert(jsonRequestBody, expectedJsonResponse, DATASET1_NAME);
@@ -310,7 +311,7 @@ public class TestLabelsQuery {
 
     private static void uploadData(URL dataUrl, String datasetName) throws Exception {
         final HttpRequest request = HttpRequest.newBuilder(new URI(BASE_URI + "/" + datasetName + "/upload"))
-                .headers("Security-Label", "!", "Content-Type", "application/trig")
+                .headers(TelicentHeaders.SECURITY_LABEL, "!", "Content-Type", "application/trig")
                 .POST(HttpRequest.BodyPublishers.ofFile(Paths.get(dataUrl.toURI()))).build();
         try (final HttpClient client = HttpClient.newHttpClient()) {
             final HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());

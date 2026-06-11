@@ -1,9 +1,9 @@
 package io.telicent.core.auth;
 
 import io.telicent.core.CQRS;
-import io.telicent.jena.abac.fuseki.ServerABAC;
 import io.telicent.jena.graphql.fuseki.SysGraphQL;
 import io.telicent.servlet.auth.jwt.PathExclusion;
+import io.telicent.smart.cache.security.data.plugins.DataSecurityPluginLoader;
 import io.telicent.smart.caches.configuration.auth.policy.Policy;
 import io.telicent.smart.caches.configuration.auth.policy.TelicentPermissions;
 import io.telicent.smart.caches.configuration.auth.policy.TelicentRoles;
@@ -13,6 +13,7 @@ import org.apache.jena.fuseki.server.DataAccessPoint;
 import org.apache.jena.fuseki.server.Endpoint;
 import org.apache.jena.fuseki.server.Operation;
 
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -50,27 +51,31 @@ public class SCG_AuthPolicy {
      * Known Fuseki operations (either Core, or from Telicent modules) that are read-only operations
      */
     //@formatter:off
-    public static final Set<Operation> READ_OPERATIONS =
-            Set.of(Operation.Query,
+    public static final Set<Operation> READ_OPERATIONS;
+    static {
+        Set<Operation> ops = new HashSet<>(Set.of(Operation.Query,
                    Operation.GSP_R,
                    Operation.PREFIXES_R,
                    Operation.Shacl,
-                   SysGraphQL.OP_GRAPHQL,
-                   ServerABAC.Vocab.operationGetLabels,
-                   ServerABAC.Vocab.operationGSPRLabels,
-                   ServerABAC.Vocab.operationQueryLabels);
+                   SysGraphQL.OP_GRAPHQL));
+        ops.addAll(DataSecurityPluginLoader.load().getReadOperations());
+        READ_OPERATIONS = Set.copyOf(ops);
+    }
     //@formatter:on
     /**
      * Known Fuseki operations (either Core, or from Telicent modules) that are read/write operations
      */
     //@formatter:off
-    public static final Set<Operation> READ_WRITE_OPERATIONS =
-            Set.of(Operation.Update,
+    public static final Set<Operation> READ_WRITE_OPERATIONS;
+    static {
+        Set<Operation> ops = new HashSet<>(Set.of(Operation.Update,
                    Operation.GSP_RW,
                    Operation.Upload,
                    Operation.Patch,
-                   CQRS.Vocab.operationUpdateCQRS,
-                   ServerABAC.Vocab.operationUploadABAC);
+                   CQRS.Vocab.operationUpdateCQRS));
+        ops.addAll(DataSecurityPluginLoader.load().getReadWriteOperations());
+        READ_WRITE_OPERATIONS = Set.copyOf(ops);
+    }
     //@formatter:on
 
     /**

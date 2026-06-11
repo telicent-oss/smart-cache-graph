@@ -9,10 +9,11 @@ import io.telicent.jena.abac.core.DatasetGraphABAC;
 import io.telicent.jena.abac.labels.Label;
 import io.telicent.jena.abac.labels.Labels;
 import io.telicent.jena.abac.labels.LabelsStore;
-import io.telicent.jena.abac.labels.store.rocksdb.legacy.LegacyLabelsStoreRocksDB;
 import io.telicent.jena.abac.labels.StoreFmtByString;
 import io.telicent.smart.cache.configuration.Configurator;
 import io.telicent.smart.cache.configuration.sources.PropertiesSource;
+import io.telicent.smart.cache.security.data.plugins.DataSecurityPlugin;
+import io.telicent.smart.cache.security.data.plugins.DataSecurityPluginLoader;
 import org.apache.jena.fuseki.server.DataAccessPoint;
 import org.apache.jena.fuseki.server.DataAccessPointRegistry;
 import org.apache.jena.fuseki.server.DataService;
@@ -95,7 +96,8 @@ public class BackupRestoreBenchmark {
         DataAccessPointRegistry registry = new DataAccessPointRegistry();
         DataAccessPoint dap = new DataAccessPoint("bench", dataService);
         registry.register(dap);
-        backupService = new DatasetBackupService(registry);
+        DataSecurityPlugin dataSecurityPlugin = DataSecurityPluginLoader.load();
+        backupService = new DatasetBackupService(registry, dataSecurityPlugin);
 
         ObjectNode response = OBJECT_MAPPER.createObjectNode();
         backupService.backupDataset(null, response);

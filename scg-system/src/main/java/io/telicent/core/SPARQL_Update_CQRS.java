@@ -16,25 +16,16 @@
 
 package io.telicent.core;
 
-import static org.apache.jena.fuseki.server.CounterName.UpdateExecErrors;
-import static org.apache.jena.fuseki.servlets.ActionExecLib.incCounter;
-import static org.apache.jena.fuseki.servlets.SPARQLProtocol.messageForException;
-import static org.apache.jena.fuseki.servlets.SPARQLProtocol.messageForParseException;
-import static org.apache.jena.riot.web.HttpNames.paramUsingGraphURI;
-import static org.apache.jena.riot.web.HttpNames.paramUsingNamedGraphURI;
-
-import java.io.InputStream;
-import java.util.Objects;
-import java.util.function.Consumer;
-import java.util.function.Function;
-
-import io.telicent.jena.abac.ABAC;
-import io.telicent.jena.abac.fuseki.ABAC_Processor;
-import io.telicent.jena.abac.fuseki.ABAC_Request;
+//import io.telicent.jena.abac.ABAC;
+//import io.telicent.jena.abac.fuseki.ABAC_Request;
+import io.telicent.smart.cache.security.data.DataAccessAuthorizer;
+import io.telicent.smart.cache.security.data.plugins.DataSecurityPlugin;
+import io.telicent.smart.cache.security.data.plugins.DataSecurityPluginLoader;
 import jakarta.servlet.http.HttpServletRequest;
 import org.apache.jena.fuseki.Fuseki;
 import org.apache.jena.fuseki.servlets.*;
 import org.apache.jena.irix.IRIxResolver;
+import org.apache.jena.query.Dataset;
 import org.apache.jena.query.QueryBuildException;
 import org.apache.jena.query.QueryParseException;
 import org.apache.jena.query.Syntax;
@@ -46,10 +37,27 @@ import org.apache.jena.update.UpdateAction;
 import org.apache.jena.update.UpdateException;
 import org.apache.kafka.clients.producer.Producer;
 
+import java.io.InputStream;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.function.Consumer;
+import java.util.function.Function;
+
+import static io.telicent.utils.ServletUtils.requestContextFrom;
+import static org.apache.jena.fuseki.server.CounterName.UpdateExecErrors;
+import static org.apache.jena.fuseki.servlets.ActionExecLib.incCounter;
+import static org.apache.jena.fuseki.servlets.SPARQLProtocol.messageForException;
+import static org.apache.jena.fuseki.servlets.SPARQLProtocol.messageForParseException;
+import static org.apache.jena.riot.web.HttpNames.paramUsingGraphURI;
+import static org.apache.jena.riot.web.HttpNames.paramUsingNamedGraphURI;
+
 /**
  * Intended to extend SPARQL_Update Currently copies SPARQL_Update.exec Pure CQRS.
  */
-public class SPARQL_Update_CQRS extends SPARQL_Update implements ABAC_Processor {
+public class SPARQL_Update_CQRS extends SPARQL_Update {
+
+    private static DataSecurityPlugin DATA_SECURITY_PLUGIN = DataSecurityPluginLoader.load();
+
 
     private static final String UpdateParseBase = Fuseki.BaseParserSPARQL;
     private static final IRIxResolver resolver = IRIxResolver.create()
@@ -94,14 +102,8 @@ public class SPARQL_Update_CQRS extends SPARQL_Update implements ABAC_Processor 
         UsingList usingList = processProtocol(action.getRequest());
         action.beginWrite();
         try {
-            // Get the ABAC Dataset to use
-            DatasetGraph dsgRequest;
-            if (ABAC.isDatasetABAC(action.getActiveDSG())) {
-                dsgRequest = ABAC_Request.decideDataset(action, action.getActiveDSG(), getUser);
-            } else {
-                dsgRequest = action.getActiveDSG();
-            }
-
+            // Get the DatasetGraph to use
+            DatasetGraph dsgRequest = getDatasetGraphToUse(action);
             CQRS.UpdateCQRS updateCtl =
                     CQRS.startOperation(topic, producer, action, dsgRequest, onBegin, onCommit, onAbort);
             UpdateAction.parseExecute(usingList, updateCtl.dataset(), input, UpdateParseBase, Syntax.syntaxARQ);
@@ -141,6 +143,13 @@ public class SPARQL_Update_CQRS extends SPARQL_Update implements ABAC_Processor 
             }
         } finally {
             action.end();
+        }
+    }
+
+    private DatasetGraph getDatasetGraphToUse(HttpAction action){
+        try(DataAccessAuthorizer authorizer = DATA_SECURITY_PLUGIN.prepareAuthorizer(requestContextFrom(action))){
+            final Optional<DatasetGraph> authDsg = authorizer.decideDataset(action, action.getActiveDSG());
+            return authDsg.orElseGet(action::getActiveDSG);
         }
     }
 

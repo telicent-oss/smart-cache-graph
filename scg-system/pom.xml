@@ -91,16 +91,6 @@
             <artifactId>jena-tdb2</artifactId>
         </dependency>
 
-        <!-- ABAC engine -->
-        <dependency>
-            <groupId>io.telicent.jena</groupId>
-            <artifactId>rdf-abac-core</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.telicent.jena</groupId>
-            <artifactId>rdf-abac-fuseki</artifactId>
-        </dependency>
-
         <!-- Jena Fuseki Kafka -->
         <dependency>
             <groupId>io.telicent.jena</groupId>
@@ -138,6 +128,11 @@
             <artifactId>distribution-lifecycle</artifactId>
             <version>${dependency.smart-caches-core}</version>
         </dependency>
+        <dependency>
+            <groupId>io.telicent.smart-caches</groupId>
+            <artifactId>data-security-core</artifactId>
+            <version>${dependency.smart-caches-core}</version>
+        </dependency>
         <!-- GraphQL -->
         <dependency>
             <groupId>io.telicent.jena.graphql</groupId>
@@ -150,6 +145,17 @@
         <dependency>
             <groupId>io.telicent.jena.graphql</groupId>
             <artifactId>telicent-graph-schema</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>io.telicent.public</groupId>
+            <artifactId>fuseki-yaml-config</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.logging.log4j</groupId>
+                    <artifactId>log4j-slf4j2-impl</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <!-- External dependencies -->
@@ -208,6 +214,25 @@
                     <artifactId>checker-qual</artifactId>
                 </exclusion>
             </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.telicent.smart-caches</groupId>
+            <artifactId>data-security-plugin-rdf-abac</artifactId>
+            <version>${dependency.smart-caches-core}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <!-- Provides the RdfAbacPlugin for testing purposes -->
+            <groupId>io.telicent.smart-caches</groupId>
+            <artifactId>data-security-plugin-rdf-abac-registration</artifactId>
+            <version>${dependency.smart-caches-core}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.telicent.jena</groupId>
+            <artifactId>rdf-abac-fuseki</artifactId>
+            <version>${dependency.rdf-abac}</version>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>uk.org.webcompere</groupId>
@@ -331,17 +356,6 @@
             <version>${dependency.fuseki-kafka}</version>
             <classifier>tests</classifier>
             <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>io.telicent.public</groupId>
-            <artifactId>fuseki-yaml-config</artifactId>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.apache.logging.log4j</groupId>
-                    <artifactId>log4j-slf4j2-impl</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
 
     </dependencies>
