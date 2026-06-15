@@ -4,6 +4,7 @@ import io.telicent.deletion.model.JobState;
 import io.telicent.deletion.service.DeletionJobService;
 import io.telicent.deletion.service.JobRegistry;
 import io.telicent.deletion.service.UserInfoService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -28,7 +29,8 @@ public class DeletionJobController {
     public ResponseEntity<Map<String, String>> deleteDistribution(
 //            @AuthenticationPrincipal Jwt token,
             @RequestParam("distribution-id") String distributionId,
-            @RequestHeader(value = "Authorization", required = false) String authorization) {
+            @RequestHeader(value = "Authorization", required = false) String authorization,
+            HttpServletRequest request) {
 //        if (!hasRole(token, "system-admin")) {
 //            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
 //        }
@@ -36,7 +38,7 @@ public class DeletionJobController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
-        if (!userInfoService.isSystemAdmin(authorization)) {
+        if (!userInfoService.isSystemAdmin(authorization, request)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(Map.of("error", "ROLE_ADMIN_SYSTEM required"));
         }
@@ -55,14 +57,15 @@ public class DeletionJobController {
     public ResponseEntity<JobState> getJobStatus(
 //            @AuthenticationPrincipal Jwt token,
             @RequestHeader(value = "Authorization", required = false) String authorization,
-            @PathVariable("jobId") String jobId) {
+            @PathVariable("jobId") String jobId,
+            HttpServletRequest request) {
 //        if (!hasRole(token, "ADMIN_SYSTEM")) {
 //            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
 //        }
         if (authorization == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-        if (!userInfoService.isSystemAdmin(authorization)) {
+        if (!userInfoService.isSystemAdmin(authorization, request)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 

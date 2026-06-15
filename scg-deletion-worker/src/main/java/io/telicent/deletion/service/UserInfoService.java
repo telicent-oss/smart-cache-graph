@@ -1,6 +1,7 @@
 package io.telicent.deletion.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -30,17 +31,31 @@ public class UserInfoService {
         this.objectMapper = new ObjectMapper();
     }
 
-    public boolean isSystemAdmin(String authorization) {
+    public boolean isSystemAdmin(String authorization, HttpServletRequest originalRequest) {
         try {
-            LOGGER.warn("isSystemAdmin called");
-            HttpRequest request = HttpRequest.newBuilder()
+            //TODO
+            // is the call to userinfo itself unauthorized?
+            HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
                     .uri(URI.create(userInfoUrl))
                     .header("Authorization", authorization)
-                    .GET()
-                    .build();
+                    .GET();
+
+            List<String> headersToForward = List.of(
+                    "User-Agent", "X-Forwarded-For", "X-Real-IP",
+                    "Origin", "Cookie"
+            );
+            for (String header : headersToForward) {
+                String value = originalRequest.getHeader(header);
+                if (value != null) {
+                    requestBuilder.header(header, value);
+                }
+            }
+
+            HttpRequest request = requestBuilder.build();
 
             HttpResponse<String> response = httpClient.send(request,
                     HttpResponse.BodyHandlers.ofString());
+            LOGGER.info("Response body: " + response.body());
 
             if (response.statusCode() != 200) {
                 LOGGER.warn("UserInfo endpoint returned {} for role check", response.statusCode());
@@ -49,6 +64,7 @@ public class UserInfoService {
 
             Map<String, Object> userInfo = objectMapper.readValue(response.body(), Map.class);
             List<String> roles = (List<String>) userInfo.get("roles");
+            LOGGER.info("User roles: {}", roles);
             if (roles == null) {
                 LOGGER.warn("No roles found in userinfo response");
                 return false;
