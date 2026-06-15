@@ -6,6 +6,8 @@ deletion-worker:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     config-file-path: ${KAFKA_CONFIG_FILE_PATH:}
   topic: ${KAFKA_TOPIC:RDF}
+  auth:
+    userinfo-url: ${USERINFO_URL:http://auth:8080/userinfo}
 
 management:
   endpoints:

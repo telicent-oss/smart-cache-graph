@@ -1,6 +1,7 @@
 package io.telicent.deletion;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.telicent.deletion.service.UserInfoService;
 import io.telicent.smart.cache.sources.TelicentHeaders;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.producer.KafkaProducer;
@@ -14,6 +15,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
@@ -28,6 +30,8 @@ import java.util.*;
 import static io.telicent.deletion.DeletionWorkerConstants.DELETION_JOB_SUFFIX;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.testcontainers.shaded.org.awaitility.Awaitility.await;
@@ -58,6 +62,9 @@ public class DeletionJobSpringIntegrationTest extends KafkaIntegrationTestBase{
     @Autowired
     private MockMvc mockMvc;
 
+    @MockitoBean
+    private UserInfoService userInfoService;
+
     @Container
     static final KafkaContainer kafka = new KafkaContainer(
             DockerImageName.parse("apache/kafka:3.7.0")
@@ -71,6 +78,7 @@ public class DeletionJobSpringIntegrationTest extends KafkaIntegrationTestBase{
 
     @BeforeEach
     void setUp() {
+        when(userInfoService.isSystemAdmin(any())).thenReturn(true);
         deleteTopic(TOPIC);
         createTopic(TOPIC);
         setUpProducer = createProducer();
@@ -85,19 +93,26 @@ public class DeletionJobSpringIntegrationTest extends KafkaIntegrationTestBase{
     void contextLoads() { }
 
     @Test
+    void mockIsWorking() {
+        assertTrue(userInfoService.isSystemAdmin("any-token"));
+    }
+
+    @Test
     public void testDeletesDistributions() throws Exception {
         String distributionId = "dist-001";
         publishRecord(distributionId, null,  new String(nquadsPayload("subject", "name"), StandardCharsets.UTF_8));
 
-        MvcResult postResult = mockMvc.perform(post("/jobs/delete-distribution").param("distribution-id", "dist-001"))
+        MvcResult postResult = mockMvc.perform(post("/jobs/delete-distribution").param("distribution-id", "dist-001")
+                .header("Authorization", "Bearer test-token"))
                 .andExpect(status().is2xxSuccessful()).andReturn();
         String jobIdJSON = postResult.getResponse().getContentAsString();
         String jobId = new ObjectMapper().readTree(jobIdJSON).get("jobId").asText();
         MvcResult getResult = mockMvc.perform(MockMvcRequestBuilders.
-                get("/jobs/" + jobId).contentType("application/n-quads")).andExpect(status().isOk()).andReturn();
+                get("/jobs/" + jobId).contentType("application/n-quads").header("Authorization", "Bearer test-token")).andExpect(status().isOk()).andReturn();
         System.out.println(getResult.getResponse().getContentAsString());
         await().atMost(30, SECONDS).untilAsserted(() -> {
-            MvcResult result = mockMvc.perform(MockMvcRequestBuilders.get("/jobs/" + jobId))
+            MvcResult result = mockMvc.perform(MockMvcRequestBuilders.get("/jobs/" + jobId)
+                    .header("Authorization", "Bearer test-token"))
                     .andExpect(status().isOk())
                     .andReturn();
             String status = new ObjectMapper().readTree(
@@ -125,7 +140,8 @@ public class DeletionJobSpringIntegrationTest extends KafkaIntegrationTestBase{
         publishRecord("dist-001", null, new String(nquadsPayload("3", "Carol"), StandardCharsets.UTF_8));
 
         MvcResult postResult = mockMvc.perform(post("/jobs/delete-distribution")
-                        .param("distribution-id", "dist-001"))
+                        .param("distribution-id", "dist-001")
+                        .header("Authorization", "Bearer test-token"))
                 .andExpect(status().isAccepted())
                 .andReturn();
 
@@ -134,7 +150,8 @@ public class DeletionJobSpringIntegrationTest extends KafkaIntegrationTestBase{
                 .get("jobId").asText();
 
         await().atMost(60, SECONDS).untilAsserted(() -> {
-            MvcResult result = mockMvc.perform(MockMvcRequestBuilders.get("/jobs/" + jobId))
+            MvcResult result = mockMvc.perform(MockMvcRequestBuilders.get("/jobs/" + jobId)
+                            .header("Authorization", "Bearer test-token"))
                     .andExpect(status().isOk()).andReturn();
             assertEquals("COMPLETED", new ObjectMapper()
                     .readTree(result.getResponse().getContentAsString())
@@ -148,27 +165,31 @@ public class DeletionJobSpringIntegrationTest extends KafkaIntegrationTestBase{
 
     @Test
     void triggerWithMissingDistributionIdReturns400() throws Exception {
-        mockMvc.perform(post("/jobs/delete-distribution"))
+        mockMvc.perform(post("/jobs/delete-distribution")
+                        .header("Authorization", "Bearer test-token"))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
     void triggerWithEmptyDistributionIdReturns400() throws Exception {
         mockMvc.perform(post("/jobs/delete-distribution")
-                        .param("distribution-id", ""))
+                        .param("distribution-id", "")
+                        .header("Authorization", "Bearer test-token"))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
     void getStatusOfNonExistentJobReturns404() throws Exception {
-        mockMvc.perform(MockMvcRequestBuilders.get("/jobs/does-not-exist"))
+        mockMvc.perform(MockMvcRequestBuilders.get("/jobs/does-not-exist")
+                        .header("Authorization", "Bearer test-token"))
                 .andExpect(status().isNotFound());
     }
 
     @Test
     void deletionOnEmptyTopicCompletesWithNoPatches() throws Exception {
         MvcResult postResult = mockMvc.perform(post("/jobs/delete-distribution")
-                        .param("distribution-id", "dist-empty"))
+                        .param("distribution-id", "dist-empty")
+                        .header("Authorization", "Bearer test-token"))
                 .andExpect(status().isAccepted())
                 .andReturn();
 
@@ -177,7 +198,8 @@ public class DeletionJobSpringIntegrationTest extends KafkaIntegrationTestBase{
                 .get("jobId").asText();
 
         await().atMost(40, SECONDS).untilAsserted(() -> {
-            MvcResult result = mockMvc.perform(MockMvcRequestBuilders.get("/jobs/" + jobId))
+            MvcResult result = mockMvc.perform(MockMvcRequestBuilders.get("/jobs/" + jobId)
+                            .header("Authorization", "Bearer test-token"))
                     .andExpect(status().isOk()).andReturn();
             assertEquals("COMPLETED", new ObjectMapper()
                     .readTree(result.getResponse().getContentAsString())
@@ -193,7 +215,8 @@ public class DeletionJobSpringIntegrationTest extends KafkaIntegrationTestBase{
         publishRecord("dist-other", null, new String(nquadsPayload("1", "Alice"), StandardCharsets.UTF_8));
 
         MvcResult postResult = mockMvc.perform(post("/jobs/delete-distribution")
-                        .param("distribution-id",  "dist-no-match"))
+                        .param("distribution-id",  "dist-no-match")
+                        .header("Authorization", "Bearer test-token"))
                 .andExpect(status().isAccepted())
                 .andReturn();
 
@@ -202,7 +225,8 @@ public class DeletionJobSpringIntegrationTest extends KafkaIntegrationTestBase{
                 .get("jobId").asText();
 
         await().atMost(40, SECONDS).untilAsserted(() -> {
-            MvcResult result = mockMvc.perform(MockMvcRequestBuilders.get("/jobs/" + jobId))
+            MvcResult result = mockMvc.perform(MockMvcRequestBuilders.get("/jobs/" + jobId)
+                            .header("Authorization", "Bearer test-token"))
                     .andExpect(status().isOk()).andReturn();
             assertEquals("COMPLETED", new ObjectMapper()
                     .readTree(result.getResponse().getContentAsString())
@@ -220,7 +244,8 @@ public class DeletionJobSpringIntegrationTest extends KafkaIntegrationTestBase{
         publishRecord("dist-target", null, new String(nquadsPayload("3", "Carol"), StandardCharsets.UTF_8));
 
         MvcResult postResult = mockMvc.perform(post("/jobs/delete-distribution")
-                        .param("distribution-id", "dist-target"))
+                        .param("distribution-id", "dist-target")
+                        .header("Authorization", "Bearer test-token"))
                 .andExpect(status().isAccepted())
                 .andReturn();
 
@@ -229,7 +254,8 @@ public class DeletionJobSpringIntegrationTest extends KafkaIntegrationTestBase{
                 .get("jobId").asText();
 
         await().atMost(60, SECONDS).untilAsserted(() -> {
-            MvcResult result = mockMvc.perform(MockMvcRequestBuilders.get("/jobs/" + jobId))
+            MvcResult result = mockMvc.perform(MockMvcRequestBuilders.get("/jobs/" + jobId)
+                            .header("Authorization", "Bearer test-token"))
                     .andExpect(status().isOk()).andReturn();
             assertEquals("COMPLETED", new ObjectMapper()
                     .readTree(result.getResponse().getContentAsString())
@@ -255,7 +281,8 @@ public class DeletionJobSpringIntegrationTest extends KafkaIntegrationTestBase{
         publishRecord("dist-001", null, new String(nquadsPayload("1", "Alice"), StandardCharsets.UTF_8));
 
         MvcResult postResult = mockMvc.perform(post("/jobs/delete-distribution")
-                        .param("distribution-id", "dist-001"))
+                        .param("distribution-id", "dist-001")
+                        .header("Authorization", "Bearer test-token"))
                 .andExpect(status().isAccepted())
                 .andReturn();
 
@@ -264,7 +291,8 @@ public class DeletionJobSpringIntegrationTest extends KafkaIntegrationTestBase{
                 .get("jobId").asText();
 
         await().atMost(60, SECONDS).untilAsserted(() -> {
-            MvcResult result = mockMvc.perform(MockMvcRequestBuilders.get("/jobs/" + jobId))
+            MvcResult result = mockMvc.perform(MockMvcRequestBuilders.get("/jobs/" + jobId)
+                            .header("Authorization", "Bearer test-token"))
                     .andExpect(status().isOk()).andReturn();
             String status = new ObjectMapper()
                     .readTree(result.getResponse().getContentAsString())
@@ -280,11 +308,13 @@ public class DeletionJobSpringIntegrationTest extends KafkaIntegrationTestBase{
         publishRecord("dist-B", null, new String(nquadsPayload("2", "Bob"), StandardCharsets.UTF_8));
 
         MvcResult postA = mockMvc.perform(post("/jobs/delete-distribution")
-                        .param("distribution-id",  "dist-A"))
+                        .param("distribution-id",  "dist-A")
+                        .header("Authorization", "Bearer test-token"))
                 .andExpect(status().isAccepted()).andReturn();
 
         MvcResult postB = mockMvc.perform(post("/jobs/delete-distribution")
-                        .param("distribution-id", "dist-B"))
+                        .param("distribution-id", "dist-B")
+                        .header("Authorization", "Bearer test-token"))
                 .andExpect(status().isAccepted()).andReturn();
 
         String jobIdA = new ObjectMapper()
@@ -293,13 +323,13 @@ public class DeletionJobSpringIntegrationTest extends KafkaIntegrationTestBase{
                 .readTree(postB.getResponse().getContentAsString()).get("jobId").asText();
 
         await().atMost(60, SECONDS).untilAsserted(() -> {
-            String statusA = new ObjectMapper().readTree(mockMvc.perform(MockMvcRequestBuilders.get("/jobs/" + jobIdA))
+            String statusA = new ObjectMapper().readTree(mockMvc.perform(MockMvcRequestBuilders.get("/jobs/" + jobIdA).header("Authorization", "Bearer test-token"))
                     .andReturn().getResponse().getContentAsString()).get("status").asText();
-            String statusB = new ObjectMapper().readTree(mockMvc.perform(MockMvcRequestBuilders.get("/jobs/" + jobIdB))
+            String statusB = new ObjectMapper().readTree(mockMvc.perform(MockMvcRequestBuilders.get("/jobs/" + jobIdB).header("Authorization", "Bearer test-token"))
                     .andReturn().getResponse().getContentAsString()).get("status").asText();
-            String patchNumberA = new ObjectMapper().readTree(mockMvc.perform(MockMvcRequestBuilders.get("/jobs/" + jobIdA))
+            String patchNumberA = new ObjectMapper().readTree(mockMvc.perform(MockMvcRequestBuilders.get("/jobs/" + jobIdA).header("Authorization", "Bearer test-token"))
                     .andReturn().getResponse().getContentAsString()).get("patchesSent").asText();
-            String patchNumberB = new ObjectMapper().readTree(mockMvc.perform(MockMvcRequestBuilders.get("/jobs/" + jobIdB))
+            String patchNumberB = new ObjectMapper().readTree(mockMvc.perform(MockMvcRequestBuilders.get("/jobs/" + jobIdB).header("Authorization", "Bearer test-token"))
                     .andReturn().getResponse().getContentAsString()).get("patchesSent").asText();
             assertEquals("COMPLETED", statusA);
             assertEquals("COMPLETED", statusB);
@@ -319,43 +349,88 @@ public class DeletionJobSpringIntegrationTest extends KafkaIntegrationTestBase{
 
         // first delete job
         MvcResult firstPost = mockMvc.perform(post("/jobs/delete-distribution")
-                        .param("distribution-id", "dist-A"))
+                        .param("distribution-id", "dist-A")
+                        .header("Authorization", "Bearer test-token"))
                 .andExpect(status().isAccepted()).andReturn();
 
         String firstJobId = new ObjectMapper()
                 .readTree(firstPost.getResponse().getContentAsString()).get("jobId").asText();
 
         await().atMost(60, SECONDS).untilAsserted(() -> {
-            String status = new ObjectMapper().readTree(mockMvc.perform(MockMvcRequestBuilders.get("/jobs/" + firstJobId))
+            String status = new ObjectMapper().readTree(mockMvc.perform(MockMvcRequestBuilders.get("/jobs/" + firstJobId)
+                            .header("Authorization", "Bearer test-token"))
                     .andReturn().getResponse().getContentAsString()).get("status").asText();
             assertEquals("COMPLETED", status);
         });
 
         String firstJobPatches = new ObjectMapper()
-                .readTree(mockMvc.perform(MockMvcRequestBuilders.get("/jobs/" + firstJobId))
+                .readTree(mockMvc.perform(MockMvcRequestBuilders.get("/jobs/" + firstJobId)
+                                .header("Authorization", "Bearer test-token"))
                         .andReturn().getResponse().getContentAsString()).get("patchesSent").asText();
         assertEquals("2", firstJobPatches);
 
         // second delete job for the same distribution
         MvcResult secondPost = mockMvc.perform(post("/jobs/delete-distribution")
-                        .param("distribution-id", "dist-A"))
+                        .param("distribution-id", "dist-A")
+                        .header("Authorization", "Bearer test-token"))
                 .andExpect(status().isAccepted()).andReturn();
 
         String secondJobId = new ObjectMapper()
                 .readTree(secondPost.getResponse().getContentAsString()).get("jobId").asText();
 
         await().atMost(60, SECONDS).untilAsserted(() -> {
-            String status = new ObjectMapper().readTree(mockMvc.perform(MockMvcRequestBuilders.get("/jobs/" + secondJobId))
+            String status = new ObjectMapper().readTree(mockMvc.perform(MockMvcRequestBuilders.get("/jobs/" + secondJobId).header("Authorization", "Bearer test-token"))
                     .andReturn().getResponse().getContentAsString()).get("status").asText();
             assertEquals("COMPLETED", status);
         });
 
         String secondJobPatches = new ObjectMapper()
-                .readTree(mockMvc.perform(MockMvcRequestBuilders.get("/jobs/" + secondJobId))
+                .readTree(mockMvc.perform(MockMvcRequestBuilders.get("/jobs/" + secondJobId).header("Authorization", "Bearer test-token"))
                         .andReturn().getResponse().getContentAsString()).get("patchesSent").asText();
         assertEquals("0", secondJobPatches);
 
         List<ConsumerRecord<Bytes, Bytes>> allRecords = readAllRecords(4);
         assertEquals(2, filterDeletePatches(allRecords).size());
+    }
+
+    @Test
+    void postWithoutTokenReturns401() throws Exception {
+        mockMvc.perform(post("/jobs/delete-distribution")
+                        .param("distribution-id", "dist-001"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void postWithNonAdminTokenReturns403() throws Exception {
+        when(userInfoService.isSystemAdmin(any())).thenReturn(false);
+        mockMvc.perform(post("/jobs/delete-distribution")
+                        .param("distribution-id", "dist-001")
+                        .header("Authorization", "Bearer some-token"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void postWithAdminTokenSucceeds() throws Exception {
+        when(userInfoService.isSystemAdmin(any())).thenReturn(true);
+        mockMvc.perform(post("/jobs/delete-distribution")
+                        .param("distribution-id", "dist-001")
+                        .header("Authorization", "Bearer admin-token"))
+                .andExpect(status().isAccepted());
+        verify(userInfoService, atLeastOnce()).isSystemAdmin(any());
+        verify(userInfoService).isSystemAdmin("Bearer admin-token");
+    }
+
+    @Test
+    void getWithoutTokenReturns401() throws Exception {
+        mockMvc.perform(MockMvcRequestBuilders.get("/jobs/some-job-id"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void getWithNonAdminTokenReturns403() throws Exception {
+        when(userInfoService.isSystemAdmin(any())).thenReturn(false);
+        mockMvc.perform(MockMvcRequestBuilders.get("/jobs/some-job-id")
+                        .header("Authorization", "Bearer some-token"))
+                .andExpect(status().isForbidden());
     }
 }
