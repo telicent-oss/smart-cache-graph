@@ -111,17 +111,23 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
                           final Callable<CompactionOperationResponse> task) {
             final CompactionJob job = new CompactionJob(scope, UUID.randomUUID().toString(), operation, statusPathPrefix);
             this.jobs.put(job.jobId, job);
+            LOG.info("[Compaction] Queued async job {} ({})", job.jobId, operation);
             this.executor.submit(() -> {
                 try {
                     job.markRunning();
+                    LOG.info("[Compaction] >>>> Async job {} ({}) started", job.jobId, operation);
                     final CompactionOperationResponse response = task.call();
                     if (response.statusCode() >= 200 && response.statusCode() < 300) {
                         job.markSucceeded(response);
+                        LOG.info("[Compaction] <<<< Async job {} ({}) completed successfully (status={})",
+                                 job.jobId, operation, response.statusCode());
                     } else {
                         job.markFailed(response);
+                        LOG.error("[Compaction] <<<< Async job {} ({}) FAILED (status={}): {}",
+                                  job.jobId, operation, response.statusCode(), job.message);
                     }
                 } catch (Exception e) {
-                    LOG.error("Unhandled compaction job failure for {}", operation, e);
+                    LOG.error("[Compaction] <<<< Async job {} ({}) FAILED with an unhandled error", job.jobId, operation, e);
                     job.markFailed(compactionFailureResponse(e.getMessage() != null ? e.getMessage() : e.getClass().getName()));
                 }
             });
@@ -516,7 +522,7 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
             LabelsStore labelsStore = abac.labelsStore();
             Timer timer = new Timer();
             timer.startTimer();
-            LOG.info("[Compaction] <<<< Start label store compaction.");
+            LOG.info("[Compaction] >>>> Start label store compaction.");
             if (labelsStore instanceof LegacyLabelsStoreRocksDB rocksDB) {
                 rocksDB.compact();
             } else if (labelsStore instanceof CompactCapable compactCapable) {
