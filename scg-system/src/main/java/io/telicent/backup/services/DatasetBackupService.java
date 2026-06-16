@@ -140,8 +140,12 @@ public class DatasetBackupService {
     private BackupOperationResponse execute(final Supplier<BackupOperationRequest> requestSupplier,
                                             final boolean backup,
                                             final boolean waitForLock) {
+        final String operation = backup ? "BACKUP" : "RESTORE";
         final ObjectNode resultNode = OBJECT_MAPPER.createObjectNode();
+        final long startNanos = System.nanoTime();
         boolean lockAcquired = false;
+        String target = "unknown";
+        BackupOperationResponse operationResponse = null;
         try {
             if (waitForLock) {
                 lock.lockInterruptibly();
@@ -150,16 +154,20 @@ public class DatasetBackupService {
                 lockAcquired = lock.tryLock();
             }
             if (!lockAcquired) {
+                LOG.warn("[{}] Rejected - another conflicting maintenance operation is already in progress", operation);
                 resultNode.put("error", "Another conflicting operation is already in progress. Please try again later.");
-                return new BackupOperationResponse(HttpServletResponse.SC_CONFLICT, resultNode);
+                operationResponse = new BackupOperationResponse(HttpServletResponse.SC_CONFLICT, resultNode);
+                return operationResponse;
             }
 
             final BackupOperationRequest request = requestSupplier.get();
             final String id = sanitiseName(request.pathInfo());
             if (!id.isEmpty()) {
                 resultNode.put("backup-type", id);
+                target = id;
             } else {
                 resultNode.put("backup-type", "FULL");
+                target = "FULL";
             }
             resultNode.put("date", DateTimeUtils.nowAsString(DATE_FORMAT));
             resultNode.put("user", request.remoteUser());
@@ -169,24 +177,95 @@ public class DatasetBackupService {
             if (request.backupName() != null) {
                 resultNode.put("backup-name", request.backupName());
             }
+            LOG.info("[{}] >>>> Starting {} operation (target={}, user={})",
+                     operation, operation, target, request.remoteUser());
             if (backup) {
                 backupDataset(id, resultNode);
             } else {
                 restoreDatasets(id, resultNode);
             }
-            return new BackupOperationResponse(HttpServletResponse.SC_OK, resultNode);
+            operationResponse = new BackupOperationResponse(HttpServletResponse.SC_OK, resultNode);
+            return operationResponse;
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             resultNode.put("error", "Interrupted while waiting to perform backup operation.");
-            return new BackupOperationResponse(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, resultNode);
+            operationResponse = new BackupOperationResponse(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, resultNode);
+            return operationResponse;
         } catch (Exception exception) {
             resultNode.put("error", exception.getMessage());
-            return new BackupOperationResponse(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, resultNode);
+            operationResponse = new BackupOperationResponse(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, resultNode);
+            return operationResponse;
         } finally {
             if (lockAcquired) {
                 lock.unlock();
             }
+            logOperationOutcome(operation, target, operationResponse, startNanos);
         }
+    }
+
+    /**
+     * Emit a single, unambiguous log line recording the outcome of a backup/restore operation, including how long it
+     * took. This makes it crystal clear in the logs when an operation has finished and whether it succeeded or failed.
+     *
+     * @param operation the operation name ("BACKUP" or "RESTORE")
+     * @param target    the dataset name (or "FULL") the operation was applied to
+     * @param response  the operation response (may be {@code null} if the operation aborted before producing one)
+     * @param startNanos the {@link System#nanoTime()} value captured when the operation started
+     */
+    private void logOperationOutcome(final String operation, final String target,
+                                     final BackupOperationResponse response, final long startNanos) {
+        final String duration = humanReadableDuration(Duration.ofNanos(System.nanoTime() - startNanos));
+        if (response == null) {
+            LOG.error("[{}] <<<< {} operation for {} ended unexpectedly without a result after {}",
+                      operation, operation, target, duration);
+            return;
+        }
+        if (isSuccessful(response)) {
+            LOG.info("[{}] <<<< Finished {} operation for {} SUCCESSFULLY in {} (status={})",
+                     operation, operation, target, duration, response.statusCode());
+        } else {
+            final String reason = failureReason(response);
+            LOG.error("[{}] <<<< {} operation for {} FAILED after {} (status={}): {}",
+                      operation, operation, target, duration, response.statusCode(), reason);
+        }
+    }
+
+    /**
+     * Determine whether an operation response represents overall success. A response is considered successful only if
+     * it returned a 2xx status code, carries no top-level {@code error}, and is not explicitly flagged as unsuccessful.
+     *
+     * @param response the operation response
+     * @return {@code true} if the operation succeeded
+     */
+    private static boolean isSuccessful(final BackupOperationResponse response) {
+        if (response.statusCode() < 200 || response.statusCode() >= 300) {
+            return false;
+        }
+        final ObjectNode body = response.body();
+        if (body.has("error")) {
+            return false;
+        }
+        if (body.has("success") && !body.get("success").asBoolean()) {
+            return false;
+        }
+        return !(body.has("backup-success") && !body.get("backup-success").asBoolean());
+    }
+
+    /**
+     * Extract a human-friendly failure reason from an operation response for logging purposes.
+     *
+     * @param response the operation response
+     * @return a description of why the operation failed
+     */
+    private static String failureReason(final BackupOperationResponse response) {
+        final ObjectNode body = response.body();
+        if (body.has("error")) {
+            return body.get("error").asText();
+        }
+        if (body.has("reason")) {
+            return body.get("reason").asText();
+        }
+        return "see operation result for per-dataset details";
     }
 
     /**
@@ -221,13 +300,27 @@ public class DatasetBackupService {
                         DatasetMaintenanceRegistry.begin(dsg, dataAccessPointName,
                                                          DatasetMaintenanceRegistry.MaintenanceOperation.BACKUP);
                 if (maintenance.isEmpty()) {
+                    LOG.warn("[BACKUP] Skipping dataset {} - another maintenance operation is already in progress",
+                             sanitizedDataAccessPointName);
                     datasetJSON.put("reason", "Another maintenance operation is already in progress.");
                     datasetJSON.put("success", false);
                 } else {
+                    LOG.info("[BACKUP] Backing up dataset {} (backup-id {}) to {}",
+                             sanitizedDataAccessPointName, backupID, backupIDPath + "/" + sanitizedDataAccessPointName);
                     try {
                         applyBackUpMethods(datasetJSON, dataAccessPoint, backupIDPath + "/" + sanitizedDataAccessPointName);
                     } finally {
                         DatasetMaintenanceRegistry.end(maintenance.get());
+                    }
+                    if (datasetJSON.path("success").asBoolean(true)
+                            && datasetJSON.path("tdb").path("success").asBoolean(true)) {
+                        LOG.info("[BACKUP] Finished backing up dataset {} (backup-id {})",
+                                 sanitizedDataAccessPointName, backupID);
+                    } else {
+                        LOG.error("[BACKUP] Failed to fully back up dataset {} (backup-id {}): {}",
+                                  sanitizedDataAccessPointName, backupID,
+                                  datasetJSON.path("tdb").path("reason").asText(
+                                          datasetJSON.path("reason").asText("see operation result for details")));
                     }
                 }
                 datasetNodes.add(datasetJSON);
@@ -474,6 +567,7 @@ public class DatasetBackupService {
         responseNode.set(datasetName, response);
         DataAccessPoint dataAccessPoint = getDataAccessPoint(datasetName);
         if (dataAccessPoint == null || dataAccessPoint.getDataService() == null) {
+            LOG.error("[RESTORE] Cannot restore dataset {} - it does not exist", datasetName);
             response.put("reason", datasetName + " does not exist");
             response.put("success", false);
             return false;
@@ -483,15 +577,18 @@ public class DatasetBackupService {
                 DatasetMaintenanceRegistry.begin(dsg, dataAccessPoint.getName(),
                                                  DatasetMaintenanceRegistry.MaintenanceOperation.RESTORE);
         if (maintenance.isEmpty()) {
+            LOG.warn("[RESTORE] Skipping dataset {} - another maintenance operation is already in progress",
+                     datasetName);
             response.put("reason", "Another maintenance operation is already in progress.");
             response.put("success", false);
             return false;
         }
 
+        LOG.info("[RESTORE] >>>> Starting restore of dataset {} from {}", datasetName, restorePath + "/" + datasetName);
         // Pause Kafka ingest for this dataset before touching the on-disk stores.
         String fksKey = dataAccessPoint.getName();
         try {
-            LOG.info("Pausing Kafka ingest for {} before restore", fksKey);
+            LOG.info("[RESTORE] Pausing Kafka ingest for {} before restore", fksKey);
             FKS.pauseProjectors(fksKey);
             boolean paused = FKS.waitForPause(fksKey, KAFKA_PAUSE_TIMEOUT);
             if (!paused) {
@@ -503,15 +600,24 @@ public class DatasetBackupService {
             }
             Txn.executeWrite(dsg, () -> applyRestoreMethods(response, dataAccessPoint, restorePath + "/" + datasetName));
         } catch (RuntimeException ex) {
+            LOG.error("[RESTORE] Error while restoring dataset {}: {}", datasetName, ex.getMessage(), ex);
             response.put("reason", ex.getMessage());
             response.put("success", false);
         } finally {
             // ALWAYS resume Kafka ingest -- even if the restore threw
             try {
-                LOG.info("Resuming Kafka ingest for {} after restore", fksKey);
+                LOG.info("[RESTORE] Resuming Kafka ingest for {} after restore", fksKey);
                 FKS.resumeProjectors(fksKey);
             } finally {
                 DatasetMaintenanceRegistry.end(maintenance.get());
+            }
+            if (response.path("success").asBoolean(true)
+                    && response.path("tdb").path("success").asBoolean(true)) {
+                LOG.info("[RESTORE] <<<< Finished restoring dataset {} SUCCESSFULLY", datasetName);
+            } else {
+                LOG.error("[RESTORE] <<<< Restore of dataset {} FAILED: {}", datasetName,
+                          response.path("reason").asText(
+                                  response.path("tdb").path("reason").asText("see operation result for details")));
             }
         }
         return true;
