@@ -33,17 +33,27 @@ public class UserInfoService {
 
     public boolean isSystemAdmin(String authorization, HttpServletRequest originalRequest) {
         try {
-            //TODO
-            // is the call to userinfo itself unauthorized?
             HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
                     .uri(URI.create(userInfoUrl))
                     .header("Authorization", authorization)
                     .GET();
 
             List<String> headersToForward = List.of(
-                    "User-Agent", "X-Forwarded-For", "X-Real-IP",
-                    "Origin", "Cookie"
+                    "Cookie",
+                    "User-Agent",
+                    "Accept",
+                    "Accept-Language",
+                    "Sec-CH-UA",
+                    "Sec-CH-UA-Mobile",
+                    "Sec-CH-UA-Platform",
+                    "Sec-Fetch-Dest",
+                    "Sec-Fetch-Mode",
+                    "Sec-Fetch-Site",
+                    "X-Forwarded-For",
+                    "X-Real-IP",
+                    "X-Auth-Session-Id"
             );
+
             for (String header : headersToForward) {
                 String value = originalRequest.getHeader(header);
                 if (value != null) {

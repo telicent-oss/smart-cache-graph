@@ -5,6 +5,8 @@ import io.telicent.deletion.service.DeletionJobService;
 import io.telicent.deletion.service.JobRegistry;
 import io.telicent.deletion.service.UserInfoService;
 import jakarta.servlet.http.HttpServletRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -17,7 +19,7 @@ public class DeletionJobController {
     private final DeletionJobService jobService;
     private final JobRegistry registry;
     private final UserInfoService userInfoService;
-
+    private static final Logger LOGGER = LoggerFactory.getLogger(DeletionJobController.class);
 
     public DeletionJobController(DeletionJobService jobService, JobRegistry registry, UserInfoService userInfoService) {
         this.jobService = jobService;
@@ -49,6 +51,7 @@ public class DeletionJobController {
         }
         JobState jobState = registry.register(distributionId);
         jobService.runDeletionJob(jobState);
+        LOGGER.info("Returning jobId: {}", jobState.jobId());
         return ResponseEntity.accepted()
                 .body(Map.of("jobId", jobState.jobId()));
     }
