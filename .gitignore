@@ -75,3 +75,4 @@ scg-benchmark/*.json
 # Metadata updater python script
 .dev/metadata-updater.py
 .dev/readme-generator-for-helm
+scg-deletion-worker/producer-script.py
