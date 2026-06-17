@@ -36,36 +36,13 @@ public class UserInfoService {
             HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
                     .uri(URI.create(userInfoUrl))
                     .header("Authorization", authorization)
+                    .header("User-Agent", originalRequest.getHeader("User-Agent"))
+                    .header("Accept-Language", originalRequest.getHeader("Accept-Language"))
                     .GET();
 
-            List<String> headersToForward = List.of(
-                    "Cookie",
-                    "User-Agent",
-                    "Accept",
-                    "Accept-Language",
-                    "Sec-CH-UA",
-                    "Sec-CH-UA-Mobile",
-                    "Sec-CH-UA-Platform",
-                    "Sec-Fetch-Dest",
-                    "Sec-Fetch-Mode",
-                    "Sec-Fetch-Site",
-                    "X-Forwarded-For",
-                    "X-Real-IP",
-                    "X-Auth-Session-Id"
-            );
-
-            for (String header : headersToForward) {
-                String value = originalRequest.getHeader(header);
-                if (value != null) {
-                    requestBuilder.header(header, value);
-                }
-            }
-
             HttpRequest request = requestBuilder.build();
-
             HttpResponse<String> response = httpClient.send(request,
                     HttpResponse.BodyHandlers.ofString());
-            LOGGER.info("Response body: " + response.body());
 
             if (response.statusCode() != 200) {
                 LOGGER.warn("UserInfo endpoint returned {} for role check", response.statusCode());
@@ -74,12 +51,10 @@ public class UserInfoService {
 
             Map<String, Object> userInfo = objectMapper.readValue(response.body(), Map.class);
             List<String> roles = (List<String>) userInfo.get("roles");
-            LOGGER.info("User roles: {}", roles);
             if (roles == null) {
                 LOGGER.warn("No roles found in userinfo response");
                 return false;
             }
-
             return roles.stream().anyMatch(ADMIN_SYSTEM_ROLE::equalsIgnoreCase);
 
         } catch (IOException | InterruptedException e) {

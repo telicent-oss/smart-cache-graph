@@ -129,7 +129,7 @@ public class DeletionJobSpringIntegrationTest extends KafkaIntegrationTestBase{
 
         for (ConsumerRecord<Bytes, Bytes> patch : deletePatches) {
             Header distId = patch.headers().lastHeader(TelicentHeaders.DISTRIBUTION_ID);
-//            assertNotNull(distId);
+            assertNotNull(distId);
             assertEquals(distributionId + DELETION_JOB_SUFFIX, new String(distId.value(), StandardCharsets.UTF_8));
         }
 
@@ -273,7 +273,7 @@ public class DeletionJobSpringIntegrationTest extends KafkaIntegrationTestBase{
 
         for (ConsumerRecord<Bytes, Bytes> patch : patches) {
             Header distId = patch.headers().lastHeader(TelicentHeaders.DISTRIBUTION_ID);
-            //assertNotNull(distId);
+            assertNotNull(distId);
             assertEquals("dist-target-deletion", new String(distId.value(), StandardCharsets.UTF_8));
         }
     }
@@ -419,7 +419,6 @@ public class DeletionJobSpringIntegrationTest extends KafkaIntegrationTestBase{
                         .header("Authorization", "Bearer admin-token"))
                 .andExpect(status().isAccepted());
         verify(userInfoService, atLeastOnce()).isSystemAdmin(any(), any());
-//        verify(userInfoService).isSystemAdmin("Bearer admin-token", any());
     }
 
     @Test
@@ -430,9 +429,30 @@ public class DeletionJobSpringIntegrationTest extends KafkaIntegrationTestBase{
 
     @Test
     void getWithNonAdminTokenReturns403() throws Exception {
+        MvcResult postResult = mockMvc.perform(post("/jobs/delete-distribution")
+                        .param("distribution-id", "dist-001")
+                        .header("Authorization", "Bearer admin-token"))
+                .andExpect(status().isAccepted())
+                .andReturn();
+        String jobId = new ObjectMapper().readTree(postResult.getResponse().getContentAsString()).get("jobId").asText();
+
         when(userInfoService.isSystemAdmin(any(), any())).thenReturn(false);
-        mockMvc.perform(MockMvcRequestBuilders.get("/jobs/some-job-id")
+        mockMvc.perform(MockMvcRequestBuilders.get("/jobs/" + jobId)
                         .header("Authorization", "Bearer some-token"))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void getWithAdminTokenSucceeds() throws Exception {
+        MvcResult postResult = mockMvc.perform(post("/jobs/delete-distribution")
+                        .param("distribution-id", "dist-001")
+                        .header("Authorization", "Bearer admin-token"))
+                .andExpect(status().isAccepted())
+                .andReturn();
+        String jobId = new ObjectMapper().readTree(postResult.getResponse().getContentAsString()).get("jobId").asText();
+
+        mockMvc.perform(MockMvcRequestBuilders.get("/jobs/" + jobId)
+                        .header("Authorization", "Bearer admin-token"))
+                .andExpect(status().isOk());
     }
 }

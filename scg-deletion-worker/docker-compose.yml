@@ -1,7 +1,6 @@
 services:
   deletion-worker:
     build:
-#      context: ./scg-deletion-worker
       dockerfile: Dockerfile
     image: scg-deletion-worker:latest
     container_name: scg-deletion-worker
@@ -10,8 +9,6 @@ services:
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:9093
       KAFKA_TOPIC: RDF
-#    depends_on:
-#      - kafka
     networks:
       - scg-docker_default
     healthcheck:

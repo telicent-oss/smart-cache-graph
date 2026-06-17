@@ -3,7 +3,7 @@ from kafka import KafkaProducer
 producer = KafkaProducer(bootstrap_servers='localhost:9092')
 
 headers = [
-    ("Distribution-Id", b"test3"),
+    ("Distribution-Id", b"test4"),
     ("Security-Label", b"(classification=O&(permitted_organisations=GBR.ALL)&(permitted_nationalities=GBR))"),
     ("Content-Type", b"application/n-quads"),
 ]
