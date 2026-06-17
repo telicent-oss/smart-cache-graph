@@ -21,7 +21,7 @@ jobs:
       fail-fast: false
       matrix:
         chart:
-          - telicent-document-loader
+          - graph
     steps:
       - name: Lint charts
         id: build-and-push-dev-image

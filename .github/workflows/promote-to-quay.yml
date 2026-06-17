@@ -45,3 +45,4 @@ jobs:
           version: ${{ needs.get-version.outputs.version }}
           quay-username: ${{ secrets.QUAY_USERNAME }}
           quay-token: ${{ secrets.QUAY_TOKEN }}
+          role-to-assume: ${{ secrets.AWS_ROLE_DEPLOY }}

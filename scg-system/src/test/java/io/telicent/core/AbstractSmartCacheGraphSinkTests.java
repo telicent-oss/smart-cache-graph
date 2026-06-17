@@ -534,22 +534,22 @@ public abstract class AbstractSmartCacheGraphSinkTests {
     private static void withDistributionLifecycleConfig(Path stateFile, String applicationId, ThrowingRunnable action)
             throws IOException {
         String previousRouteToNamedGraphs = System.getProperty("ROUTE_TO_NAMED_GRAPHS");
-        String previousStateFile = System.getProperty(FMod_DistributionLifecycleFilter.DISTRIBUTION_LIFECYCLE_STATE_FILE);
-        String previousAppId = System.getProperty(FMod_DistributionLifecycleFilter.DISTRIBUTION_LIFECYCLE_APP_ID);
+        String previousStateFile = System.getProperty(FMod_DistributionLifecycle.DISTRIBUTION_LIFECYCLE_STATE_FILE);
+        String previousAppId = System.getProperty(FMod_DistributionLifecycle.DISTRIBUTION_LIFECYCLE_APP_ID);
         try {
             Configurator.addSource(SystemPropertiesSource.INSTANCE);
             System.setProperty("ROUTE_TO_NAMED_GRAPHS", "true");
-            System.setProperty(FMod_DistributionLifecycleFilter.DISTRIBUTION_LIFECYCLE_STATE_FILE, stateFile.toString());
+            System.setProperty(FMod_DistributionLifecycle.DISTRIBUTION_LIFECYCLE_STATE_FILE, stateFile.toString());
             if (applicationId != null) {
-                System.setProperty(FMod_DistributionLifecycleFilter.DISTRIBUTION_LIFECYCLE_APP_ID, applicationId);
+                System.setProperty(FMod_DistributionLifecycle.DISTRIBUTION_LIFECYCLE_APP_ID, applicationId);
             } else {
-                System.clearProperty(FMod_DistributionLifecycleFilter.DISTRIBUTION_LIFECYCLE_APP_ID);
+                System.clearProperty(FMod_DistributionLifecycle.DISTRIBUTION_LIFECYCLE_APP_ID);
             }
             action.run();
         } finally {
             restoreProperty("ROUTE_TO_NAMED_GRAPHS", previousRouteToNamedGraphs);
-            restoreProperty(FMod_DistributionLifecycleFilter.DISTRIBUTION_LIFECYCLE_STATE_FILE, previousStateFile);
-            restoreProperty(FMod_DistributionLifecycleFilter.DISTRIBUTION_LIFECYCLE_APP_ID, previousAppId);
+            restoreProperty(FMod_DistributionLifecycle.DISTRIBUTION_LIFECYCLE_STATE_FILE, previousStateFile);
+            restoreProperty(FMod_DistributionLifecycle.DISTRIBUTION_LIFECYCLE_APP_ID, previousAppId);
             Files.deleteIfExists(stateFile);
         }
     }

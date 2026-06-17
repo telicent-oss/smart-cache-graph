@@ -54,17 +54,23 @@ public class BackupJobManager {
                              final Callable<BackupOperationResponse> task) {
         final BackupJob job = new BackupJob(UUID.randomUUID().toString(), operation, statusPathPrefix);
         this.jobs.put(job.jobId, job);
+        LOG.info("[{}] Queued async job {}", operation, job.jobId);
         this.executor.submit(() -> {
             try {
                 job.markRunning();
+                LOG.info("[{}] >>>> Async job {} started", operation, job.jobId);
                 final BackupOperationResponse response = task.call();
                 if (response.statusCode() >= 200 && response.statusCode() < 300) {
                     job.markSucceeded(response);
+                    LOG.info("[{}] <<<< Async job {} completed successfully (status={})",
+                             operation, job.jobId, response.statusCode());
                 } else {
                     job.markFailed(response);
+                    LOG.error("[{}] <<<< Async job {} FAILED (status={}): {}",
+                              operation, job.jobId, response.statusCode(), job.message);
                 }
             } catch (Exception e) {
-                LOG.error("Unhandled backup job failure for {}", operation, e);
+                LOG.error("[{}] <<<< Async job {} FAILED with an unhandled error", operation, job.jobId, e);
                 final ObjectNode body = OBJECT_MAPPER.createObjectNode();
                 body.put("error", e.getMessage());
                 job.markFailed(new BackupOperationResponse(500, body));

@@ -63,6 +63,8 @@ global:
 java:
   # @key java.jvmOptions JVM options for the application
   jvmOptions: "-XX:MaxRAMPercentage=80.0"
+  # @key java.mallocArenaMax glibc malloc arena cap used to limit native memory fragmentation/retention
+  mallocArenaMax: "2"
 
 #
 # @section Application Parameters - Graph
