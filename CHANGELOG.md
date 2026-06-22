@@ -1,6 +1,13 @@
 # Smart Cache Graph
 
+## 1.0.6
+- Build improvements
+  - Performance improvements
+  - Clearer logging
+
 ## 1.0.5
+This is a maintenance release due to changes to the underlying CI/CD pipeline.
+
 ## 1.0.4
 This is a maintenance release due to changes to the underlying CI/CD pipeline.
 
