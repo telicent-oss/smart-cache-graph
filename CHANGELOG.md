@@ -1,5 +1,10 @@
 # Smart Cache Graph
 
+## 1.0.8
+## 1.0.7
+## 1.0.6
+Performance improvements focused on memory usage and Rocks DB from dependencies.
+
 ## 1.0.5
 ## 1.0.4
 This is a maintenance release due to changes to the underlying CI/CD pipeline.
