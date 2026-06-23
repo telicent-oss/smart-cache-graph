@@ -21,11 +21,13 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.file.Files;
 import java.time.Duration;
 import java.util.Map;
 import java.util.UUID;
@@ -53,8 +55,10 @@ import org.apache.jena.Jena;
 import org.apache.jena.fuseki.main.FusekiServer;
 import org.apache.jena.fuseki.system.FusekiLogging;
 import org.apache.jena.http.HttpEnv;
+import org.apache.jena.sparql.core.DatasetGraph;
 import org.apache.jena.sparql.core.DatasetGraphFactory;
 import org.apache.jena.sys.JenaSystem;
+import org.apache.jena.tdb2.TDB2Factory;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -264,13 +268,13 @@ class TestJenaMetrics {
         boolean openTelemetryEnabledSetting = FMod_OpenTelemetry.ENABLED;
         FMod_OpenTelemetry.ENABLED = true;
         try {
-            server_metrics_reader2();
+            server_metrics_reader2(DatasetGraphFactory.empty());
         } finally {
             FMod_OpenTelemetry.ENABLED = openTelemetryEnabledSetting;
         }
     }
 
-    private void server_metrics_reader2() throws IOException, InterruptedException {
+    private InMemoryMetricReader server_metrics_reader2(DatasetGraph dsg) throws IOException, InterruptedException {
         InMemoryMetricReader reader = InMemoryMetricReader.create();
         SdkMeterProvider meterProvider = SdkMeterProvider.builder().registerMetricReader(reader).build();
         OpenTelemetrySdk sdk = OpenTelemetrySdk.builder().setMeterProvider(meterProvider).build();
@@ -279,7 +283,7 @@ class TestJenaMetrics {
 
         FusekiServer server = SmartCacheGraph.smartCacheGraphBuilder()
                 .port(0)
-                .add("/ds", DatasetGraphFactory.empty())
+                .add("/ds", dsg)
                 .build()
                 .start();
         int port = server.getPort();
@@ -306,6 +310,8 @@ class TestJenaMetrics {
         } finally {
             server.stop();
         }
+
+        return reader;
     }
 
     @Test
@@ -342,5 +348,31 @@ class TestJenaMetrics {
         String actual = fModOpenTelemetry.name();
         // then
         assertEquals(expected, actual);
+    }
+
+    @Test
+    void tdb_disk_usage_metric() throws IOException, InterruptedException {
+        boolean openTelemetryEnabledSetting = FMod_OpenTelemetry.ENABLED;
+        FMod_OpenTelemetry.ENABLED = true;
+        DatasetGraph dsg = null;
+        try {
+            File tempDir = Files.createTempDirectory("tdb2").toFile();
+            dsg = TDB2Factory.connectDataset(tempDir.getAbsolutePath()).asDatasetGraph();
+            try (InMemoryMetricReader reader = server_metrics_reader2(dsg)) {
+                assertTrue(
+                        reader.collectAllMetrics()
+                              .stream()
+                              .filter(m -> m.getName().equals(FMod_OpenTelemetry.TDB_DISK_USAGE))
+                              .flatMap(m -> m.getLongGaugeData().getPoints().stream())
+                              .filter(d -> d.getAttributes().get(FMod_OpenTelemetry.DB_NAME).equals("/ds"))
+                              .anyMatch(d -> d.getValue() > 0L));
+            }
+        } finally {
+            FMod_OpenTelemetry.ENABLED = openTelemetryEnabledSetting;
+
+            if (dsg != null) {
+                dsg.close();
+            }
+        }
     }
 }
