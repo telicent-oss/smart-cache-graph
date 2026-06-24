@@ -2,8 +2,10 @@
 
 ## 1.0.9
 
-- Chart improvements:
-    - Improved default JVM memory options
+- Build improvements:
+  - Improved default JVM memory options
+  - Improved metrics
+  - Shared kafka config use
 
 ## 1.0.8
 ## 1.0.7
