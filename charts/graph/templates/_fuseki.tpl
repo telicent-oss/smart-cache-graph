@@ -235,8 +235,16 @@ Copyright (C) 2026 Telicent Limited
         tdb2:location "/fuseki/databases/catalog";
         .
     ## --------
-    <#connector> rdf:type fk:Connector ;
+    <#kafkaCluster> rdf:type fk:Cluster ;
         fk:bootstrapServers    {{ .Values.global.kafka.bootstrapServers | quote }};
+        # Additional Kafka Configuration properties are loaded from a file specified via
+        # an environment variable
+        # Empty default (the :} at the end) means if this variable is not set then no extra
+        # properties are loaded
+        fk:configFile       "env:{KAFKA_CONFIG_FILE_PATH:}"
+        .
+    <#connector> rdf:type fk:Connector ;
+        fk:cluster             <#kafkaCluster> ;
         fk:topic               "knowledge";
         fk:dlqTopic            "knowledge.dlq";
         fk:fusekiServiceName   "/knowledge";
@@ -246,14 +254,9 @@ Copyright (C) 2026 Telicent Limited
         ## fk:replayTopic -- true for in-memory storage / false for TDB2 storage
         fk:replayTopic      false;
         fk:stateFile        "/fuseki/databases/Replay-RDF.state";
-        # Additional Kafka Configuration properties are loaded from a file specified via
-        # an environment variable
-        # Empty default (the :} at the end) means if this variable is not set then no extra
-        # properties are loaded
-        fk:configFile       "env:{KAFKA_CONFIG_FILE_PATH:}"
         .
     <#ontologyConnector> rdf:type fk:Connector ;
-        fk:bootstrapServers    {{ .Values.global.kafka.bootstrapServers | quote }};
+        fk:cluster             <#kafkaCluster> ;
         fk:topic               "ontology";
         fk:dlqTopic            "ontology.dlq";
         ## This should refer to the target dataset
@@ -264,14 +267,9 @@ Copyright (C) 2026 Telicent Limited
         ## fk:replayTopic -- true for in-memory storage / false for TDB2 storage
         fk:replayTopic      false;
         fk:stateFile        "/fuseki/databases/Replay-Ontology-RDF.state";
-        # Additional Kafka Configuration properties are loaded from a file specified via
-        # an environment variable
-        # Empty default (the :} at the end) means if this variable is not set then no extra
-        # properties are loaded
-        fk:configFile       "env:{KAFKA_CONFIG_FILE_PATH:}"
         .
     <#catalogConnector> rdf:type fk:Connector ;
-        fk:bootstrapServers    {{ .Values.global.kafka.bootstrapServers | quote }};
+        fk:cluster             <#kafkaCluster> ;
         fk:topic               "catalog";
         fk:dlqTopic            "catalog.dlq";
         ## This should refer to the target dataset
@@ -282,11 +280,6 @@ Copyright (C) 2026 Telicent Limited
         ## fk:replayTopic -- true for in-memory storage / false for TDB2 storage
         fk:replayTopic      false;
         fk:stateFile        "/fuseki/databases/Replay-Catalog-RDF.state";
-        # Additional Kafka Configuration properties are loaded from a file specified via
-        # an environment variable
-        # Empty default (the :} at the end) means if this variable is not set then no extra
-        # properties are loaded
-        fk:configFile       "env:{KAFKA_CONFIG_FILE_PATH:}"
         .
 
 {{- end  -}}
