@@ -99,7 +99,7 @@
                 "jvmOptions": {
                     "type": "string",
                     "description": "JVM options for the application",
-                    "default": "-XX:MaxRAMPercentage=80.0"
+                    "default": "-XX:InitialRAMPercentage=20 -XX:MaxRAMPercentage=40 -XX:MinHeapFreeRatio=20 -XX:MaxHeapFreeRatio=40 -XX:-ShrinkHeapInSteps -XX:InitialCodeCacheSize=8m -XX:ReservedCodeCacheSize=64m -XX:MetaspaceSize=32m -XX:MaxMetaspaceSize=256m -XX:MaxDirectMemorySize=100m"
                 },
                 "mallocArenaMax": {
                     "type": "string",
