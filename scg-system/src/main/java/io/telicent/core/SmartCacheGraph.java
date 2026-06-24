@@ -119,6 +119,7 @@ public class SmartCacheGraph {
         mods.addAll(List.of(
                 new FMod_JwtServletAuth()
                 , new FMod_OpenTelemetry()
+                , new FMod_MemoryInfo()
                 , new FMod_TelicentGraphQL()
                 , new FMod_RequestIDFilter()
                 , new FMod_DatasetAvailabilityFilter()

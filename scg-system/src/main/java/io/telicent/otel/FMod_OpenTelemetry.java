@@ -23,6 +23,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.metrics.Meter;
+import io.opentelemetry.api.metrics.ObservableLongGauge;
+import io.opentelemetry.semconv.DbAttributes;
+import io.telicent.core.FMod_InitialCompaction;
+import org.apache.commons.io.FileUtils;
 import org.apache.jena.Jena;
 import org.apache.jena.atlas.lib.Lib;
 import org.apache.jena.atlas.lib.Version;
@@ -32,6 +36,10 @@ import org.apache.jena.fuseki.main.FusekiServer;
 import org.apache.jena.fuseki.main.sys.FusekiModule;
 import org.apache.jena.fuseki.server.*;
 import org.apache.jena.rdf.model.Model;
+import org.apache.jena.sparql.core.DatasetGraph;
+import org.apache.jena.sparql.util.DatasetUtils;
+import org.apache.jena.tdb2.store.DatasetGraphSwitchable;
+import org.apache.jena.tdb2.store.DatasetGraphTDB;
 
 @SuppressWarnings("deprecation")
 public class FMod_OpenTelemetry implements FusekiModule {
@@ -41,6 +49,11 @@ public class FMod_OpenTelemetry implements FusekiModule {
     public static final AttributeKey<String> DB_OPERATION = AttributeKey.stringKey("db.operation");
     public static final AttributeKey<String> FUSEKI_ENDPOINT = AttributeKey.stringKey("fuseki.endpoint");
     public static final AttributeKey<String> FUSEKI_OPERATION = AttributeKey.stringKey("fuseki.operation");
+    protected static final String METRIC_PREFIX = "smartcache.graph.";
+    /**
+     * Metric that records TDB2 disk space usage
+     */
+    public static final String TDB_DISK_USAGE = METRIC_PREFIX + "tdb2.disk.usage";
 
     public static String ENV_OPENTELEMETRY = "FUSEKI_FMOD_OTEL";
     public static String SYS_OPENTELEMETRY = "fuseki:fmod:OpenTelemetry";
@@ -53,17 +66,18 @@ public class FMod_OpenTelemetry implements FusekiModule {
     private static final String VERSION = Version.versionForClass(FMod_OpenTelemetry.class).orElse("<development>");
 
     /**
-     * Enable / disable FMod_OpenTelemetry : this is necessary because there are
-     * background operations (threads) associated with OpenTelemetry. If running with
-     * OTel on the class/module path, and setting {@code ENABLED = false} means
-     * FMod_OpenTelemetry will not start OpenTelemetry. This must be called before
-     * Fuseki module loading, which is usually happening during JenaSystem.init();
+     * Enable / disable FMod_OpenTelemetry : this is necessary because there are background operations (threads)
+     * associated with OpenTelemetry. If running with OTel on the class/module path, and setting {@code ENABLED = false}
+     * means FMod_OpenTelemetry will not start OpenTelemetry. This must be called before Fuseki module loading, which is
+     * usually happening during JenaSystem.init();
      */
     public static boolean ENABLED = Lib.isPropertyOrEnvVarSetToTrue(SYS_OPENTELEMETRY, ENV_OPENTELEMETRY);
 
     private static AtomicBoolean INITIALIZED = new AtomicBoolean(false);
 
-    /** One time initialization */
+    /**
+     * One time initialization
+     */
     private static void init() {
         // Run once.
         INITIALIZED.getAndSet(true);
@@ -75,16 +89,18 @@ public class FMod_OpenTelemetry implements FusekiModule {
 
     @Override
     public void prepare(FusekiServer.Builder serverBuilder, Set<String> datasetNames, Model configModel) {
-        if ( ! ENABLED )
+        if (!ENABLED) {
             return;
+        }
         init();
         FmtLog.info(Fuseki.configLog, "OpenTelemetry Fuseki Module (%s)", VERSION);
     }
 
     @Override
     public void configured(FusekiServer.Builder serverBuilder, DataAccessPointRegistry dapRegistry, Model configModel) {
-        if ( ! ENABLED )
+        if (!ENABLED) {
             return;
+        }
         dapRegistry.accessPoints().forEach(FMod_OpenTelemetry::buildMetrics);
     }
 
@@ -92,25 +108,49 @@ public class FMod_OpenTelemetry implements FusekiModule {
         Meter meter = JenaMetrics.getMeter("Jena", Jena.VERSION);
         DataService dataService = dap.getDataService();
 
-        for ( Operation operation : dataService.getOperations() ) {
+        // Add gauge for disk space usage if using TDB2
+        DatasetGraphSwitchable tdb = FMod_InitialCompaction.getTDB2(dataService.getDataset());
+        if (tdb != null) {
+            Attributes diskUsageAttributes = Attributes.builder()
+                                                       .put(DB_SYSTEM, "Apache Jena TDB2")
+                                                       .put(DbAttributes.DB_SYSTEM_NAME, "Apache Jena TDB2")
+                                                       .put(DB_NAME, dap.getName())
+                                                       .put(DbAttributes.DB_NAMESPACE,
+                                                            "file://" + tdb.getContainerPath()
+                                                                           .toFile()
+                                                                           .getAbsolutePath())
+                                                       .build();
+            meter.gaugeBuilder(TDB_DISK_USAGE)
+                 .setUnit("bytes")
+                 .ofLongs()
+                 .buildWithCallback(m -> m.record(FileUtils.sizeOfDirectory(tdb.getContainerPath().toFile()),
+                                                  diskUsageAttributes));
+        }
+
+        // Add gauges for each Fuseki counter
+        for (Operation operation : dataService.getOperations()) {
             List<Endpoint> endpoints = dataService.getEndpoints(operation);
-            for ( Endpoint endpoint : endpoints ) {
+            for (Endpoint endpoint : endpoints) {
                 CounterSet counters = endpoint.getCounters();
-                for ( CounterName counterName : counters.counters() ) {
+                for (CounterName counterName : counters.counters()) {
                     Counter counter = counters.get(counterName);
 
                     // Single shared gauge for each Fuseki counter, unique attribute sets for each endpoint that has
                     // that counter
                     // smartcache.graph.[counter name]
-                    Attributes metricAttributes = Attributes.of(DB_SYSTEM, "Apache Jena Fuseki",
-                                                                DB_NAME, dap.getName(),
-                                                                DB_OPERATION,
-                                                                endpoint.getOperation().getName(),
-                                                                FUSEKI_ENDPOINT, endpoint.getName(),
-                                                                FUSEKI_OPERATION, operation.getDescription());
+                    Attributes metricAttributes = Attributes.builder()
+                                                            .put(DB_SYSTEM, "Apache Jena Fuseki")
+                                                            .put(DbAttributes.DB_SYSTEM_NAME, "Apache Jena Fuseki")
+                                                            .put(DB_NAME, dap.getName())
+                                                            .put(DB_OPERATION, endpoint.getOperation().getName())
+                                                            .put(DbAttributes.DB_OPERATION_NAME,
+                                                                 endpoint.getOperation().getName())
+                                                            .put(FUSEKI_ENDPOINT, endpoint.getName())
+                                                            .put(FUSEKI_OPERATION, operation.getDescription())
+                                                            .build();
 
                     String counterTxt = fixupName(counterName.getFullName());
-                    String gaugeName = "smartcache.graph." + counterTxt;
+                    String gaugeName = METRIC_PREFIX + counterTxt;
                     meter.gaugeBuilder(gaugeName)
                          .ofLongs()
                          .buildWithCallback(measure -> measure.record(counter.value(), metricAttributes));
@@ -121,6 +161,7 @@ public class FMod_OpenTelemetry implements FusekiModule {
 
     /**
      * Take a filename string and replace any troublesome characters
+     *
      * @param name to be cleaned
      * @return a cleaned filename
      */
