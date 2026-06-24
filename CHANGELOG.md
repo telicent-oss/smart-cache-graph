@@ -1,5 +1,10 @@
 # Smart Cache Graph
 
+## 1.0.9
+
+- Chart improvements:
+    - Improved default JVM memory options
+
 ## 1.0.8
 ## 1.0.7
 ## 1.0.6
@@ -10,6 +15,7 @@ Performance improvements focused on memory usage and Rocks DB from dependencies.
 This is a maintenance release due to changes to the underlying CI/CD pipeline.
 
 ## 1.0.3
+
 - Build improvements:
   - improved error response on failed backup creation
   - pause kafka processing during restoration.

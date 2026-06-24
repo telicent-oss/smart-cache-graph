@@ -108,10 +108,10 @@ Note: Only global parameters used within this chart will be listed below.
 
 Contains Java configuration parameters to be used by the *Graph* application
 
-| Name                  | Description                                                                | Value                       |
-| --------------------- | -------------------------------------------------------------------------- | --------------------------- |
-| `java.jvmOptions`     | JVM options for the application                                            | `-XX:MaxRAMPercentage=80.0` |
-| `java.mallocArenaMax` | glibc malloc arena cap used to limit native memory fragmentation/retention | `2`                         |
+| Name                  | Description                                                                | Value                                                                                                                                                                                                                                                               |
+| --------------------- | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `java.jvmOptions`     | JVM options for the application                                            | `-XX:InitialRAMPercentage=20 -XX:MaxRAMPercentage=40 -XX:MinHeapFreeRatio=20 -XX:MaxHeapFreeRatio=40 -XX:-ShrinkHeapInSteps -XX:InitialCodeCacheSize=8m -XX:ReservedCodeCacheSize=64m -XX:MetaspaceSize=32m -XX:MaxMetaspaceSize=256m -XX:MaxDirectMemorySize=100m` |
+| `java.mallocArenaMax` | glibc malloc arena cap used to limit native memory fragmentation/retention | `2`                                                                                                                                                                                                                                                                 |
 
 ### Application Parameters - Graph
 
