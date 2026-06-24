@@ -59,6 +59,7 @@ import org.apache.jena.sparql.core.DatasetGraph;
 import org.apache.jena.sparql.core.DatasetGraphFactory;
 import org.apache.jena.sys.JenaSystem;
 import org.apache.jena.tdb2.TDB2Factory;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -73,11 +74,15 @@ class TestJenaMetrics {
         LibTestsSCG.disableInitialCompaction();
     }
 
+    @AfterAll
+    static void teardown() throws Exception {
+        LibTestsSCG.teardownAuthentication();
+    }
+
     @Test
     void no_configuration() throws Exception {
         OpenTelemetry otel = JenaMetrics.get();
         assertNotNull(otel);
-        LibTestsSCG.teardownAuthentication();
     }
 
     @Test
