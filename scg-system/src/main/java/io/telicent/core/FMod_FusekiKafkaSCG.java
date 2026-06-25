@@ -24,7 +24,6 @@ import java.util.function.Function;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.telicent.backup.services.DatasetBackupService;
-import io.telicent.distribution.DistributionLifecycleStateFile;
 import io.telicent.smart.cache.configuration.Configurator;
 import io.telicent.smart.cache.payloads.RdfPayload;
 import io.telicent.smart.cache.projectors.Sink;
@@ -71,12 +70,12 @@ public class FMod_FusekiKafkaSCG extends FMod_FusekiKafka {
 
     @Override
     protected Function<DatasetGraph, Sink<Event<Bytes, RdfPayload>>> getSinkBuilder() {
-        boolean routeToNamedGraphs = Configurator.get("ROUTE_TO_NAMED_GRAPHS", Boolean::parseBoolean, false);
-        String lifecycleStateFile = Configurator.get(FMod_DistributionLifecycle.DISTRIBUTION_LIFECYCLE_STATE_FILE);
-        String applicationId = Configurator.get(FMod_DistributionLifecycle.DISTRIBUTION_LIFECYCLE_APP_ID);
-        DistributionLifecycleStateFile lifecycleState =
-                routeToNamedGraphs && StringUtils.isNotBlank(lifecycleStateFile) ?
-                new DistributionLifecycleStateFile(Path.of(lifecycleStateFile), applicationId) : null;
+        final boolean routeToNamedGraphs = Configurator.get("ROUTE_TO_NAMED_GRAPHS", Boolean::parseBoolean, false);
+        final String lifecycleStateFile = Configurator.get(FMod_DistributionLifecycle.DISTRIBUTION_LIFECYCLE_STATE_FILE);
+        final String applicationId = Configurator.get(FMod_DistributionLifecycle.DISTRIBUTION_LIFECYCLE_APP_ID);
+//        DistributionLifecycleStateFile lifecycleState =
+//                routeToNamedGraphs && StringUtils.isNotBlank(lifecycleStateFile) ?
+//                new DistributionLifecycleStateFile(Path.of(lifecycleStateFile), applicationId) : null;
         return dsg -> {
 //<<<<<<< HEAD
 //            if (dsg instanceof DatasetGraphABAC dsgABAC) {
@@ -84,7 +83,7 @@ public class FMod_FusekiKafkaSCG extends FMod_FusekiKafka {
 //                return new SmartCacheGraphSink(dsgABAC, routeToNamedGraphs, lifecycleState);
 //=======
             final DataSecurityPlugin dataSecurityPlugin = DataSecurityPluginLoader.load();
-            final Optional<FusekiSink<?>> fusekiSink = dataSecurityPlugin.prepareFusekiSink(dsg, routeToNamedGraphs, lifecycleState);
+            final Optional<FusekiSink<?>> fusekiSink = dataSecurityPlugin.prepareFusekiSink(dsg, routeToNamedGraphs, lifecycleStateFile, applicationId);
             if (fusekiSink.isPresent()) {
                 return fusekiSink.get();
 //>>>>>>> a3872dd (CORE-762: connect up DataSecurityPlugin)
