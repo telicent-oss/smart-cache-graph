@@ -330,3 +330,5 @@ hostsPreview:
   paperbackWriter: "paperback-writer:8080"
   # @key hostsPreview.aiSparqlBuilder AI SPARQL Builder application host value, as defined by 'service/serviceAccount:port'
   aiSparqlBuilder: "ai-sparql-builder:8080"
+  # @key hostsPreview.catalogue Catalogue API host value, as defined by 'service/serviceAccount:port'
+  catalogue: "catalogue-api:8080"
