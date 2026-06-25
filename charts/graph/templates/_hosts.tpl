@@ -47,3 +47,11 @@ application relies on. For a full explanation please view '_hosts.tlp' file in t
 {{- define "graph.serviceAccountAISparqlBuilder" -}}
 {{- printf "%s" (include "common.discoverServiceAccountPreview" (list . .Values.hostsPreview.aiSparqlBuilder )) -}}
 {{- end -}}
+
+{{/* catalogue-api | preview - returns host ('service:port') and serviceAccount */}}
+{{- define "graph.hostCatalogue" -}}
+{{- printf "%s" (include "common.discoverHostPreview" (list . .Values.hostsPreview.catalogue )) -}}
+{{- end -}}
+{{- define "graph.serviceAccountCatalogue" -}}
+{{- printf "%s" (include "common.discoverServiceAccountPreview" (list . .Values.hostsPreview.catalogue )) -}}
+{{- end -}}
