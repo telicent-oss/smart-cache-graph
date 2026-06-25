@@ -27,6 +27,7 @@ To uninstall/delete the `my-release` deployment:
 ```console
 helm delete my-release
 ```
+
 The command removes all the Kubernetes components associated with the chart and deletes the release.
 
 ## Automating README and schema generation
@@ -263,6 +264,7 @@ If either of those details changes, you can use this section to correctly refer 
 | `hostsPreview.enableAutoCorrect` | Prefix 'global.releaseNameTelicentPreview' value to each host value. Alternatively, the host value will be used as it is, without any modification | `true`                   |
 | `hostsPreview.paperbackWriter`   | Paperback Writer application host value, as defined by 'service/serviceAccount:port'                                                               | `paperback-writer:8080`  |
 | `hostsPreview.aiSparqlBuilder`   | AI SPARQL Builder application host value, as defined by 'service/serviceAccount:port'                                                              | `ai-sparql-builder:8080` |
+| `hostsPreview.catalogue`         | Catalogue API host value, as defined by 'service/serviceAccount:port'                                                                              | `catalogue-api:8080`     |
 
 ## License
 
