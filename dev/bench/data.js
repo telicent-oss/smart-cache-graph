@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1782733629527,
+  "lastUpdate": 1782733827430,
   "repoUrl": "https://github.com/telicent-oss/smart-cache-graph",
   "entries": {
     "ABAC Benchmark": [
@@ -7474,6 +7474,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "io.telicent.core.SCGraphScenarioBenchmark.benchmarkSparqlSelect",
             "value": 1.1295624158521966,
+            "unit": "ms/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "tatelicent",
+            "username": "tatelicent",
+            "email": "65309332+tatelicent@users.noreply.github.com"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "a232c7f47515153e57b3ddc324feba61dc4014bd",
+          "message": "Merge pull request #433 from telicent-oss/fix/host-tpl-catalogue\n\nmissed templating value in _hosts.tpl",
+          "timestamp": "2026-06-25T14:45:43Z",
+          "url": "https://github.com/telicent-oss/smart-cache-graph/commit/a232c7f47515153e57b3ddc324feba61dc4014bd"
+        },
+        "date": 1782733827207,
+        "tool": "jmh",
+        "benches": [
+          {
+            "name": "io.telicent.core.SCGraphScenarioBenchmark.benchmarkGraphQL",
+            "value": 0.8543765701087442,
+            "unit": "ms/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "io.telicent.core.SCGraphScenarioBenchmark.benchmarkSparqlSelect",
+            "value": 0.8437933485819029,
             "unit": "ms/op",
             "extra": "iterations: 5\nforks: 1\nthreads: 1"
           }
