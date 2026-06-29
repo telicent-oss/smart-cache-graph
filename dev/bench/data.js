@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1782726076235,
+  "lastUpdate": 1782726145375,
   "repoUrl": "https://github.com/telicent-oss/smart-cache-graph",
   "entries": {
     "ABAC Benchmark": [
@@ -2724,6 +2724,34 @@ window.BENCHMARK_DATA = {
           {
             "name": "io.telicent.core.CQRSUpdateBenchmark.benchmarkCqrsUpdate",
             "value": 0.04153922228465853,
+            "unit": "ms/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "tatelicent",
+            "username": "tatelicent",
+            "email": "65309332+tatelicent@users.noreply.github.com"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "a232c7f47515153e57b3ddc324feba61dc4014bd",
+          "message": "Merge pull request #433 from telicent-oss/fix/host-tpl-catalogue\n\nmissed templating value in _hosts.tpl",
+          "timestamp": "2026-06-25T14:45:43Z",
+          "url": "https://github.com/telicent-oss/smart-cache-graph/commit/a232c7f47515153e57b3ddc324feba61dc4014bd"
+        },
+        "date": 1782726145146,
+        "tool": "jmh",
+        "benches": [
+          {
+            "name": "io.telicent.core.CQRSUpdateBenchmark.benchmarkCqrsUpdate",
+            "value": 0.041760701197183676,
             "unit": "ms/op",
             "extra": "iterations: 5\nforks: 1\nthreads: 1"
           }
