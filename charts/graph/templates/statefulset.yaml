@@ -49,10 +49,46 @@ spec:
       imagePullSecrets:
         {{- toYaml . | nindent 6 }}
       {{- end }}
-      {{- if .Values.initContainers }}
+      {{- if or .Values.initContainers .Values.graph.enableBackupEncryption }}
       initContainers:
       {{- with .Values.initContainers }}
         {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if .Values.graph.enableBackupEncryption }}
+        - name: generate-backup-keys
+          image: {{ include "graph.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext: {{- toYaml .Values.containerSecurityContext | nindent 12 }}
+          command:
+            - /bin/sh
+            - -c
+            - |
+              KEYS_DIR=/fuseki/backups/keys
+              if [ -f "${KEYS_DIR}/private.asc" ] && [ -f "${KEYS_DIR}/public.asc" ]; then
+                echo "Backup encryption keys already exist, skipping generation"
+                exit 0
+              fi
+              mkdir -p "${KEYS_DIR}"
+              GNUPGHOME=$(mktemp -d)
+              export GNUPGHOME
+              printf '%s' "${BACKUPS_PASSKEY}" > "${GNUPGHOME}/passphrase"
+              gpg --batch --pinentry-mode loopback --passphrase-file "${GNUPGHOME}/passphrase" \
+                --quick-gen-key "Smart Cache Graph Backup <scg-backup@localhost>" rsa4096 encr 0
+              gpg --armor --export > "${KEYS_DIR}/public.asc"
+              gpg --batch --pinentry-mode loopback --passphrase-file "${GNUPGHOME}/passphrase" \
+                --armor --export-secret-keys > "${KEYS_DIR}/private.asc"
+              chmod 600 "${KEYS_DIR}/private.asc"
+              rm -rf "${GNUPGHOME}"
+              echo "Backup encryption keys generated successfully"
+          env:
+          - name: BACKUPS_PASSKEY
+            valueFrom:
+              secretKeyRef:
+                name: {{ include "graph.backupEncryptionSecretName" . }}
+                key: passphrase
+          volumeMounts:
+          - name: backups-volume
+            mountPath: /fuseki/backups
       {{- end }}
       {{- end }}
       containers:
@@ -66,11 +102,19 @@ spec:
           - --config
           - /fuseki/config/config.ttl
 
-        {{- if .Values.extraEnvVars }}
+        {{- if or .Values.extraEnvVars .Values.graph.enableBackupEncryption }}
         env:
         {{- range .Values.extraEnvVars }}
         - name: {{ .name }}
           value: {{ .value | quote }}
+        {{- end }}
+        {{- if .Values.graph.enableBackupEncryption }}
+        - name: BACKUPS_PASSKEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "graph.backupEncryptionSecretName" . }}
+              key: passphrase
+              optional: false
         {{- end }}
         {{- end }}
         envFrom:
