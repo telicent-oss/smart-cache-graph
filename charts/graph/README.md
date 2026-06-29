@@ -265,6 +265,8 @@ If either of those details changes, you can use this section to correctly refer 
 | `hostsPreview.paperbackWriter`   | Paperback Writer application host value, as defined by 'service/serviceAccount:port'                                                               | `paperback-writer:8080`  |
 | `hostsPreview.aiSparqlBuilder`   | AI SPARQL Builder application host value, as defined by 'service/serviceAccount:port'                                                              | `ai-sparql-builder:8080` |
 | `hostsPreview.catalogue`         | Catalogue API host value, as defined by 'service/serviceAccount:port'                                                                              | `catalogue-api:8080`     |
+| `hostsPreview.apiBuilder`        | API Builder API default host value, as defined by 'service/serviceAccount:port'                                                                    | `api-builder:8000`       |
+| `hostsPreview.theManagement`     | The Management API default host value, as defined by 'service/serviceAccount:port'                                                                 | `the-management:8000`    |
 
 ## License
 
