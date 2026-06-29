@@ -55,3 +55,19 @@ application relies on. For a full explanation please view '_hosts.tlp' file in t
 {{- define "graph.serviceAccountCatalogue" -}}
 {{- printf "%s" (include "common.discoverServiceAccountPreview" (list . .Values.hostsPreview.catalogue )) -}}
 {{- end -}}
+
+{{/* api-builder | preview - returns host ('service:port') and serviceAccount */}}
+{{- define "graph.hostAPIBuilder" -}}
+{{- printf "%s" (include "common.discoverHostPreview" (list . .Values.hostsPreview.apiBuilder )) -}}
+{{- end -}}
+{{- define "graph.serviceAccountAPIBuilder" -}}
+{{- printf "%s" (include "common.discoverServiceAccountPreview" (list . .Values.hostsPreview.apiBuilder )) -}}
+{{- end -}}
+
+{{/* the-management | preview - returns host ('service:port') and serviceAccount */}}
+{{- define "graph.hostTheManagement" -}}
+{{- printf "%s" (include "common.discoverHostPreview" (list . .Values.hostsPreview.theManagement )) -}}
+{{- end -}}
+{{- define "graph.serviceAccountTheManagement" -}}
+{{- printf "%s" (include "common.discoverServiceAccountPreview" (list . .Values.hostsPreview.theManagement )) -}}
+{{- end -}}

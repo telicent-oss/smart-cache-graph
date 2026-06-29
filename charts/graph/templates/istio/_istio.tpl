@@ -35,3 +35,21 @@ Returns the principal used for Catalogue API traffic by the Istio AuthorizationP
 {{- printf "- cluster.local/ns/%s/sa/%s" .Release.Namespace ( include "graph.serviceAccountCatalogue" .) -}}
 {{- end -}}
 {{- end -}}
+
+{{/*
+Returns the principal used for API Builder API traffic by the Istio AuthorizationPolicy
+*/}}
+{{- define "graph.apiBuilderPrincipal" -}}
+{{- if .Values.global.enterprise -}}
+{{- printf "- cluster.local/ns/%s/sa/%s" .Release.Namespace ( include "graph.serviceAccountAPIBuilder" .) -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Returns the principal used for The Management API traffic by the Istio AuthorizationPolicy
+*/}}
+{{- define "graph.theManagementPrincipal" -}}
+{{- if .Values.global.enterprise -}}
+{{- printf "- cluster.local/ns/%s/sa/%s" .Release.Namespace ( include "graph.serviceAccountTheManagement" .) -}}
+{{- end -}}
+{{- end -}}
