@@ -35,7 +35,7 @@ data:
   {{- end }}
 
   {{- if .Values.graph.enableBackupEncryption }}
-  BACKUPS_PRIVATE_KEY_URL: {{ .Values.graph.backupEncryption.privateKeyUrl | default "file:///fuseki/backups/keys/private.asc" | quote }}
-  BACKUPS_PUBLIC_KEY_URL: {{ .Values.graph.backupEncryption.publicKeyUrl | default "file:///fuseki/backups/keys/public.asc" | quote }}
+  BACKUPS_PRIVATE_KEY_URL: {{ .Values.graph.backupEncryption.privateKeyUrl | quote }}
+  BACKUPS_PUBLIC_KEY_URL: {{ .Values.graph.backupEncryption.publicKeyUrl | quote }}
   {{- end }}
 {{- end }}

@@ -90,10 +90,10 @@ graph:
   # @key graph.enableBackupEncryption Enable GPG encryption of backups. When true, sets BACKUPS_PRIVATE_KEY_URL, BACKUPS_PUBLIC_KEY_URL and BACKUPS_PASSKEY environment variables. Keys are generated on first run if they do not exist.
   enableBackupEncryption: false
   backupEncryption:
-    # @key graph.backupEncryption.privateKeyUrl URL of the private key file (e.g. file:///tmp/private.asc). If empty, defaults to a path determined by the key source.
-    privateKeyUrl: ""
-    # @key graph.backupEncryption.publicKeyUrl URL of the public key file (e.g. file:///tmp/public.asc). If empty, defaults to a path determined by the key source.
-    publicKeyUrl: ""
+    # @key graph.backupEncryption.privateKeyUrl URL of the private key file
+    privateKeyUrl: "file:///fuseki/backups/keys/private.asc"
+    # @key graph.backupEncryption.publicKeyUrl URL of the public key file
+    publicKeyUrl: "file:///fuseki/backups/keys/public.asc"
     # @key graph.backupEncryption.existingSecret Name of an existing secret containing the backup encryption passphrase. The secret must contain 1 key: 'passphrase'. Public and private keys are generated from this passphrase on first run.
     existingSecret: ""
 

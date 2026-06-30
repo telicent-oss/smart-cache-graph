@@ -131,13 +131,13 @@
                     "properties": {
                         "privateKeyUrl": {
                             "type": "string",
-                            "description": "URL of the private key file (e.g. file:///tmp/private.asc). If empty, defaults to a path determined by the key source.",
-                            "default": ""
+                            "description": "URL of the private key file",
+                            "default": "file:///fuseki/backups/keys/private.asc"
                         },
                         "publicKeyUrl": {
                             "type": "string",
-                            "description": "URL of the public key file (e.g. file:///tmp/public.asc). If empty, defaults to a path determined by the key source.",
-                            "default": ""
+                            "description": "URL of the public key file",
+                            "default": "file:///fuseki/backups/keys/public.asc"
                         },
                         "existingSecret": {
                             "type": "string",
