@@ -64,14 +64,26 @@ spec:
             - -c
             - |
               KEYS_DIR=/fuseki/backups/keys
-              if [ -f "${KEYS_DIR}/private.asc" ] && [ -f "${KEYS_DIR}/public.asc" ]; then
-                echo "Backup encryption keys already exist, skipping generation"
-                exit 0
-              fi
-              mkdir -p "${KEYS_DIR}"
               GNUPGHOME=$(mktemp -d)
               export GNUPGHOME
               printf '%s' "${BACKUPS_PASSKEY}" > "${GNUPGHOME}/passphrase"
+              if [ -f "${KEYS_DIR}/private.asc" ] && [ -f "${KEYS_DIR}/public.asc" ]; then
+                echo "Backup encryption keys already exist, verifying passphrase..."
+                gpg --batch --import "${KEYS_DIR}/private.asc" 2>/dev/null
+                if ! gpg --batch --pinentry-mode loopback --passphrase-file "${GNUPGHOME}/passphrase" \
+                    --armor --export-secret-keys > /dev/null 2>&1; then
+                  echo "ERROR: The provided passphrase cannot unlock the existing backup encryption keys."
+                  echo "Either restore the original passphrase in the secret, or manually delete"
+                  echo "${KEYS_DIR}/private.asc and ${KEYS_DIR}/public.asc to regenerate the keys."
+                  echo "WARNING: Deleting the key files will make any existing encrypted backups inaccessible."
+                  rm -rf "${GNUPGHOME}"
+                  exit 1
+                fi
+                echo "Passphrase verified successfully"
+                rm -rf "${GNUPGHOME}"
+                exit 0
+              fi
+              mkdir -p "${KEYS_DIR}"
               gpg --batch --pinentry-mode loopback --passphrase-file "${GNUPGHOME}/passphrase" \
                 --quick-gen-key "Smart Cache Graph Backup <scg-backup@localhost>" rsa4096 encr 0
               gpg --armor --export > "${KEYS_DIR}/public.asc"
