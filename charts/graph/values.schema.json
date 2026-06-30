@@ -120,6 +120,31 @@
                     "type": "boolean",
                     "description": "Enable or disable legacy label store format.  When set to false then the new label store format will be used, which allows for more efficient storage and querying of labels.  If a pre-existing store exists in the legacy format it will be automatically migrated forwards to the new format.",
                     "default": false
+                },
+                "enableBackupEncryption": {
+                    "type": "boolean",
+                    "description": "Enable GPG encryption of backups. When true, sets BACKUPS_PRIVATE_KEY_URL, BACKUPS_PUBLIC_KEY_URL and BACKUPS_PASSKEY environment variables. Keys are generated on first run if they do not exist.",
+                    "default": false
+                },
+                "backupEncryption": {
+                    "type": "object",
+                    "properties": {
+                        "privateKeyUrl": {
+                            "type": "string",
+                            "description": "URL of the private key file",
+                            "default": "file:///fuseki/backups/keys/private.asc"
+                        },
+                        "publicKeyUrl": {
+                            "type": "string",
+                            "description": "URL of the public key file",
+                            "default": "file:///fuseki/backups/keys/public.asc"
+                        },
+                        "existingSecret": {
+                            "type": "string",
+                            "description": "Name of an existing secret containing the backup encryption passphrase. The secret must contain 1 key: 'passphrase'. Public and private keys are generated from this passphrase on first run.",
+                            "default": ""
+                        }
+                    }
                 }
             }
         },

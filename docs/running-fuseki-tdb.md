@@ -128,6 +128,9 @@ Select the default or other appropriate options and choose a passphrase - this w
 ```shell
 gpg --list-keys --keyid-format=long
 ```
+> [!CAUTION]
+> Care must be taken not to loose the passphrase as this will render existing backups unreadable and replacement keys will need to be created for future backups.
+
 Copy the key ID for the public key you just created, e.g. `F2C0B93297F09448`, then export the key to a file:
 ```shell
 gpg --armor --export F2C0B93297F09448 > public.asc
