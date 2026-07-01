@@ -58,6 +58,7 @@ jobs:
           registry: aws
           fail-on-unfixed: true
           github-token: ${{ secrets.GITHUB_TOKEN }}
+          role-to-assume: ${{ secrets.AWS_ROLE_DEPLOY }}
           enable-buildkit-cache: "true"
           build-args: |
             PROJECT_VERSION=${{ needs.maven-build.outputs.version }}
@@ -85,6 +86,7 @@ jobs:
           registry: aws
           fail-on-unfixed: true
           github-token: ${{ secrets.GITHUB_TOKEN }}
+          role-to-assume: ${{ secrets.AWS_ROLE_DEPLOY }}
           enable-buildkit-cache: "true"
           build-args: |
             PROJECT_VERSION=${{ needs.maven-build.outputs.version }}
