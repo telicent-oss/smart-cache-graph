@@ -5,7 +5,7 @@
     <parent>
         <groupId>io.telicent.smart-caches.graph</groupId>
         <artifactId>scg-base</artifactId>
-        <version>1.0.6-SNAPSHOT</version>
+        <version>1.0.10-SNAPSHOT</version>
     </parent>
 
     <artifactId>scg-benchmark</artifactId>
@@ -152,6 +152,25 @@
                         <phase>none</phase>
                     </execution>
                 </executions>
+            </plugin>
+            <!--
+                The benchmark module is for internal performance testing only (run by the
+                weekly-benchmark workflow). It produces a large shaded uber-jar and is not a
+                consumable artifact, so it must not be published to Maven Central.
+            -->
+            <plugin>
+                <groupId>org.sonatype.central</groupId>
+                <artifactId>central-publishing-maven-plugin</artifactId>
+                <configuration>
+                    <skipPublishing>true</skipPublishing>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-gpg-plugin</artifactId>
+                <configuration>
+                    <skip>true</skip>
+                </configuration>
             </plugin>
         </plugins>
     </build>

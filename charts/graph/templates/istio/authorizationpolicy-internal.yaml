@@ -38,4 +38,41 @@ spec:
         - /$/labels/catalog
         - /$/labels/catalog/*
         methods: ["GET", "POST"]
+  - from:
+    - source:
+        principals:
+          {{- include "graph.cataloguePrincipal" . | nindent 8 }}
+          {{- include "graph.theManagementPrincipal" . | nindent 8 }}
+    to:
+    - operation:
+        paths:
+        - /catalog/query
+        - /catalog/query/*
+        - /catalog/update
+        - /catalog/update/*
+        - /$/labels/catalog
+        - /$/labels/catalog/*
+        methods: ["GET", "POST"]
+  - from:
+    - source:
+        principals:
+          {{- include "graph.apiBuilderPrincipal" . | nindent 8 }}
+    to:
+    - operation:
+        paths:
+        - /knowledge/query
+        - /knowledge/query/*
+        methods: ["GET", "POST"]
+  - from:
+    - source:
+        principals:
+          {{- include "graph.theManagementPrincipal" . | nindent 8 }}
+    to:
+    - operation:
+        paths:
+        - /knowledge/query
+        - /knowledge/query/*
+        - /ontology/query
+        - /ontology/query/*
+        methods: ["GET", "POST"]
 {{- end -}}

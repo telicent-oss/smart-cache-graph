@@ -27,6 +27,7 @@ To uninstall/delete the `my-release` deployment:
 ```console
 helm delete my-release
 ```
+
 The command removes all the Kubernetes components associated with the chart and deletes the release.
 
 ## Automating README and schema generation
@@ -108,10 +109,10 @@ Note: Only global parameters used within this chart will be listed below.
 
 Contains Java configuration parameters to be used by the *Graph* application
 
-| Name                  | Description                                                                | Value                       |
-| --------------------- | -------------------------------------------------------------------------- | --------------------------- |
-| `java.jvmOptions`     | JVM options for the application                                            | `-XX:MaxRAMPercentage=80.0` |
-| `java.mallocArenaMax` | glibc malloc arena cap used to limit native memory fragmentation/retention | `2`                         |
+| Name                  | Description                                                                | Value                                                                                                                                                                                                                                                               |
+| --------------------- | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `java.jvmOptions`     | JVM options for the application                                            | `-XX:InitialRAMPercentage=20 -XX:MaxRAMPercentage=40 -XX:MinHeapFreeRatio=20 -XX:MaxHeapFreeRatio=40 -XX:-ShrinkHeapInSteps -XX:InitialCodeCacheSize=8m -XX:ReservedCodeCacheSize=64m -XX:MetaspaceSize=32m -XX:MaxMetaspaceSize=256m -XX:MaxDirectMemorySize=100m` |
+| `java.mallocArenaMax` | glibc malloc arena cap used to limit native memory fragmentation/retention | `2`                                                                                                                                                                                                                                                                 |
 
 ### Application Parameters - Graph
 
@@ -263,6 +264,9 @@ If either of those details changes, you can use this section to correctly refer 
 | `hostsPreview.enableAutoCorrect` | Prefix 'global.releaseNameTelicentPreview' value to each host value. Alternatively, the host value will be used as it is, without any modification | `true`                   |
 | `hostsPreview.paperbackWriter`   | Paperback Writer application host value, as defined by 'service/serviceAccount:port'                                                               | `paperback-writer:8080`  |
 | `hostsPreview.aiSparqlBuilder`   | AI SPARQL Builder application host value, as defined by 'service/serviceAccount:port'                                                              | `ai-sparql-builder:8080` |
+| `hostsPreview.catalogue`         | Catalogue API host value, as defined by 'service/serviceAccount:port'                                                                              | `catalogue-api:8080`     |
+| `hostsPreview.apiBuilder`        | API Builder API default host value, as defined by 'service/serviceAccount:port'                                                                    | `api-builder:8000`       |
+| `hostsPreview.theManagement`     | The Management API default host value, as defined by 'service/serviceAccount:port'                                                                 | `the-management:8000`    |
 
 ## License
 

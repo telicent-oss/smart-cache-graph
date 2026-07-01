@@ -26,11 +26,12 @@
     <parent>
         <groupId>io.telicent.smart-caches.graph</groupId>
         <artifactId>scg-base</artifactId>
-        <version>1.0.6-SNAPSHOT</version>
+        <version>1.0.10-SNAPSHOT</version>
     </parent>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <gpg.skip>true</gpg.skip>
     </properties>
 
     <dependencies>
@@ -85,6 +86,13 @@
                         </configuration>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.sonatype.central</groupId>
+                <artifactId>central-publishing-maven-plugin</artifactId>
+                <configuration>
+                    <skipPublishing>true</skipPublishing>
+                </configuration>
             </plugin>
         </plugins>
     </build>

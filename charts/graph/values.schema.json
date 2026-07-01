@@ -99,7 +99,7 @@
                 "jvmOptions": {
                     "type": "string",
                     "description": "JVM options for the application",
-                    "default": "-XX:MaxRAMPercentage=80.0"
+                    "default": "-XX:InitialRAMPercentage=20 -XX:MaxRAMPercentage=40 -XX:MinHeapFreeRatio=20 -XX:MaxHeapFreeRatio=40 -XX:-ShrinkHeapInSteps -XX:InitialCodeCacheSize=8m -XX:ReservedCodeCacheSize=64m -XX:MetaspaceSize=32m -XX:MaxMetaspaceSize=256m -XX:MaxDirectMemorySize=100m"
                 },
                 "mallocArenaMax": {
                     "type": "string",
@@ -552,6 +552,21 @@
                     "type": "string",
                     "description": "AI SPARQL Builder application host value, as defined by 'service/serviceAccount:port'",
                     "default": "ai-sparql-builder:8080"
+                },
+                "catalogue": {
+                    "type": "string",
+                    "description": "Catalogue API host value, as defined by 'service/serviceAccount:port'",
+                    "default": "catalogue-api:8080"
+                },
+                "apiBuilder": {
+                    "type": "string",
+                    "description": "API Builder API default host value, as defined by 'service/serviceAccount:port'",
+                    "default": "api-builder:8000"
+                },
+                "theManagement": {
+                    "type": "string",
+                    "description": "The Management API default host value, as defined by 'service/serviceAccount:port'",
+                    "default": "the-management:8000"
                 }
             }
         }

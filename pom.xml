@@ -22,7 +22,7 @@
   <groupId>io.telicent.smart-caches.graph</groupId>
   <artifactId>scg-base</artifactId>
   <packaging>pom</packaging>
-  <version>1.0.6-SNAPSHOT</version>
+  <version>1.0.10-SNAPSHOT</version>
 
   <name>Telicent Smart Cache Graph - Parent</name>
   <description>Telicent Smart Cache Graph</description>
@@ -56,14 +56,14 @@
   <properties>
     <!-- Build properties -->
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <project.build.outputTimestamp>2026-05-28T12:25:52Z</project.build.outputTimestamp>
+    <project.build.outputTimestamp>2026-06-24T15:50:38Z</project.build.outputTimestamp>
     <java.version>21</java.version>
 
     <!-- Maven Plugin versions -->
     <plugin.central>0.11.0</plugin.central>
     <plugin.clean>3.3.2</plugin.clean>
     <plugin.compiler>3.15.0</plugin.compiler>
-    <plugin.cyclonedx>2.9.1</plugin.cyclonedx>
+    <plugin.cyclonedx>2.9.2</plugin.cyclonedx>
     <plugin.dependency>3.11.0</plugin.dependency>
     <plugin.deploy>3.1.4</plugin.deploy>
     <plugin.enforcer>3.4.1</plugin.enforcer>
@@ -81,12 +81,12 @@
 
     <!-- Dependency versions -->
     <!-- Internal dependencies -->
-    <dependency.rdf-abac>3.1.2</dependency.rdf-abac>
+    <dependency.rdf-abac>3.1.4</dependency.rdf-abac>
     <dependency.fuseki-kafka>3.0.4</dependency.fuseki-kafka>
     <dependency.jena>6.1.0</dependency.jena>
     <dependency.graphql>0.12.2</dependency.graphql>
     <dependency.jwt-servlet-auth>4.1.2</dependency.jwt-servlet-auth>
-    <dependency.smart-caches-core>0.40.1</dependency.smart-caches-core>
+    <dependency.smart-caches-core>0.40.3</dependency.smart-caches-core>
 
     <!-- External dependencies -->
     <dependency.awaitility>4.3.0</dependency.awaitility>
@@ -99,16 +99,16 @@
 
     <!-- Logging dependencies -->
     <dependency.log4j2>2.26.0</dependency.log4j2>
-    <dependency.logback>1.5.34</dependency.logback>
+    <dependency.logback>1.5.37</dependency.logback>
     <dependency.slf4j>2.0.18</dependency.slf4j>
 
     <!-- Test dependencies -->
     <dependency.jmh>1.37</dependency.jmh>
-    <dependency.junit5>6.1.0</dependency.junit5>
-    <dependency.junit5-platform>6.1.0</dependency.junit5-platform>
+    <dependency.junit5>6.1.1</dependency.junit5>
+    <dependency.junit5-platform>6.1.1</dependency.junit5-platform>
     <dependency.mockito>5.23.0</dependency.mockito>
     <dependency.testcontainers>1.21.4</dependency.testcontainers>
-    <dependency.yaml-config>2.0.1</dependency.yaml-config>
+    <dependency.yaml-config>2.0.2</dependency.yaml-config>
 
     <!-- CVE Patches -->
     <!-- CVE-2025-48734-->

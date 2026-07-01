@@ -62,7 +62,17 @@ global:
 # @descEnd
 java:
   # @key java.jvmOptions JVM options for the application
-  jvmOptions: "-XX:MaxRAMPercentage=80.0"
+  jvmOptions: >-
+    -XX:InitialRAMPercentage=20
+    -XX:MaxRAMPercentage=40
+    -XX:MinHeapFreeRatio=20
+    -XX:MaxHeapFreeRatio=40
+    -XX:-ShrinkHeapInSteps
+    -XX:InitialCodeCacheSize=8m
+    -XX:ReservedCodeCacheSize=64m
+    -XX:MetaspaceSize=32m
+    -XX:MaxMetaspaceSize=256m
+    -XX:MaxDirectMemorySize=100m
   # @key java.mallocArenaMax glibc malloc arena cap used to limit native memory fragmentation/retention
   mallocArenaMax: "2"
 
@@ -320,3 +330,9 @@ hostsPreview:
   paperbackWriter: "paperback-writer:8080"
   # @key hostsPreview.aiSparqlBuilder AI SPARQL Builder application host value, as defined by 'service/serviceAccount:port'
   aiSparqlBuilder: "ai-sparql-builder:8080"
+  # @key hostsPreview.catalogue Catalogue API host value, as defined by 'service/serviceAccount:port'
+  catalogue: "catalogue-api:8080"
+  # @key hostsPreview.apiBuilder API Builder API default host value, as defined by 'service/serviceAccount:port'
+  apiBuilder: "api-builder:8000"
+  # @key hostsPreview.theManagement The Management API default host value, as defined by 'service/serviceAccount:port'
+  theManagement: "the-management:8000"
