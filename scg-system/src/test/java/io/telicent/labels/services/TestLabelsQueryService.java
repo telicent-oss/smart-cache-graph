@@ -3,6 +3,8 @@ package io.telicent.labels.services;
 import io.telicent.jena.abac.labels.Label;
 import io.telicent.jena.abac.labels.LabelsStore;
 import io.telicent.labels.TripleLabels;
+import io.telicent.smart.cache.security.data.labels.SecurityLabelsApplicator;
+import io.telicent.smart.cache.security.data.plugins.DataSecurityPlugin;
 import org.apache.jena.graph.Node;
 import org.apache.jena.graph.NodeFactory;
 import org.apache.jena.graph.Triple;
@@ -23,8 +25,9 @@ import static org.mockito.Mockito.when;
 class TestLabelsQueryService {
 
     private static final LabelsStore mockLabelsStore = mock(LabelsStore.class);
+    private static final DataSecurityPlugin mockDataSecurityPlugin = mock(DataSecurityPlugin.class);
     private static final DatasetGraph emptyDsg = DatasetGraphFactory.create();
-    private static final LabelsQueryService queryService = new LabelsQueryService(mockLabelsStore, emptyDsg,"");
+    private static final LabelsQueryService queryService = new LabelsQueryService(mockDataSecurityPlugin, emptyDsg,"");
 
     private static final Triple TRIPLE = Triple.create(
             NodeFactory.createURI("http://example.org/subject"),
@@ -59,9 +62,11 @@ class TestLabelsQueryService {
     @Test
     public void testLabelQuery_queryDSGAndLabelStore() {
         // given
+        final SecurityLabelsApplicator mockApplicator = mock(SecurityLabelsApplicator.class);
+        when(mockDataSecurityPlugin.prepareLabelsApplicator(any(),any())).thenReturn(mockApplicator);
         emptyDsg.getDefaultGraph().add(TRIPLE);
         // when
-        List<TripleLabels> labels = queryService.queryDSGAndLabelStore(TRIPLE);
+        final List<TripleLabels> labels = queryService.queryDSGAndLabelStore(TRIPLE);
         // then
         Assertions.assertEquals(1, labels.size());
     }

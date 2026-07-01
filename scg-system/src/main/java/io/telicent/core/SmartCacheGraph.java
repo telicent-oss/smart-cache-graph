@@ -20,13 +20,14 @@ import io.telicent.access.FMod_AccessQuery;
 import io.telicent.backup.FMod_BackupData;
 import io.telicent.core.auth.FMod_JwtServletAuth;
 import io.telicent.graphql.FMod_TelicentGraphQL;
-import io.telicent.jena.abac.fuseki.FMod_ABAC;
 import io.telicent.jena.fuseki.config.yaml.ConfigStruct;
 import io.telicent.jena.fuseki.config.yaml.RDFConfigGenerator;
 import io.telicent.jena.fuseki.config.yaml.YAMLConfigParser;
 import io.telicent.labels.FMod_LabelsQuery;
 import io.telicent.otel.FMod_OpenTelemetry;
 import io.telicent.smart.cache.configuration.Configurator;
+import io.telicent.smart.cache.security.data.plugins.DataSecurityPlugin;
+import io.telicent.smart.cache.security.data.plugins.DataSecurityPluginLoader;
 import io.telicent.smart.caches.configuration.auth.AuthConstants;
 import org.apache.commons.lang3.Strings;
 import org.apache.jena.atlas.lib.Version;
@@ -44,6 +45,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -97,10 +99,16 @@ public class SmartCacheGraph {
      */
     public static FusekiModules modules() {
         List<FusekiModule> mods = new ArrayList<>();
+        DataSecurityPlugin dataSecurityPlugin = DataSecurityPluginLoader.load();
         mods.add(new FMod_CQRS());
         // Only add the ABAC mode when authentication is enabled
         if (isAuthEnabled()) {
-            mods.add(new FMod_ABAC());
+            final Optional<FusekiModule> labelsModule = dataSecurityPlugin.prepareLabelsModule();
+            if(labelsModule.isPresent()){
+                mods.add(labelsModule.get());
+            } else {
+                log.warn("Authentication is enabled but no security labels module found.");
+            }
         }
 
         // Initial compaction gets applied twice, once before Kafka module and once after, this is because we want to

@@ -23,10 +23,11 @@ import java.util.function.Function;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.telicent.backup.services.DatasetBackupService;
-import io.telicent.jena.abac.core.DatasetGraphABAC;
 import io.telicent.smart.cache.configuration.Configurator;
 import io.telicent.smart.cache.payloads.RdfPayload;
 import io.telicent.smart.cache.projectors.Sink;
+import io.telicent.smart.cache.security.data.plugins.DataSecurityPlugin;
+import io.telicent.smart.cache.security.data.plugins.DataSecurityPluginLoader;
 import io.telicent.smart.cache.sources.Event;
 import org.apache.jena.atlas.io.IOX;
 import org.apache.jena.fuseki.kafka.FKS;
@@ -69,9 +70,10 @@ public class FMod_FusekiKafkaSCG extends FMod_FusekiKafka {
     protected Function<DatasetGraph, Sink<Event<Bytes, RdfPayload>>> getSinkBuilder() {
         boolean routeToNamedGraphs = Configurator.get("ROUTE_TO_NAMED_GRAPHS", Boolean::parseBoolean, false);
         return dsg -> {
-            if (dsg instanceof DatasetGraphABAC dsgABAC) {
-                // For ABAC enabled datasets use our custom sink that applies labels
-                return new SmartCacheGraphSink(dsgABAC, routeToNamedGraphs);
+            final DataSecurityPlugin dataSecurityPlugin = DataSecurityPluginLoader.load();
+            final Optional<FusekiSink<?>> fusekiSink = dataSecurityPlugin.prepareFusekiSink(dsg, routeToNamedGraphs);
+            if (fusekiSink.isPresent()) {
+                return fusekiSink.get();
             } else {
                 // For non-ABAC datasets use the default Fuseki Kafka sink
                 return FusekiSink.builder().dataset(dsg).build();

@@ -30,6 +30,7 @@ import org.apache.jena.fuseki.server.DataService;
 import org.apache.jena.fuseki.server.Operation;
 import org.apache.jena.kafka.KConnectorDesc;
 import org.apache.jena.sparql.core.DatasetGraphFactory;
+import org.apache.jena.sparql.core.DatasetGraphWrapper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -69,7 +70,7 @@ public class TestFModDistributionLifecycle {
         server.start();
         try {
             // when
-            Collection<DatasetGraphABAC> datasets = FMod_DistributionLifecycle.abacDatasets(server);
+            Collection<DatasetGraphWrapper> datasets = FMod_DistributionLifecycle.wrappedDatasets(server);
 
             // then
             assertEquals(1, datasets.size(), "Only the ABAC dataset should be returned");

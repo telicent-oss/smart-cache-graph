@@ -26,8 +26,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.function.Consumer;
 
-import io.telicent.jena.abac.SysABAC;
-import io.telicent.jena.abac.fuseki.ServerABAC;
+import io.telicent.smart.cache.sources.TelicentHeaders;
+import io.telicent.utils.UserUtils;
 import org.apache.jena.atlas.lib.Bytes;
 import org.apache.jena.atlas.logging.Log;
 import org.apache.jena.fuseki.server.Operation;
@@ -78,11 +78,11 @@ public class CQRS {
         Producer<String, byte[]> producer = (producerProperties == null)
                 ? null
                 : new KafkaProducer<>(producerProperties, new StringSerializer(), new ByteArraySerializer());
-        return new SPARQL_Update_CQRS(ServerABAC.userForRequest(), topic, producer, onBegin, onCommit, onAbort);
+        return new SPARQL_Update_CQRS(UserUtils.userForRequest(), topic, producer, onBegin, onCommit, onAbort);
     }
 
     static ActionService updateActionWithProducer(String topic, Producer<String, byte[]> producer) {
-        return new SPARQL_Update_CQRS(ServerABAC.userForRequest(), topic, producer, onBegin, onCommit, onAbort);
+        return new SPARQL_Update_CQRS(UserUtils.userForRequest(), topic, producer, onBegin, onCommit, onAbort);
     }
 
     /**
@@ -97,7 +97,7 @@ public class CQRS {
                                      Consumer<HttpAction> onCommit,
                                      Consumer<HttpAction> onAbort) {
         // Base dataset is only ever read.
-        String hSecurityLabel = action.getRequestHeader(SysABAC.hSecurityLabel);
+        String hSecurityLabel = action.getRequestHeader(TelicentHeaders.SECURITY_LABEL);
 
         BufferingDatasetGraph dsgBuffering = new BufferingDatasetGraph(dsgBase);
         // Writing the patch log.
@@ -180,7 +180,7 @@ public class CQRS {
             List<Header> sendHeaders;
             Header headerContentType = kafkaHeader(HttpNames.hContentType, WebContent.contentTypePatch);
             if ( changesCtl.securityLabelHeader != null ) {
-                Header headerSecurityLabel = kafkaHeader(SysABAC.hSecurityLabel, changesCtl.securityLabelHeader);
+                Header headerSecurityLabel = kafkaHeader(TelicentHeaders.SECURITY_LABEL, changesCtl.securityLabelHeader);
                 sendHeaders = List.of(headerContentType, headerSecurityLabel);
             } else {
                 sendHeaders = List.of(headerContentType);

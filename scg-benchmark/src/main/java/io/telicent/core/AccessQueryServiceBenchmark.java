@@ -6,6 +6,8 @@ import io.telicent.jena.abac.core.AttributesStoreLocal;
 import io.telicent.jena.abac.core.DatasetGraphABAC;
 import io.telicent.jena.abac.labels.Label;
 import io.telicent.jena.abac.labels.Labels;
+import io.telicent.smart.cache.security.data.plugins.DataSecurityPlugin;
+import io.telicent.smart.cache.security.data.plugins.DataSecurityPluginLoader;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -72,7 +74,8 @@ public class AccessQueryServiceBenchmark {
             datasetGraph.getDefaultGraph().add(triple);
             datasetGraph.labelsStore().add(Quad.defaultGraphIRI, triple.getSubject(), triple.getPredicate(), triple.getObject(), dataLabel);
         }
-        accessQueryService = new AccessQueryService(datasetGraph);
+        DataSecurityPlugin dataSecurityPlugin = DataSecurityPluginLoader.load();
+        accessQueryService = new AccessQueryService(datasetGraph, dataSecurityPlugin);
         allTriples = datasetGraph.getDefaultGraph().find(Triple.ANY).toList();
         configureMocks();
         httpAction = createHttpAction();

@@ -44,6 +44,12 @@
             </exclusions>
         </dependency>
 
+        <dependency>
+            <groupId>io.telicent.smart-caches</groupId>
+            <artifactId>data-security-plugin-rdf-abac</artifactId>
+            <version>${dependency.smart-caches-core}</version>
+        </dependency>
+
         <!-- For Mocking HTTP Requests/Responses -->
         <dependency>
             <groupId>org.mockito</groupId>

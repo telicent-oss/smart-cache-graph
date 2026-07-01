@@ -4,7 +4,6 @@ import io.telicent.jena.abac.AttributeValueSet;
 import io.telicent.jena.abac.attributes.AttributeValue;
 import io.telicent.jena.abac.attributes.ValueTerm;
 import io.telicent.jena.abac.core.AttributesStoreAuthServer;
-import io.telicent.jena.abac.fuseki.server.UserInfoEnrichmentFilter;
 import io.telicent.servlet.auth.jwt.JwtServletConstants;
 import io.telicent.smart.caches.configuration.auth.UserInfo;
 import io.telicent.smart.caches.configuration.auth.UserInfoLookup;
@@ -25,7 +24,16 @@ import java.util.*;
 final class UserInfoFilter implements Filter {
     private static final Logger LOGGER = LoggerFactory.getLogger(UserInfoFilter.class);
 
+    /*
+    /**
+     * Request attribute key under which this filter stores the resolved username.
+     * FIXME - ATTR_ABAC_USERNAME has been copied from the UserInfoEnrichmentFilter on RDF ABAC to avoid a direct
+     * dependency on RDF ABAC here. A better solution needs to be found for this.
+     */
+    public static final String ATTR_ABAC_USERNAME = "abac.user";
+
     private final UserInfoLookup userInfoLookup;
+
 
     /**
      * Creates a new filter
@@ -49,7 +57,7 @@ final class UserInfoFilter implements Filter {
             // and RDF-ABAC
             HttpServletRequest httpRequest = (HttpServletRequest) request;
             AttributesStoreAuthServer.addIdAndUserName(jwt, httpRequest.getRemoteUser());
-            request.setAttribute(UserInfoEnrichmentFilter.ATTR_ABAC_USERNAME, httpRequest.getRemoteUser());
+            request.setAttribute(ATTR_ABAC_USERNAME, httpRequest.getRemoteUser());
 
             try {
                 // Obtain the actual User Info, convert the attributes to an RDF-ABAC AttributeValueSet and make those
@@ -57,14 +65,14 @@ final class UserInfoFilter implements Filter {
                 UserInfo userInfo = this.userInfoLookup.lookup(jwt);
                 request.setAttribute(UserInfo.class.getCanonicalName(), userInfo);
                 AttributesStoreAuthServer.addUserNameAndAttributes(httpRequest.getRemoteUser(),
-                                                                   toAttributeValueSet(userInfo.getAttributes()));
+                        toAttributeValueSet(userInfo.getAttributes()));
             } catch (UserInfoLookupException e) {
                 LOGGER.warn("Failed to obtain User Info", e);
 
                 // In the error path forcibly reset the cached attributes to the empty set as otherwise users could get
                 // attributes they no longer have
                 AttributesStoreAuthServer.addUserNameAndAttributes(httpRequest.getRemoteUser(),
-                                                                   AttributeValueSet.EMPTY);
+                        AttributeValueSet.EMPTY);
             }
         }
 

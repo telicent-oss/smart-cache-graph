@@ -2,10 +2,10 @@ package io.telicent.core;
 
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.telicent.jena.abac.core.DatasetGraphABAC;
-import io.telicent.jena.abac.labels.LabelsStore;
-import io.telicent.jena.abac.labels.store.rocksdb.legacy.LegacyLabelsStoreRocksDB;
-import io.telicent.smart.cache.storage.CompactCapable;
+import io.telicent.smart.cache.security.data.DataSecurityException;
+import io.telicent.smart.cache.security.data.labels.SecurityLabelsCompact;
+import io.telicent.smart.cache.security.data.plugins.DataSecurityPlugin;
+import io.telicent.smart.cache.security.data.plugins.DataSecurityPluginLoader;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -38,14 +38,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.Instant;
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Properties;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -354,7 +347,11 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
                          name, Timer.timeStr(timer.endTimer()), humanReadableSize(sizeAfter), sizeAfter);
                 SIZES.put(name, sizeAfter);
                 updateCompactionResultsFile(dsg, sizeAfter);
-                compactLabels(datasetGraph);
+                try {
+                    compactLabels(datasetGraph);
+                } catch (DataSecurityException e) {
+                    LOG.warn("[Compaction] Label compaction failed for {} — data compaction still succeeded", name, e);
+                }
                 successIndicator = new CompactionIndicator(CompactionIndicatorState.SUCCEEDED, name,
                                                            startedAt.toString(), Instant.now().toString(),
                                                            sizeBefore, sizeAfter, null);
@@ -516,23 +513,12 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
         }
     }
 
-    @SuppressWarnings("deprecation")
-    public static void compactLabels(DatasetGraph dsg) {
-        if (dsg instanceof DatasetGraphABAC abac) {
-            LabelsStore labelsStore = abac.labelsStore();
-            Timer timer = new Timer();
-            timer.startTimer();
-            LOG.info("[Compaction] >>>> Start label store compaction.");
-            if (labelsStore instanceof LegacyLabelsStoreRocksDB rocksDB) {
-                rocksDB.compact();
-            } else if (labelsStore instanceof CompactCapable compactCapable) {
-                compactCapable.compact();
-            }
-            LOG.info("[Compaction] <<<< Finish label store compaction. Took {} seconds.",
-                     Timer.timeStr(timer.endTimer()));
-            return;
+    public static void compactLabels(DatasetGraph dsg) throws DataSecurityException {
+        final DataSecurityPlugin plugin = DataSecurityPluginLoader.load();
+        final Optional<SecurityLabelsCompact> compact = plugin.prepareLabelsCompact();
+        if(compact.isPresent()) {
+            compact.get().compact(dsg);
         }
-        LOG.info("[Compaction] <<<< Label store compaction not needed.");
     }
 
     private static String compactionFailureDetails(String datasetName, Throwable t) {

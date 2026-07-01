@@ -24,6 +24,8 @@ import io.telicent.jena.abac.ABAC;
 import io.telicent.jena.abac.core.DatasetGraphABAC;
 import io.telicent.jena.abac.labels.LabelsStoreMem;
 import io.telicent.jena.abac.labels.store.rocksdb.legacy.LegacyLabelsStoreRocksDB;
+import io.telicent.smart.cache.security.data.DataSecurityException;
+import io.telicent.smart.cache.security.data.plugins.DataSecurityPlugin;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -38,7 +40,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
@@ -186,6 +190,7 @@ public class TestDatasetBackupService {
                 mock(LegacyLabelsStoreRocksDB.class),
                 null,
                 null);
+
         DataAccessPoint dap = new DataAccessPoint(datasetName, DataService.newBuilder().dataset(dsgABAC).build());
         when(mockRegistry.accessPoints()).thenReturn(List.of(dap));
 
@@ -240,6 +245,7 @@ public class TestDatasetBackupService {
                 mock(LegacyLabelsStoreRocksDB.class),
                 null,
                 null);
+
         DataAccessPoint dap = new DataAccessPoint("dataset-name", DataService.newBuilder().dataset(dsgABAC).build());
         when(mockRegistry.accessPoints()).thenReturn(List.of(dap));
         ObjectNode backupResponse = OBJECT_MAPPER.createObjectNode();
@@ -347,6 +353,7 @@ public class TestDatasetBackupService {
                 mock(LegacyLabelsStoreRocksDB.class),
                 null,
                 null);
+
         DataAccessPoint dap = new DataAccessPoint("dataset-name", DataService.newBuilder().dataset(dsgABAC).build());
         DataAccessPoint dap2 = new DataAccessPoint("dataset-ignore", DataService.newBuilder().dataset(dsgABAC).build());
         when(mockRegistry.accessPoints()).thenReturn(List.of(dap, dap2));
@@ -387,12 +394,12 @@ public class TestDatasetBackupService {
         // given
 
         // This only needs to be a zip file (no contents required)
-        File altZip = new File(baseDir.toString() + "/backup.zip");
+        File altZip = new File(baseDir + "/backup.zip");
         assertTrue(altZip.createNewFile());
         altZip.deleteOnExit();
 
         // This only needs to be a directory (no contents required)
-        File altDir = new File(baseDir.toString() + "/2");
+        File altDir = new File(baseDir + "/2");
         assertTrue(altDir.mkdir());
         altDir.deleteOnExit();
 
@@ -402,6 +409,7 @@ public class TestDatasetBackupService {
                 mock(LegacyLabelsStoreRocksDB.class),
                 null,
                 null);
+
         DataAccessPoint dap = new DataAccessPoint("dataset-name", DataService.newBuilder().dataset(dsgABAC).build());
         DataAccessPoint dap2 = new DataAccessPoint("dataset-ignore", DataService.newBuilder().dataset(dsgABAC).build());
         when(mockRegistry.accessPoints()).thenReturn(List.of(dap, dap2));
@@ -447,6 +455,7 @@ public class TestDatasetBackupService {
                 mock(LegacyLabelsStoreRocksDB.class),
                 null,
                 null);
+
         DataAccessPoint dap = new DataAccessPoint("dataset-name", DataService.newBuilder().dataset(dsgABAC).build());
         DataAccessPoint dap2 = new DataAccessPoint("dataset-include", DataService.newBuilder().dataset(dsgABAC).build());
         when(mockRegistry.accessPoints()).thenReturn(List.of(dap, dap2));
@@ -529,10 +538,10 @@ public class TestDatasetBackupService {
         assertTrue(dataset.has("labels"));
         JsonNode labelsNode = dataset.get("labels");
         assertTrue(labelsNode.has("success"));
-        assertFalse(labelsNode.get("success").asBoolean());
+        assertTrue(labelsNode.get("success").asBoolean());
 
         assertEquals(1, DatasetBackupService_Test.getCallCount(BACKUP_TDB));
-        assertEquals(0, DatasetBackupService_Test.getCallCount(BACKUP_LABELS));
+        assertEquals(1, DatasetBackupService_Test.getCallCount(BACKUP_LABELS));
     }
 
     @Test
@@ -545,6 +554,7 @@ public class TestDatasetBackupService {
                 null,
                 null,
                 null);
+
         DataAccessPoint dap = new DataAccessPoint("dataset-name", DataService.newBuilder().dataset(dsgABAC).build());
         when(mockRegistry.accessPoints()).thenReturn(List.of(dap));
 
@@ -573,10 +583,10 @@ public class TestDatasetBackupService {
         assertTrue(dataset.has("labels"));
         JsonNode labelsNode = dataset.get("labels");
         assertTrue(labelsNode.has("success"));
-        assertFalse(labelsNode.get("success").asBoolean());
+        assertTrue(labelsNode.get("success").asBoolean());
 
         assertEquals(1, DatasetBackupService_Test.getCallCount(BACKUP_TDB));
-        assertEquals(0, DatasetBackupService_Test.getCallCount(BACKUP_LABELS));
+        assertEquals(1, DatasetBackupService_Test.getCallCount(BACKUP_LABELS));
     }
 
     @Test
@@ -613,10 +623,10 @@ public class TestDatasetBackupService {
         assertTrue(dataset.has("labels"));
         JsonNode labelsNode = dataset.get("labels");
         assertTrue(labelsNode.has("success"));
-        assertFalse(labelsNode.get("success").asBoolean());
+        assertTrue(labelsNode.get("success").asBoolean());
 
         assertEquals(1, DatasetBackupService_Test.getCallCount(BACKUP_TDB));
-        assertEquals(0, DatasetBackupService_Test.getCallCount(BACKUP_LABELS));
+        assertEquals(1, DatasetBackupService_Test.getCallCount(BACKUP_LABELS));
     }
 
 
@@ -687,12 +697,17 @@ public class TestDatasetBackupService {
 
     @Test
     @DisplayName("Happy path for executing backup of Label Store")
-    public void test_executeBackupLabelStore_happyPath() throws Exception {
+    public void test_executeBackupLabelStore_happyPath() {
         // given
-        LegacyLabelsStoreRocksDB mockRocksDB = mock(LegacyLabelsStoreRocksDB.class);
-        DatasetBackupService datasetBackupService = new DatasetBackupService(null);
+        DataSecurityPlugin mockPlugin = mock(DataSecurityPlugin.class);
+        when(mockPlugin.prepareLabelsBackup()).thenReturn(Optional.of((dsg, path, node) -> node.put("success", true)));
+        DatasetBackupService datasetBackupService = new DatasetBackupService(null, mockPlugin);
+        DataAccessPoint mockDataAccessPoint = mock(DataAccessPoint.class);
+        DataService mockDataService = mock(DataService.class);
+        when(mockDataAccessPoint.getDataService()).thenReturn(mockDataService);
+        when(mockDataService.getDataset()).thenReturn(DatasetGraphFactory.createTxnMem());
         // when
-        datasetBackupService.executeBackupLabelStore(mockRocksDB, "doesn't matter", RESULT_NODE);
+        datasetBackupService.backupLabelStore(mockDataAccessPoint, "doesn't matter", RESULT_NODE);
         // then
         assertTrue(RESULT_NODE.has("success"));
         assertTrue(RESULT_NODE.get("success").asBoolean());
@@ -702,10 +717,15 @@ public class TestDatasetBackupService {
     @DisplayName("Happy path for executing restore of Label Store")
     public void test_executeRestoreLabelStore_happyPath() {
         // given
-        LegacyLabelsStoreRocksDB mockRocksDB = mock(LegacyLabelsStoreRocksDB.class);
-        DatasetBackupService datasetBackupService = new DatasetBackupService(null);
+        DataSecurityPlugin mockPlugin = mock(DataSecurityPlugin.class);
+        when(mockPlugin.prepareLabelsRestore()).thenReturn(Optional.of((dsg, path, node) -> node.put("success", true)));
+        DatasetBackupService datasetBackupService = new DatasetBackupService(null, mockPlugin);
+        DataAccessPoint mockDataAccessPoint = mock(DataAccessPoint.class);
+        DataService mockDataService = mock(DataService.class);
+        when(mockDataAccessPoint.getDataService()).thenReturn(mockDataService);
+        when(mockDataService.getDataset()).thenReturn(DatasetGraphFactory.createTxnMem());
         // when
-        datasetBackupService.executeRestoreLabelStore(mockRocksDB, "doesn't matter", RESULT_NODE);
+        datasetBackupService.restoreLabelStore(mockDataAccessPoint, "doesn't matter", RESULT_NODE);
         // then
         assertTrue(RESULT_NODE.has("success"));
         assertTrue(RESULT_NODE.get("success").asBoolean());
@@ -848,7 +868,7 @@ public class TestDatasetBackupService {
 
         JsonNode dataset = result.get(datasetName);
         assertTrue(dataset.has("dataset-name"));
-        assertEquals(dataset.get("dataset-name").asText(), datasetName);
+        assertEquals(datasetName, dataset.get("dataset-name").asText());
 
         assertTrue(dataset.has("tdb"));
         JsonNode tdb = dataset.get("tdb");
@@ -908,6 +928,7 @@ public class TestDatasetBackupService {
                 mockRocksDbLabelStore,
                 null,
                 null);
+
         DataAccessPoint dap = new DataAccessPoint("dataset-name", DataService.newBuilder().dataset(dsgABAC).build());
         when(mockRegistry.accessPoints()).thenReturn(List.of(dap));
         when(mockRegistry.get("dataset-name")).thenReturn(dap);
@@ -923,7 +944,7 @@ public class TestDatasetBackupService {
         assertTrue(result.has(datasetName));
         JsonNode dataset = result.get(datasetName);
         assertTrue(dataset.has("dataset-name"));
-        assertEquals(dataset.get("dataset-name").asText(), datasetName);
+        assertEquals(datasetName, dataset.get("dataset-name").asText());
 
         assertTrue(dataset.has("tdb"));
         JsonNode tdb = dataset.get("tdb");
@@ -952,16 +973,16 @@ public class TestDatasetBackupService {
     @DisplayName("Restore datasets with ABAC and RocksDB labels without passing the backupID to the restore method (multiple entries)")
     public void test_backupRestoreDatasets_abac_rocksDB_no_arg_multiple_entries() throws Exception {
         // given
-        File altDir = new File(baseDir.toString() + "/1");
+        File altDir = new File(baseDir + "/1");
         assertTrue(altDir.mkdir());
         altDir.deleteOnExit();
 
-        File altZip = new File(baseDir.toString() + "/2.zip");
+        File altZip = new File(baseDir + "/2.zip");
         assertTrue(altZip.createNewFile());
         altZip.deleteOnExit();
 
         String restoreID = "3";
-        File newDir = new File(baseDir.toString() + "/" + restoreID);
+        File newDir = new File(baseDir + "/" + restoreID);
         assertTrue(newDir.mkdir());
         newDir.deleteOnExit();
 
@@ -1008,6 +1029,7 @@ public class TestDatasetBackupService {
                 mockRocksDbLabelStore,
                 null,
                 null);
+
         DataAccessPoint dap = new DataAccessPoint("dataset-name", DataService.newBuilder().dataset(dsgABAC).build());
         DataAccessPoint dap2 = new DataAccessPoint("second-dataset-name", DataService.newBuilder().dataset(dsgABAC).build());
 
@@ -1025,7 +1047,7 @@ public class TestDatasetBackupService {
         assertTrue(result.has(datasetName));
         JsonNode dataset = result.get(datasetName);
         assertTrue(dataset.has("dataset-name"));
-        assertEquals(dataset.get("dataset-name").asText(), datasetName);
+        assertEquals(datasetName, dataset.get("dataset-name").asText());
 
         assertTrue(dataset.has("tdb"));
         JsonNode tdb = dataset.get("tdb");
@@ -1056,17 +1078,17 @@ public class TestDatasetBackupService {
         // given
 
         // This only needs to be a directory (no contents required)
-        File altDir = new File(baseDir.toString() + "/1");
+        File altDir = new File(baseDir + "/1");
         assertTrue(altDir.mkdir());
         altDir.deleteOnExit();
 
         // This only needs to be a zip file (no contents required)
-        File altZip = new File(baseDir.toString() + "/2.zip");
+        File altZip = new File(baseDir + "/2.zip");
         assertTrue(altZip.createNewFile());
         altZip.deleteOnExit();
 
         String restoreID = "3";
-        File newDir = new File(baseDir.toString() + "/" + restoreID);
+        File newDir = new File(baseDir + "/" + restoreID);
         assertTrue(newDir.mkdir());
         newDir.deleteOnExit();
 
@@ -1096,6 +1118,7 @@ public class TestDatasetBackupService {
                 mockRocksDbLabelStore,
                 null,
                 null);
+
         DataAccessPoint dap = new DataAccessPoint("dataset-name", DataService.newBuilder().dataset(dsgABAC).build());
 
         when(mockRegistry.get("dataset-name")).thenReturn(dap);
@@ -1199,7 +1222,7 @@ public class TestDatasetBackupService {
         assertTrue(backupSuccessDatasetName.has("tdb-success"));
         assertEquals("true", backupSuccessDatasetName.get("tdb-success").asText());
         assertTrue(backupSuccessDatasetName.has("labels-success"));
-        assertEquals("false", backupSuccessDatasetName.get("labels-success").asText());
+        assertEquals("true", backupSuccessDatasetName.get("labels-success").asText());
 
         assertEquals(1, DatasetBackupService_Test.getCallCount(RESTORE_TDB));
         assertEquals(0, DatasetBackupService_Test.getCallCount(RESTORE_LABELS));
@@ -1266,7 +1289,7 @@ public class TestDatasetBackupService {
         assertTrue(backupSuccessDatasetName.has("tdb-success"));
         assertEquals("true", backupSuccessDatasetName.get("tdb-success").asText());
         assertTrue(backupSuccessDatasetName.has("labels-success"));
-        assertEquals("false", backupSuccessDatasetName.get("labels-success").asText());
+        assertEquals("true", backupSuccessDatasetName.get("labels-success").asText());
 
         assertEquals(1, DatasetBackupService_Test.getCallCount(RESTORE_TDB));
         assertEquals(0, DatasetBackupService_Test.getCallCount(RESTORE_LABELS));
@@ -1276,20 +1299,20 @@ public class TestDatasetBackupService {
     @DisplayName("Restore datasets without ABAC DSG without passing the backupID to the restore method (multiple entries)")
     public void test_restoreDatasets_not_abac_dsg_no_arg_multiple_entries() throws Exception {
         // given
-        File altDir = new File(baseDir.toString() + "/1");
+        File altDir = new File(baseDir + "/1");
         assertTrue(altDir.mkdir());
         altDir.deleteOnExit();
 
-        File altDir2 = new File(baseDir.toString() + "/2");
+        File altDir2 = new File(baseDir + "/2");
         assertTrue(altDir2.mkdir());
         altDir2.deleteOnExit();
 
-        File altDir3 = new File(baseDir.toString() + "/3");
+        File altDir3 = new File(baseDir + "/3");
         assertTrue(altDir3.mkdir());
         altDir3.deleteOnExit();
 
         String restoreID = "4";
-        File newDir = new File(baseDir.toString() + "/" + restoreID);
+        File newDir = new File(baseDir + "/" + restoreID);
         assertTrue(newDir.mkdir());
         newDir.deleteOnExit();
 
@@ -1345,7 +1368,7 @@ public class TestDatasetBackupService {
         assertTrue(backupSuccessDatasetName.has("tdb-success"));
         assertEquals("true", backupSuccessDatasetName.get("tdb-success").asText());
         assertTrue(backupSuccessDatasetName.has("labels-success"));
-        assertEquals("false", backupSuccessDatasetName.get("labels-success").asText());
+        assertEquals("true", backupSuccessDatasetName.get("labels-success").asText());
 
         assertEquals(1, DatasetBackupService_Test.getCallCount(RESTORE_TDB));
         assertEquals(0, DatasetBackupService_Test.getCallCount(RESTORE_LABELS));
@@ -1380,11 +1403,6 @@ public class TestDatasetBackupService {
         LegacyLabelsStoreRocksDB mockRocksDbLabelStore = mock(LegacyLabelsStoreRocksDB.class);
         when(mockRocksDbLabelStore.getTransactional()).thenReturn(DatasetGraphFactory.createTxnMem());
 
-        DatasetGraphABAC dsgABAC = ABAC.authzDataset(DatasetGraphFactory.createTxnMem(),
-                null,
-                mockRocksDbLabelStore,
-                null,
-                null);
         DataAccessPoint dap = new DataAccessPoint("dataset-name", DataService.newBuilder().build());
 
         when(mockRegistry.get("dataset-name")).thenReturn(dap);
@@ -1414,7 +1432,7 @@ public class TestDatasetBackupService {
         assertTrue(backupSuccessDatasetName.has("tdb-success"));
         assertEquals("true", backupSuccessDatasetName.get("tdb-success").asText());
         assertTrue(backupSuccessDatasetName.has("labels-success"));
-        assertEquals("false", backupSuccessDatasetName.get("labels-success").asText());
+        assertEquals("true", backupSuccessDatasetName.get("labels-success").asText());
 
         assertEquals(0, DatasetBackupService_Test.getCallCount(RESTORE_TDB));
         assertEquals(0, DatasetBackupService_Test.getCallCount(RESTORE_LABELS));
@@ -1445,9 +1463,6 @@ public class TestDatasetBackupService {
         File labelsDir = new File(newDataset + "/labels/");
         assertTrue(labelsDir.mkdir());
         labelsDir.deleteOnExit();
-
-        LegacyLabelsStoreRocksDB mockRocksDbLabelStore = mock(LegacyLabelsStoreRocksDB.class);
-        when(mockRocksDbLabelStore.getTransactional()).thenReturn(DatasetGraphFactory.createTxnMem());
 
         DataAccessPoint mockDAP = mock(DataAccessPoint.class);
 
@@ -1503,9 +1518,6 @@ public class TestDatasetBackupService {
         File labelsDir = new File(newDataset + "/labels/");
         assertTrue(labelsDir.mkdir());
         labelsDir.deleteOnExit();
-
-        LegacyLabelsStoreRocksDB mockRocksDbLabelStore = mock(LegacyLabelsStoreRocksDB.class);
-        when(mockRocksDbLabelStore.getTransactional()).thenReturn(DatasetGraphFactory.createTxnMem());
 
         DataAccessPoint mockDAP = mock(DataAccessPoint.class);
         when(mockDAP.getName()).thenReturn("nothingThatMatches");
@@ -1620,6 +1632,7 @@ public class TestDatasetBackupService {
                 LabelsStoreMem.create(),
                 null,
                 null);
+
         DataAccessPoint dap = new DataAccessPoint("dataset-name", DataService.newBuilder().dataset(dsgABAC).build());
 
         when(mockRegistry.get("dataset-name")).thenReturn(dap);
@@ -1659,7 +1672,7 @@ public class TestDatasetBackupService {
         assertTrue(backupSuccessDatasetName.has("tdb-success"));
         assertEquals("true", backupSuccessDatasetName.get("tdb-success").asText());
         assertTrue(backupSuccessDatasetName.has("labels-success"));
-        assertEquals("false", backupSuccessDatasetName.get("labels-success").asText());
+        assertEquals("true", backupSuccessDatasetName.get("labels-success").asText());
 
         assertEquals(1, DatasetBackupService_Test.getCallCount(RESTORE_TDB));
         assertEquals(0, DatasetBackupService_Test.getCallCount(RESTORE_LABELS));
@@ -1692,6 +1705,7 @@ public class TestDatasetBackupService {
                 LabelsStoreMem.create(),
                 null,
                 null);
+
         DataAccessPoint dap = new DataAccessPoint("dataset-name", DataService.newBuilder().dataset(dsgABAC).build());
 
         when(mockRegistry.get("dataset-name")).thenReturn(dap);
@@ -1731,7 +1745,7 @@ public class TestDatasetBackupService {
         assertTrue(backupSuccessDatasetName.has("tdb-success"));
         assertEquals("true", backupSuccessDatasetName.get("tdb-success").asText());
         assertTrue(backupSuccessDatasetName.has("labels-success"));
-        assertEquals("false", backupSuccessDatasetName.get("labels-success").asText());
+        assertEquals("true", backupSuccessDatasetName.get("labels-success").asText());
 
         assertEquals(1, DatasetBackupService_Test.getCallCount(RESTORE_TDB));
         assertEquals(0, DatasetBackupService_Test.getCallCount(RESTORE_LABELS));
@@ -1741,16 +1755,16 @@ public class TestDatasetBackupService {
     @DisplayName("Restore datasets with ABAC but not RocksDB without passing the backupID to the restore method (multiple entries)")
     public void test_restoreDatasets_abac_dsg_not_rocksdb_no_arg_multiple_entries() throws Exception {
         // given
-        File altDir = new File(baseDir.toString() + "/1");
+        File altDir = new File(baseDir + "/1");
         assertTrue(altDir.mkdir());
         altDir.deleteOnExit();
 
-        File altDir2 = new File(baseDir.toString() + "/2");
+        File altDir2 = new File(baseDir + "/2");
         assertTrue(altDir2.mkdir());
         altDir2.deleteOnExit();
 
         String restoreID = "3";
-        File newDir = new File(baseDir.toString() + "/" + restoreID);
+        File newDir = new File(baseDir + "/" + restoreID);
         assertTrue(newDir.mkdir());
         newDir.deleteOnExit();
 
@@ -1772,6 +1786,7 @@ public class TestDatasetBackupService {
                 LabelsStoreMem.create(),
                 null,
                 null);
+
         DataAccessPoint dap = new DataAccessPoint("dataset-name", DataService.newBuilder().dataset(dsgABAC).build());
 
         when(mockRegistry.get("dataset-name")).thenReturn(dap);
@@ -1810,7 +1825,7 @@ public class TestDatasetBackupService {
         assertTrue(backupSuccessDatasetName.has("tdb-success"));
         assertEquals("true", backupSuccessDatasetName.get("tdb-success").asText());
         assertTrue(backupSuccessDatasetName.has("labels-success"));
-        assertEquals("false", backupSuccessDatasetName.get("labels-success").asText());
+        assertEquals("true", backupSuccessDatasetName.get("labels-success").asText());
 
         assertEquals(1, DatasetBackupService_Test.getCallCount(RESTORE_TDB));
         assertEquals(0, DatasetBackupService_Test.getCallCount(RESTORE_LABELS));
@@ -1850,6 +1865,7 @@ public class TestDatasetBackupService {
                 mockRocksDbLabelStore,
                 null,
                 null);
+
         DataAccessPoint dap = new DataAccessPoint("dataset-name", DataService.newBuilder().dataset(dsgABAC).build());
 
         when(mockRegistry.get("dataset-name")).thenReturn(dap);
@@ -1917,6 +1933,7 @@ public class TestDatasetBackupService {
                 mockRocksDbLabelStore,
                 null,
                 null);
+
         DataAccessPoint dap = new DataAccessPoint("dataset-name", DataService.newBuilder().dataset(dsgABAC).build());
 
         when(mockRegistry.get("dataset-name")).thenReturn(dap);
@@ -2065,6 +2082,7 @@ public class TestDatasetBackupService {
                 mockRocksDbLabelStore,
                 null,
                 null);
+
         DataAccessPoint dap = new DataAccessPoint("dataset-name", DataService.newBuilder().dataset(dsgABAC).build());
 
         when(mockRegistry.get("dataset-name")).thenReturn(dap);
@@ -2141,6 +2159,7 @@ public class TestDatasetBackupService {
                 mockRocksDbLabelStore,
                 null,
                 null);
+
         DataAccessPoint dap = new DataAccessPoint("dataset-name", DataService.newBuilder().dataset(dsgABAC).build());
 
         when(mockRegistry.get("DATASET-NAME")).thenReturn(null);
@@ -2211,12 +2230,12 @@ public class TestDatasetBackupService {
         LegacyLabelsStoreRocksDB mockRocksDbLabelStore = mock(LegacyLabelsStoreRocksDB.class);
         when(mockRocksDbLabelStore.getTransactional()).thenReturn(DatasetGraphFactory.createTxnMem());
 
-
         DatasetGraphABAC dsgABAC = ABAC.authzDataset(DatasetGraphFactory.createTxnMem(),
                 null,
                 mockRocksDbLabelStore,
                 null,
                 null);
+
         DataAccessPoint dap = new DataAccessPoint("dataset-name", DataService.newBuilder().dataset(dsgABAC).build());
 
         when(mockRegistry.get("dataset-name")).thenReturn(dap);
@@ -2267,12 +2286,12 @@ public class TestDatasetBackupService {
         LegacyLabelsStoreRocksDB mockRocksDbLabelStore = mock(LegacyLabelsStoreRocksDB.class);
         when(mockRocksDbLabelStore.getTransactional()).thenReturn(DatasetGraphFactory.createTxnMem());
 
-
         DatasetGraphABAC dsgABAC = ABAC.authzDataset(DatasetGraphFactory.createTxnMem(),
                 null,
                 mockRocksDbLabelStore,
                 null,
                 null);
+
         DataAccessPoint dap = new DataAccessPoint("dataset-name", DataService.newBuilder().dataset(dsgABAC).build());
 
         when(mockRegistry.get("dataset-name")).thenReturn(dap);
@@ -2321,12 +2340,12 @@ public class TestDatasetBackupService {
         LegacyLabelsStoreRocksDB mockRocksDbLabelStore = mock(LegacyLabelsStoreRocksDB.class);
         when(mockRocksDbLabelStore.getTransactional()).thenReturn(DatasetGraphFactory.createTxnMem());
 
-
         DatasetGraphABAC dsgABAC = ABAC.authzDataset(DatasetGraphFactory.createTxnMem(),
                 null,
                 mockRocksDbLabelStore,
                 null,
                 null);
+
         DataAccessPoint dap = new DataAccessPoint("dataset-name", DataService.newBuilder().dataset(dsgABAC).build());
 
         when(mockRegistry.get("dataset-name")).thenReturn(dap);
@@ -2344,7 +2363,7 @@ public class TestDatasetBackupService {
         assertTrue(result.has(datasetName));
         JsonNode dataset = result.get(datasetName);
         assertTrue(dataset.has("dataset-name"));
-        assertEquals(dataset.get("dataset-name").asText(), datasetName);
+        assertEquals(datasetName, dataset.get("dataset-name").asText());
 
         assertTrue(dataset.has("tdb"));
         JsonNode tdb = dataset.get("tdb");
@@ -2539,7 +2558,7 @@ public class TestDatasetBackupService {
 
     @Test
     @DisplayName("Apply backup methods when no methods are registered (no-op)")
-    public void applyBackUpMethods_noMethodsNoOp() {
+    public void applyBackUpMethods_noMethodsNoOp() throws DataSecurityException {
         // given
         backupConsumerMap.clear();
         // when
@@ -2727,9 +2746,7 @@ public class TestDatasetBackupService {
 
         // then
         assertTrue(RESULT_NODE.has("success"));
-        assertFalse(RESULT_NODE.get("success").asBoolean());
-        assertTrue(RESULT_NODE.has("reason"));
-        assertEquals("No Label Store to restore (not ABAC)", RESULT_NODE.get("reason").asText());
+        assertTrue(RESULT_NODE.get("success").asBoolean());
     }
 
 
@@ -2742,6 +2759,7 @@ public class TestDatasetBackupService {
                 null,
                 null,
                 null);
+
         DataAccessPoint dap = new DataAccessPoint("dataset-name", DataService.newBuilder().dataset(dsgABAC).build());
         when(mockRegistry.accessPoints()).thenReturn(List.of(dap));
 
@@ -2750,9 +2768,7 @@ public class TestDatasetBackupService {
 
         // then
         assertTrue(RESULT_NODE.has("success"));
-        assertFalse(RESULT_NODE.get("success").asBoolean());
-        assertTrue(RESULT_NODE.has("reason"));
-        assertEquals("No Label Store to restore (not RocksDB)", RESULT_NODE.get("reason").asText());
+        assertTrue(RESULT_NODE.get("success").asBoolean());
     }
 
     @Test
@@ -2764,6 +2780,7 @@ public class TestDatasetBackupService {
                 mock(LegacyLabelsStoreRocksDB.class),
                 null,
                 null);
+
         DataAccessPoint dap = new DataAccessPoint("dataset-name", DataService.newBuilder().dataset(dsgABAC).build());
         when(mockRegistry.accessPoints()).thenReturn(List.of(dap));
 
@@ -2772,9 +2789,7 @@ public class TestDatasetBackupService {
 
         // then
         assertTrue(RESULT_NODE.has("success"));
-        assertFalse(RESULT_NODE.get("success").asBoolean());
-        assertTrue(RESULT_NODE.has("reason"));
-        assertTrue(RESULT_NODE.get("reason").asText().startsWith("Restore directory not found: "));
+        assertTrue(RESULT_NODE.get("success").asBoolean());
     }
 
     @Test
