@@ -1,0 +1,32 @@
+{{- /*
+Copyright (C) 2026 Telicent Limited
+*/}}
+
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+
+metadata:
+  name: {{ include "deletion-worker.fullname" . }}-ingress
+  namespace: {{ include "deletion-worker.namespace" . | quote }}
+  labels:
+    {{- include "deletion-worker.labels" . | nindent 4 }}
+
+spec:
+  selector:
+    matchLabels:
+      {{- include "deletion-worker.selectorLabels" . | nindent 6 }}
+  action: ALLOW
+  rules:
+  - from:
+    - source:
+        principals:
+          {{- include "deletion-worker.ingressPrincipal" . | nindent 8 }}
+    to:
+    - operation:
+        paths:
+          - /jobs/*
+        methods: ["GET"]
+    - operation:
+        paths:
+          - /jobs/delete-distribution
+        methods: ["POST"]
