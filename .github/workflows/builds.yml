@@ -64,6 +64,7 @@ jobs:
           registry: aws
           fail-on-unfixed: true
           github-token: ${{ secrets.GITHUB_TOKEN }}
+          role-to-assume: ${{ secrets.AWS_ROLE_DEPLOY }}
           download-sbom: "false"
           enable-buildkit-cache: "true"
           build-args: |
