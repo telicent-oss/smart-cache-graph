@@ -1,0 +1,23 @@
+{{- /*
+Copyright (C) 2026 Telicent Limited
+*/}}
+
+apiVersion: v1
+kind: Service
+
+metadata:
+  name: {{ include "deletion-worker.serviceName" . }}
+  namespace: {{ include "deletion-worker.namespace" . | quote }}
+  labels:
+    {{- include "deletion-worker.labels" . | nindent 4 }}
+
+spec:
+  type: {{ .Values.service.type }}
+  selector:
+    {{- include "deletion-worker.selectorLabels" . | nindent 4 }}
+  ports:
+  - name: http
+    appProtocol: http
+    protocol: TCP
+    targetPort: http
+    port: {{ .Values.service.port }}
