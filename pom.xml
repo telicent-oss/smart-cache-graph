@@ -702,6 +702,7 @@
           <autoPublish>true</autoPublish>
           <waitUntil>validated</waitUntil>
           <waitMaxTime>3600</waitMaxTime>
+          <deploymentName>Smart Cache Graph ${project.version}</deploymentName>
         </configuration>
       </plugin>
 
