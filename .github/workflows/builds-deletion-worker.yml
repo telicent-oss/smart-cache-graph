@@ -65,6 +65,9 @@ jobs:
           enable-buildkit-cache: "true"
           build-args: |
             PROJECT_VERSION=${{ needs.maven-build.outputs.version }}
+#          TODO
+#          remove once tested
+          trivy-ignores: .trivyignore
 
       - name: Package and push Helm chart to ECR
         uses: telicent-oss/shared-workflows/.github/actions/push-helm-chart@main
