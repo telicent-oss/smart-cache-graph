@@ -80,3 +80,4 @@ jobs:
           version: ${{ needs.maven-build.outputs.version }}
           appVersion: ${{ needs.maven-build.outputs.version }}
           replace-chart-versions: true
+          role-to-assume: ${{ secrets.AWS_ROLE_DEPLOY }}
