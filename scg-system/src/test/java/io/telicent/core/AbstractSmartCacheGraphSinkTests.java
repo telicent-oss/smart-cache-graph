@@ -1,6 +1,7 @@
 package io.telicent.core;
 
 import io.telicent.LibTestsSCG;
+import io.telicent.distribution.DistributionLifecycleStateFile;
 import io.telicent.jena.abac.ABAC;
 import io.telicent.jena.abac.AttributeValueSet;
 import io.telicent.jena.abac.DefaultDatasetFilterProvider;
@@ -23,6 +24,7 @@ import io.telicent.smart.cache.sources.EventHeader;
 import io.telicent.smart.cache.sources.Header;
 import io.telicent.smart.cache.sources.TelicentHeaders;
 import io.telicent.smart.cache.sources.memory.SimpleEvent;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.jena.fuseki.main.FusekiServer;
 import org.apache.jena.fuseki.server.DataService;
 import org.apache.jena.fuseki.server.Operation;
@@ -661,12 +663,21 @@ public abstract class AbstractSmartCacheGraphSinkTests {
         FusekiServer server = SmartCacheGraph.serverBuilder().port(0).add(dsName, dataSrv).add(dsBase, dsgBase).build();
         server.start();
         try {
-            try (SmartCacheGraphSink sink = new SmartCacheGraphSink(dsgz, true)) {
+            try (SmartCacheGraphSink sink = createNamedGraphSink(dsgz)) {
                 execTestAction.execTest(sink, server, dsgBase, dsgz);
             }
         } finally {
             server.stop();
         }
+    }
+
+    private SmartCacheGraphSink createNamedGraphSink(DatasetGraphABAC dataset) {
+        String lifecycleStateFile = Configurator.get(FMod_DistributionLifecycle.DISTRIBUTION_LIFECYCLE_STATE_FILE);
+        String applicationId = Configurator.get(FMod_DistributionLifecycle.DISTRIBUTION_LIFECYCLE_APP_ID);
+        DistributionLifecycleStateFile lifecycleState =
+                StringUtils.isNotBlank(lifecycleStateFile) ?
+                new DistributionLifecycleStateFile(Path.of(lifecycleStateFile), applicationId) : null;
+        return new SmartCacheGraphSink(dataset, true, lifecycleState);
     }
 
     /**
@@ -752,6 +763,105 @@ public abstract class AbstractSmartCacheGraphSinkTests {
                     checkDatasetSize(dsgBase, 0);
                 };
         runTestProcessorSCGWithAuthNamedGraph(action);
+    }
+
+    @Test
+    final void processorSCG_namedGraph_deletedDistributionRejectedBeforeWrite_thenSubsequentEventsDropped()
+            throws IOException {
+        String deletedGraph = "http://example/deleted";
+        Path lifecycleState = Files.createTempFile("distribution-lifecycle", ".json");
+        writeLifecycleStateFile(lifecycleState, """
+                {
+                  "distributions" : {
+                    "%s" : "Deleted"
+                  }
+                }
+                """.formatted(deletedGraph));
+
+        TestAction action =
+                (Sink<Event<Bytes, RdfPayload>> proc, FusekiServer server, DatasetGraph dsgBase, DatasetGraph dsg) -> {
+                    JenaKafkaException ex =
+                            assertThrows(JenaKafkaException.class, () -> sendEventWithDistributionId(dsg, proc, """
+                                    PREFIX : <http://example/>
+                                    :s :p "value1" .
+                                    """, WebContent.contentTypeTurtle, attrPermit, deletedGraph));
+                    assertInstanceOf(IllegalStateException.class, ex.getCause());
+                    assertEquals("Rejecting ingest for deleted distribution " + deletedGraph,
+                                 ex.getCause().getMessage());
+
+                    sendEventWithDistributionId(dsg, proc, """
+                            PREFIX : <http://example/>
+                            :s :p "value2" .
+                            """, WebContent.contentTypeTurtle, attrPermit, deletedGraph);
+
+                    verifyNamedGraphsEmpty(dsgBase, deletedGraph);
+                    checkDatasetSize(dsgBase, 0);
+
+                    String URL = server.datasetURL(dsName);
+                    verifyCounts(URL, queryAll, 0L, 0L);
+                    verifyCounts(URL, queryUnion, 0L, 0L);
+                    verifyDefaultGraphEmpty(URL);
+                };
+
+        withDistributionLifecycleConfig(lifecycleState, null, () -> runTestProcessorSCGWithAuthNamedGraph(action));
+    }
+
+    @Test
+    final void processorSCG_namedGraph_unregisteredDistributionIsIngested() throws IOException {
+        // A distribution that is not present in the lifecycle state file at all is treated as unregistered. Per the
+        // ticket, rejecting unregistered distributions is deferred to a later ticket, so ingest must still proceed.
+        String deletedGraph = "http://example/deleted";
+        String unregisteredGraph = "http://example/unregistered";
+        Path lifecycleState = Files.createTempFile("distribution-lifecycle", ".json");
+        writeLifecycleStateFile(lifecycleState, """
+                {
+                  "distributions" : {
+                    "%s" : "Deleted"
+                  }
+                }
+                """.formatted(deletedGraph));
+
+        TestAction action =
+                (Sink<Event<Bytes, RdfPayload>> proc, FusekiServer server, DatasetGraph dsgBase, DatasetGraph dsg) -> {
+                    dsg.begin(TxnType.WRITE);
+                    // No exception expected - the unregistered distribution is accepted for ingest.
+                    sendEventWithDistributionId(dsg, proc, """
+                            PREFIX : <http://example/>
+                            :s :p "value" .
+                            """, WebContent.contentTypeTurtle, attrPermit, unregisteredGraph);
+                    dsg.commit();
+
+                    // Data is physically written to the underlying store for the unregistered distribution.
+                    verifyNamedGraphsHaveData(dsgBase, unregisteredGraph);
+                };
+
+        withDistributionLifecycleConfig(lifecycleState, null, () -> runTestProcessorSCGWithAuthNamedGraph(action));
+    }
+
+    @Test
+    final void processorSCG_namedGraph_missingLifecycleStateRejectsIngest() throws IOException {
+        String graph = "http://example/graph1";
+        Path lifecycleState = Files.createTempFile("distribution-lifecycle", ".json");
+        Files.deleteIfExists(lifecycleState);
+
+        TestAction action =
+                (Sink<Event<Bytes, RdfPayload>> proc, FusekiServer server, DatasetGraph dsgBase, DatasetGraph dsg) -> {
+                    JenaKafkaException ex =
+                            assertThrows(JenaKafkaException.class, () -> sendEventWithDistributionId(dsg, proc, """
+                                    PREFIX : <http://example/>
+                                    :s :p "value" .
+                                    """, WebContent.contentTypeTurtle, attrPermit, graph));
+                    assertInstanceOf(IllegalStateException.class, ex.getCause());
+                    assertEquals(
+                            "Rejecting ingest because distribution lifecycle state is unavailable for distribution "
+                            + graph,
+                            ex.getCause().getMessage());
+
+                    verifyNamedGraphsEmpty(dsgBase, graph);
+                    verifyDefaultGraphEmpty(dsgBase);
+                };
+
+        withDistributionLifecycleConfig(lifecycleState, null, () -> runTestProcessorSCGWithAuthNamedGraph(action));
     }
 
     @Test
@@ -873,7 +983,7 @@ public abstract class AbstractSmartCacheGraphSinkTests {
                 {
                   "distributions" : {
                     "%s" : "Active",
-                    "%s" : "Deleted"
+                    "%s" : "Withdrawn"
                   }
                 }
                 """.formatted(activeGraph, inactiveGraph));
@@ -905,7 +1015,7 @@ public abstract class AbstractSmartCacheGraphSinkTests {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"Unregistered", "Registered", "Withdrawn", "Deleted", "Unrecognised"})
+    @ValueSource(strings = {"Unregistered", "Registered", "Withdrawn", "Unrecognised"})
     final void processorSCG_namedGraph_inactiveDistributionsAreHidden(String state) throws IOException {
         String graph = "http://example/graph1";
         Path lifecycleState = Files.createTempFile("distribution-lifecycle", ".json");
@@ -939,7 +1049,7 @@ public abstract class AbstractSmartCacheGraphSinkTests {
     }
 
     @Test
-    final void processorSCG_namedGraph_applicationIdMismatchHidesAllGraphs() throws IOException {
+    final void processorSCG_namedGraph_applicationIdMismatchRejectsIngest() throws IOException {
         String graph = "http://example/graph1";
         Path lifecycleState = Files.createTempFile("distribution-lifecycle", ".json");
         writeLifecycleStateFile(lifecycleState, """
@@ -953,16 +1063,18 @@ public abstract class AbstractSmartCacheGraphSinkTests {
 
         TestAction action =
                 (Sink<Event<Bytes, RdfPayload>> proc, FusekiServer server, DatasetGraph dsgBase, DatasetGraph dsg) -> {
-                    dsg.begin(TxnType.WRITE);
-                    sendEventWithDistributionId(dsg, proc, """
-                            PREFIX : <http://example/>
-                            :s :p "value" .
-                            """, WebContent.contentTypeTurtle, attrPermit, graph);
-                    dsg.commit();
+                    JenaKafkaException ex =
+                            assertThrows(JenaKafkaException.class, () -> sendEventWithDistributionId(dsg, proc, """
+                                    PREFIX : <http://example/>
+                                    :s :p "value" .
+                                    """, WebContent.contentTypeTurtle, attrPermit, graph));
+                    assertInstanceOf(IllegalStateException.class, ex.getCause());
+                    assertEquals(
+                            "Rejecting ingest because distribution lifecycle state is unavailable for distribution "
+                            + graph,
+                            ex.getCause().getMessage());
 
-                    verifyNamedGraphsHaveData(dsgBase, graph);
-
-                    // App id mismatch -> reader treats the file as unreadable -> empty active set -> nothing visible.
+                    verifyNamedGraphsEmpty(dsgBase, graph);
                     String URL = server.datasetURL(dsName);
                     verifyCounts(URL, queryAll, 0L, 0L);
                     verifyCounts(URL, queryUnion, 0L, 0L);
@@ -1203,6 +1315,37 @@ public abstract class AbstractSmartCacheGraphSinkTests {
                             """, WebContent.contentTypePatch, attrPermit, null));
                 };
         runTestProcessorSCGWithAuthNamedGraph(action);
+    }
+
+    @Test
+    final void processorSCG_namedGraph_rdfPatch_deletedDistributionRejectedBeforeWrite() throws IOException {
+        String deletedGraph = "http://example/deleted";
+        Path lifecycleState = Files.createTempFile("distribution-lifecycle", ".json");
+        writeLifecycleStateFile(lifecycleState, """
+                {
+                  "distributions" : {
+                    "%s" : "Deleted"
+                  }
+                }
+                """.formatted(deletedGraph));
+
+        TestAction action =
+                (Sink<Event<Bytes, RdfPayload>> proc, FusekiServer server, DatasetGraph dsgBase, DatasetGraph dsg) -> {
+                    JenaKafkaException ex =
+                            assertThrows(JenaKafkaException.class, () -> sendEventWithDistributionId(dsg, proc, """
+                                    TX .
+                                    A <http://example/s> <http://example/p> "value1" .
+                                    TC .
+                                    """, WebContent.contentTypePatch, attrPermit, deletedGraph));
+                    assertInstanceOf(IllegalStateException.class, ex.getCause());
+                    assertEquals("Rejecting ingest for deleted distribution " + deletedGraph,
+                                 ex.getCause().getMessage());
+
+                    verifyNamedGraphsEmpty(dsgBase, deletedGraph);
+                    verifyDefaultGraphEmpty(dsgBase);
+                };
+
+        withDistributionLifecycleConfig(lifecycleState, null, () -> runTestProcessorSCGWithAuthNamedGraph(action));
     }
 
     @Test

@@ -17,17 +17,20 @@
 package io.telicent.core;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.function.Function;
 
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.telicent.backup.services.DatasetBackupService;
+import io.telicent.distribution.DistributionLifecycleStateFile;
 import io.telicent.jena.abac.core.DatasetGraphABAC;
 import io.telicent.smart.cache.configuration.Configurator;
 import io.telicent.smart.cache.payloads.RdfPayload;
 import io.telicent.smart.cache.projectors.Sink;
 import io.telicent.smart.cache.sources.Event;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.jena.atlas.io.IOX;
 import org.apache.jena.fuseki.kafka.FKS;
 import org.apache.jena.fuseki.kafka.FMod_FusekiKafka;
@@ -68,10 +71,15 @@ public class FMod_FusekiKafkaSCG extends FMod_FusekiKafka {
     @Override
     protected Function<DatasetGraph, Sink<Event<Bytes, RdfPayload>>> getSinkBuilder() {
         boolean routeToNamedGraphs = Configurator.get("ROUTE_TO_NAMED_GRAPHS", Boolean::parseBoolean, false);
+        String lifecycleStateFile = Configurator.get(FMod_DistributionLifecycle.DISTRIBUTION_LIFECYCLE_STATE_FILE);
+        String applicationId = Configurator.get(FMod_DistributionLifecycle.DISTRIBUTION_LIFECYCLE_APP_ID);
+        DistributionLifecycleStateFile lifecycleState =
+                routeToNamedGraphs && StringUtils.isNotBlank(lifecycleStateFile) ?
+                new DistributionLifecycleStateFile(Path.of(lifecycleStateFile), applicationId) : null;
         return dsg -> {
             if (dsg instanceof DatasetGraphABAC dsgABAC) {
                 // For ABAC enabled datasets use our custom sink that applies labels
-                return new SmartCacheGraphSink(dsgABAC, routeToNamedGraphs);
+                return new SmartCacheGraphSink(dsgABAC, routeToNamedGraphs, lifecycleState);
             } else {
                 // For non-ABAC datasets use the default Fuseki Kafka sink
                 return FusekiSink.builder().dataset(dsg).build();
