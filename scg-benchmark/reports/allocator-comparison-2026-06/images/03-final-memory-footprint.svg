@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="920" height="560" viewBox="0 0 920 560" role="img" aria-labelledby="title desc">
+  <title>Final Memory Footprint</title>
+  <desc>Pi-side end-of-run process and cgroup memory measurements.</desc>
+  <rect width="920" height="560" fill="#FAFAF7"/>
+  <text x="90" y="36" font-family="Helvetica, Arial, sans-serif" font-size="24" font-weight="700" fill="#1F2933">Final Memory Footprint</text>
+  <text x="90" y="58" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#52606D">Pi-side end-of-run process and cgroup memory measurements.</text>
+  <text x="24" y="270.0" transform="rotate(-90 24 270.0)" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#52606D">GiB</text>
+  <line x1="90" y1="470" x2="880" y2="470" stroke="#7B8794" stroke-width="1"/>
+  <line x1="90" y1="70" x2="90" y2="470" stroke="#7B8794" stroke-width="1"/>
+  <line x1="90" y1="70.0" x2="880" y2="70.0" stroke="#D9E2EC" stroke-width="1"/>
+  <text x="80" y="74.0" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#52606D">2.82</text>
+  <line x1="90" y1="150.0" x2="880" y2="150.0" stroke="#D9E2EC" stroke-width="1"/>
+  <text x="80" y="154.0" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#52606D">2.25</text>
+  <line x1="90" y1="230.0" x2="880" y2="230.0" stroke="#D9E2EC" stroke-width="1"/>
+  <text x="80" y="234.0" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#52606D">1.69</text>
+  <line x1="90" y1="310.0" x2="880" y2="310.0" stroke="#D9E2EC" stroke-width="1"/>
+  <text x="80" y="314.0" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#52606D">1.13</text>
+  <line x1="90" y1="390.0" x2="880" y2="390.0" stroke="#D9E2EC" stroke-width="1"/>
+  <text x="80" y="394.0" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#52606D">0.56</text>
+  <line x1="90" y1="470.0" x2="880" y2="470.0" stroke="#D9E2EC" stroke-width="1"/>
+  <text x="80" y="474.0" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#52606D">0.00</text>
+  <rect x="122.9" y="172.0" width="61.8" height="298.0" fill="#5B8E7D"/>
+  <text x="153.8" y="165.0" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="10" fill="#1F2933">2.10</text>
+  <rect x="188.8" y="177.7" width="61.8" height="292.3" fill="#BC4B51"/>
+  <text x="219.7" y="170.7" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="10" fill="#1F2933">2.06</text>
+  <rect x="254.6" y="175.0" width="61.8" height="295.0" fill="#3C91E6"/>
+  <text x="285.5" y="168.0" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="10" fill="#1F2933">2.08</text>
+  <text x="221.7" y="492.0" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#1F2933">glibc-arena2</text>
+  <rect x="386.2" y="405.5" width="61.8" height="64.5" fill="#5B8E7D"/>
+  <text x="417.2" y="398.5" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="10" fill="#1F2933">0.45</text>
+  <rect x="452.1" y="411.3" width="61.8" height="58.7" fill="#BC4B51"/>
+  <text x="483.0" y="404.3" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="10" fill="#1F2933">0.41</text>
+  <rect x="517.9" y="399.5" width="61.8" height="70.5" fill="#3C91E6"/>
+  <text x="548.8" y="392.5" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="10" fill="#1F2933">0.50</text>
+  <text x="485.0" y="492.0" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#1F2933">jemalloc</text>
+  <rect x="649.6" y="125.1" width="61.8" height="344.9" fill="#5B8E7D"/>
+  <text x="680.5" y="118.1" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="10" fill="#1F2933">2.43</text>
+  <rect x="715.4" y="130.9" width="61.8" height="339.1" fill="#BC4B51"/>
+  <text x="746.3" y="123.9" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="10" fill="#1F2933">2.39</text>
+  <rect x="781.2" y="122.2" width="61.8" height="347.8" fill="#3C91E6"/>
+  <text x="812.2" y="115.2" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="10" fill="#1F2933">2.45</text>
+  <text x="748.3" y="492.0" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#1F2933">tcmalloc</text>
+  <rect x="710" y="28" width="12" height="12" fill="#5B8E7D"/>
+  <text x="728" y="38" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#1F2933">VmRSS</text>
+  <rect x="710" y="46" width="12" height="12" fill="#BC4B51"/>
+  <text x="728" y="56" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#1F2933">RssAnon</text>
+  <rect x="710" y="64" width="12" height="12" fill="#3C91E6"/>
+  <text x="728" y="74" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#1F2933">cgroup current</text>
+</svg>
