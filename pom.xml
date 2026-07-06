@@ -59,6 +59,13 @@
     <project.build.outputTimestamp>2026-06-24T15:50:38Z</project.build.outputTimestamp>
     <java.version>21</java.version>
 
+    <!-- Skip Test Jar generation -->
+    <!--
+    tests and test-sources JARs are skipped by default, modules that need to expose test code to downstream consumers
+    can override this property to false to do so
+    -->
+    <skip.testJars>true</skip.testJars>
+
     <!-- Maven Plugin versions -->
     <plugin.central>0.11.0</plugin.central>
     <plugin.clean>3.3.2</plugin.clean>
@@ -569,6 +576,10 @@
               <goals>
                 <goal>test-jar</goal>
               </goals>
+              <configuration>
+                <skipIfEmpty>true</skipIfEmpty>
+                <skip>${skip.testJars}</skip>
+              </configuration>
             </execution>
           </executions>
         </plugin>
@@ -628,6 +639,7 @@
               <phase>package</phase>
               <configuration>
                 <classifier>test-sources</classifier>
+                <skipSource>${skip.testJars}</skipSource>
               </configuration>
             </execution>
           </executions>
@@ -667,6 +679,7 @@
           <configuration>
             <skipNotDeployed>false</skipNotDeployed> <!-- Forces SBOM generation -->
             <outputName>${project.artifactId}-${project.version}-bom</outputName>
+            <outputFormat>json</outputFormat>
           </configuration>
         </plugin>
       </plugins>
@@ -703,6 +716,7 @@
           <waitUntil>validated</waitUntil>
           <waitMaxTime>3600</waitMaxTime>
           <deploymentName>Smart Cache Graph ${project.version}</deploymentName>
+          <checksums>required</checksums>
         </configuration>
       </plugin>
 

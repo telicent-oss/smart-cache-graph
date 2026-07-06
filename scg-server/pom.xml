@@ -32,6 +32,10 @@
 
   <description>A Fuseki based server for Smart Cache Graph that adds various Telicent specific functionality to the base Fuseki server.</description>
 
+  <properties>
+    <skipPublishing>true</skipPublishing>
+  </properties>
+
   <dependencies>
 
     <dependency>
