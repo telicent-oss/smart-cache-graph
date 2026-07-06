@@ -262,16 +262,3 @@ It improved throughput slightly, but ended with the highest resident anonymous f
    - native object reuse versus churn
    - read-only fast paths that reduce temporary native allocation pressure
 5. If a production safety valve is needed for a memory-constrained deployment, consider a `jemalloc` variant only with explicit acknowledgement of the throughput tradeoff.
-
-## Caveats
-
-Two notes matter when presenting this work:
-
-1. The allocator conclusion should be based mainly on Pi-side captures:
-   - `proc-smaps-rollup.txt`
-   - `proc-status.txt`
-   - `pmap-x.txt`
-   - `cgroup-memory-current.txt`
-   - `vm-native-memory.txt`
-
-2. Some Prometheus `graph_mem` pre-snapshots were contaminated by residual state from the previous allocator leg, so they are useful for RocksDB counters and trend corroboration, but not the strongest source for allocator-memory comparisons.
