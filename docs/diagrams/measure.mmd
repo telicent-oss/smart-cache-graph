@@ -1,0 +1,9 @@
+flowchart LR
+    A["Graph stress workload<br/>30 cycles, 5 minutes per cycle"] --> B["Smart Cache Graph<br/>ABAC + RocksDB labels"]
+    B --> C["Allocator under test<br/>glibc-arena2 / jemalloc / tcmalloc"]
+    B --> D["Prometheus snapshots<br/>throughput, latency, RocksDB gauges"]
+    B --> E["JVM/native capture<br/>smaps, pmap, cgroup, NMT, heap"]
+    D --> F["Performance conclusion"]
+    E --> G["Memory conclusion"]
+    F --> H["Allocator recommendation"]
+    G --> H

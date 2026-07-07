@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="920" height="560" viewBox="0 0 920 560" role="img" aria-labelledby="title desc">
+  <title>Start-to-End Memory Change</title>
+  <desc>Change in Pi-side process RSS over each allocator leg.</desc>
+  <rect width="920" height="560" fill="#FAFAF7"/>
+  <text x="90" y="36" font-family="Helvetica, Arial, sans-serif" font-size="24" font-weight="700" fill="#1F2933">Start-to-End Memory Change</text>
+  <text x="90" y="58" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#52606D">Change in Pi-side process RSS over each allocator leg.</text>
+  <text x="24" y="270.0" transform="rotate(-90 24 270.0)" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#52606D">GiB</text>
+  <line x1="90" y1="470" x2="880" y2="470" stroke="#7B8794" stroke-width="1"/>
+  <line x1="90" y1="70" x2="90" y2="470" stroke="#7B8794" stroke-width="1"/>
+  <line x1="90" y1="70.0" x2="880" y2="70.0" stroke="#D9E2EC" stroke-width="1"/>
+  <text x="80" y="74.0" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#52606D">0.26</text>
+  <line x1="90" y1="150.0" x2="880" y2="150.0" stroke="#D9E2EC" stroke-width="1"/>
+  <text x="80" y="154.0" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#52606D">-0.17</text>
+  <line x1="90" y1="230.0" x2="880" y2="230.0" stroke="#D9E2EC" stroke-width="1"/>
+  <text x="80" y="234.0" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#52606D">-0.60</text>
+  <line x1="90" y1="310.0" x2="880" y2="310.0" stroke="#D9E2EC" stroke-width="1"/>
+  <text x="80" y="314.0" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#52606D">-1.03</text>
+  <line x1="90" y1="390.0" x2="880" y2="390.0" stroke="#D9E2EC" stroke-width="1"/>
+  <text x="80" y="394.0" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#52606D">-1.46</text>
+  <line x1="90" y1="470.0" x2="880" y2="470.0" stroke="#D9E2EC" stroke-width="1"/>
+  <text x="80" y="474.0" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#52606D">-1.88</text>
+  <line x1="90" y1="118.1" x2="880" y2="118.1" stroke="#1F2933" stroke-width="1.2"/>
+  <rect x="126.9" y="116.2" width="90.8" height="2.0" fill="#5B8E7D"/>
+  <text x="172.3" y="109.2" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="10" fill="#1F2933">0.01</text>
+  <rect x="221.7" y="116.2" width="90.8" height="2.0" fill="#BC4B51"/>
+  <text x="267.1" y="109.2" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="10" fill="#1F2933">0.01</text>
+  <text x="221.7" y="492.0" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#1F2933">glibc-arena2</text>
+  <rect x="390.2" y="118.1" width="90.8" height="306.0" fill="#5B8E7D"/>
+  <text x="435.6" y="438.1" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="10" fill="#1F2933">-1.64</text>
+  <rect x="485.0" y="118.1" width="90.8" height="306.0" fill="#BC4B51"/>
+  <text x="530.4" y="438.1" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="10" fill="#1F2933">-1.64</text>
+  <text x="485.0" y="492.0" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#1F2933">jemalloc</text>
+  <rect x="653.5" y="76.3" width="90.8" height="41.9" fill="#5B8E7D"/>
+  <text x="698.9" y="69.3" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="10" fill="#1F2933">0.22</text>
+  <rect x="748.3" y="76.3" width="90.8" height="41.9" fill="#BC4B51"/>
+  <text x="793.7" y="69.3" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="10" fill="#1F2933">0.22</text>
+  <text x="748.3" y="492.0" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#1F2933">tcmalloc</text>
+  <rect x="710" y="28" width="12" height="12" fill="#5B8E7D"/>
+  <text x="728" y="38" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#1F2933">VmRSS delta</text>
+  <rect x="710" y="46" width="12" height="12" fill="#BC4B51"/>
+  <text x="728" y="56" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#1F2933">RssAnon delta</text>
+</svg>
