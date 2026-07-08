@@ -32,11 +32,9 @@ The command removes all the Kubernetes components associated with the chart and 
 
 ## Automating README and schema generation
 
+Run the `metadata-updater.sh` script from the root directory:
 ```bash
-.dev/readme-generator-for-helm --config=charts/telicent-core/readme.config \
- --values=charts/telicent-core/charts/graph/values.yaml \
- --readme=charts/telicent-core/charts/graph/README.md \
- --schema=charts/telicent-core/charts/graph/values.schema.json
+.dev/metadata-updater.sh
 ```
 
 ## Configuration and installation details
@@ -118,10 +116,14 @@ Contains Java configuration parameters to be used by the *Graph* application
 
 Contains configuration parameters that configure aspects of the *Graph* application behaviour.
 
-| Name                       | Description                                                                                                                                                                                                                                                                                      | Value   |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------- |
-| `graph.routeToNamedGraphs` | Enable or disable routing to named graphs. When set to true, data will be routed into named graphs based on the Distribution-ID header set on the incoming Kafka events.                                                                                                                         | `false` |
-| `graph.legacyLabels`       | Enable or disable legacy label store format.  When set to false then the new label store format will be used, which allows for more efficient storage and querying of labels.  If a pre-existing store exists in the legacy format it will be automatically migrated forwards to the new format. | `false` |
+| Name                                    | Description                                                                                                                                                                                                                                                                                      | Value                                     |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------- |
+| `graph.routeToNamedGraphs`              | Enable or disable routing to named graphs. When set to true, data will be routed into named graphs based on the Distribution-ID header set on the incoming Kafka events.                                                                                                                         | `false`                                   |
+| `graph.legacyLabels`                    | Enable or disable legacy label store format.  When set to false then the new label store format will be used, which allows for more efficient storage and querying of labels.  If a pre-existing store exists in the legacy format it will be automatically migrated forwards to the new format. | `false`                                   |
+| `graph.enableBackupEncryption`          | Enable GPG encryption of backups. When true, sets BACKUPS_PRIVATE_KEY_URL, BACKUPS_PUBLIC_KEY_URL and BACKUPS_PASSKEY environment variables. Keys are generated on first run if they do not exist.                                                                                               | `false`                                   |
+| `graph.backupEncryption.privateKeyUrl`  | URL of the private key file                                                                                                                                                                                                                                                                      | `file:///fuseki/backups/keys/private.asc` |
+| `graph.backupEncryption.publicKeyUrl`   | URL of the public key file                                                                                                                                                                                                                                                                       | `file:///fuseki/backups/keys/public.asc`  |
+| `graph.backupEncryption.existingSecret` | Name of an existing secret containing the backup encryption passphrase. The secret must contain 1 key: 'passphrase'. Public and private keys are generated from this passphrase on first run.                                                                                                    | `""`                                      |
 
 ### ConfigMap Parameters
 
