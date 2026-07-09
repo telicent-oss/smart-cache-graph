@@ -183,6 +183,50 @@ spec:
           {{- toYaml . | nindent 12 }}
         {{- end }}
 
+      {{- if .Values.registrationSidecar.enabled }}
+      - name: registration-sidecar
+        image: {{ include "graph.registrationSidecarImage" . }}
+        imagePullPolicy: {{ .Values.registrationSidecar.image.pullPolicy }}
+        resources: {{- toYaml .Values.registrationSidecar.resources | nindent 10 }}
+        securityContext: {{- toYaml .Values.containerSecurityContext | nindent 10 }}
+        command:
+          - /bin/sh
+          - -c
+          - |
+            set -eu
+            echo "registration-sidecar starting; posting to ${REGISTRATION_ENDPOINT} every ${INTERVAL_SECONDS}s"
+            while true; do
+              if curl -sf -o /dev/null --max-time 5 "${HEALTHCHECK_URL}"; then
+                HEALTHCHECK_RESULT="healthy"
+              else
+                HEALTHCHECK_RESULT="unhealthy"
+              fi
+              PAYLOAD=$(printf '{"name":"%s","publicUrl":"%s","healthcheckResult":"%s"}' \
+                "${SERVICE_NAME}" "${PUBLIC_URL}" "${HEALTHCHECK_RESULT}")
+              if curl -sf -o /dev/null --max-time 10 \
+                  -X POST "${REGISTRATION_ENDPOINT}" \
+                  -H "Content-Type: application/json" \
+                  -d "${PAYLOAD}"; then
+                echo "posted registration: ${PAYLOAD}"
+              else
+                echo "WARNING: failed to POST registration to ${REGISTRATION_ENDPOINT}" >&2
+              fi
+              sleep "${INTERVAL_SECONDS}"
+            done
+        env:
+          - name: REGISTRATION_ENDPOINT
+            value: {{ required "registrationSidecar.endpoint is required when registrationSidecar.enabled is true" .Values.registrationSidecar.endpoint | quote }}
+          # Public URL derived from the API host domain, same source used elsewhere in the chart
+          - name: PUBLIC_URL
+            value: {{ printf "https://%s" .Values.global.apiHostDomain | quote }}
+          - name: SERVICE_NAME
+            value: {{ .Values.registrationSidecar.name | default (include "graph.serviceName" .) | quote }}
+          # Same endpoint as the readinessProbe above, so healthcheckResult tracks pod readiness
+          - name: HEALTHCHECK_URL
+            value: "http://localhost:3030/$/ping"
+          - name: INTERVAL_SECONDS
+            value: {{ .Values.registrationSidecar.intervalSeconds | quote }}
+      {{- end }}
       {{- with .Values.sidecars }}
         {{- toYaml . | nindent 8 }}
       {{- end }}

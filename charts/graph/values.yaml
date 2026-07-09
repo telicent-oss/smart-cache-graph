@@ -157,6 +157,35 @@ initContainers: []
 sidecars: []
 
 #
+# @section Registration Sidecar Parameters
+#
+# @descStart
+# Adds a sidecar container that periodically POSTs a JSON registration/heartbeat
+# payload to a configurable endpoint. The payload contains the service 'name', its
+# 'publicUrl', and the 'healthcheckResult' of a local check against the *Graph* container.
+# @descEnd
+registrationSidecar:
+  # @key registrationSidecar.enabled Enable the registration sidecar container
+  enabled: false
+  # @key registrationSidecar.endpoint URL the sidecar POSTs the registration payload to. Required when enabled
+  endpoint: ""
+  # @key registrationSidecar.name Service name sent in the payload as 'name'. If not set, the generated service name is used
+  name: ""
+  # @key registrationSidecar.intervalSeconds How often (in seconds) the sidecar POSTs the payload
+  intervalSeconds: 30
+  image:
+    # @key registrationSidecar.image.registry Registration sidecar image registry
+    registry: docker.io
+    # @key registrationSidecar.image.repository Registration sidecar image repository
+    repository: curlimages/curl
+    # @key registrationSidecar.image.tag Registration sidecar image tag
+    tag: "8.11.1"
+    # @key registrationSidecar.image.pullPolicy Registration sidecar image pull policy
+    pullPolicy: IfNotPresent
+  # @key registrationSidecar.resources Resources for the registration sidecar container
+  resources: {}
+
+#
 # @section Statefulset Image Parameters
 #
 image:

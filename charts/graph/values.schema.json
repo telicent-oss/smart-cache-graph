@@ -238,6 +238,61 @@
             "default": [],
             "items": {}
         },
+        "registrationSidecar": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean",
+                    "description": "Enable the registration sidecar container",
+                    "default": false
+                },
+                "endpoint": {
+                    "type": "string",
+                    "description": "URL the sidecar POSTs the registration payload to. Required when enabled",
+                    "default": ""
+                },
+                "name": {
+                    "type": "string",
+                    "description": "Service name sent in the payload as 'name'. If not set, the generated service name is used",
+                    "default": ""
+                },
+                "intervalSeconds": {
+                    "type": "number",
+                    "description": "How often (in seconds) the sidecar POSTs the payload",
+                    "default": 30
+                },
+                "image": {
+                    "type": "object",
+                    "properties": {
+                        "registry": {
+                            "type": "string",
+                            "description": "Registration sidecar image registry",
+                            "default": "docker.io"
+                        },
+                        "repository": {
+                            "type": "string",
+                            "description": "Registration sidecar image repository",
+                            "default": "curlimages/curl"
+                        },
+                        "tag": {
+                            "type": "string",
+                            "description": "Registration sidecar image tag",
+                            "default": "8.11.1"
+                        },
+                        "pullPolicy": {
+                            "type": "string",
+                            "description": "Registration sidecar image pull policy",
+                            "default": "IfNotPresent"
+                        }
+                    }
+                },
+                "resources": {
+                    "type": "object",
+                    "description": "Resources for the registration sidecar container",
+                    "default": {}
+                }
+            }
+        },
         "image": {
             "type": "object",
             "properties": {
