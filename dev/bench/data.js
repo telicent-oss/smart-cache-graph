@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1783933892976,
+  "lastUpdate": 1783933962256,
   "repoUrl": "https://github.com/telicent-oss/smart-cache-graph",
   "entries": {
     "ABAC Benchmark": [
@@ -2896,6 +2896,34 @@ window.BENCHMARK_DATA = {
           {
             "name": "io.telicent.core.CQRSUpdateBenchmark.benchmarkCqrsUpdate",
             "value": 0.04169845653022645,
+            "unit": "ms/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "Rob Vesse",
+            "username": "rvesse",
+            "email": "rob.vesse@telicent.io"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "b3cd9c6143f143dce19797ced60d2a4d4fa0d84e",
+          "message": "Merge pull request #440 from telicent-oss/teldevops-1115\n\n[TELDEVOPS-1115] - Update workflows with new input",
+          "timestamp": "2026-07-13T08:13:54Z",
+          "url": "https://github.com/telicent-oss/smart-cache-graph/commit/b3cd9c6143f143dce19797ced60d2a4d4fa0d84e"
+        },
+        "date": 1783933961993,
+        "tool": "jmh",
+        "benches": [
+          {
+            "name": "io.telicent.core.CQRSUpdateBenchmark.benchmarkCqrsUpdate",
+            "value": 0.042771855514102786,
             "unit": "ms/op",
             "extra": "iterations: 5\nforks: 1\nthreads: 1"
           }
