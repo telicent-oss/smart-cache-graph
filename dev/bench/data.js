@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1783933962256,
+  "lastUpdate": 1783934162595,
   "repoUrl": "https://github.com/telicent-oss/smart-cache-graph",
   "entries": {
     "ABAC Benchmark": [
@@ -4126,6 +4126,46 @@ window.BENCHMARK_DATA = {
           {
             "name": "io.telicent.core.IngestionBenchmark.benchmarkIngestWithLabels ( {\"batchSize\":\"10000\"} )",
             "value": 23.436940664582504,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "Rob Vesse",
+            "username": "rvesse",
+            "email": "rob.vesse@telicent.io"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "b3cd9c6143f143dce19797ced60d2a4d4fa0d84e",
+          "message": "Merge pull request #440 from telicent-oss/teldevops-1115\n\n[TELDEVOPS-1115] - Update workflows with new input",
+          "timestamp": "2026-07-13T08:13:54Z",
+          "url": "https://github.com/telicent-oss/smart-cache-graph/commit/b3cd9c6143f143dce19797ced60d2a4d4fa0d84e"
+        },
+        "date": 1783934162293,
+        "tool": "jmh",
+        "benches": [
+          {
+            "name": "io.telicent.core.IngestionBenchmark.benchmarkIngestWithLabels ( {\"batchSize\":\"100\"} )",
+            "value": 56.709294570440626,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "io.telicent.core.IngestionBenchmark.benchmarkIngestWithLabels ( {\"batchSize\":\"1000\"} )",
+            "value": 94.51671447838297,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "io.telicent.core.IngestionBenchmark.benchmarkIngestWithLabels ( {\"batchSize\":\"10000\"} )",
+            "value": 24.27819598732201,
             "unit": "ops/s",
             "extra": "iterations: 5\nforks: 1\nthreads: 1"
           }
