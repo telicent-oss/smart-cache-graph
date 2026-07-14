@@ -1,5 +1,12 @@
 # Smart Cache Graph
 
+## 1.0.10
+- Build improvements:
+  - REduced release size payloads
+  - Improved documentation re: Memory
+  - Deleted distribution handling
+  - Dependency updates
+
 ## 1.0.9
 
 - Build improvements:
