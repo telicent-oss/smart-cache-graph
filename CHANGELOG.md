@@ -2,7 +2,7 @@
 
 ## 1.0.10
 - Build improvements:
-  - REduced release size payloads
+  - Reduced release size payloads
   - Improved documentation re: Memory
   - Deleted distribution handling
   - Dependency updates
