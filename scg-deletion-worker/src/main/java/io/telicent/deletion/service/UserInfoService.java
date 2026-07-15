@@ -33,9 +33,14 @@ public class UserInfoService {
 
     public boolean isSystemAdmin(String authorization, HttpServletRequest originalRequest) {
         try {
+            String sessionId = originalRequest.getHeader("X-Auth-Session-Id");
+            String authHeader = sessionId != null
+                    ? "Bearer " + sessionId
+                    : authorization;
+
             HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
                     .uri(URI.create(userInfoUrl))
-                    .header("Authorization", authorization)
+                    .header("Authorization", authHeader)
                     .header("User-Agent", originalRequest.getHeader("User-Agent"))
                     .header("Accept-Language", originalRequest.getHeader("Accept-Language"))
                     .GET();
