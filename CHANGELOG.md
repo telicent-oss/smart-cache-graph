@@ -5,7 +5,7 @@
   - Reduced release size payloads
   - Improved documentation re: Memory
   - Deleted distribution handling
-  - Dependency updates
+  - Dependency updates including Smart Caches Core upgraded to 1.0.1
 
 ## 1.0.9
 
