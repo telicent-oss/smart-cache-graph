@@ -22,14 +22,14 @@ PREFIX authz:   <http://telicent.io/security#>
 
 :dataset1 rdf:type authz:DatasetAuthz ;
          authz:dataset :inMemoryDatabase;
-         authz:labelsStore  [ authz:labelsStorePath "labels" ];
+         authz:labelsStore  [ authz:labelsStorePath "target/labels" ];
          authz:attributes <file:access-query-test-attribute-store.ttl> ;
          authz:tripleDefaultAttributes "!";
          .
 
 :dataset2 rdf:type authz:DatasetAuthz ;
          authz:dataset :inMemoryDatabase;
-         authz:labelsStore  [ authz:labelsStorePath "labels" ];
+         authz:labelsStore  [ authz:labelsStorePath "target/labels" ];
          authz:attributes <file:access-query-test-attribute-store.ttl> ;
          authz:tripleDefaultAttributes "!";
 .

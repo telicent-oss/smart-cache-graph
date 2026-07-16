@@ -2,6 +2,7 @@ package io.telicent.access;
 
 import io.telicent.LibTestsSCG;
 import io.telicent.jena.abac.fuseki.SysFusekiABAC;
+import io.telicent.jena.abac.labels.Labels;
 import io.telicent.smart.cache.configuration.Configurator;
 import org.apache.jena.fuseki.main.FusekiServer;
 import org.apache.jena.fuseki.system.FusekiLogging;
@@ -49,12 +50,23 @@ public class TestAccessBase {
         if (null != server) {
             server.stop();
         }
+        // server.stop() does not close the RocksDB label stores. Close them here otherwise we leak the native
+        // handles, which keep holding the OS lock on the labels store and cause "No locks available" failures in
+        // other tests that use the same configuration file.
+        Labels.rocks.forEach((f, labels) -> {
+            try {
+                labels.close();
+            } catch (Exception e) {
+                // Ignore
+            }
+        });
+        Labels.rocks.clear();
         Configurator.reset();
     }
 
     @AfterAll
     static void afterAll() throws Exception {
-        FileUtils.deleteDirectory(new File("labels"));
+        FileUtils.deleteDirectory(new File("target/labels"));
     }
 
     protected void startServer() {
