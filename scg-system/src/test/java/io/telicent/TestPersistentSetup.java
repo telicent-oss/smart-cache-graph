@@ -74,19 +74,34 @@ public class TestPersistentSetup {
         LibTestsSCG.disableInitialCompaction();
         FusekiLogging.setLogging();
         FileOps.ensureDir(testArea);
-        Labels.rocks.clear();
+        closeAndClearLabels();
     }
 
     @BeforeEach
     public void beforeEach() {
         FileOps.clearAll(testArea);
-        Labels.rocks.clear();
+        closeAndClearLabels();
     }
 
     @AfterAll
     public static void afterAll() {
         FileOps.clearAll(testArea);
         Configurator.reset();
+        closeAndClearLabels();
+    }
+
+    /**
+     * Close any open labels stores before clearing the cache. Clearing without closing orphans the RocksDB native
+     * handles, which keep holding the OS lock and interfere with other tests that use the same configuration file.
+     */
+    private static void closeAndClearLabels() {
+        Labels.rocks.forEach((f, labels) -> {
+            try {
+                labels.close();
+            } catch (Exception e) {
+                // Ignore
+            }
+        });
         Labels.rocks.clear();
     }
 
