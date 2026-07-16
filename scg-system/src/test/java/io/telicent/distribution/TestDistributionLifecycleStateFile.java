@@ -1,5 +1,6 @@
 package io.telicent.distribution;
 
+import io.telicent.smart.cache.security.data.distribution.DistributionLifecycleStateFile;
 import org.apache.jena.graph.Node;
 import org.apache.jena.graph.NodeFactory;
 import org.junit.jupiter.api.AfterEach;

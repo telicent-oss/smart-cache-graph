@@ -16,17 +16,13 @@
 
 package io.telicent.core;
 
-import java.io.File;
-import java.nio.file.Path;
-import java.util.*;
-import java.util.function.Function;
-
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.telicent.backup.services.DatasetBackupService;
 import io.telicent.smart.cache.configuration.Configurator;
 import io.telicent.smart.cache.payloads.RdfPayload;
 import io.telicent.smart.cache.projectors.Sink;
+import io.telicent.smart.cache.security.data.distribution.DistributionLifecycleStateFile;
 import io.telicent.smart.cache.security.data.plugins.DataSecurityPlugin;
 import io.telicent.smart.cache.security.data.plugins.DataSecurityPluginLoader;
 import io.telicent.smart.cache.sources.Event;
@@ -45,6 +41,11 @@ import org.apache.jena.kafka.common.FusekiSink;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.sparql.core.DatasetGraph;
 import org.apache.kafka.common.utils.Bytes;
+
+import java.io.File;
+import java.nio.file.Path;
+import java.util.*;
+import java.util.function.Function;
 
 import static io.telicent.backup.services.DatasetBackupService.sanitiseName;
 import static io.telicent.backup.utils.JsonFileUtils.OBJECT_MAPPER;
@@ -71,22 +72,16 @@ public class FMod_FusekiKafkaSCG extends FMod_FusekiKafka {
     @Override
     protected Function<DatasetGraph, Sink<Event<Bytes, RdfPayload>>> getSinkBuilder() {
         final boolean routeToNamedGraphs = Configurator.get("ROUTE_TO_NAMED_GRAPHS", Boolean::parseBoolean, false);
-        final String lifecycleStateFile = Configurator.get(FMod_DistributionLifecycle.DISTRIBUTION_LIFECYCLE_STATE_FILE);
+        final String lifecycleStateFileName = Configurator.get(FMod_DistributionLifecycle.DISTRIBUTION_LIFECYCLE_STATE_FILE);
         final String applicationId = Configurator.get(FMod_DistributionLifecycle.DISTRIBUTION_LIFECYCLE_APP_ID);
-//        DistributionLifecycleStateFile lifecycleState =
-//                routeToNamedGraphs && StringUtils.isNotBlank(lifecycleStateFile) ?
-//                new DistributionLifecycleStateFile(Path.of(lifecycleStateFile), applicationId) : null;
+        final DistributionLifecycleStateFile lifecycleStateFile =
+                routeToNamedGraphs && StringUtils.isNotBlank(lifecycleStateFileName) ?
+                new DistributionLifecycleStateFile(Path.of(lifecycleStateFileName), applicationId) : null;
         return dsg -> {
-//<<<<<<< HEAD
-//            if (dsg instanceof DatasetGraphABAC dsgABAC) {
-//                // For ABAC enabled datasets use our custom sink that applies labels
-//                return new SmartCacheGraphSink(dsgABAC, routeToNamedGraphs, lifecycleState);
-//=======
             final DataSecurityPlugin dataSecurityPlugin = DataSecurityPluginLoader.load();
-            final Optional<FusekiSink<?>> fusekiSink = dataSecurityPlugin.prepareFusekiSink(dsg, routeToNamedGraphs, lifecycleStateFile, applicationId);
+            final Optional<FusekiSink<?>> fusekiSink = dataSecurityPlugin.prepareFusekiSink(dsg, routeToNamedGraphs, lifecycleStateFile);
             if (fusekiSink.isPresent()) {
                 return fusekiSink.get();
-//>>>>>>> a3872dd (CORE-762: connect up DataSecurityPlugin)
             } else {
                 // For non-ABAC datasets use the default Fuseki Kafka sink
                 return FusekiSink.builder().dataset(dsg).build();

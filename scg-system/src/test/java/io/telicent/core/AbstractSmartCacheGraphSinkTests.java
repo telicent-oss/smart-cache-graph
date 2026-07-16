@@ -1,7 +1,6 @@
 package io.telicent.core;
 
 import io.telicent.LibTestsSCG;
-import io.telicent.distribution.DistributionLifecycleStateFile;
 import io.telicent.jena.abac.ABAC;
 import io.telicent.jena.abac.AttributeValueSet;
 import io.telicent.jena.abac.DefaultDatasetFilterProvider;
@@ -19,6 +18,7 @@ import io.telicent.smart.cache.configuration.Configurator;
 import io.telicent.smart.cache.configuration.sources.SystemPropertiesSource;
 import io.telicent.smart.cache.payloads.RdfPayload;
 import io.telicent.smart.cache.projectors.Sink;
+import io.telicent.smart.cache.security.data.distribution.DistributionLifecycleStateFile;
 import io.telicent.smart.cache.security.data.plugins.rdf.abac.RdfAbacSink;
 import io.telicent.smart.cache.sources.Event;
 import io.telicent.smart.cache.sources.EventHeader;
@@ -664,7 +664,7 @@ public abstract class AbstractSmartCacheGraphSinkTests {
         FusekiServer server = SmartCacheGraph.serverBuilder().port(0).add(dsName, dataSrv).add(dsBase, dsgBase).build();
         server.start();
         try {
-            try (FusekiSink<?> sink = new RdfAbacSink(dsgz, true)) {
+            try (FusekiSink<?> sink = createNamedGraphSink(dsgz)) {
                 execTestAction.execTest(sink, server, dsgBase, dsgz);
             }
         } finally {
@@ -672,13 +672,13 @@ public abstract class AbstractSmartCacheGraphSinkTests {
         }
     }
 
-    private SmartCacheGraphSink createNamedGraphSink(DatasetGraphABAC dataset) {
+    private RdfAbacSink createNamedGraphSink(DatasetGraphABAC dataset) {
         String lifecycleStateFile = Configurator.get(FMod_DistributionLifecycle.DISTRIBUTION_LIFECYCLE_STATE_FILE);
         String applicationId = Configurator.get(FMod_DistributionLifecycle.DISTRIBUTION_LIFECYCLE_APP_ID);
         DistributionLifecycleStateFile lifecycleState =
                 StringUtils.isNotBlank(lifecycleStateFile) ?
                 new DistributionLifecycleStateFile(Path.of(lifecycleStateFile), applicationId) : null;
-        return new SmartCacheGraphSink(dataset, true, lifecycleState);
+        return new RdfAbacSink(dataset, true, lifecycleState);
     }
 
     /**

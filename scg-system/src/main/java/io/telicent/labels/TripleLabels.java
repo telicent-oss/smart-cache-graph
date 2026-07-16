@@ -24,7 +24,7 @@ public class TripleLabels {
         node.put("object", triple.getObject().toString());
         ArrayNode labelNode = OBJECT_MAPPER.createArrayNode();
         if (label != null) {
-            labelNode.add(label.toDebugString()); // FIXME - this feels wrong
+            labelNode.add(label.toDebugString());
         }
         node.set("labels", labelNode);
         return node;
