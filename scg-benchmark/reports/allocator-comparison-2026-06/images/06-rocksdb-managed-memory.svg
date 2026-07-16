@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="920" height="560" viewBox="0 0 920 560" role="img" aria-labelledby="title desc">
+  <title>Final Managed RocksDB Memory</title>
+  <desc>Block cache, memtables, and table-reader bytes remained tiny in all three runs.</desc>
+  <rect width="920" height="560" fill="#FAFAF7"/>
+  <text x="90" y="36" font-family="Helvetica, Arial, sans-serif" font-size="24" font-weight="700" fill="#1F2933">Final Managed RocksDB Memory</text>
+  <text x="90" y="58" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#52606D">Block cache, memtables, and table-reader bytes remained tiny in all three runs.</text>
+  <text x="24" y="270.0" transform="rotate(-90 24 270.0)" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#52606D">KiB</text>
+  <line x1="90" y1="470" x2="880" y2="470" stroke="#7B8794" stroke-width="1"/>
+  <line x1="90" y1="70" x2="90" y2="470" stroke="#7B8794" stroke-width="1"/>
+  <line x1="90" y1="70.0" x2="880" y2="70.0" stroke="#D9E2EC" stroke-width="1"/>
+  <text x="80" y="74.0" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#52606D">127</text>
+  <line x1="90" y1="150.0" x2="880" y2="150.0" stroke="#D9E2EC" stroke-width="1"/>
+  <text x="80" y="154.0" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#52606D">101</text>
+  <line x1="90" y1="230.0" x2="880" y2="230.0" stroke="#D9E2EC" stroke-width="1"/>
+  <text x="80" y="234.0" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#52606D">76.0</text>
+  <line x1="90" y1="310.0" x2="880" y2="310.0" stroke="#D9E2EC" stroke-width="1"/>
+  <text x="80" y="314.0" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#52606D">50.7</text>
+  <line x1="90" y1="390.0" x2="880" y2="390.0" stroke="#D9E2EC" stroke-width="1"/>
+  <text x="80" y="394.0" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#52606D">25.3</text>
+  <line x1="90" y1="470.0" x2="880" y2="470.0" stroke="#D9E2EC" stroke-width="1"/>
+  <text x="80" y="474.0" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#52606D">0.00</text>
+  <rect x="122.9" y="212.8" width="61.8" height="257.2" fill="#5B8E7D"/>
+  <text x="153.8" y="205.8" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="10" fill="#1F2933">81.4</text>
+  <rect x="188.8" y="463.7" width="61.8" height="6.3" fill="#BC4B51"/>
+  <text x="219.7" y="456.7" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="10" fill="#1F2933">2.00</text>
+  <rect x="254.6" y="464.1" width="61.8" height="5.9" fill="#3C91E6"/>
+  <text x="285.5" y="457.1" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="10" fill="#1F2933">1.86</text>
+  <text x="221.7" y="492.0" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#1F2933">glibc-arena2</text>
+  <rect x="386.2" y="122.2" width="61.8" height="347.8" fill="#5B8E7D"/>
+  <text x="417.2" y="115.2" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="10" fill="#1F2933">110</text>
+  <rect x="452.1" y="463.7" width="61.8" height="6.3" fill="#BC4B51"/>
+  <text x="483.0" y="456.7" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="10" fill="#1F2933">2.00</text>
+  <rect x="517.9" y="464.0" width="61.8" height="6.0" fill="#3C91E6"/>
+  <text x="548.8" y="457.0" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="10" fill="#1F2933">1.89</text>
+  <text x="485.0" y="492.0" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#1F2933">jemalloc</text>
+  <rect x="649.6" y="366.2" width="61.8" height="103.8" fill="#5B8E7D"/>
+  <text x="680.5" y="359.2" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="10" fill="#1F2933">32.9</text>
+  <rect x="715.4" y="463.7" width="61.8" height="6.3" fill="#BC4B51"/>
+  <text x="746.3" y="456.7" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="10" fill="#1F2933">2.00</text>
+  <rect x="781.2" y="464.0" width="61.8" height="6.0" fill="#3C91E6"/>
+  <text x="812.2" y="457.0" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="10" fill="#1F2933">1.89</text>
+  <text x="748.3" y="492.0" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#1F2933">tcmalloc</text>
+  <rect x="710" y="28" width="12" height="12" fill="#5B8E7D"/>
+  <text x="728" y="38" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#1F2933">Block cache</text>
+  <rect x="710" y="46" width="12" height="12" fill="#BC4B51"/>
+  <text x="728" y="56" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#1F2933">Memtables</text>
+  <rect x="710" y="64" width="12" height="12" fill="#3C91E6"/>
+  <text x="728" y="74" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#1F2933">Table readers</text>
+</svg>

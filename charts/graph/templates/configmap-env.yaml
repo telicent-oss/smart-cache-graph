@@ -33,4 +33,9 @@ data:
   OTEL_TRACES_EXPORTER: "none"
   OTEL_LOGS_EXPORTER: "none"
   {{- end }}
+
+  {{- if .Values.graph.enableBackupEncryption }}
+  BACKUPS_PRIVATE_KEY_URL: {{ .Values.graph.backupEncryption.privateKeyUrl | quote }}
+  BACKUPS_PUBLIC_KEY_URL: {{ .Values.graph.backupEncryption.publicKeyUrl | quote }}
+  {{- end }}
 {{- end }}

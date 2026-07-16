@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="920" height="560" viewBox="0 0 920 560" role="img" aria-labelledby="title desc">
+  <title>Average Graph Throughput</title>
+  <desc>30 graph-stress cycles per allocator, ABAC/RocksDB Smart Cache Graph</desc>
+  <rect width="920" height="560" fill="#FAFAF7"/>
+  <text x="90" y="36" font-family="Helvetica, Arial, sans-serif" font-size="24" font-weight="700" fill="#1F2933">Average Graph Throughput</text>
+  <text x="90" y="58" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#52606D">30 graph-stress cycles per allocator, ABAC/RocksDB Smart Cache Graph</text>
+  <text x="24" y="270.0" transform="rotate(-90 24 270.0)" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#52606D">Requests/sec</text>
+  <line x1="90" y1="470" x2="880" y2="470" stroke="#7B8794" stroke-width="1"/>
+  <line x1="90" y1="70" x2="90" y2="470" stroke="#7B8794" stroke-width="1"/>
+  <line x1="90" y1="70.0" x2="880" y2="70.0" stroke="#D9E2EC" stroke-width="1"/>
+  <text x="80" y="74.0" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#52606D">1036</text>
+  <line x1="90" y1="150.0" x2="880" y2="150.0" stroke="#D9E2EC" stroke-width="1"/>
+  <text x="80" y="154.0" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#52606D">829</text>
+  <line x1="90" y1="230.0" x2="880" y2="230.0" stroke="#D9E2EC" stroke-width="1"/>
+  <text x="80" y="234.0" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#52606D">622</text>
+  <line x1="90" y1="310.0" x2="880" y2="310.0" stroke="#D9E2EC" stroke-width="1"/>
+  <text x="80" y="314.0" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#52606D">415</text>
+  <line x1="90" y1="390.0" x2="880" y2="390.0" stroke="#D9E2EC" stroke-width="1"/>
+  <text x="80" y="394.0" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#52606D">207</text>
+  <line x1="90" y1="470.0" x2="880" y2="470.0" stroke="#D9E2EC" stroke-width="1"/>
+  <text x="80" y="474.0" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#52606D">0.00</text>
+  <rect x="149.2" y="125.6" width="144.8" height="344.4" fill="#4C956C"/>
+  <text x="221.7" y="117.6" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#1F2933">892</text>
+  <text x="221.7" y="492.0" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#1F2933">glibc-arena2</text>
+  <rect x="412.6" y="205.9" width="144.8" height="264.1" fill="#D97D54"/>
+  <text x="485.0" y="197.9" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#1F2933">684</text>
+  <text x="485.0" y="492.0" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#1F2933">jemalloc</text>
+  <rect x="675.9" y="122.2" width="144.8" height="347.8" fill="#3C91E6"/>
+  <text x="748.3" y="114.2" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#1F2933">901</text>
+  <text x="748.3" y="492.0" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#1F2933">tcmalloc</text>
+</svg>
