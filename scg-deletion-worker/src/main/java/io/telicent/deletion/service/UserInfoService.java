@@ -31,7 +31,13 @@ public class UserInfoService {
         this.objectMapper = new ObjectMapper();
     }
 
-    public boolean isSystemAdmin(String authorization, HttpServletRequest originalRequest) {
+    public enum AuthResult {
+        AUTHORIZED,       // 200 from /userinfo + ADMIN_SYSTEM role present
+        FORBIDDEN,        // 200 from /userinfo + ADMIN_SYSTEM role absent
+        UNAUTHORIZED      // 401/non-200 from /userinfo — invalid/expired session
+    }
+
+    public AuthResult isSystemAdmin(String authorization, HttpServletRequest originalRequest) {
         try {
             String sessionId = originalRequest.getHeader("X-Auth-Session-Id");
             String authHeader = sessionId != null
@@ -49,22 +55,28 @@ public class UserInfoService {
             HttpResponse<String> response = httpClient.send(request,
                     HttpResponse.BodyHandlers.ofString());
 
+            if (response.statusCode() == 401) {
+                LOGGER.warn("UserInfo returned 401 — invalid or expired session");
+                return AuthResult.UNAUTHORIZED;
+            }
             if (response.statusCode() != 200) {
                 LOGGER.warn("UserInfo endpoint returned {} for role check", response.statusCode());
-                return false;
+                return AuthResult.UNAUTHORIZED;
             }
 
             Map<String, Object> userInfo = objectMapper.readValue(response.body(), Map.class);
             List<String> roles = (List<String>) userInfo.get("roles");
             if (roles == null) {
                 LOGGER.warn("No roles found in userinfo response");
-                return false;
+                return AuthResult.FORBIDDEN;
             }
-            return roles.stream().anyMatch(ADMIN_SYSTEM_ROLE::equalsIgnoreCase);
+            boolean isAdmin = roles.stream().anyMatch(ADMIN_SYSTEM_ROLE::equalsIgnoreCase);
+            LOGGER.info("User roles: {} — isAdmin: {}", roles, isAdmin);
+            return isAdmin ? AuthResult.AUTHORIZED : AuthResult.FORBIDDEN;
 
         } catch (IOException | InterruptedException e) {
             LOGGER.error("Failed to call userinfo endpoint: {}", e.getMessage());
-            return false;
+            return AuthResult.UNAUTHORIZED;
         }
     }
 }
