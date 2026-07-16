@@ -114,6 +114,7 @@ public class DistributionGraphDeletionListener implements DistributionLifecycleL
     static void deleteDistributionGraph(DatasetGraphABAC dataset, Node graphName) {
         Txn.executeWrite(dataset, () -> {
             DatasetGraph base = dataset.getBase();
+            @SuppressWarnings("resource") // LabelsStore is owned/closed by DatasetGraphABAC
             LabelsStore labels = dataset.labelsStore();
             if (labels != null) {
                 List<Quad> quads = Iter.toList(base.find(graphName, Node.ANY, Node.ANY, Node.ANY));
