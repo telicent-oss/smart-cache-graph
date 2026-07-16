@@ -1,0 +1,253 @@
+openapi: 3.0.3
+info:
+  title: SCG Deletion Worker API
+  description: |
+    OpenAPI Specification for interacting with the SCG Deletion Worker API for triggering and monitoring RDF distribution deletion jobs in Kafka event streams.
+  version: 1.0.10-SNAPSHOT
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+  - url: https://api.system-integration.telicent-sandbox.telicent.live/deletion-worker
+    description: SI server
+components:
+  schemas:
+    JobSubmissionResponse:
+      type: object
+      description: Response when a deletion job is successfully submitted
+      properties:
+        jobId:
+          type: string
+          format: uuid
+          description: Unique identifier for the deletion job
+          example: "550e8400-e29b-41d4-a716-446655440000"
+      required:
+        - jobId
+    ErrorResponse:
+      type: object
+      description: Standard error response
+      properties:
+        error:
+          type: string
+          description: Human-readable error message
+          example: "distributionId is required"
+      required:
+        - error
+    JobState:
+      type: object
+      description: Current state of a deletion job
+      properties:
+        jobId:
+          type: string
+          format: uuid
+          description: Unique identifier for the deletion job
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        distributionId:
+          type: string
+          description: The distribution ID targeted for deletion
+          example: "my-data-distribution"
+        status:
+          type: string
+          enum: [RUNNING, COMPLETED, FAILED]
+          description: Current job status
+          example: "COMPLETED"
+        startedAt:
+          type: string
+          format: date-time
+          description: Timestamp when the job was started
+          example: "2026-07-15T10:30:00Z"
+        errorMessage:
+          type: string
+          nullable: true
+          description: Error message if job failed
+          example: "Failed to connect to Kafka: Connection refused"
+        patchesSent:
+          type: integer
+          nullable: false
+          description: Number of delete patches successfully sent to Kafka
+          example: 42
+      required:
+        - jobId
+        - distributionId
+        - status
+        - startedAt
+  responses:
+    UnauthorizedError:
+      description: Missing or invalid Authorization header
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: "Unauthorized"
+    ForbiddenError:
+      description: User lacks ADMIN_SYSTEM role
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: "ROLE_ADMIN_SYSTEM required"
+    NotFoundError:
+      description: Job not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: "Job not found: 550e8400-e29b-41d4-a716-446655440000"
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: "Failed to start deletion job"
+  securitySchemes:
+    SessionAuth:
+      description: |
+        Session-based authentication. Clients must provide a valid session ID in the
+        Authorization header as "Bearer sess_xxx". In SI, requests go through
+        Traefik which validates the session via the auth-server's forward auth endpoint
+        and injects X-Auth-Session-Id for downstream role checking. Direct API calls
+        require a valid session ID obtained from the auth-server.
+      type: http
+      scheme: bearer
+security:
+  - SessionAuth: []
+paths:
+  /jobs/delete-distribution:
+    post:
+      summary: Trigger a distribution deletion job
+      description: |
+        Initiates an asynchronous job to delete all RDF data for the specified distribution ID from the Kafka topic.
+        The job reads all existing patches for the distribution, inverts them to delete operations, and publishes
+        the delete patches back to the same topic.
+
+        **Authentication**: Requires a valid session ID in the Authorization: Bearer sess_xxx header with ADMIN_SYSTEM role, 
+        validated against the configured userinfo endpoint.
+      operationId: deleteDistribution
+      parameters:
+        - name: distribution-id
+          in: query
+          required: true
+          description: The distribution ID to delete. Must match the Distribution-ID header on Kafka records.
+          schema:
+            type: string
+            minLength: 1
+            example: "my-data-distribution"
+      responses:
+        '202':
+          description: Deletion job accepted and started asynchronously
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobSubmissionResponse'
+              example:
+                jobId: "550e8400-e29b-41d4-a716-446655440000"
+        '400':
+          description: Missing or blank distribution-id parameter
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "distributionId is required"
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /jobs/{jobId}:
+    get:
+      summary: Get deletion job status
+      description: |
+        Retrieves the current status and progress of a deletion job by its jobId.
+
+        **Authentication**: Requires a valid Bearer token with the `ADMIN_SYSTEM` role.
+      operationId: getJobStatus
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          description: The job ID returned from the delete-distribution endpoint
+          schema:
+            type: string
+            format: uuid
+            example: "550e8400-e29b-41d4-a716-446655440000"
+      responses:
+        '200':
+          description: Job status retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobState'
+              examples:
+                running:
+                  summary: Job in progress
+                  value:
+                    jobId: "550e8400-e29b-41d4-a716-446655440000"
+                    distributionId: "my-data-distribution"
+                    status: "RUNNING"
+                    startedAt: "2026-07-15T10:30:00Z"
+                    errorMessage: null
+                    patchesSent: 0
+                completed:
+                  summary: Job completed successfully
+                  value:
+                    jobId: "550e8400-e29b-41d4-a716-446655440000"
+                    distributionId: "my-data-distribution"
+                    status: "COMPLETED"
+                    startedAt: "2026-07-15T10:30:00Z"
+                    errorMessage: null
+                    patchesSent: 157
+                failed:
+                  summary: Job failed
+                  value:
+                    jobId: "550e8400-e29b-41d4-a716-446655440000"
+                    distributionId: "my-data-distribution"
+                    status: "FAILED"
+                    startedAt: "2026-07-15T10:30:00Z"
+                    errorMessage: "Failed to connect to Kafka: Connection refused"
+                    patchesSent: 0
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /actuator/health:
+    get:
+      security: []
+      summary: Health check endpoint
+      description: |
+        Spring Boot Actuator health check endpoint. Returns service health status.
+      operationId: healthCheck
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [UP, DOWN]
+                    example: "UP"
+              example:
+                status: "UP"
+        '503':
+          description: Service is unhealthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [UP, DOWN]
+                    example: "DOWN"

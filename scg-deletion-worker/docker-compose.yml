@@ -1,7 +1,10 @@
 services:
   deletion-worker:
     build:
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: scg-deletion-worker/Dockerfile
+      args:
+        PROJECT_VERSION: ${PROJECT_VERSION}
     image: scg-deletion-worker:latest
     container_name: scg-deletion-worker
     ports:

@@ -109,13 +109,10 @@ public class DeletionJobConsumer implements AutoCloseable {
 
     /**
      * Processes records from the topic, calling the handler for each relevant record.
-     * Returns when the job's own events are encountered or the topic
-     * is exhausted.
+     * Returns when the job's own events are encountered or the topic is exhausted.
      *
      * @param handler decides what is being done with the records.
      */
-    //TODO
-    // rethink double pass
     public void process(RecordHandler handler) {
         Map<Long, ConsumerRecord<Bytes, Bytes>> candidates = new LinkedHashMap<>();
         Set<Long> deletedOffsets = new HashSet<>();
