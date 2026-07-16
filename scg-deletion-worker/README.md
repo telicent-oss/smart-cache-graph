@@ -104,7 +104,7 @@ curl -X POST \
 |--------|-------------|
 | 202 Accepted | Job started, returns `{"jobId": "<uuid>"}` |
 | 400 Bad Request | Missing or blank `distribution-id` |
-| 401 Unauthorized | Missing `Authorization` header |
+| 401 Unauthorized | Missing `Authorization` header, or invalid/expired session |
 | 403 Forbidden | User lacks `ADMIN_SYSTEM` role |
 
 ### Get Job Status

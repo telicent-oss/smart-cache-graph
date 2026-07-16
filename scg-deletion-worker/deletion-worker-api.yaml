@@ -77,8 +77,15 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
-          example:
-            error: "Unauthorized"
+          examples:
+            missing_header:
+              summary: No Authorization header provided
+              value:
+                error: "Authorization header is required"
+            invalid_session:
+              summary: Invalid or expired session
+              value:
+                error: "Invalid or expired session"
     ForbiddenError:
       description: User lacks ADMIN_SYSTEM role
       content:
