@@ -18,17 +18,19 @@ package io.telicent.deletion;
 
 import org.apache.jena.graph.Node;
 import org.apache.jena.rdfpatch.RDFPatch;
+import org.apache.jena.rdfpatch.changes.RDFChangesBase;
 import org.apache.jena.rdfpatch.changes.RDFChangesCollector;
 import org.apache.jena.sparql.core.DatasetGraph;
 import org.apache.jena.sparql.core.Quad;
 
 import java.util.Iterator;
+import java.util.Optional;
 
 public class RDFPatchInverter {
 
-    public RDFPatch invert(DatasetGraph dsg) {
+    public Optional<RDFPatch> invert(DatasetGraph dsg) {
         if (dsg.isEmpty()) {
-            return null;
+            return Optional.empty();
         }
 
         RDFChangesCollector collector = new RDFChangesCollector();
@@ -43,8 +45,30 @@ public class RDFPatchInverter {
 
         collector.txnCommit();
 
-        return collector.getRDFPatch();
+        return Optional.ofNullable(collector.getRDFPatch());
     }
+
+    public Optional<RDFPatch> invert(RDFPatch sourcePatch) {
+        RDFChangesCollector collector = new RDFChangesCollector();
+        collector.txnBegin();
+
+        sourcePatch.apply(new RDFChangesBase() {
+            @Override
+            public void add(Node g, Node s, Node p, Node o) {
+                // Inverts adds to deletes
+                collector.delete(resolveGraph(g), s, p, o);
+            }
+
+            @Override
+            public void delete(Node g, Node s, Node p, Node o) {
+                // Ignores deletes - not restoring previously deleted data
+            }
+        });
+
+        collector.txnCommit();
+        return Optional.ofNullable(collector.getRDFPatch());
+    }
+
     /**
      * Normalises the graph node — the default graph has two possible
      * representations in Jena, both of which we map to the patch default.

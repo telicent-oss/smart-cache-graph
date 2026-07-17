@@ -127,6 +127,7 @@ public class DeletionJobConsumer implements AutoCloseable {
             }
             emptyPolls = 0;
 
+            // Loop detection - stop processing when delete patches sent by this job are encountered
             for (ConsumerRecord<Bytes, Bytes> record : records) {
                 String incomingJobId = headerValue(record, DELETION_JOB_ID);
                 if (jobId.equals(incomingJobId)) {
@@ -135,10 +136,13 @@ public class DeletionJobConsumer implements AutoCloseable {
                     return;
                 }
 
+                // Skip all other distribution-ids
                 String recordDistributionId = headerValue(record, TelicentHeaders.DISTRIBUTION_ID);
                 if (!distributionId.equals(recordDistributionId)) {
                     continue;
                 }
+
+                // Call handler on a record with the matching distribution-id (all other are being skipped)
                 handler.handle(record);
             }
         }

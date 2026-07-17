@@ -4,7 +4,9 @@ import io.telicent.jena.abac.labels.node.LabelToNodeGenerator;
 import io.telicent.smart.cache.sources.TelicentHeaders;
 import org.apache.jena.rdfpatch.RDFPatch;
 import org.apache.jena.rdfpatch.RDFPatchOps;
+import org.apache.jena.rdfpatch.changes.RDFChangesApply;
 import org.apache.jena.riot.Lang;
+import org.apache.jena.riot.RDFLanguages;
 import org.apache.jena.riot.RDFParser;
 import org.apache.jena.riot.system.StreamRDFLib;
 import org.apache.jena.sparql.core.DatasetGraph;
@@ -92,35 +94,50 @@ public class DeletionJobProducer implements AutoCloseable {
      * @return
      */
     public Optional<RecordMetadata> sendDeletePatch(ConsumerRecord<Bytes, Bytes> record) throws ExecutionException, InterruptedException {
-        Lang lang = resolveLang(headerValue(record, TelicentHeaders.CONTENT_TYPE));
-        if (lang == null) {
-            LOGGER.warn("[{}] Skipping offset {} — unrecognised Content-Type: {}",
-                    jobId, record.offset(), headerValue(record, TelicentHeaders.CONTENT_TYPE));
-            return Optional.empty();
+        String contentType = headerValue(record, TelicentHeaders.CONTENT_TYPE);
+        DatasetGraph dsg = DatasetGraphFactory.create();
+        Optional<RDFPatch> patch;
+
+        // Handles RDFPatches, as their content type wouldn't be recognized by contentTypeToLang later
+        // That way RDFPatches aren't skipped
+        if ("application/rdf-patch".equals(contentType)) {
+            try {
+                RDFPatch sourcePatch = RDFPatchOps.read(new ByteArrayInputStream(record.value().get()));
+                patch = inverter.invert(sourcePatch);
+            } catch (Exception e) {
+                LOGGER.warn("[{}] Skipping offset {} — failed to parse RDF Patch payload: {}",
+                        jobId, record.offset(), e.getMessage());
+                return Optional.empty();
+            }
+        } else {
+            // Handles dataset events
+            Lang lang = RDFLanguages.contentTypeToLang(headerValue(record, TelicentHeaders.CONTENT_TYPE));
+            if (lang == null) {
+                LOGGER.warn("[{}] Skipping offset {} — unrecognised Content-Type: {}",
+                        jobId, record.offset(), headerValue(record, TelicentHeaders.CONTENT_TYPE));
+                return Optional.empty();
+            }
+            try {
+                RDFParser.create()
+                        .source(new ByteArrayInputStream(record.value().get()))
+                        .labelToNode(LabelToNodeGenerator.generate())
+                        .lang(lang)
+                        .parse(StreamRDFLib.dataset(dsg));
+            } catch (Exception e) {
+                LOGGER.warn("[{}] Skipping offset {} — failed to parse payload: {}",
+                        jobId, record.offset(), e.getMessage());
+                return Optional.empty();
+            }
+            patch = inverter.invert(dsg);
         }
 
-        DatasetGraph dsg = DatasetGraphFactory.createTxnMem();
-        try {
-            RDFParser.create()
-                    .source(new ByteArrayInputStream(record.value().get()))
-                    .labelToNode(LabelToNodeGenerator.generate())
-                    .lang(lang)
-                    .parse(StreamRDFLib.dataset(dsg));
-        }
-        catch (Exception e) {
-            LOGGER.warn("[{}] Skipping offset {} — failed to parse payload: {}",
-                    jobId, record.offset(), e.getMessage());
-            return Optional.empty();
-        }
-
-        RDFPatch patch = inverter.invert(dsg);
-        if (patch == null) {
+        if (patch.isEmpty()) {
             LOGGER.warn("[{}] Skipping offset {} — no quads found in payload",
                     jobId, record.offset());
             return Optional.empty();
         }
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        RDFPatchOps.write(baos, patch);
+        RDFPatchOps.write(baos, patch.get());
 
         ProducerRecord<Bytes, Bytes> output = new ProducerRecord<>(
                 topic,
@@ -162,19 +179,6 @@ public class DeletionJobProducer implements AutoCloseable {
                     jobId, record.offset(), e.getMessage());
             throw new DeletionJobException("Failed to send delete patch", e);
         }
-    }
-
-    private Lang resolveLang(String contentType) {
-        if (contentType == null) return null;
-        String normalised = contentType.split(";")[0].trim().toLowerCase();
-        return switch (normalised) {
-            case "nquads", "application/n-quads", "text/x-nquads" -> Lang.NQUADS;
-            case "text/turtle", "application/turtle"              -> Lang.TURTLE;
-            case "application/trig"                               -> Lang.TRIG;
-            case "application/n-triples"                         -> Lang.NTRIPLES;
-            case "application/rdf+xml"                            -> Lang.RDFXML;
-            default                                               -> null;
-        };
     }
 
     private String headerValue(ConsumerRecord<?, ?> record, String headerName) {

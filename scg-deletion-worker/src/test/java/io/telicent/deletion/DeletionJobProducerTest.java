@@ -21,6 +21,7 @@ import org.apache.jena.graph.Node;
 import org.apache.jena.graph.NodeFactory;
 import org.apache.jena.rdfpatch.RDFPatch;
 import org.apache.jena.rdfpatch.RDFPatchOps;
+import org.apache.jena.rdfpatch.changes.RDFChangesCollector;
 import org.apache.jena.riot.Lang;
 import org.apache.jena.riot.RDFDataMgr;
 import org.apache.jena.riot.RDFParser;
@@ -293,6 +294,51 @@ class DeletionJobProducerTest {
         Node first = blankNodes.getFirst();
         assertTrue(blankNodes.stream().allMatch(n -> n.equals(first)),
                 "All occurrences of _:b0 within a single record should map to the same internal node ID");
+    }
+
+    @Test
+    void rdfPatchRecordProducesDeleteOperation() throws Exception {
+        RDFChangesCollector collector = new RDFChangesCollector();
+        collector.start();
+        collector.txnBegin();
+        collector.add(G, S, P, O);
+        collector.txnCommit();
+        collector.finish();
+        RDFPatch sourcePatch = collector.getRDFPatch();
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        RDFPatchOps.write(baos, sourcePatch);
+
+        ConsumerRecord<Bytes, Bytes> record = new ConsumerRecord<>(
+                TOPIC, 0, 0L,
+                Bytes.wrap("key".getBytes(StandardCharsets.UTF_8)),
+                Bytes.wrap(baos.toByteArray())
+        );
+        record.headers().add(
+                TelicentHeaders.DISTRIBUTION_ID,
+                DISTRIBUTION_ID.getBytes(StandardCharsets.UTF_8)
+        );
+        record.headers().add(
+                TelicentHeaders.CONTENT_TYPE,
+                "application/rdf-patch".getBytes(StandardCharsets.UTF_8)
+        );
+
+        try (DeletionJobProducer producer = new DeletionJobProducer(
+                mockProducer, rdfPatchInverter, TOPIC, DISTRIBUTION_ID, JOB_ID)) {
+            Optional<RecordMetadata> result = producer.sendDeletePatch(record);
+            assertTrue(result.isPresent(), "Expected a delete patch to be produced for an RDF Patch record");
+        }
+
+        assertEquals(1, mockProducer.history().size());
+
+        ProducerRecord<Bytes, Bytes> sent = mockProducer.history().getFirst();
+        RDFPatch deletePatch = RDFPatchOps.read(new ByteArrayInputStream(sent.value().get()));
+
+        RDFPatchInverterTest.RecordingChanges changes = new RDFPatchInverterTest.RecordingChanges();
+        deletePatch.apply(changes);
+
+        assertEquals(1, changes.deletes.size(), "Expected one delete operation for the added quad");
+        assertEquals(0, changes.adds.size());
     }
 
     private byte[] nquadsPayload() {

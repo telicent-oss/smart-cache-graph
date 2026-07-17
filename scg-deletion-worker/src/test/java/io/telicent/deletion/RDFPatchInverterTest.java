@@ -28,6 +28,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -51,7 +52,7 @@ public class RDFPatchInverterTest {
     @Test
     void returnsNullForEmptyDataset() {
         DatasetGraph dsg = DatasetGraphFactory.createTxnMem();
-        assertNull(rdfPatchInverter.invert(dsg));
+        assertEquals(rdfPatchInverter.invert(dsg), Optional.empty());
     }
 
     @Test
@@ -59,7 +60,7 @@ public class RDFPatchInverterTest {
         DatasetGraph dsg = DatasetGraphFactory.createTxnMem();
         dsg.add(G, S, P, O);
 
-        RDFPatch patch = rdfPatchInverter.invert(dsg);
+        RDFPatch patch = rdfPatchInverter.invert(dsg).get();
         assertNotNull(patch);
 
         RecordingChanges changes = new RecordingChanges();
@@ -84,11 +85,11 @@ public class RDFPatchInverterTest {
         dsg.add(G, S, P, NodeFactory.createURI("http://example.org/object3"));
         dsg.add(G, S, P, NodeFactory.createBlankNode());
 
-        RDFPatch patch = rdfPatchInverter.invert(dsg);
-        assertNotNull(patch);
+        Optional<RDFPatch> patch = rdfPatchInverter.invert(dsg);
+        assertFalse(patch.isEmpty());
 
         RecordingChanges changes = new RecordingChanges();
-        patch.apply(changes);
+        patch.get().apply(changes);
 
         assertEquals(4, changes.deletes.size());
         assertEquals(0, changes.adds.size());
@@ -99,11 +100,11 @@ public class RDFPatchInverterTest {
         DatasetGraph dsg = DatasetGraphFactory.createTxnMem();
         dsg.add(Quad.defaultGraphIRI, S, P, O);
 
-        RDFPatch patch = rdfPatchInverter.invert(dsg);
-        assertNotNull(patch);
+        Optional<RDFPatch> patch = rdfPatchInverter.invert(dsg);
+        assertFalse(patch.isEmpty());
 
         RecordingChanges changes = new RecordingChanges();
-        patch.apply(changes);
+        patch.get().apply(changes);
 
         assertEquals(1, changes.deletes.size());
         assertEquals(Quad.defaultGraphIRI, changes.deletes.getFirst().g);
@@ -114,11 +115,11 @@ public class RDFPatchInverterTest {
         DatasetGraph dsg = DatasetGraphFactory.createTxnMem();
         dsg.add(G, S, P, LITERAL);
 
-        RDFPatch patch = rdfPatchInverter.invert(dsg);
-        assertNotNull(patch);
+        Optional<RDFPatch> patch = rdfPatchInverter.invert(dsg);
+        assertFalse(patch.isEmpty());
 
         RecordingChanges changes = new RecordingChanges();
-        patch.apply(changes);
+        patch.get().apply(changes);
 
         assertEquals(1, changes.deletes.size());
         assertEquals(LITERAL, changes.deletes.getFirst().o);
@@ -129,11 +130,11 @@ public class RDFPatchInverterTest {
         DatasetGraph dsg = DatasetGraphFactory.createTxnMem();
         dsg.add(G, S, P, TYPED_LITERAL);
 
-        RDFPatch patch = rdfPatchInverter.invert(dsg);
-        assertNotNull(patch);
+        Optional<RDFPatch> patch = rdfPatchInverter.invert(dsg);
+        assertFalse(patch.isEmpty());
 
         RecordingChanges changes = new RecordingChanges();
-        patch.apply(changes);
+        patch.get().apply(changes);
 
         assertEquals(1, changes.deletes.size());
         assertEquals(TYPED_LITERAL, changes.deletes.getFirst().o);
@@ -144,11 +145,11 @@ public class RDFPatchInverterTest {
         DatasetGraph dsg = DatasetGraphFactory.createTxnMem();
         dsg.add(G, S, P, LANG_LITERAL);
 
-        RDFPatch patch = rdfPatchInverter.invert(dsg);
-        assertNotNull(patch);
+        Optional<RDFPatch> patch = rdfPatchInverter.invert(dsg);
+        assertFalse(patch.isEmpty());
 
         RecordingChanges changes = new RecordingChanges();
-        patch.apply(changes);
+        patch.get().apply(changes);
 
         assertEquals(1, changes.deletes.size());
         assertEquals(LANG_LITERAL, changes.deletes.getFirst().o);
@@ -159,11 +160,11 @@ public class RDFPatchInverterTest {
         DatasetGraph dsg = DatasetGraphFactory.createTxnMem();
         dsg.add(G, S, P, O);
 
-        RDFPatch patch = rdfPatchInverter.invert(dsg);
-        assertNotNull(patch);
+        Optional<RDFPatch> patch = rdfPatchInverter.invert(dsg);
+        assertFalse(patch.isEmpty());
 
         RecordingChanges changes = new RecordingChanges();
-        patch.apply(changes);
+        patch.get().apply(changes);
 
         assertTrue(changes.hasTransaction,
                 "Patch must contain transaction boundaries (txnBegin/txnCommit)");
@@ -175,11 +176,11 @@ public class RDFPatchInverterTest {
         dsg.add(G, S, P, O);
         dsg.add(G, S, P, LITERAL);
 
-        RDFPatch patch = rdfPatchInverter.invert(dsg);
-        assertNotNull(patch);
+        Optional<RDFPatch> patch = rdfPatchInverter.invert(dsg);
+        assertFalse(patch.isEmpty());
 
         RecordingChanges changes = new RecordingChanges();
-        patch.apply(changes);
+        patch.get().apply(changes);
 
         assertEquals(0, changes.adds.size(),
                 "Delete patch must never contain add operations");
@@ -194,11 +195,11 @@ public class RDFPatchInverterTest {
         dsg.add(g1, S, P, O);
         dsg.add(g2, S, P, O);
 
-        RDFPatch patch = rdfPatchInverter.invert(dsg);
-        assertNotNull(patch);
+        Optional<RDFPatch> patch = rdfPatchInverter.invert(dsg);
+        assertFalse(patch.isEmpty());
 
         RecordingChanges changes = new RecordingChanges();
-        patch.apply(changes);
+        patch.get().apply(changes);
 
         assertEquals(2, changes.deletes.size());
         assertTrue(changes.deletes.stream().anyMatch(d -> g1.equals(d.g)));

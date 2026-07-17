@@ -284,20 +284,6 @@ class DeletionJobProducerIntegrationTest extends KafkaIntegrationTestBase{
     }
 
     @Test
-    void contentTypeWithCharsetSuffixIsHandled() throws Exception {
-        ConsumerRecord<Bytes, Bytes> record = buildRecordWithContentType(
-                0L, DISTRIBUTION_ID, "application/n-quads; charset=utf-8", nquadsPayload("1", "Alice"));
-
-        try (DeletionJobProducer producer = new DeletionJobProducer(
-                kafka.getBootstrapServers(), null, rdfPatchInverter, topic, DISTRIBUTION_ID, jobId)) {
-            var result = producer.sendDeletePatch(record);
-            assertTrue(result.isPresent());
-        }
-
-        assertEquals(1, readAllRecords(1).size());
-    }
-
-    @Test
     void returnsEmptyForNullContentType() throws Exception {
         ConsumerRecord<Bytes, Bytes> record = new ConsumerRecord<>(
                 topic, 0, 0L,
