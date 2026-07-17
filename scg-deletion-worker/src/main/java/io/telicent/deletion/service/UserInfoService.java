@@ -12,6 +12,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
@@ -26,7 +27,9 @@ public class UserInfoService {
     private final ObjectMapper objectMapper;
 
     public UserInfoService(@Value("${deletion-worker.auth.userinfo-url}") String userInfoUrl) {
-        this.httpClient = HttpClient.newHttpClient();
+        this.httpClient = HttpClient.newBuilder()
+                .connectTimeout(Duration.ofSeconds(10))
+                .build();
         this.userInfoUrl = userInfoUrl;
         this.objectMapper = new ObjectMapper();
     }
@@ -51,7 +54,9 @@ public class UserInfoService {
                     .header("Accept-Language", originalRequest.getHeader("Accept-Language"))
                     .GET();
 
-            HttpRequest request = requestBuilder.build();
+            HttpRequest request = requestBuilder
+                    .timeout(Duration.ofSeconds(10))
+                    .build();
             HttpResponse<String> response = httpClient.send(request,
                     HttpResponse.BodyHandlers.ofString());
 
@@ -74,7 +79,11 @@ public class UserInfoService {
             LOGGER.info("User roles: {} — isAdmin: {}", roles, isAdmin);
             return isAdmin ? AuthResult.AUTHORIZED : AuthResult.FORBIDDEN;
 
-        } catch (IOException | InterruptedException e) {
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            LOGGER.error("UserInfo request interrupted: {}", e.getMessage());
+            return AuthResult.UNAUTHORIZED;
+        } catch (IOException e) {
             LOGGER.error("Failed to call userinfo endpoint: {}", e.getMessage());
             return AuthResult.UNAUTHORIZED;
         }

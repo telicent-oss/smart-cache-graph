@@ -82,6 +82,7 @@ public class RDFPatchInverterTest {
         dsg.add(G, S, P, O);
         dsg.add(G, S, P, NodeFactory.createURI("http://example.org/object2"));
         dsg.add(G, S, P, NodeFactory.createURI("http://example.org/object3"));
+        dsg.add(G, S, P, NodeFactory.createBlankNode());
 
         RDFPatch patch = rdfPatchInverter.invert(dsg);
         assertNotNull(patch);
@@ -89,7 +90,7 @@ public class RDFPatchInverterTest {
         RecordingChanges changes = new RecordingChanges();
         patch.apply(changes);
 
-        assertEquals(3, changes.deletes.size());
+        assertEquals(4, changes.deletes.size());
         assertEquals(0, changes.adds.size());
     }
 

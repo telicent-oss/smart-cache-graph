@@ -96,7 +96,6 @@ public class DeletionJobProducer implements AutoCloseable {
         if (lang == null) {
             LOGGER.warn("[{}] Skipping offset {} — unrecognised Content-Type: {}",
                     jobId, record.offset(), headerValue(record, TelicentHeaders.CONTENT_TYPE));
-            System.err.println(jobId + " Skipping offset " + record.offset() + " — unrecognised Content-Type: " + headerValue(record, TelicentHeaders.CONTENT_TYPE));
             return Optional.empty();
         }
 
@@ -111,7 +110,6 @@ public class DeletionJobProducer implements AutoCloseable {
         catch (Exception e) {
             LOGGER.warn("[{}] Skipping offset {} — failed to parse payload: {}",
                     jobId, record.offset(), e.getMessage());
-            System.err.println(jobId + "Skipping offset " + record.offset() + " — failed to parse payload: "  + e.getMessage());
             return Optional.empty();
         }
 
@@ -119,7 +117,6 @@ public class DeletionJobProducer implements AutoCloseable {
         if (patch == null) {
             LOGGER.warn("[{}] Skipping offset {} — no quads found in payload",
                     jobId, record.offset());
-            System.err.println(jobId + "Skipping offset " + record.offset() + " — no quads found in payload");
             return Optional.empty();
         }
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -164,12 +161,10 @@ public class DeletionJobProducer implements AutoCloseable {
             RecordMetadata metadata = producer.send(output).get();
             LOGGER.debug("[{}] Sent delete patch for offset {} -> new offset {}",
                     jobId, record.offset(), metadata.offset());
-            System.err.println(jobId + "Sent delete patch for offset " +  record.offset() + "-> new offset " +  metadata.offset());
             return Optional.of(metadata);
         } catch (Exception e) {
             LOGGER.error("[{}] Failed to send delete patch for offset {}: {}",
                     jobId, record.offset(), e.getMessage());
-            System.err.println(jobId + " Failed to send delete patch for offset " +  record.offset() + ": " + e.getMessage());
             throw new DeletionJobException("Failed to send delete patch", e);
         }
     }
