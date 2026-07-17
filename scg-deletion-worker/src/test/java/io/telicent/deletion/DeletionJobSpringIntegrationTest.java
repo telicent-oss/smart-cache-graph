@@ -345,57 +345,6 @@ public class DeletionJobSpringIntegrationTest extends KafkaIntegrationTestBase{
     }
 
     @Test
-    void deletingSameDistributionTwiceOnlySendsPatchOnFirstDelete() throws Exception {
-        publishRecord("dist-A", null, new String(nquadsPayload("1", "Alice"), StandardCharsets.UTF_8));
-        publishRecord("dist-A", null, new String(nquadsPayload("2", "Bob"), StandardCharsets.UTF_8));
-
-        // first delete job
-        MvcResult firstPost = mockMvc.perform(post("/jobs/delete-distribution")
-                        .param("distribution-id", "dist-A")
-                        .header("Authorization", "Bearer test-token"))
-                .andExpect(status().isAccepted()).andReturn();
-
-        String firstJobId = new ObjectMapper()
-                .readTree(firstPost.getResponse().getContentAsString()).get("jobId").asText();
-
-        await().atMost(60, SECONDS).untilAsserted(() -> {
-            String status = new ObjectMapper().readTree(mockMvc.perform(MockMvcRequestBuilders.get("/jobs/" + firstJobId)
-                            .header("Authorization", "Bearer test-token"))
-                    .andReturn().getResponse().getContentAsString()).get("status").asText();
-            assertEquals("COMPLETED", status);
-        });
-
-        String firstJobPatches = new ObjectMapper()
-                .readTree(mockMvc.perform(MockMvcRequestBuilders.get("/jobs/" + firstJobId)
-                                .header("Authorization", "Bearer test-token"))
-                        .andReturn().getResponse().getContentAsString()).get("patchesSent").asText();
-        assertEquals("2", firstJobPatches);
-
-        // second delete job for the same distribution
-        MvcResult secondPost = mockMvc.perform(post("/jobs/delete-distribution")
-                        .param("distribution-id", "dist-A")
-                        .header("Authorization", "Bearer test-token"))
-                .andExpect(status().isAccepted()).andReturn();
-
-        String secondJobId = new ObjectMapper()
-                .readTree(secondPost.getResponse().getContentAsString()).get("jobId").asText();
-
-        await().atMost(60, SECONDS).untilAsserted(() -> {
-            String status = new ObjectMapper().readTree(mockMvc.perform(MockMvcRequestBuilders.get("/jobs/" + secondJobId).header("Authorization", "Bearer test-token"))
-                    .andReturn().getResponse().getContentAsString()).get("status").asText();
-            assertEquals("COMPLETED", status);
-        });
-
-        String secondJobPatches = new ObjectMapper()
-                .readTree(mockMvc.perform(MockMvcRequestBuilders.get("/jobs/" + secondJobId).header("Authorization", "Bearer test-token"))
-                        .andReturn().getResponse().getContentAsString()).get("patchesSent").asText();
-        assertEquals("0", secondJobPatches);
-
-        List<ConsumerRecord<Bytes, Bytes>> allRecords = readAllRecords(4);
-        assertEquals(2, filterDeletePatches(allRecords).size());
-    }
-
-    @Test
     void postWithoutTokenReturns401() throws Exception {
         mockMvc.perform(post("/jobs/delete-distribution")
                         .param("distribution-id", "dist-001"))

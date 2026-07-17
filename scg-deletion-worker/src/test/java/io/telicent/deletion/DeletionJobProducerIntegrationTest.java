@@ -112,10 +112,6 @@ class DeletionJobProducerIntegrationTest extends KafkaIntegrationTestBase{
         Header operation = patch.headers().lastHeader(OPERATION);
         assertNotNull(operation);
         assertEquals("delete", new String(operation.value(), StandardCharsets.UTF_8));
-
-        Header originalOffset = patch.headers().lastHeader(ORIGINAL_OFFSET);
-        assertNotNull(originalOffset);
-        assertEquals("0", new String(originalOffset.value(), StandardCharsets.UTF_8));
     }
 
     @Test
@@ -416,41 +412,6 @@ class DeletionJobProducerIntegrationTest extends KafkaIntegrationTestBase{
         assertEquals(1, changes.deletes.size());
         assertEquals(0, changes.adds.size());
         assertTrue(changes.hasTransaction);
-    }
-
-    @Test
-    void originalOffsetIsCorrectForNonZeroOffset() throws Exception {
-        ConsumerRecord<Bytes, Bytes> record = buildRecord(42L, DISTRIBUTION_ID, nquadsPayload("1", "Alice"));
-
-        try (DeletionJobProducer producer = new DeletionJobProducer(
-                kafka.getBootstrapServers(), null, rdfPatchInverter, topic, DISTRIBUTION_ID, jobId)) {
-            producer.sendDeletePatch(record);
-        }
-
-        ConsumerRecord<Bytes, Bytes> patch = readAllRecords(1).getFirst();
-        Header originalOffset = patch.headers().lastHeader(ORIGINAL_OFFSET);
-        assertNotNull(originalOffset);
-        assertEquals("42", new String(originalOffset.value(), StandardCharsets.UTF_8));
-    }
-
-    @Test
-    void multipleRecordsGetCorrectOriginalOffsets() throws Exception {
-        ConsumerRecord<Bytes, Bytes> record1 = buildRecord(0L, DISTRIBUTION_ID, nquadsPayload("1", "Alice"));
-        ConsumerRecord<Bytes, Bytes> record2 = buildRecord(5L, DISTRIBUTION_ID, nquadsPayload("2", "Bob"));
-
-        try (DeletionJobProducer producer = new DeletionJobProducer(
-                kafka.getBootstrapServers(), null, rdfPatchInverter, topic, DISTRIBUTION_ID, jobId)) {
-            producer.sendDeletePatch(record1);
-            producer.sendDeletePatch(record2);
-        }
-
-        List<ConsumerRecord<Bytes, Bytes>> patches = readAllRecords(2);
-        assertEquals(2, patches.size());
-
-        assertEquals("0", new String(
-                patches.get(0).headers().lastHeader(ORIGINAL_OFFSET).value(), StandardCharsets.UTF_8));
-        assertEquals("5", new String(
-                patches.get(1).headers().lastHeader(ORIGINAL_OFFSET).value(), StandardCharsets.UTF_8));
     }
 
     @Test

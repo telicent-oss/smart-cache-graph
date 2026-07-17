@@ -20,7 +20,6 @@ import io.telicent.smart.cache.sources.TelicentHeaders;
 import org.apache.kafka.clients.consumer.*;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.header.Header;
-import org.apache.kafka.common.protocol.types.Field;
 import org.apache.kafka.common.serialization.BytesDeserializer;
 import org.apache.kafka.common.utils.Bytes;
 import org.slf4j.Logger;
@@ -34,7 +33,6 @@ import java.time.Duration;
 import java.util.*;
 
 import static io.telicent.deletion.DeletionWorkerConstants.DELETION_JOB_ID;
-import static io.telicent.deletion.DeletionWorkerConstants.ORIGINAL_OFFSET;
 
 public class DeletionJobConsumer implements AutoCloseable {
 
@@ -114,15 +112,17 @@ public class DeletionJobConsumer implements AutoCloseable {
      * @param handler decides what is being done with the records.
      */
     public void process(RecordHandler handler) {
-        Map<Long, ConsumerRecord<Bytes, Bytes>> candidates = new LinkedHashMap<>();
-        Set<Long> deletedOffsets = new HashSet<>();
         int emptyPolls = 0;
 
         while (true) {
             ConsumerRecords<Bytes, Bytes> records = consumer.poll(POLL_TIMEOUT);
             if (records.isEmpty()) {
                 emptyPolls++;
-                if (emptyPolls >= MAX_EMPTY_POLLS) break;
+                if (emptyPolls >= MAX_EMPTY_POLLS) {
+                    LOGGER.info("[{}] Topic exhausted after {} consecutive empty polls, job complete",
+                            jobId, MAX_EMPTY_POLLS);
+                    return;
+                }
                 continue;
             }
             emptyPolls = 0;
@@ -132,30 +132,16 @@ public class DeletionJobConsumer implements AutoCloseable {
                 if (jobId.equals(incomingJobId)) {
                     LOGGER.info("[{}] Encountered own events at offset {}, job complete",
                             jobId, record.offset());
-                    candidates.entrySet().stream()
-                            .filter(e -> !deletedOffsets.contains(e.getKey()))
-                            .forEach(e -> handler.handle(e.getValue()));
                     return;
-                }
-
-                String originalOffset = headerValue(record, ORIGINAL_OFFSET);
-                if (originalOffset != null) {
-                    deletedOffsets.add(Long.parseLong(originalOffset));
-                    continue;
                 }
 
                 String recordDistributionId = headerValue(record, TelicentHeaders.DISTRIBUTION_ID);
                 if (!distributionId.equals(recordDistributionId)) {
                     continue;
                 }
-
-                candidates.put(record.offset(), record);
+                handler.handle(record);
             }
         }
-
-        candidates.entrySet().stream()
-                .filter(e -> !deletedOffsets.contains(e.getKey()))
-                .forEach(e -> handler.handle(e.getValue()));
     }
 
 

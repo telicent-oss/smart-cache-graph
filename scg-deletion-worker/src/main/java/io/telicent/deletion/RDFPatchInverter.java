@@ -27,7 +27,9 @@ import java.util.Iterator;
 public class RDFPatchInverter {
 
     public RDFPatch invert(DatasetGraph dsg) {
-        if (dsg.isEmpty()) return null;
+        if (dsg.isEmpty()) {
+            return null;
+        }
 
         RDFChangesCollector collector = new RDFChangesCollector();
         collector.txnBegin();

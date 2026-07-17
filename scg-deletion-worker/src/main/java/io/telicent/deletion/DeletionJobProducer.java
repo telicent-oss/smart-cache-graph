@@ -145,11 +145,6 @@ public class DeletionJobProducer implements AutoCloseable {
         );
 
         output.headers().add(
-                ORIGINAL_OFFSET,
-                String.valueOf(record.offset()).getBytes(StandardCharsets.UTF_8)
-        );
-
-        output.headers().add(
                 DELETION_JOB_ID,
                 jobId.getBytes(StandardCharsets.UTF_8)
         );
@@ -184,12 +179,14 @@ public class DeletionJobProducer implements AutoCloseable {
 
     private String headerValue(ConsumerRecord<?, ?> record, String headerName) {
         Header header = record.headers().lastHeader(headerName);
-        if (header == null) return null;
+        if (header == null) {
+            return null;
+        }
         return new String(header.value(), StandardCharsets.UTF_8);
     }
 
-        @Override
-    public void close() throws Exception {
+    @Override
+    public void close() {
         producer.close();
     }
 }

@@ -23,6 +23,8 @@ import org.apache.jena.rdfpatch.RDFPatch;
 import org.apache.jena.rdfpatch.RDFPatchOps;
 import org.apache.jena.riot.Lang;
 import org.apache.jena.riot.RDFDataMgr;
+import org.apache.jena.riot.RDFParser;
+import org.apache.jena.riot.system.StreamRDFLib;
 import org.apache.jena.sparql.core.DatasetGraph;
 import org.apache.jena.sparql.core.DatasetGraphFactory;
 import org.apache.kafka.clients.consumer.*;
@@ -264,6 +266,33 @@ class DeletionJobProducerTest {
         ProducerRecord<Bytes, Bytes> sentRecord = sent.getFirst();
         Header contentType = sentRecord.headers().lastHeader(TelicentHeaders.CONTENT_TYPE);
         assertEquals("application/rdf-patch", new String(contentType.value(), StandardCharsets.UTF_8));
+    }
+
+    @Test
+    void blankNodesAreConsistentWithinSingleRecord() {
+        String nquadsWithSharedBlankNode =
+                "_:b0 <http://example.org/p1> <http://example.org/o1> <http://example.org/g> .\n" +
+                        "_:b0 <http://example.org/p2> <http://example.org/o2> <http://example.org/g> .\n" +
+                        "<http://example.org/s> <http://example.org/p3> _:b0 <http://example.org/g> .\n";
+
+        DatasetGraph dsg = DatasetGraphFactory.createTxnMem();
+        RDFParser.create()
+                .source(new ByteArrayInputStream(nquadsWithSharedBlankNode.getBytes(StandardCharsets.UTF_8)))
+                .lang(Lang.NQUADS)
+                .parse(StreamRDFLib.dataset(dsg));
+
+        List<Node> blankNodes = new ArrayList<>();
+        dsg.find().forEachRemaining(quad -> {
+            if (quad.getSubject().isBlank()) blankNodes.add(quad.getSubject());
+            if (quad.getObject().isBlank()) blankNodes.add(quad.getObject());
+        });
+
+        assertEquals(3, blankNodes.size(),
+                "Expected 3 quads referencing _:b0 (2 as subject, 1 as object)");
+
+        Node first = blankNodes.getFirst();
+        assertTrue(blankNodes.stream().allMatch(n -> n.equals(first)),
+                "All occurrences of _:b0 within a single record should map to the same internal node ID");
     }
 
     private byte[] nquadsPayload() {
