@@ -118,21 +118,36 @@ public class TestDistributionGraphDeletionListener {
 
     }
 
-    // Disabling due to commented out code.
-//    @Test
-//    void removesSecurityLabelsForDeletedDistribution() {
-//        //given
-//        DatasetGraphABAC dsg = newDataset();
-//        addQuad(dsg, DISTRIBUTION_ID, "value1", Label.fromText("PERMIT"));
-//        // when
-//        try (DistributionGraphDeletionListener  listener = listenerFor(dsg)) {
-//            assertNotNull(listener);
-//            listener.accept(action(DISTRIBUTION_ID, DistributionLifecycleState.Active, DistributionLifecycleState.Deleted));
-//        }
-//        // then
-//        assertTrue(graphEmpty(dsg, DISTRIBUTION_ID), "Named graph should be removed");
-//        assertTrue(labelsEmpty(dsg), "Security labels for the deleted distribution should be removed");
-//    }
+    @Test
+    void removesSecurityLabelsForDeletedDistribution() {
+        //given
+        DatasetGraphABAC dsg = newDataset();
+        addQuad(dsg, DISTRIBUTION_ID, "value1", Label.fromText("PERMIT"));
+        // when
+        try (DistributionGraphDeletionListener  listener = listenerFor(dsg)) {
+            assertNotNull(listener);
+            listener.accept(action(DISTRIBUTION_ID, DistributionLifecycleState.Active, DistributionLifecycleState.Deleted));
+        }
+        // then
+        assertTrue(graphEmpty(dsg, DISTRIBUTION_ID), "Named graph should be removed");
+        assertTrue(labelsEmpty(dsg), "Security labels for the deleted distribution should be removed");
+    }
+
+    @Test
+    void removesSecurityLabelsForDeletedDistributionIsIdempotent() {
+        //given
+        DatasetGraphABAC dsg = newDataset();
+        addQuad(dsg, DISTRIBUTION_ID, "value1", Label.fromText("PERMIT"));
+        // when
+        try (DistributionGraphDeletionListener  listener = listenerFor(dsg)) {
+            assertNotNull(listener);
+            listener.accept(action(DISTRIBUTION_ID, DistributionLifecycleState.Active, DistributionLifecycleState.Deleted));
+            listener.accept(action(DISTRIBUTION_ID, DistributionLifecycleState.Active, DistributionLifecycleState.Deleted));
+        }
+        // then
+        assertTrue(graphEmpty(dsg, DISTRIBUTION_ID), "Named graph should be removed");
+        assertTrue(labelsEmpty(dsg), "Security labels for the deleted distribution should be removed");
+    }
 
     @Test
     void ignoresNonDeletedTransition() {
