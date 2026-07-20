@@ -307,5 +307,5 @@ hosts:
   enableAutoCorrect: true
   # @key hosts.traefikProxy Traefik Proxy application default host value, as defined by 'service/serviceAccount:port'
   traefikProxy: "traefik-proxy:8080"
-  #  # @key hosts.auth Auth application default host value, as defined by 'service/serviceAccount:port'
+  # @key hosts.auth Auth application default host value, as defined by 'service/serviceAccount:port'
   auth: "auth:8080"

@@ -452,6 +452,11 @@
                     "type": "string",
                     "description": "Traefik Proxy application default host value, as defined by 'service/serviceAccount:port'",
                     "default": "traefik-proxy:8080"
+                },
+                "auth": {
+                    "type": "string",
+                    "description": "Auth application default host value, as defined by 'service/serviceAccount:port'",
+                    "default": "auth:8080"
                 }
             }
         }
