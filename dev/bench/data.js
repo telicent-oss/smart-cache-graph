@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1784546131336,
+  "lastUpdate": 1784546330872,
   "repoUrl": "https://github.com/telicent-oss/smart-cache-graph",
   "entries": {
     "ABAC Benchmark": [
@@ -8320,6 +8320,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "io.telicent.core.SCGraphScenarioBenchmark.benchmarkSparqlSelect",
             "value": 0.9713485319137571,
+            "unit": "ms/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "Paul Gallagher",
+            "username": "TelicentPaul",
+            "email": "132362215+TelicentPaul@users.noreply.github.com"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "e7d54ba54e269ecb2c2b546c64ee9e8774863437",
+          "message": "Merge pull request #451 from telicent-oss/core_1383_reject_incoming_events_for_unregistered_distributions\n\n[CORE-1383] Reject and ignore events for unregistered distributions when routing to named graphs",
+          "timestamp": "2026-07-17T09:04:33Z",
+          "url": "https://github.com/telicent-oss/smart-cache-graph/commit/e7d54ba54e269ecb2c2b546c64ee9e8774863437"
+        },
+        "date": 1784546329977,
+        "tool": "jmh",
+        "benches": [
+          {
+            "name": "io.telicent.core.SCGraphScenarioBenchmark.benchmarkGraphQL",
+            "value": 0.7717486851224334,
+            "unit": "ms/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "io.telicent.core.SCGraphScenarioBenchmark.benchmarkSparqlSelect",
+            "value": 0.9941908805746834,
             "unit": "ms/op",
             "extra": "iterations: 5\nforks: 1\nthreads: 1"
           }
