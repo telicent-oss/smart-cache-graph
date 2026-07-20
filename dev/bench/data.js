@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1784543392544,
+  "lastUpdate": 1784543544225,
   "repoUrl": "https://github.com/telicent-oss/smart-cache-graph",
   "entries": {
     "ABAC Benchmark": [
@@ -11402,6 +11402,52 @@ window.BENCHMARK_DATA = {
           {
             "name": "io.telicent.core.BackupRestoreBenchmark.benchmarkRestoreDataset ( {\"tripleCount\":\"10000\"} )",
             "value": 134.60003018,
+            "unit": "ms/op",
+            "extra": "iterations: 3\nforks: 1\nthreads: 1"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "Paul Gallagher",
+            "username": "TelicentPaul",
+            "email": "132362215+TelicentPaul@users.noreply.github.com"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "e7d54ba54e269ecb2c2b546c64ee9e8774863437",
+          "message": "Merge pull request #451 from telicent-oss/core_1383_reject_incoming_events_for_unregistered_distributions\n\n[CORE-1383] Reject and ignore events for unregistered distributions when routing to named graphs",
+          "timestamp": "2026-07-17T09:04:33Z",
+          "url": "https://github.com/telicent-oss/smart-cache-graph/commit/e7d54ba54e269ecb2c2b546c64ee9e8774863437"
+        },
+        "date": 1784543543347,
+        "tool": "jmh",
+        "benches": [
+          {
+            "name": "io.telicent.core.BackupRestoreBenchmark.benchmarkBackupDataset ( {\"tripleCount\":\"1000\"} )",
+            "value": 12.647670120295706,
+            "unit": "ms/op",
+            "extra": "iterations: 3\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "io.telicent.core.BackupRestoreBenchmark.benchmarkBackupDataset ( {\"tripleCount\":\"10000\"} )",
+            "value": 37.0768051474113,
+            "unit": "ms/op",
+            "extra": "iterations: 3\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "io.telicent.core.BackupRestoreBenchmark.benchmarkRestoreDataset ( {\"tripleCount\":\"1000\"} )",
+            "value": 32.372377290816544,
+            "unit": "ms/op",
+            "extra": "iterations: 3\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "io.telicent.core.BackupRestoreBenchmark.benchmarkRestoreDataset ( {\"tripleCount\":\"10000\"} )",
+            "value": 126.755227922231,
             "unit": "ms/op",
             "extra": "iterations: 3\nforks: 1\nthreads: 1"
           }
