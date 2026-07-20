@@ -27,14 +27,13 @@ public class DeletionJobController {
     @PostMapping("/delete-distribution")
     public ResponseEntity<Map<String, String>> deleteDistribution(
             @RequestParam("distribution-id") String distributionId,
-            @RequestHeader(value = "Authorization", required = false) String authorization,
-            HttpServletRequest request) {
+            @RequestHeader(value = "Authorization", required = false) String authorization) {
         if (authorization == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                      .body(Map.of("error", "Authorization header is required"));
         }
 
-        switch (userInfoService.isSystemAdmin(authorization, request)) {
+        switch (userInfoService.isSystemAdmin(authorization)) {
             case UNAUTHORIZED -> {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                         .body(Map.of("error", "Invalid or expired session"));
@@ -59,13 +58,12 @@ public class DeletionJobController {
     @GetMapping("/{jobId}")
     public ResponseEntity<?> getJobStatus(
             @RequestHeader(value = "Authorization", required = false) String authorization,
-            @PathVariable("jobId") String jobId,
-            HttpServletRequest request) {
+            @PathVariable("jobId") String jobId) {
         if (authorization == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of("error", "Authorization header is required"));
         }
-        switch (userInfoService.isSystemAdmin(authorization, request)) {
+        switch (userInfoService.isSystemAdmin(authorization)) {
             case UNAUTHORIZED -> {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                         .body(Map.of("error", "Invalid or expired session"));

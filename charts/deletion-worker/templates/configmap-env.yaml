@@ -15,6 +15,7 @@ data:
   KAFKA_BOOTSTRAP_SERVERS: {{ .Values.global.kafka.bootstrapServers | quote }}
   KAFKA_TOPIC: {{ .Values.deletionWorker.topic | quote }}
   KAFKA_CONFIG_FILE_PATH: /app/config/kafka-auth/kafka-config.properties
+  USERINFO_URL: {{ printf "http://%s%s" (include "deletion-worker.hostAuth" . ) "/userinfo" | quote }}
 
   {{- if .Values.extraEnvVars }}
   {{- range .Values.extraEnvVars }}

@@ -79,7 +79,7 @@ public class DeletionJobSpringIntegrationTest extends KafkaIntegrationTestBase{
 
     @BeforeEach
     void setUp() {
-        when(userInfoService.isSystemAdmin(any(), any())).thenReturn(UserInfoService.AuthResult.AUTHORIZED);
+        when(userInfoService.isSystemAdmin(any())).thenReturn(UserInfoService.AuthResult.AUTHORIZED);
         deleteTopic(TOPIC);
         createTopic(TOPIC);
         setUpProducer = createProducer();
@@ -95,8 +95,7 @@ public class DeletionJobSpringIntegrationTest extends KafkaIntegrationTestBase{
 
     @Test
     void mockIsWorking() {
-        HttpServletRequest request = mock(HttpServletRequest.class);
-        assertEquals(UserInfoService.AuthResult.AUTHORIZED, userInfoService.isSystemAdmin("any-token", request));
+        assertEquals(UserInfoService.AuthResult.AUTHORIZED, userInfoService.isSystemAdmin("any-token"));
     }
 
     @Test
@@ -353,7 +352,7 @@ public class DeletionJobSpringIntegrationTest extends KafkaIntegrationTestBase{
 
     @Test
     void postWithNonAdminTokenReturns403() throws Exception {
-        when(userInfoService.isSystemAdmin(any(), any())).thenReturn(UserInfoService.AuthResult.FORBIDDEN);
+        when(userInfoService.isSystemAdmin(any())).thenReturn(UserInfoService.AuthResult.FORBIDDEN);
         mockMvc.perform(post("/jobs/delete-distribution")
                         .param("distribution-id", "dist-001")
                         .header("Authorization", "Bearer some-token"))
@@ -362,12 +361,12 @@ public class DeletionJobSpringIntegrationTest extends KafkaIntegrationTestBase{
 
     @Test
     void postWithAdminTokenSucceeds() throws Exception {
-        when(userInfoService.isSystemAdmin(any(), any())).thenReturn(UserInfoService.AuthResult.AUTHORIZED);
+        when(userInfoService.isSystemAdmin(any())).thenReturn(UserInfoService.AuthResult.AUTHORIZED);
         mockMvc.perform(post("/jobs/delete-distribution")
                         .param("distribution-id", "dist-001")
                         .header("Authorization", "Bearer admin-token"))
                 .andExpect(status().isAccepted());
-        verify(userInfoService, atLeastOnce()).isSystemAdmin(any(), any());
+        verify(userInfoService, atLeastOnce()).isSystemAdmin(any());
     }
 
     @Test
@@ -385,7 +384,7 @@ public class DeletionJobSpringIntegrationTest extends KafkaIntegrationTestBase{
                 .andReturn();
         String jobId = new ObjectMapper().readTree(postResult.getResponse().getContentAsString()).get("jobId").asText();
 
-        when(userInfoService.isSystemAdmin(any(), any())).thenReturn(UserInfoService.AuthResult.FORBIDDEN);
+        when(userInfoService.isSystemAdmin(any())).thenReturn(UserInfoService.AuthResult.FORBIDDEN);
         mockMvc.perform(MockMvcRequestBuilders.get("/jobs/" + jobId)
                         .header("Authorization", "Bearer some-token"))
                 .andExpect(status().isForbidden());

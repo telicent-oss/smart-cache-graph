@@ -40,23 +40,18 @@ public class UserInfoService {
         UNAUTHORIZED      // 401/non-200 from /userinfo — invalid/expired session
     }
 
-    public AuthResult isSystemAdmin(String authorization, HttpServletRequest originalRequest) {
+    public AuthResult isSystemAdmin(String authorization) {
         try {
-            String sessionId = originalRequest.getHeader("X-Auth-Session-Id");
-            String authHeader = sessionId != null
-                    ? "Bearer " + sessionId
-                    : authorization;
-
-            HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
+            // the Authorization header is the JWT access token
+            // injected by Traefik after forward auth validation.
+            // calls auth-server's /userinfo directly via internal hostname
+            HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(userInfoUrl))
-                    .header("Authorization", authHeader)
-                    .header("User-Agent", originalRequest.getHeader("User-Agent"))
-                    .header("Accept-Language", originalRequest.getHeader("Accept-Language"))
-                    .GET();
-
-            HttpRequest request = requestBuilder
+                    .header("Authorization", authorization)
                     .timeout(Duration.ofSeconds(10))
+                    .GET()
                     .build();
+
             HttpResponse<String> response = httpClient.send(request,
                     HttpResponse.BodyHandlers.ofString());
 
