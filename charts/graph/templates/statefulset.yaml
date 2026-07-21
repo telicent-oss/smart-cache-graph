@@ -147,7 +147,7 @@ spec:
         
         readinessProbe:
           httpGet:
-            path: /$/ping
+            path: /$/ready
             port: 3030
             scheme: HTTP
           initialDelaySeconds: {{ .Values.readinessProbe.initialDelaySeconds }}
