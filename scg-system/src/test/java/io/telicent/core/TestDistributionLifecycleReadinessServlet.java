@@ -1,5 +1,6 @@
 package io.telicent.core;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import io.telicent.LibTestsSCG;
 import io.telicent.distribution.DistributionLifecycleStateFile;
 import io.telicent.smart.cache.configuration.Configurator;
@@ -20,6 +21,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Properties;
 
+import static io.telicent.backup.utils.JsonFileUtils.OBJECT_MAPPER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -42,10 +44,12 @@ class TestDistributionLifecycleReadinessServlet {
         startServer(new Properties());
 
         HttpResponse<String> response = getReady();
+        JsonNode body = OBJECT_MAPPER.readTree(response.body());
 
         assertEquals(200, response.statusCode());
-        assertTrue(response.body().contains("\"ready\" : true"));
-        assertTrue(response.body().contains("\"state\" : \"DISABLED\""));
+        assertTrue(body.get("healthy").booleanValue());
+        assertEquals("DISABLED", body.path("config").path("state").textValue());
+        assertEquals("Distribution lifecycle filtering is disabled.", body.path("reasons").get(0).textValue());
     }
 
     @Test
@@ -57,10 +61,11 @@ class TestDistributionLifecycleReadinessServlet {
         startServer(properties);
 
         HttpResponse<String> response = getReady();
+        JsonNode body = OBJECT_MAPPER.readTree(response.body());
 
         assertEquals(503, response.statusCode());
-        assertTrue(response.body().contains("\"state\" : \"EXTERNAL_ONLY\""));
-        assertTrue(response.body().contains("still unavailable"));
+        assertEquals("EXTERNAL_ONLY", body.path("config").path("state").textValue());
+        assertTrue(body.path("reasons").get(0).textValue().contains("still unavailable"));
     }
 
     @Test
@@ -81,10 +86,12 @@ class TestDistributionLifecycleReadinessServlet {
         startServer(properties);
 
         HttpResponse<String> response = getReady();
+        JsonNode body = OBJECT_MAPPER.readTree(response.body());
 
         assertEquals(200, response.statusCode());
-        assertTrue(response.body().contains("\"ready\" : true"));
-        assertTrue(response.body().contains("\"state\" : \"READY\""));
+        assertTrue(body.get("healthy").booleanValue());
+        assertEquals("READY", body.path("config").path("state").textValue());
+        assertEquals("Distribution lifecycle state is usable.", body.path("reasons").get(0).textValue());
     }
 
     private void startServer(Properties properties) throws IOException {

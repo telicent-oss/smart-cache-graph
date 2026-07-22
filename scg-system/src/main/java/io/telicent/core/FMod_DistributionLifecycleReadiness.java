@@ -1,5 +1,6 @@
 package io.telicent.core;
 
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.telicent.utils.ServletUtils;
 import jakarta.servlet.http.HttpServlet;
@@ -41,13 +42,14 @@ public class FMod_DistributionLifecycleReadiness implements FusekiModule {
                     DistributionLifecycleReadiness.getInstance().snapshot();
 
             ObjectNode json = OBJECT_MAPPER.createObjectNode();
-            json.put("ready", readiness.ready());
+            json.put("healthy", readiness.ready());
+            ArrayNode reasons = json.putArray("reasons");
+            reasons.add(readiness.reason());
 
-            ObjectNode lifecycle = json.putObject("lifecycle");
-            lifecycle.put("filteringEnabled", readiness.filteringEnabled());
-            lifecycle.put("trackerEnabled", readiness.trackerEnabled());
-            lifecycle.put("state", readiness.state().name());
-            lifecycle.put("reason", readiness.reason());
+            ObjectNode config = json.putObject("config");
+            config.put("filteringEnabled", readiness.filteringEnabled());
+            config.put("trackerEnabled", readiness.trackerEnabled());
+            config.put("state", readiness.state().name());
 
             response.setStatus(readiness.ready() ? HttpServletResponse.SC_OK : HttpServletResponse.SC_SERVICE_UNAVAILABLE);
             ServletUtils.processResponse(response, json);
