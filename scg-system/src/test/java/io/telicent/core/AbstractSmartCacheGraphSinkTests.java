@@ -765,18 +765,19 @@ public abstract class AbstractSmartCacheGraphSinkTests {
         runTestProcessorSCGWithAuthNamedGraph(action);
     }
 
-    @Test
-    final void processorSCG_namedGraph_deletedDistributionRejectedBeforeWrite_thenSubsequentEventsDropped()
+    @ParameterizedTest
+    @ValueSource(strings = {"Unregistered", "Deleted"})
+    final void processorSCG_namedGraph_invalidDistributionRejectedBeforeWrite_thenSubsequentEventsDropped(String state)
             throws IOException {
-        String deletedGraph = "http://example/deleted";
+        String invalidGraph = "http://example/invalid";
         Path lifecycleState = Files.createTempFile("distribution-lifecycle", ".json");
         writeLifecycleStateFile(lifecycleState, """
                 {
                   "distributions" : {
-                    "%s" : "Deleted"
+                    "%s" : "%s"
                   }
                 }
-                """.formatted(deletedGraph));
+                """.formatted(invalidGraph, state));
 
         TestAction action =
                 (Sink<Event<Bytes, RdfPayload>> proc, FusekiServer server, DatasetGraph dsgBase, DatasetGraph dsg) -> {
@@ -784,17 +785,17 @@ public abstract class AbstractSmartCacheGraphSinkTests {
                             assertThrows(JenaKafkaException.class, () -> sendEventWithDistributionId(dsg, proc, """
                                     PREFIX : <http://example/>
                                     :s :p "value1" .
-                                    """, WebContent.contentTypeTurtle, attrPermit, deletedGraph));
+                                    """, WebContent.contentTypeTurtle, attrPermit, invalidGraph));
                     assertInstanceOf(IllegalStateException.class, ex.getCause());
-                    assertEquals("Rejecting ingest for deleted distribution " + deletedGraph,
+                    assertEquals("Rejecting ingest for " + state + " distribution " + invalidGraph,
                                  ex.getCause().getMessage());
 
                     sendEventWithDistributionId(dsg, proc, """
                             PREFIX : <http://example/>
                             :s :p "value2" .
-                            """, WebContent.contentTypeTurtle, attrPermit, deletedGraph);
+                            """, WebContent.contentTypeTurtle, attrPermit, invalidGraph);
 
-                    verifyNamedGraphsEmpty(dsgBase, deletedGraph);
+                    verifyNamedGraphsEmpty(dsgBase, invalidGraph);
                     checkDatasetSize(dsgBase, 0);
 
                     String URL = server.datasetURL(dsName);
@@ -1015,7 +1016,7 @@ public abstract class AbstractSmartCacheGraphSinkTests {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"Unregistered", "Registered", "Withdrawn", "Unrecognised"})
+    @ValueSource(strings = {"Registered", "Withdrawn", "Unrecognised"})
     final void processorSCG_namedGraph_inactiveDistributionsAreHidden(String state) throws IOException {
         String graph = "http://example/graph1";
         Path lifecycleState = Files.createTempFile("distribution-lifecycle", ".json");
@@ -1317,17 +1318,18 @@ public abstract class AbstractSmartCacheGraphSinkTests {
         runTestProcessorSCGWithAuthNamedGraph(action);
     }
 
-    @Test
-    final void processorSCG_namedGraph_rdfPatch_deletedDistributionRejectedBeforeWrite() throws IOException {
-        String deletedGraph = "http://example/deleted";
+    @ParameterizedTest
+    @ValueSource(strings = {"Unregistered", "Deleted"})
+    final void processorSCG_namedGraph_rdfPatch_violableDistributionRejectedBeforeWrite(String state) throws IOException {
+        String violableGraph = "http://example/violable";
         Path lifecycleState = Files.createTempFile("distribution-lifecycle", ".json");
         writeLifecycleStateFile(lifecycleState, """
                 {
                   "distributions" : {
-                    "%s" : "Deleted"
+                    "%s" : "%s"
                   }
                 }
-                """.formatted(deletedGraph));
+                """.formatted(violableGraph, state));
 
         TestAction action =
                 (Sink<Event<Bytes, RdfPayload>> proc, FusekiServer server, DatasetGraph dsgBase, DatasetGraph dsg) -> {
@@ -1336,12 +1338,12 @@ public abstract class AbstractSmartCacheGraphSinkTests {
                                     TX .
                                     A <http://example/s> <http://example/p> "value1" .
                                     TC .
-                                    """, WebContent.contentTypePatch, attrPermit, deletedGraph));
+                                    """, WebContent.contentTypePatch, attrPermit, violableGraph));
                     assertInstanceOf(IllegalStateException.class, ex.getCause());
-                    assertEquals("Rejecting ingest for deleted distribution " + deletedGraph,
+                    assertEquals("Rejecting ingest for " + state + " distribution " + violableGraph,
                                  ex.getCause().getMessage());
 
-                    verifyNamedGraphsEmpty(dsgBase, deletedGraph);
+                    verifyNamedGraphsEmpty(dsgBase, violableGraph);
                     verifyDefaultGraphEmpty(dsgBase);
                 };
 

@@ -33,11 +33,11 @@ public class SmartCacheGraphSink extends FusekiSink<DatasetGraphABAC> {
 
     private final boolean routeToNamedGraphs;
     private final DistributionLifecycleStateFile lifecycleState;
-    // Tracks distributions whose first event we have already rejected (DLQ'd). The first event for a deleted
+    // Tracks distributions whose first event we have already rejected (DLQ'd). The first event for a deleted/unregistered
     // distribution throws so it is dead-lettered with a clear reason; subsequent events for the same distribution are
     // silently dropped. NB - this is in-memory only, so after a restart the first new event for a still-deleted
     // distribution will be DLQ'd again rather than dropped.
-    private final Set<String> deletedDistributionsAlreadyRejected = ConcurrentHashMap.newKeySet();
+    private final Set<String> distributionsAlreadyRejected = ConcurrentHashMap.newKeySet();
 
     public SmartCacheGraphSink(DatasetGraphABAC dataset, boolean routeToNamedGraphs) {
         this(dataset, routeToNamedGraphs, null);
@@ -146,17 +146,22 @@ public class SmartCacheGraphSink extends FusekiSink<DatasetGraphABAC> {
         }
 
         String state = stateResult.state();
-        if (!DistributionLifecycleState.Deleted.name().equals(state)) {
-            this.deletedDistributionsAlreadyRejected.remove(distributionId);
+        if (viableState(state)) {
+            this.distributionsAlreadyRejected.remove(distributionId);
             return false;
         }
-        if (this.deletedDistributionsAlreadyRejected.add(distributionId)) {
+        if (this.distributionsAlreadyRejected.add(distributionId)) {
             throw new IllegalStateException(
-                    "Rejecting ingest for deleted distribution " + distributionId);
+                    "Rejecting ingest for " + state + " distribution " + distributionId);
         }
 
-        LOGGER.info("Dropping ingest for previously rejected deleted distribution {}", distributionId);
+        LOGGER.info("Dropping ingest for previously rejected distribution {}", distributionId);
         return true;
+    }
+
+    private static boolean viableState(String state) {
+        return !DistributionLifecycleState.Deleted.name().equals(state)
+                && !DistributionLifecycleState.Unregistered.name().equals(state);
     }
 
     @Override

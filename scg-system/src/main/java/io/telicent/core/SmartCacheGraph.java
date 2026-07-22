@@ -123,6 +123,7 @@ public class SmartCacheGraph {
                 , new FMod_TelicentGraphQL()
                 , new FMod_RequestIDFilter()
                 , new FMod_DatasetAvailabilityFilter()
+                , new FMod_DistributionLifecycleReadiness()
                 , new FMod_DistributionLifecycle()
                 , new FMod_BackupData()
                 , new FMod_LabelsQuery()

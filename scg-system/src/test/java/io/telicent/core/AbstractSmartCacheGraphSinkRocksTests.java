@@ -25,6 +25,15 @@ public abstract class AbstractSmartCacheGraphSinkRocksTests extends AbstractSmar
 
     @AfterAll
     public static void teardownRocksCache() {
+        // We Have to close any open labels stores otherwise we leave the RocksDB native handles open, holding the OS
+        // lock, and interfere with following tests that use the same configuration file
+        Labels.rocks.forEach((f, labels) -> {
+            try {
+                labels.close();
+            } catch (Exception e) {
+                // Ignore
+            }
+        });
         Labels.rocks.clear();
     }
 }

@@ -98,6 +98,7 @@ public class TestJwtServletAuth {
         // given
         List<PathExclusion> expectedList = List.of(
                 new PathExclusion("/$/ping"),
+                new PathExclusion("/$/ready"),
                 new PathExclusion("/$/metrics"),
                 new PathExclusion("/$/stats/*")
         );
