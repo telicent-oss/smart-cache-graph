@@ -17,6 +17,7 @@
 package io.telicent.core;
 
 import io.telicent.distribution.DistributionLifecycleFilters;
+import io.telicent.distribution.DistributionLifecycleStateFile;
 import io.telicent.jena.abac.core.DatasetGraphABAC;
 import io.telicent.smart.cache.configuration.Configurator;
 import io.telicent.smart.cache.distribution.lifecycle.events.listeners.AcknowledgingListener;
@@ -47,6 +48,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashSet;
@@ -54,6 +56,10 @@ import java.util.List;
 import java.util.Properties;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * A Fuseki module that makes Smart Cache Graph "distribution lifecycle aware".
@@ -81,9 +87,13 @@ public class FMod_DistributionLifecycle implements FusekiModule {
     static final String DEFAULT_CONSUMER_GROUP = "smart-cache-graph-distribution-lifecycle";
     static final String DEFAULT_STATE_FILE = "distribution-lifecycle.state";
     static final String DEFAULT_APP_ID = "smart-cache-graph";
+    private static final long TRACKER_STARTUP_RETRY_DELAY_MS = 1_000L;
+    private static final AtomicInteger TRACKER_STARTER_THREAD_ID = new AtomicInteger();
 
+    private final DistributionLifecycleReadiness readiness = DistributionLifecycleReadiness.getInstance();
     private DistributionLifecycleTracker tracker;
     private DistributionLifecycleStateStore stateStore;
+    private ExecutorService trackerStarter;
 
     @Override
     public String name() {
@@ -117,6 +127,8 @@ public class FMod_DistributionLifecycle implements FusekiModule {
 
     @Override
     public void serverBeforeStarting(FusekiServer server) {
+        configureReadiness();
+
         if (!isEnabled()) {
             LOGGER.debug("Distribution lifecycle tracker disabled (ENABLE_DISTRIBUTION_LIFECYCLE=false)");
             return;
@@ -125,7 +137,7 @@ public class FMod_DistributionLifecycle implements FusekiModule {
             LOGGER.warn("Distribution lifecycle tracker ignored because ROUTE_TO_NAMED_GRAPHS is disabled");
             return;
         }
-        if (this.tracker != null) {
+        if (this.tracker != null || this.trackerStarter != null) {
             LOGGER.warn("Distribution lifecycle tracker already started");
             return;
         }
@@ -134,6 +146,8 @@ public class FMod_DistributionLifecycle implements FusekiModule {
                 selectBootstrapServers(connectors(), Configurator.get(DISTRIBUTION_LIFECYCLE_BOOTSTRAP_SERVERS));
         if (StringUtils.isBlank(bootstrapServers)) {
             LOGGER.warn(
+                    "Distribution lifecycle tracker is enabled but no Kafka bootstrap servers could be determined.");
+            this.readiness.markFailed(
                     "Distribution lifecycle tracker is enabled but no Kafka bootstrap servers could be determined.");
             return;
         }
@@ -145,58 +159,23 @@ public class FMod_DistributionLifecycle implements FusekiModule {
         String consumerGroup = consumerGroup();
         String stateFile = stateFilePath();
 
-        try {
-            this.stateStore = AppDistributionLifecycleStoreFile.builder()
-                                                               .app(application)
-                                                               .stateFile(new File(stateFile))
-                                                               .build();
-
-            DistributionLifecycleListener graphDeletion =
-                    new DistributionGraphDeletionListener(() -> abacDatasets(server));
-            DistributionLifecycleListener listener =
-                    AcknowledgingListener.builder()
-                                         .application(application)
-                                         .version(SmartCacheGraph.VERSION)
-                                         .listener(graphDeletion)
-                                         .sink(lifecycleSink(bootstrapServers, topic, kafkaProperties))
-                                         .stateStore(this.stateStore)
-                                         .build();
-
-            EventSource<UUID, LazyEnvelope> source = KafkaEventSource.<UUID, LazyEnvelope>create()
-                                                                     .bootstrapServers(bootstrapServers)
-                                                                     .consumerConfig(kafkaProperties)
-                                                                     .topic(topic)
-                                                                     .consumerGroup(consumerGroup)
-                                                                     .readPolicy(KafkaReadPolicies.fromEarliest())
-                                                                     .commitOnProcessed()
-                                                                     .keyDeserializer(UUIDDeserializer.class)
-                                                                     .valueDeserializer(LazyEnvelopeDeserializer.class)
-                                                                     .build();
-
-            Sink<Event<UUID, LazyEnvelope>> dlq =
-                    StringUtils.isBlank(dlqTopic) ? null : lifecycleSink(bootstrapServers, dlqTopic, kafkaProperties);
-
-            this.tracker = DistributionLifecycleTracker.builder()
-                                                       .application(application)
-                                                       .eventSource(source)
-                                                       .dlq(dlq)
-                                                       .listenerThreads(1)
-                                                       .listeners(List.of(listener))
-                                                       .stateStore(this.stateStore)
-                                                       .build();
-
-            LOGGER.info(
-                    "Distribution lifecycle tracker enabled: consuming topic '{}' from {} (consumer group '{}', application '{}')",
-                    topic, bootstrapServers, consumerGroup, application);
-        } catch (RuntimeException e) {
-            LOGGER.error("Failed to start distribution lifecycle tracker; lifecycle events will NOT be processed", e);
-            closeTracker();
-        }
+        this.readiness.markStarting("Distribution lifecycle tracker is starting or catching up.");
+        ExecutorService starter = Executors.newSingleThreadExecutor(r -> {
+            Thread thread = new Thread(r, "distribution-lifecycle-startup-"
+                    + TRACKER_STARTER_THREAD_ID.incrementAndGet());
+            thread.setDaemon(true);
+            return thread;
+        });
+        this.trackerStarter = starter;
+        starter.submit(() -> startupTracker(starter, server, bootstrapServers, kafkaProperties, application, topic,
+                                            dlqTopic, consumerGroup, stateFile));
     }
 
     @Override
     public void serverStopped(FusekiServer server) {
+        closeTrackerStarter();
         closeTracker();
+        this.readiness.reset();
     }
 
     /**
@@ -222,12 +201,138 @@ public class FMod_DistributionLifecycle implements FusekiModule {
         }
     }
 
+    private void closeTrackerStarter() {
+        if (this.trackerStarter != null) {
+            this.trackerStarter.shutdownNow();
+            try {
+                this.trackerStarter.awaitTermination(5, TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            } finally {
+                this.trackerStarter = null;
+            }
+        }
+    }
+
     /**
      * Indicates whether the lifecycle tracker is currently running.
      * @return True if the tracker has been started, false otherwise
      */
     boolean isRunning() {
-        return this.tracker != null;
+        return this.tracker != null && this.tracker.isRunning();
+    }
+
+    private void startupTracker(ExecutorService starter, FusekiServer server, String bootstrapServers,
+                                Properties kafkaProperties,
+                                String application, String topic, String dlqTopic, String consumerGroup,
+                                String stateFile) {
+        try {
+            while (!Thread.currentThread().isInterrupted()) {
+                try {
+                    createTracker(server, bootstrapServers, kafkaProperties, application, topic, dlqTopic,
+                                  consumerGroup, stateFile);
+                    this.stateStore.flush();
+                    this.readiness.markReady();
+                    LOGGER.info(
+                            "Distribution lifecycle tracker enabled: consuming topic '{}' from {} (consumer group '{}', application '{}')",
+                            topic, bootstrapServers, consumerGroup, application);
+                    return;
+                } catch (RuntimeException e) {
+                    closeTracker();
+                    if (isCatchUpFailure(e)) {
+                        this.readiness.markStarting(
+                                "Distribution lifecycle tracker is still catching up; lifecycle state is not yet usable.");
+                        LOGGER.warn("Distribution lifecycle tracker is still catching up; retrying startup", e);
+                        Thread.sleep(TRACKER_STARTUP_RETRY_DELAY_MS);
+                    } else {
+                        this.readiness.markFailed("Distribution lifecycle tracker is unavailable: " + rootMessage(e));
+                        LOGGER.error("Failed to start distribution lifecycle tracker; lifecycle events will NOT be processed", e);
+                        return;
+                    }
+                }
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        } finally {
+            starter.shutdown();
+            if (this.trackerStarter == starter) {
+                this.trackerStarter = null;
+            }
+        }
+    }
+
+    private void createTracker(FusekiServer server, String bootstrapServers, Properties kafkaProperties,
+                               String application, String topic, String dlqTopic, String consumerGroup,
+                               String stateFile) {
+        this.stateStore = AppDistributionLifecycleStoreFile.builder()
+                                                           .app(application)
+                                                           .stateFile(new File(stateFile))
+                                                           .build();
+
+        DistributionLifecycleListener graphDeletion =
+                new DistributionGraphDeletionListener(() -> abacDatasets(server));
+        DistributionLifecycleListener listener =
+                AcknowledgingListener.builder()
+                                     .application(application)
+                                     .version(SmartCacheGraph.VERSION)
+                                     .listener(graphDeletion)
+                                     .sink(lifecycleSink(bootstrapServers, topic, kafkaProperties))
+                                     .stateStore(this.stateStore)
+                                     .build();
+
+        EventSource<UUID, LazyEnvelope> source = KafkaEventSource.<UUID, LazyEnvelope>create()
+                                                                 .bootstrapServers(bootstrapServers)
+                                                                 .consumerConfig(kafkaProperties)
+                                                                 .topic(topic)
+                                                                 .consumerGroup(consumerGroup)
+                                                                 .readPolicy(KafkaReadPolicies.fromEarliest())
+                                                                 .commitOnProcessed()
+                                                                 .keyDeserializer(UUIDDeserializer.class)
+                                                                 .valueDeserializer(LazyEnvelopeDeserializer.class)
+                                                                 .build();
+
+        Sink<Event<UUID, LazyEnvelope>> dlq =
+                StringUtils.isBlank(dlqTopic) ? null : lifecycleSink(bootstrapServers, dlqTopic, kafkaProperties);
+
+        this.tracker = DistributionLifecycleTracker.builder()
+                                                   .application(application)
+                                                   .eventSource(source)
+                                                   .dlq(dlq)
+                                                   .listenerThreads(1)
+                                                   .listeners(List.of(listener))
+                                                   .stateStore(this.stateStore)
+                                                   .build();
+    }
+
+    private void configureReadiness() {
+        String configuredStateFile = Configurator.get(DISTRIBUTION_LIFECYCLE_STATE_FILE);
+        boolean filteringEnabled = StringUtils.isNotBlank(configuredStateFile) && routeToNamedGraphsEnabled();
+        boolean trackerEnabled = filteringEnabled && isEnabled();
+        DistributionLifecycleStateFile stateFile = filteringEnabled
+                                                   ? new DistributionLifecycleStateFile(Path.of(stateFilePath()),
+                                                                                        Configurator.get(
+                                                                                                DISTRIBUTION_LIFECYCLE_APP_ID))
+                                                   : null;
+        this.readiness.configure(filteringEnabled, trackerEnabled, stateFile,
+                                 () -> this.tracker != null && this.tracker.isRunning());
+    }
+
+    private static boolean isCatchUpFailure(Throwable error) {
+        for (Throwable current = error; current != null; current = current.getCause()) {
+            String message = current.getMessage();
+            if (message != null && message.contains("cannot make up to date decisions about distribution lifecycle")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static String rootMessage(Throwable error) {
+        Throwable current = error;
+        while (current.getCause() != null) {
+            current = current.getCause();
+        }
+        return StringUtils.defaultIfBlank(current.getMessage(), error.getClass().getSimpleName());
     }
 
     /**
