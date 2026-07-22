@@ -152,7 +152,7 @@ deletion-worker:
     config-file-path: ${KAFKA_CONFIG_FILE_PATH:}  # Optional Kafka client properties file
   topic: ${KAFKA_TOPIC:RDF}
   auth:
-    userinfo-url: ${USERINFO_URL:https://auth.system-integration.telicent-sandbox.telicent.live/userinfo}
+    userinfo-url: ${USERINFO_URL:http://auth.telicent.localhost/userinfo}
 
 management:
   endpoints:
@@ -302,8 +302,7 @@ scg-deletion-worker/
 ## Security
 
 - All endpoints require `Authorization` header (Bearer token)
-- Role validation is performed by calling the auth-server's `/userinfo` endpoint using the session ID from the `X-Auth-Session-Id` header, which is injected by the auth-server during Traefik's forward auth validation flow.
-  For direct API calls, provide a valid session ID as `Authorization: Bearer sess_xxx` along with matching browser fingerprint headers (`User-Agent`, `Accept-Language`, `Sec-*`) — the auth-server uses these for fingerprint validation when calling `/userinfo`.
+- Role validation is performed by extracting the `roles` claim directly from the JWT access token injected by Traefik after forward auth validation
 - Only users with `ADMIN_SYSTEM` role can trigger or view deletion jobs
 
 ---

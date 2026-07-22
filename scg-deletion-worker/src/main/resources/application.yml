@@ -7,7 +7,7 @@ deletion-worker:
     config-file-path: ${KAFKA_CONFIG_FILE_PATH:}
   topic: ${KAFKA_TOPIC:RDF}
   auth:
-    userinfo-url: ${USERINFO_URL:https://auth.system-integration.telicent-sandbox.telicent.live/userinfo}
+    userinfo-url: ${USERINFO_URL:http://auth.telicent.localhost/userinfo}
 
 management:
   endpoints:

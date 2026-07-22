@@ -1,18 +1,28 @@
+/*
+ *  Copyright (c) Telicent Ltd.
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
 package io.telicent.deletion.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.time.Duration;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 
@@ -22,15 +32,9 @@ public class UserInfoService {
     private static final Logger LOGGER = LoggerFactory.getLogger(UserInfoService.class);
     private static final String ADMIN_SYSTEM_ROLE = "ADMIN_SYSTEM";
 
-    private final HttpClient httpClient;
-    private final String userInfoUrl;
     private final ObjectMapper objectMapper;
 
-    public UserInfoService(@Value("${deletion-worker.auth.userinfo-url}") String userInfoUrl) {
-        this.httpClient = HttpClient.newBuilder()
-                .connectTimeout(Duration.ofSeconds(10))
-                .build();
-        this.userInfoUrl = userInfoUrl;
+    public UserInfoService() {
         this.objectMapper = new ObjectMapper();
     }
 
@@ -40,46 +44,39 @@ public class UserInfoService {
         UNAUTHORIZED      // 401/non-200 from /userinfo — invalid/expired session
     }
 
-    public AuthResult isSystemAdmin(String authorization) {
+    public AuthResult checkAdminRole(String authorization) {
+        // the Authorization header is the JWT access token
+        // injected by Traefik after forward auth validation.
+        // calls auth-server's /userinfo directly via internal hostname
+        if (authorization == null || !authorization.startsWith("Bearer ")) {
+            return AuthResult.UNAUTHORIZED;
+        }
         try {
-            // the Authorization header is the JWT access token
-            // injected by Traefik after forward auth validation.
-            // calls auth-server's /userinfo directly via internal hostname
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(userInfoUrl))
-                    .header("Authorization", authorization)
-                    .timeout(Duration.ofSeconds(10))
-                    .GET()
-                    .build();
-
-            HttpResponse<String> response = httpClient.send(request,
-                    HttpResponse.BodyHandlers.ofString());
-
-            if (response.statusCode() == 401) {
-                LOGGER.warn("UserInfo returned 401 — invalid or expired session");
+            // Extract the JWT payload and remove "Bearer"
+            String token = authorization.substring(7);
+            String[] parts = token.split("\\.");
+            if (parts.length != 3) {
+                LOGGER.warn("Invalid JWT format");
                 return AuthResult.UNAUTHORIZED;
             }
-            if (response.statusCode() != 200) {
-                LOGGER.warn("UserInfo endpoint returned {} for role check", response.statusCode());
-                return AuthResult.UNAUTHORIZED;
-            }
+            String payload = new String(
+                    Base64.getUrlDecoder().decode(parts[1]),
+                    StandardCharsets.UTF_8
+            );
 
-            Map<String, Object> userInfo = objectMapper.readValue(response.body(), Map.class);
-            List<String> roles = (List<String>) userInfo.get("roles");
+            Map<String, Object> claims = objectMapper.readValue(payload, Map.class);
+            List<String> roles = (List<String>) claims.get("roles");
+
             if (roles == null) {
-                LOGGER.warn("No roles found in userinfo response");
+                LOGGER.warn("No roles claim found in JWT");
                 return AuthResult.FORBIDDEN;
             }
             boolean isAdmin = roles.stream().anyMatch(ADMIN_SYSTEM_ROLE::equalsIgnoreCase);
-            LOGGER.info("User roles: {} — isAdmin: {}", roles, isAdmin);
+            LOGGER.info("JWT roles: {} — isAdmin: {}", roles, isAdmin);
             return isAdmin ? AuthResult.AUTHORIZED : AuthResult.FORBIDDEN;
 
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            LOGGER.error("UserInfo request interrupted: {}", e.getMessage());
-            return AuthResult.UNAUTHORIZED;
-        } catch (IOException e) {
-            LOGGER.error("Failed to call userinfo endpoint: {}", e.getMessage());
+        } catch (Exception e) {
+            LOGGER.error("Failed to parse JWT: {}", e.getMessage());
             return AuthResult.UNAUTHORIZED;
         }
     }

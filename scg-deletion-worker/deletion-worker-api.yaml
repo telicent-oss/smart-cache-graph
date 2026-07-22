@@ -1,3 +1,6 @@
+#
+# Copyright (C) 2026 Telicent Limited
+#
 openapi: 3.0.3
 info:
   title: SCG Deletion Worker API
@@ -114,10 +117,7 @@ components:
     SessionAuth:
       description: |
         Session-based authentication. Clients must provide a valid session ID in the
-        Authorization header as "Bearer sess_xxx". In SI, requests go through
-        Traefik which validates the session via the auth-server's forward auth endpoint
-        and injects X-Auth-Session-Id for downstream role checking. Direct API calls
-        require a valid session ID obtained from the auth-server.
+        Authorization header as "Bearer sess_xxx", same for direct API calls.
       type: http
       scheme: bearer
 security:

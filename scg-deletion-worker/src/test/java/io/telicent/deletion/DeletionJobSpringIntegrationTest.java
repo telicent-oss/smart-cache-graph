@@ -1,3 +1,19 @@
+/*
+ *  Copyright (c) Telicent Ltd.
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
 package io.telicent.deletion;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -79,7 +95,7 @@ public class DeletionJobSpringIntegrationTest extends KafkaIntegrationTestBase{
 
     @BeforeEach
     void setUp() {
-        when(userInfoService.isSystemAdmin(any())).thenReturn(UserInfoService.AuthResult.AUTHORIZED);
+        when(userInfoService.checkAdminRole(any())).thenReturn(UserInfoService.AuthResult.AUTHORIZED);
         deleteTopic(TOPIC);
         createTopic(TOPIC);
         setUpProducer = createProducer();
@@ -95,7 +111,7 @@ public class DeletionJobSpringIntegrationTest extends KafkaIntegrationTestBase{
 
     @Test
     void mockIsWorking() {
-        assertEquals(UserInfoService.AuthResult.AUTHORIZED, userInfoService.isSystemAdmin("any-token"));
+        assertEquals(UserInfoService.AuthResult.AUTHORIZED, userInfoService.checkAdminRole("any-token"));
     }
 
     @Test
@@ -352,7 +368,7 @@ public class DeletionJobSpringIntegrationTest extends KafkaIntegrationTestBase{
 
     @Test
     void postWithNonAdminTokenReturns403() throws Exception {
-        when(userInfoService.isSystemAdmin(any())).thenReturn(UserInfoService.AuthResult.FORBIDDEN);
+        when(userInfoService.checkAdminRole(any())).thenReturn(UserInfoService.AuthResult.FORBIDDEN);
         mockMvc.perform(post("/jobs/delete-distribution")
                         .param("distribution-id", "dist-001")
                         .header("Authorization", "Bearer some-token"))
@@ -361,12 +377,12 @@ public class DeletionJobSpringIntegrationTest extends KafkaIntegrationTestBase{
 
     @Test
     void postWithAdminTokenSucceeds() throws Exception {
-        when(userInfoService.isSystemAdmin(any())).thenReturn(UserInfoService.AuthResult.AUTHORIZED);
+        when(userInfoService.checkAdminRole(any())).thenReturn(UserInfoService.AuthResult.AUTHORIZED);
         mockMvc.perform(post("/jobs/delete-distribution")
                         .param("distribution-id", "dist-001")
                         .header("Authorization", "Bearer admin-token"))
                 .andExpect(status().isAccepted());
-        verify(userInfoService, atLeastOnce()).isSystemAdmin(any());
+        verify(userInfoService, atLeastOnce()).checkAdminRole(any());
     }
 
     @Test
@@ -384,7 +400,7 @@ public class DeletionJobSpringIntegrationTest extends KafkaIntegrationTestBase{
                 .andReturn();
         String jobId = new ObjectMapper().readTree(postResult.getResponse().getContentAsString()).get("jobId").asText();
 
-        when(userInfoService.isSystemAdmin(any())).thenReturn(UserInfoService.AuthResult.FORBIDDEN);
+        when(userInfoService.checkAdminRole(any())).thenReturn(UserInfoService.AuthResult.FORBIDDEN);
         mockMvc.perform(MockMvcRequestBuilders.get("/jobs/" + jobId)
                         .header("Authorization", "Bearer some-token"))
                 .andExpect(status().isForbidden());
