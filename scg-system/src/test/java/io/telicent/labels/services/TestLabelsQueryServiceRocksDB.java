@@ -50,8 +50,8 @@ public class TestLabelsQueryServiceRocksDB {
         rocksDbLabelsStore.add(triple, Label.fromText("example"));
         final DatasetGraph emptyDsg = DatasetGraphFactory.create();
         final DataSecurityPlugin mockDataSecurityPlugin = mock(DataSecurityPlugin.class);
-        final SecurityLabelsApplicator applicator = new RdfAbacApplicator(new RdfAbacParser(), rocksDbLabelsStore);
-        when(mockDataSecurityPlugin.prepareLabelsApplicator(any(),any())).thenReturn(applicator);
+        final SecurityLabelsApplicator mockApplicator = mock(SecurityLabelsApplicator.class);
+        when(mockDataSecurityPlugin.prepareLabelsApplicator(any(),any())).thenReturn(mockApplicator);
 
         final LabelsQueryService queryService = new LabelsQueryService(mockDataSecurityPlugin, emptyDsg, DATASET_NAME);
         final List<TripleLabels> labels = queryService.queryOnlyLabelStore(triple);
@@ -71,9 +71,8 @@ public class TestLabelsQueryServiceRocksDB {
         rocksDbLabelsStore.add(triple, Label.fromText("example"));
         final DatasetGraph emptyDsg = DatasetGraphFactory.create();
         final DataSecurityPlugin mockDataSecurityPlugin = mock(DataSecurityPlugin.class);
-        final SecurityLabelsApplicator applicator = new RdfAbacApplicator(new RdfAbacParser(), rocksDbLabelsStore);
-        when(mockDataSecurityPlugin.prepareLabelsApplicator(any(),any())).thenReturn(applicator);
-
+        final SecurityLabelsApplicator mockApplicator = mock(SecurityLabelsApplicator.class);
+        when(mockDataSecurityPlugin.prepareLabelsApplicator(any(),any())).thenReturn(mockApplicator);
         final LabelsQueryService queryService = new LabelsQueryService(mockDataSecurityPlugin, emptyDsg, DATASET_NAME);
         final List<TripleLabels> labels = queryService.queryOnlyLabelStore(triple);
         Assertions.assertEquals(1, labels.size());

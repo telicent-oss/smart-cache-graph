@@ -133,7 +133,7 @@ public class TestLabelsQuery {
                     "subject" : "http://dbpedia.org/resource/Rome",
                     "predicate" : "http://dbpedia.org/ontology/country",
                     "object" : "http://dbpedia.org/resource/Italy",
-                    "labels" : [ ]
+                    "labels" : [ "!" ]
                   } ]
                 }""";
         callAndAssert(jsonRequestBody, expectedJsonResponse, DATASET1_NAME);
@@ -166,7 +166,7 @@ public class TestLabelsQuery {
                     "subject" : "http://dbpedia.org/resource/Rome",
                     "predicate" : "http://dbpedia.org/ontology/country",
                     "object" : "http://dbpedia.org/resource/Italy",
-                    "labels" : [ ]
+                    "labels" : [ "!" ]
                   }, {
                     "subject" : "http://dbpedia.org/resource/Paris",
                     "predicate" : "http://dbpedia.org/ontology/country",
@@ -284,7 +284,7 @@ public class TestLabelsQuery {
                     "subject" : "http://telicent.io/catalog#7efb98c6-708e-4c05-9284-866bf5d33bae_DataHandlingPolicy",
                     "predicate" : "http://purl.org/dc/terms/description",
                     "object" : "\\"Please be careful: this data is fragile … ! okoka\\"",
-                    "labels" : [ ]
+                    "labels" : [ "!" ]
                   } ]
                 }""";
 

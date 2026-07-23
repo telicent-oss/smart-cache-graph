@@ -2,7 +2,6 @@ package io.telicent.core;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import io.telicent.LibTestsSCG;
-import io.telicent.distribution.DistributionLifecycleStateFile;
 import io.telicent.smart.cache.configuration.Configurator;
 import io.telicent.smart.cache.configuration.sources.PropertiesSource;
 import io.telicent.smart.caches.configuration.auth.AuthConstants;
