@@ -24,7 +24,6 @@ import java.util.*;
 final class UserInfoFilter implements Filter {
     private static final Logger LOGGER = LoggerFactory.getLogger(UserInfoFilter.class);
 
-    /*
     /**
      * Request attribute key under which this filter stores the resolved username.
      * FIXME - ATTR_ABAC_USERNAME has been copied from the UserInfoEnrichmentFilter on RDF ABAC to avoid a direct
@@ -33,7 +32,6 @@ final class UserInfoFilter implements Filter {
     public static final String ATTR_ABAC_USERNAME = "abac.user";
 
     private final UserInfoLookup userInfoLookup;
-
 
     /**
      * Creates a new filter
