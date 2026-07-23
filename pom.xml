@@ -132,6 +132,7 @@
     <module>scg-server</module>
     <module>scg-docker</module>
     <module>scg-benchmark</module>
+    <module>scg-deletion-worker</module>
   </modules>
 
   <dependencyManagement>

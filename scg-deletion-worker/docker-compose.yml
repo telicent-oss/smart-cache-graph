@@ -1,0 +1,30 @@
+#
+# Copyright (C) 2026 Telicent Limited
+#
+
+services:
+  deletion-worker:
+    build:
+      context: ..
+      dockerfile: scg-deletion-worker/Dockerfile
+      args:
+        PROJECT_VERSION: ${PROJECT_VERSION}
+    image: scg-deletion-worker:latest
+    container_name: scg-deletion-worker
+    ports:
+      - "8080:8080"
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9093
+      KAFKA_TOPIC: RDF
+    networks:
+      - scg-docker_default
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+networks:
+  scg-docker_default:
+    external: true

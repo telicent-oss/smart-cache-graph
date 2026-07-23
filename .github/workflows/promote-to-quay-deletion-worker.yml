@@ -1,0 +1,48 @@
+name: Promote Deletion Worker to Quay
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to promote (defaults to latest release)
+        required: false
+        type: string
+
+jobs:
+  get-version:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.resolve.outputs.version }}
+    steps:
+      - name: Resolve version
+        id: resolve
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="${{ inputs.version }}"
+          if [[ -z "$VERSION" ]]; then
+            VERSION=$(gh release view --repo "${{ github.repository }}" --json tagName -q '.tagName')
+            VERSION="${VERSION#v}"
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Promoting version: $VERSION"
+
+  promote:
+    name: Promote to Quay
+    needs: get-version
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Promote image and chart
+        uses: telicent-oss/shared-workflows/.github/actions/promote-to-quay@main
+        with:
+          image: scg-deletion-worker
+          chart: deletion-worker
+          version: ${{ needs.get-version.outputs.version }}
+          quay-username: ${{ secrets.QUAY_USERNAME }}
+          quay-token: ${{ secrets.QUAY_TOKEN }}
+          role-to-assume: ${{ secrets.AWS_ROLE_DEPLOY }}
