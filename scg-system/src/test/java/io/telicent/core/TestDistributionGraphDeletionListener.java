@@ -28,11 +28,11 @@ import io.telicent.smart.cache.distribution.lifecycle.events.LifecycleAction;
 import io.telicent.smart.cache.distribution.lifecycle.events.utils.LifecycleStateTransition;
 import org.apache.jena.graph.Node;
 import org.apache.jena.graph.NodeFactory;
+import org.apache.jena.sparql.core.DatasetGraph;
 import org.apache.jena.sparql.core.DatasetGraphFactory;
 import org.apache.jena.sparql.core.Quad;
 import org.apache.jena.sparql.core.mem.DatasetGraphInMemory;
 import org.apache.jena.system.Txn;
-import org.junit.Ignore;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
@@ -66,7 +66,7 @@ public class TestDistributionGraphDeletionListener {
     }
 
     private static boolean graphEmpty(DatasetGraphABAC dsg, String graphUri) {
-        return Txn.calculateRead(dsg, () -> dsg.getBase().getGraph(NodeFactory.createURI(graphUri)).isEmpty());
+        return Txn.calculateRead(dsg, () -> dsg.getGraph(NodeFactory.createURI(graphUri)).isEmpty());
     }
 
     private static boolean labelsEmpty(DatasetGraphABAC dsg) {
@@ -84,8 +84,8 @@ public class TestDistributionGraphDeletionListener {
                               .build();
     }
 
-    private static DistributionGraphDeletionListener listenerFor(DatasetGraphABAC... datasets) {
-        List<DatasetGraphABAC> list = List.of(datasets);
+    private static DistributionGraphDeletionListener listenerFor(DatasetGraph... datasets) {
+        List<DatasetGraph> list = List.of(datasets);
         return new DistributionGraphDeletionListener(() -> list);
     }
 

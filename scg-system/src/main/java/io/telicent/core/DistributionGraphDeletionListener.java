@@ -16,11 +16,13 @@
 
 package io.telicent.core;
 
-import io.telicent.jena.abac.core.DatasetGraphABAC;
-import io.telicent.jena.abac.labels.LabelsStore;
 import io.telicent.smart.cache.distribution.lifecycle.DistributionLifecycleState;
 import io.telicent.smart.cache.distribution.lifecycle.events.LifecycleAction;
 import io.telicent.smart.cache.distribution.lifecycle.events.listeners.DistributionLifecycleListener;
+import io.telicent.smart.cache.security.data.DataSecurityException;
+import io.telicent.smart.cache.security.data.labels.SecurityLabelsRemover;
+import io.telicent.smart.cache.security.data.plugins.DataSecurityPlugin;
+import io.telicent.smart.cache.security.data.plugins.DataSecurityPluginLoader;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.jena.atlas.iterator.Iter;
 import org.apache.jena.graph.Node;
@@ -31,10 +33,7 @@ import org.apache.jena.system.Txn;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.Supplier;
 
 /**
@@ -46,14 +45,14 @@ public class DistributionGraphDeletionListener implements DistributionLifecycleL
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DistributionGraphDeletionListener.class);
 
-    private final Supplier<Collection<DatasetGraphABAC>> datasetSupplier;
+    private final Supplier<Collection<DatasetGraph>> datasetSupplier;
 
     /**
      * Creates a new listener.
      *
      * @param datasetSupplier Supplies the ABAC datasets to review
      */
-    public DistributionGraphDeletionListener(Supplier<Collection<DatasetGraphABAC>> datasetSupplier) {
+    public DistributionGraphDeletionListener(Supplier<Collection<DatasetGraph>> datasetSupplier) {
         this.datasetSupplier = Objects.requireNonNull(datasetSupplier, "datasetsSupplier cannot be null");
     }
 
@@ -73,7 +72,7 @@ public class DistributionGraphDeletionListener implements DistributionLifecycleL
             return;
         }
 
-        Collection<DatasetGraphABAC> datasets = this.datasetSupplier.get();
+        Collection<DatasetGraph> datasets = this.datasetSupplier.get();
         if (datasets == null || datasets.isEmpty()) {
             LOGGER.info("No ABAC datasets to delete named graph {} from", distributionId);
             return;
@@ -81,7 +80,7 @@ public class DistributionGraphDeletionListener implements DistributionLifecycleL
 
         Node graphName = NodeFactory.createURI(distributionId);
         List<RuntimeException> failures = new ArrayList<>();
-        for (DatasetGraphABAC dataset : datasets) {
+        for (DatasetGraph dataset : datasets) {
             if (dataset == null) {
                 continue;
             }
@@ -107,27 +106,25 @@ public class DistributionGraphDeletionListener implements DistributionLifecycleL
      * Deletes the named graph corresponding to a distribution, and any associated ABAC security labels, for the given dataset.
      * @param dataset   ABAC dataset to delete from
      * @param graphName Named graph to delete
-     *
-     * Note: Commented out code to remove corresponding security labels until
-     * it is address as part of wider work
      */
-    static void deleteDistributionGraph(DatasetGraphABAC dataset, Node graphName) {
+    static void deleteDistributionGraph(DatasetGraph dataset, Node graphName) {
+
         Txn.executeWrite(dataset, () -> {
-            DatasetGraph base = dataset.getBase();
-            @SuppressWarnings("resource") // LabelsStore is owned/closed by DatasetGraphABAC
-            LabelsStore labels = dataset.labelsStore();
-            if (labels != null) {
-                List<Quad> quads = Iter.toList(base.find(graphName, Node.ANY, Node.ANY, Node.ANY));
+            final DataSecurityPlugin dataSecurityPlugin = DataSecurityPluginLoader.load();
+            final Optional<SecurityLabelsRemover> labelsRemover = dataSecurityPlugin.prepareLabelsRemover();
+            if (labelsRemover.isPresent()) {
+                final List<Quad> quads = Iter.toList(dataset.find(graphName, Node.ANY, Node.ANY, Node.ANY));
+                final SecurityLabelsRemover remover = labelsRemover.get();
                 for (Quad quad : quads) {
                     try {
-                        labels.remove(quad);
-                    } catch (RuntimeException e) {
+                        remover.remove(dataset, quad);
+                    } catch (DataSecurityException e) {
                         LOGGER.warn("Failed to remove security labels for quad {} while deleting named graph {}", quad,
                                     graphName, e);
                     }
                 }
             }
-            base.removeGraph(graphName);
+            dataset.removeGraph(graphName);
             LOGGER.info("Deleted named graph {} for deleted distribution", graphName.getURI());
         });
     }

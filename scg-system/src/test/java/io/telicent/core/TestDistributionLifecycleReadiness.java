@@ -1,6 +1,6 @@
 package io.telicent.core;
 
-import io.telicent.distribution.DistributionLifecycleStateFile;
+import io.telicent.smart.cache.security.data.distribution.DistributionLifecycleStateFile;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 

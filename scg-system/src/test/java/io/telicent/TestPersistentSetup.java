@@ -18,21 +18,9 @@
 
 package io.telicent;
 
-import static io.telicent.LibTestsSCG.tokenHeader;
-import static io.telicent.LibTestsSCG.tokenHeaderValue;
-import static org.apache.jena.atlas.lib.Lib.concatPaths;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-import java.io.Closeable;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Map;
-
 import io.telicent.core.MainSmartCacheGraph;
-import io.telicent.core.SmartCacheGraphSink;
 import io.telicent.core.TestSmartCacheGraphSink;
 import io.telicent.jena.abac.AttributeValueSet;
-import io.telicent.jena.abac.SysABAC;
 import io.telicent.jena.abac.attributes.Attribute;
 import io.telicent.jena.abac.attributes.ValueTerm;
 import io.telicent.jena.abac.core.Attributes;
@@ -41,13 +29,16 @@ import io.telicent.jena.abac.core.DatasetGraphABAC;
 import io.telicent.jena.abac.labels.Labels;
 import io.telicent.smart.cache.configuration.Configurator;
 import io.telicent.smart.cache.payloads.RdfPayload;
+import io.telicent.smart.cache.security.data.plugins.rdf.abac.RdfAbacSink;
 import io.telicent.smart.cache.sources.Event;
+import io.telicent.smart.cache.sources.TelicentHeaders;
 import io.telicent.smart.cache.sources.memory.SimpleEvent;
 import org.apache.jena.atlas.io.IO;
 import org.apache.jena.atlas.lib.FileOps;
 import org.apache.jena.fuseki.kafka.FKLib;
 import org.apache.jena.fuseki.main.FusekiServer;
 import org.apache.jena.fuseki.system.FusekiLogging;
+import org.apache.jena.kafka.common.FusekiSink;
 import org.apache.jena.riot.Lang;
 import org.apache.jena.riot.RDFWriter;
 import org.apache.jena.riot.web.HttpNames;
@@ -58,8 +49,16 @@ import org.apache.jena.sparql.exec.RowSetRewindable;
 import org.apache.jena.sparql.exec.http.QueryExecHTTPBuilder;
 import org.apache.jena.system.Txn;
 import org.apache.kafka.common.utils.Bytes;
-import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.*;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Map;
+
+import static io.telicent.LibTestsSCG.tokenHeader;
+import static io.telicent.LibTestsSCG.tokenHeaderValue;
+import static org.apache.jena.atlas.lib.Lib.concatPaths;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Testing of the persistent setup
@@ -127,7 +126,7 @@ public class TestPersistentSetup {
         final DatasetGraph dsgBase = dsgz.getBase();
 
         // Add connectors in such a way we can manually inject requests.
-        SmartCacheGraphSink sink = new SmartCacheGraphSink(dsgz, false);
+        FusekiSink<?> sink = new RdfAbacSink(dsgz, false);
 
         try {
             server.start();
@@ -137,10 +136,10 @@ public class TestPersistentSetup {
 
             // Send files to the FKProcessor
             sendFile(dsgz, sink, concatPaths(FILES, "data-test-1.ttl"),
-                     Map.of(SysABAC.hSecurityLabel, "clearance=ordinary", HttpNames.hContentType,
+                     Map.of(TelicentHeaders.SECURITY_LABEL, "clearance=ordinary", HttpNames.hContentType,
                             Lang.TTL.getHeaderString()));
             sendFile(dsgz, sink, concatPaths(FILES, "data-test-2.ttl"),
-                     Map.of(SysABAC.hSecurityLabel, "clearance=secret", HttpNames.hContentType,
+                     Map.of(TelicentHeaders.SECURITY_LABEL, "clearance=secret", HttpNames.hContentType,
                             Lang.TTL.getHeaderString()));
 
             if (false) {
@@ -154,10 +153,10 @@ public class TestPersistentSetup {
 
             // Send more files to the FKProcessor
             sendFile(dsgz, sink, concatPaths(FILES, "data-test-3.ttl"),
-                     Map.of(SysABAC.hSecurityLabel, "clearance=top-secret", HttpNames.hContentType,
+                     Map.of(TelicentHeaders.SECURITY_LABEL, "clearance=top-secret", HttpNames.hContentType,
                             Lang.TTL.getHeaderString()));
             sendFile(dsgz, sink, concatPaths(FILES, "data-test-4.ttl"),
-                     Map.of(SysABAC.hSecurityLabel, "*", HttpNames.hContentType, Lang.TTL.getHeaderString()));
+                     Map.of(TelicentHeaders.SECURITY_LABEL, "*", HttpNames.hContentType, Lang.TTL.getHeaderString()));
 
             // User 'user1' can see "no label", "ordinary", "secret"
             query(queryURL, 3, "user1", "SELECT * { ?s ?p ?o}", attributeStore);
@@ -192,7 +191,7 @@ public class TestPersistentSetup {
         return "config-persistent.ttl";
     }
 
-    private void sendFile(DatasetGraph dsg, SmartCacheGraphSink sink, String path, Map<String, String> headers) throws
+    private void sendFile(DatasetGraph dsg, FusekiSink<?> sink, String path, Map<String, String> headers) throws
             IOException {
         byte[] data;
         try (InputStream input = IO.openFileBuffered(path)) {

@@ -15,7 +15,9 @@
  */
 package io.telicent.backup.services;
 
+import io.telicent.smart.cache.security.data.DataSecurityException;
+
 @FunctionalInterface
 public interface TriConsumer<T, U, V> {
-    void accept(T t, U u, V v);
+    void accept(T t, U u, V v) throws DataSecurityException;
 }

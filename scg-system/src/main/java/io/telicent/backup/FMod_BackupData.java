@@ -20,6 +20,8 @@ import io.telicent.backup.services.DatasetBackupService;
 import io.telicent.backup.servlets.*;
 import io.telicent.model.KeyPair;
 import io.telicent.smart.cache.configuration.Configurator;
+import io.telicent.smart.cache.security.data.plugins.DataSecurityPlugin;
+import io.telicent.smart.cache.security.data.plugins.DataSecurityPluginLoader;
 import io.telicent.utils.SmartCacheGraphException;
 import org.apache.jena.fuseki.main.FusekiServer;
 import org.apache.jena.fuseki.main.sys.FusekiAutoModule;
@@ -68,10 +70,12 @@ public class FMod_BackupData implements FusekiAutoModule {
     DatasetBackupService getBackupService(DataAccessPointRegistry dapRegistry) throws SmartCacheGraphException {
         try {
             final Optional<KeyPair> keyPairOption = getKeyPairOption();
+            final DataSecurityPlugin dataSecurityPlugin = DataSecurityPluginLoader.load();
+
             if (keyPairOption.isPresent()) {
-                return new DatasetBackupService(dapRegistry, keyPairOption.get());
+                return new DatasetBackupService(dapRegistry, keyPairOption.get(), dataSecurityPlugin);
             } else {
-                return new DatasetBackupService(dapRegistry);
+                return new DatasetBackupService(dapRegistry, dataSecurityPlugin);
             }
 
         } catch (IOException | PGPException | URISyntaxException ex) {

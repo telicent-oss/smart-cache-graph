@@ -2,19 +2,19 @@ package io.telicent.labels;
 
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.telicent.jena.abac.labels.Label;
+import io.telicent.smart.cache.security.data.labels.SecurityLabels;
 import org.apache.jena.graph.Triple;
 
 import static io.telicent.backup.utils.JsonFileUtils.OBJECT_MAPPER;
 
 public class TripleLabels {
 
-    public TripleLabels(Triple triple, Label label){
+    public TripleLabels(Triple triple, SecurityLabels<?> label){
         this.triple = triple;
         this.label = label;
     }
 
-    public Label label;
+    public SecurityLabels<?> label;
     public Triple triple;
 
     public ObjectNode toJSONNode() {
@@ -24,7 +24,7 @@ public class TripleLabels {
         node.put("object", triple.getObject().toString());
         ArrayNode labelNode = OBJECT_MAPPER.createArrayNode();
         if (label != null) {
-            labelNode.add(label.getText());
+            labelNode.add(label.toDebugString());
         }
         node.set("labels", labelNode);
         return node;

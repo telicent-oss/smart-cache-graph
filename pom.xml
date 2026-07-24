@@ -93,7 +93,7 @@
     <dependency.jena>6.1.0</dependency.jena>
     <dependency.graphql>0.12.2</dependency.graphql>
     <dependency.jwt-servlet-auth>4.1.3</dependency.jwt-servlet-auth>
-    <dependency.smart-caches-core>1.0.2</dependency.smart-caches-core>
+    <dependency.smart-caches-core>1.0.4</dependency.smart-caches-core>
 
     <!-- External dependencies -->
     <dependency.awaitility>4.3.0</dependency.awaitility>
@@ -253,29 +253,6 @@
         <groupId>io.telicent.jena</groupId>
         <artifactId>jena-kafka-connector</artifactId>
         <version>${dependency.fuseki-kafka}</version>
-      </dependency>
-      <!-- ABAC engine -->
-      <dependency>
-        <!-- Used in scg-system -->
-        <groupId>io.telicent.jena</groupId>
-        <artifactId>rdf-abac-fuseki</artifactId>
-        <version>${dependency.rdf-abac}</version>
-        <exclusions>
-          <exclusion>
-                  <groupId>org.apache.logging.log4j</groupId>
-                  <artifactId>log4j-slf4j2-impl</artifactId>
-          </exclusion>
-        </exclusions>
-      </dependency>
-      <dependency>
-        <groupId>io.telicent.jena</groupId>
-        <artifactId>rdf-abac-core</artifactId>
-        <version>${dependency.rdf-abac}</version>
-      </dependency>
-      <dependency>
-        <groupId>io.telicent.jena</groupId>
-        <artifactId>rdf-abac-fmod</artifactId>
-        <version>${dependency.rdf-abac}</version>
       </dependency>
 
       <!-- Authentication -->
@@ -502,6 +479,21 @@
 
       <!-- CVE-2026-1605 patch block start-->
       <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-http</artifactId>
+        <version>${dependency.jetty}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-io</artifactId>
+        <version>${dependency.jetty}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-util</artifactId>
+        <version>${dependency.jetty}</version>
+      </dependency>
+      <dependency>
         <groupId>org.eclipse.jetty.ee11</groupId>
         <artifactId>jetty-ee11-servlet</artifactId>
         <version>${dependency.jetty}</version>
@@ -509,11 +501,6 @@
       <dependency>
         <groupId>org.eclipse.jetty.ee11</groupId>
         <artifactId>jetty-ee11-servlets</artifactId>
-        <version>${dependency.jetty}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-http</artifactId>
         <version>${dependency.jetty}</version>
       </dependency>
       <dependency>

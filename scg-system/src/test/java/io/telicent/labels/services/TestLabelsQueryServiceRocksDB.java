@@ -2,6 +2,10 @@ package io.telicent.labels.services;
 
 import io.telicent.jena.abac.labels.*;
 import io.telicent.labels.TripleLabels;
+import io.telicent.smart.cache.security.data.labels.SecurityLabelsApplicator;
+import io.telicent.smart.cache.security.data.plugins.DataSecurityPlugin;
+import io.telicent.smart.cache.security.data.plugins.rdf.abac.RdfAbacApplicator;
+import io.telicent.smart.cache.security.data.plugins.rdf.abac.RdfAbacParser;
 import org.apache.commons.io.FileUtils;
 import org.apache.jena.graph.NodeFactory;
 import org.apache.jena.graph.Triple;
@@ -16,6 +20,10 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.List;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @SuppressWarnings("deprecation")
 public class TestLabelsQueryServiceRocksDB {
@@ -41,7 +49,11 @@ public class TestLabelsQueryServiceRocksDB {
                 dbDir, null, new StoreFmtByString());
         rocksDbLabelsStore.add(triple, Label.fromText("example"));
         final DatasetGraph emptyDsg = DatasetGraphFactory.create();
-        final LabelsQueryService queryService = new LabelsQueryService(rocksDbLabelsStore, emptyDsg, DATASET_NAME);
+        final DataSecurityPlugin mockDataSecurityPlugin = mock(DataSecurityPlugin.class);
+        final SecurityLabelsApplicator mockApplicator = mock(SecurityLabelsApplicator.class);
+        when(mockDataSecurityPlugin.prepareLabelsApplicator(any(),any())).thenReturn(mockApplicator);
+
+        final LabelsQueryService queryService = new LabelsQueryService(mockDataSecurityPlugin, emptyDsg, DATASET_NAME);
         final List<TripleLabels> labels = queryService.queryOnlyLabelStore(triple);
         Assertions.assertEquals(1, labels.size());
     }
@@ -58,7 +70,10 @@ public class TestLabelsQueryServiceRocksDB {
                 dbDir, null, new StoreFmtByString());
         rocksDbLabelsStore.add(triple, Label.fromText("example"));
         final DatasetGraph emptyDsg = DatasetGraphFactory.create();
-        final LabelsQueryService queryService = new LabelsQueryService(rocksDbLabelsStore, emptyDsg, DATASET_NAME);
+        final DataSecurityPlugin mockDataSecurityPlugin = mock(DataSecurityPlugin.class);
+        final SecurityLabelsApplicator mockApplicator = mock(SecurityLabelsApplicator.class);
+        when(mockDataSecurityPlugin.prepareLabelsApplicator(any(),any())).thenReturn(mockApplicator);
+        final LabelsQueryService queryService = new LabelsQueryService(mockDataSecurityPlugin, emptyDsg, DATASET_NAME);
         final List<TripleLabels> labels = queryService.queryOnlyLabelStore(triple);
         Assertions.assertEquals(1, labels.size());
     }

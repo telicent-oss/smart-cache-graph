@@ -1,8 +1,14 @@
 package io.telicent.utils;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.telicent.servlet.auth.jwt.servlet5.AuthenticatedHttpServletRequest;
+import io.telicent.smart.cache.security.data.requests.MinimalRequestContext;
+import io.telicent.smart.cache.security.data.requests.RequestContext;
+import io.telicent.smart.caches.configuration.auth.UserInfo;
 import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.apache.jena.fuseki.servlets.HttpAction;
 import org.apache.jena.riot.WebContent;
 
 import java.io.IOException;
@@ -52,4 +58,23 @@ public class ServletUtils {
         jsonResponse.put("error", message);
         processResponse(response, jsonResponse);
     }
+
+    /**
+     *
+     * @param action
+     * @return
+     */
+    public static RequestContext requestContextFrom(HttpAction action) {
+        HttpServletRequest request = action.getRequest();
+        if (!(request instanceof AuthenticatedHttpServletRequest authenticated)) {
+            return null;
+        }
+        UserInfo userInfo = (UserInfo) request.getAttribute(UserInfo.class.getCanonicalName());
+        return MinimalRequestContext.builder()
+                .jwt(authenticated.getVerifiedJwt())
+                .username(authenticated.getRemoteUser())
+                .userInfo(userInfo)
+                .build();
+    }
+
 }
