@@ -145,6 +145,11 @@
                             "default": ""
                         }
                     }
+                },
+                "simpleKnowledgeEnabled": {
+                    "type": "boolean",
+                    "description": "Enable or disable the simple knowledge service. When set to true, an additional Fuseki service is exposed at `/simple-knowledge`, backed by its own ABAC secured TDB2 dataset, providing SPARQL query, GraphQL, Graph Store Protocol (read) and SHACL validation endpoints, plus a CQRS update endpoint that publishes changes as RDF patches to the `simple-knowledge` Kafka topic. Note: The update endpoint is exposed to all users and should only be enabled in development environments.",
+                    "default": false
                 }
             }
         },

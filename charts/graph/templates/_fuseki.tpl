@@ -20,6 +20,7 @@ Copyright (C) 2026 Telicent Limited
         ## Data services enabled.
         fuseki:services (
             :knowledgeService
+            :simpleKnowledgeService
             :ontologyService
             :catalogService
         ) .
@@ -99,6 +100,84 @@ Copyright (C) 2026 Telicent Limited
     :datasetAuthBase rdf:type      tdb2:DatasetTDB2 ;
         tdb2:location "/fuseki/databases/knowledge";
         .
+    ## --------
+    {{- if .Values.graph.simpleKnowledgeEnabled }}
+    :simpleKnowledgeService rdf:type fuseki:Service ;
+        # http://host:port/simple-knowledge
+        fuseki:name "/simple-knowledge" ;
+        fuseki:endpoint [
+            # SPARQL query service on "/simple-knowledge/sparql"
+            fuseki:operation fuseki:query ;
+            fuseki:name "sparql" ;
+            ja:context [
+                ja:cxtName "arq:queryTimeout" ;
+                ja:cxtValue "120000,120000"
+            ] ;
+        ];
+        fuseki:endpoint [
+            # SPARQL query service on "/simple-knowledge/query"
+            fuseki:operation fuseki:query ;
+            fuseki:name "query" ;
+            ja:context [
+                ja:cxtName "arq:queryTimeout" ;
+                ja:cxtValue "120000,120000"
+            ] ;
+        ] ;
+        ## Updates will be generate an RDF patch which is sent to the Kafka topic.
+        ## This exposes update to all users and should only be applied in development environments. Pending access admin/user pools solution.
+        fuseki:endpoint [
+            # CQRS update service on "/simple-knowledge/update"
+            fuseki:operation cqrs:update ;
+            # This name (ja:cxtValue) must agree with the connector below.
+            ja:context [
+                ja:cxtName "kafka:topic" ;
+                ja:cxtValue "simple-knowledge"
+            ];
+            fuseki:name "update"
+        ];
+        fuseki:endpoint [
+            # GraphQL operations
+            fuseki:operation graphql:graphql ;
+            ja:context [
+                ja:cxtName "graphql:executor" ;
+                ja:cxtValue "io.telicent.jena.graphql.execution.telicent.graph.TelicentGraphExecutor"
+            ] ;
+            fuseki:name "graphql"
+        ];
+        fuseki:endpoint [
+            # SPARQL Graph Store Protocol (read) on "/simple-knowledge/get"
+            fuseki:operation fuseki:gsp-r ;
+            fuseki:name "get"
+        ] ;
+        fuseki:endpoint [
+            # SHACL validation on "/simple-knowledge/shacl"
+            fuseki:operation fuseki:shacl ;
+            fuseki:name "shacl"
+        ] ;
+        # Knowledge dataset to use
+        fuseki:dataset :datasetAuth ;
+        .
+    ## Dataset with security labels / ABAC.
+    :datasetAuth rdf:type authz:DatasetAuthz ;
+        ## Config item where labels are stored
+        authz:labelsStore [ 
+          authz:labelsStorePath "/fuseki/databases/simpleKnowledgeLabels.db" ;
+          authz:labelsStoreLegacy {{ .Values.graph.legacyLabels }} ;
+          {{- if not .Values.graph.legacyLabels }}
+          authz:labelsStoreByHash true ;
+          authz:labelsStoreByHashFunction "xx128" ;
+          {{- end }}
+        ] ;
+        authz:dataset :datasetAuthBase;
+        authz:tripleDefaultLabels "!";
+        ## Use Telicent Auth Server
+        authz:authServer true;
+        .
+    ## Storage of data on filesystem.
+    :datasetAuthBase rdf:type      tdb2:DatasetTDB2 ;
+        tdb2:location "/fuseki/databases/simple-knowledge";
+        .
+    {{- end }}
     ## --------
     :ontologyService rdf:type fuseki:Service ;
         # http://host:port/ontology
@@ -254,6 +333,18 @@ Copyright (C) 2026 Telicent Limited
         ## fk:replayTopic -- true for in-memory storage / false for TDB2 storage
         fk:replayTopic      false;
         fk:stateFile        "/fuseki/databases/Replay-RDF.state";
+        .
+    <#connector> rdf:type fk:Connector ;
+        fk:cluster             <#kafkaCluster> ;
+        fk:topic               "simple-knowledge";
+        fk:dlqTopic            "simple-knowledge.dlq";
+        fk:fusekiServiceName   "/simple-knowledge";
+        ## From 0.90.0 onwards this is mandatory if defining more than one connector
+        ## and each connector MUST have a unique Group ID
+        fk:groupId "graph-simple-knowledge";
+        ## fk:replayTopic -- true for in-memory storage / false for TDB2 storage
+        fk:replayTopic      false;
+        fk:stateFile        "/fuseki/databases/Replay-Simple-Knowledge-RDF.state";
         .
     <#ontologyConnector> rdf:type fk:Connector ;
         fk:cluster             <#kafkaCluster> ;
