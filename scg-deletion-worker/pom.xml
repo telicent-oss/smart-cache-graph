@@ -1,30 +1,58 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<!--
+    Copyright (c) Telicent Ltd.
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+-->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
     <modelVersion>4.0.0</modelVersion>
     <name>Telicent Smart Cache Graph - Deletion Worker</name>
+
     <parent>
         <groupId>io.telicent.smart-caches.graph</groupId>
         <artifactId>scg-base</artifactId>
         <version>1.0.11-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
     </parent>
 
     <artifactId>scg-deletion-worker</artifactId>
+    <description>Kafka consumer that applies deletion requests to Smart Cache Graph</description>
 
     <properties>
-        <maven.compiler.source>21</maven.compiler.source>
-        <maven.compiler.target>21</maven.compiler.target>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <dependency.junit5>6.0.3</dependency.junit5>
+        <dependency.spring-boot>4.1.0</dependency.spring-boot>
+        <dependency.tomcat>11.0.24</dependency.tomcat>
     </properties>
 
     <dependencyManagement>
         <dependencies>
+            <!--
+                 Imported BOMs are resolved in declaration order, so anything we need to win over
+                 spring-boot-dependencies must be imported ahead of it.
+            -->
+            <dependency>
+                <groupId>org.junit</groupId>
+                <artifactId>junit-bom</artifactId>
+                <version>${dependency.junit5}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
             <dependency>
                 <groupId>com.fasterxml.jackson</groupId>
                 <artifactId>jackson-bom</artifactId>
-                <version>2.22.1</version>
+                <version>${dependency.jackson}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -32,95 +60,42 @@
             <dependency>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-dependencies</artifactId>
-                <version>3.5.14</version>
+                <version>${dependency.spring-boot}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
 
+            <!-- Overrides of versions managed by spring-boot-dependencies -->
             <dependency>
                 <groupId>org.apache.tomcat.embed</groupId>
                 <artifactId>tomcat-embed-core</artifactId>
-                <version>11.0.24</version>
+                <version>${dependency.tomcat}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.tomcat.embed</groupId>
                 <artifactId>tomcat-embed-websocket</artifactId>
-                <version>11.0.24</version>
+                <version>${dependency.tomcat}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.tomcat.embed</groupId>
                 <artifactId>tomcat-embed-el</artifactId>
-                <version>11.0.24</version>
+                <version>${dependency.tomcat}</version>
             </dependency>
-
-            <dependency>
-                <groupId>org.junit.jupiter</groupId>
-                <artifactId>junit-jupiter</artifactId>
-                <version>6.1.2</version>
-            </dependency>
-            <dependency>
-                <groupId>org.junit.jupiter</groupId>
-                <artifactId>junit-jupiter-api</artifactId>
-                <version>6.1.2</version>
-            </dependency>
-            <dependency>
-                <groupId>org.junit.jupiter</groupId>
-                <artifactId>junit-jupiter-engine</artifactId>
-                <version>6.1.2</version>
-            </dependency>
-            <dependency>
-                <groupId>org.junit.jupiter</groupId>
-                <artifactId>junit-jupiter-params</artifactId>
-                <version>6.1.2</version>
-            </dependency>
-            <dependency>
-                <groupId>org.junit.platform</groupId>
-                <artifactId>junit-platform-engine</artifactId>
-                <version>6.1.2</version>
-            </dependency>
-            <dependency>
-                <groupId>org.junit.platform</groupId>
-                <artifactId>junit-platform-commons</artifactId>
-                <version>6.1.2</version>
-            </dependency>
-            <dependency>
-                <groupId>org.junit.platform</groupId>
-                <artifactId>junit-platform-launcher</artifactId>
-                <version>6.1.2</version>
-            </dependency>
-            <dependency>
-                <groupId>org.junit.platform</groupId>
-                <artifactId>junit-platform-suite</artifactId>
-                <version>6.1.2</version>
-            </dependency>
-            <dependency>
-                <groupId>org.junit.platform</groupId>
-                <artifactId>junit-platform-suite-api</artifactId>
-                <version>6.1.2</version>
-            </dependency>
-            <dependency>
-                <groupId>org.junit.platform</groupId>
-                <artifactId>junit-platform-suite-engine</artifactId>
-                <version>6.1.2</version>
-            </dependency>
-
             <dependency>
                 <groupId>ch.qos.logback</groupId>
                 <artifactId>logback-classic</artifactId>
-                <version>1.6.1</version>
+                <version>${dependency.logback}</version>
             </dependency>
             <dependency>
                 <groupId>ch.qos.logback</groupId>
                 <artifactId>logback-core</artifactId>
-                <version>1.6.1</version>
+                <version>${dependency.logback}</version>
             </dependency>
-
             <dependency>
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-lang3</artifactId>
                 <version>3.20.0</version>
             </dependency>
-
         </dependencies>
     </dependencyManagement>
 
@@ -150,107 +125,42 @@
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
         </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-annotations</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-core</artifactId>
-        </dependency>
 
         <!-- Spring -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
-            <exclusions>
-                <exclusion>
-                    <groupId>ch.qos.logback</groupId>
-                    <artifactId>logback-classic</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>ch.qos.logback</groupId>
-                    <artifactId>logback-core</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
-
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
-        </dependency>
-
-        <!-- Logging -->
-        <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-classic</artifactId>
-            <version>1.6.1</version>
-        </dependency>
-        <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-core</artifactId>
-            <version>1.6.1</version>
         </dependency>
 
         <!-- Telicent headers -->
         <dependency>
             <groupId>io.telicent.smart-caches</groupId>
             <artifactId>event-sources-core</artifactId>
-            <version>1.0.5</version>
+            <version>${dependency.smart-caches-core}</version>
         </dependency>
 
         <!-- Test -->
         <dependency>
+            <!--
+                 Brings in spring-boot-starter-test plus the MockMvc auto-configuration that Spring Boot 4
+                 split out of it into its own module
+                 -->
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-test</artifactId>
+            <artifactId>spring-boot-starter-webmvc-test</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
-            <version>6.1.2</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-api</artifactId>
-            <version>6.1.2</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-engine</artifactId>
-            <version>6.1.2</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-params</artifactId>
-            <version>6.1.2</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.junit.platform</groupId>
-            <artifactId>junit-platform-engine</artifactId>
-            <version>6.1.2</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.junit.platform</groupId>
-            <artifactId>junit-platform-commons</artifactId>
-            <version>6.1.2</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.junit.platform</groupId>
             <artifactId>junit-platform-launcher</artifactId>
-            <version>6.1.2</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.junit.platform</groupId>
-            <artifactId>junit-platform-suite</artifactId>
-            <version>6.1.2</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -264,40 +174,20 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <!-- Also required by the surefire argLine inherited from the parent POM -->
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-junit-jupiter</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>
 
     <build>
         <plugins>
-            <!--
-                  Copy OTel Agent into a specific directory under target/ so developers can configure a run configuration that
-                  utilises this
-                  -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>
                 <executions>
-                    <execution>
-                        <id>copy-otel-agent</id>
-                        <goals>
-                            <goal>copy-dependencies</goal>
-                        </goals>
-                        <phase>package</phase>
-                        <configuration>
-                            <includeGroupIds>io.opentelemetry</includeGroupIds>
-                            <includeArtifactIds>opentelemetry-javaagent</includeArtifactIds>
-                            <stripVersion>true</stripVersion>
-                            <outputDirectory>${project.build.directory}/agents</outputDirectory>
-                        </configuration>
-                    </execution>
+                    <!-- Resolves ${org.mockito:mockito-core:jar} for the inherited surefire argLine -->
                     <execution>
                         <id>properties</id>
                         <goals>
@@ -310,12 +200,10 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
             </plugin>
-
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-resources-plugin</artifactId>
             </plugin>
-
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-source-plugin</artifactId>
@@ -323,7 +211,7 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
-                <version>4.1.0</version>
+                <version>${dependency.spring-boot}</version>
                 <executions>
                     <execution>
                         <goals>
