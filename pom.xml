@@ -70,7 +70,7 @@
     <plugin.central>0.11.0</plugin.central>
     <plugin.clean>3.3.2</plugin.clean>
     <plugin.compiler>3.15.0</plugin.compiler>
-    <plugin.cyclonedx>2.9.2</plugin.cyclonedx>
+    <plugin.cyclonedx>2.9.3</plugin.cyclonedx>
     <plugin.dependency>3.11.0</plugin.dependency>
     <plugin.deploy>3.1.4</plugin.deploy>
     <plugin.enforcer>3.4.1</plugin.enforcer>
@@ -90,7 +90,7 @@
     <!-- Internal dependencies -->
     <dependency.rdf-abac>3.1.4</dependency.rdf-abac>
     <dependency.fuseki-kafka>3.0.4</dependency.fuseki-kafka>
-    <dependency.jena>6.1.0</dependency.jena>
+    <dependency.jena>6.2.0</dependency.jena>
     <dependency.graphql>0.12.2</dependency.graphql>
     <dependency.jwt-servlet-auth>4.1.4</dependency.jwt-servlet-auth>
     <dependency.smart-caches-core>1.0.5</dependency.smart-caches-core>
