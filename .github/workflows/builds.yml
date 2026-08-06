@@ -18,7 +18,7 @@ concurrency:
 
 jobs:
   maven-build:
-    uses: telicent-oss/shared-workflows/.github/workflows/maven.yml@main
+    uses: telicent-oss/shared-workflows/.github/workflows/maven.yml@sonarqube-to-mvn
     permissions:
       contents: write
       id-token: write

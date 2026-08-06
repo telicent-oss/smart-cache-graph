@@ -83,9 +83,13 @@
     <plugin.resources>3.5.0</plugin.resources>
     <plugin.shade>3.4.1</plugin.shade>
     <plugin.site>3.9.1</plugin.site>
+    <plugin.sonar>5.7.0.6970</plugin.sonar>
     <plugin.source>3.4.0</plugin.source>
     <plugin.surefire>3.5.6</plugin.surefire>
     <plugin.versions>2.21.0</plugin.versions>
+
+    <!-- SonarQube analysis, invoked from CI via mvn sonar:sonar -->
+    <sonar.projectKey>telicent-oss_smart-cache-graph</sonar.projectKey>
 
     <!-- Dependency versions -->
     <!-- Internal dependencies -->
@@ -666,6 +670,12 @@
           <configuration>
             <argLine>@{jacocoArgLine} -javaagent:${org.mockito:mockito-core:jar} -XX:+EnableDynamicAgentLoading -Xshare:off</argLine>
           </configuration>
+        </plugin>
+
+        <plugin>
+          <groupId>org.sonarsource.scanner.maven</groupId>
+          <artifactId>sonar-maven-plugin</artifactId>
+          <version>${plugin.sonar}</version>
         </plugin>
 
         <plugin>
