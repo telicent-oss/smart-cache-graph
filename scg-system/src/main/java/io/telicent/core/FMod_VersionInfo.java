@@ -79,7 +79,7 @@ public class FMod_VersionInfo implements FusekiModule {
             }
 
             TreeSet<String> extras = new TreeSet<>(properties.stringPropertyNames());
-            extras.removeAll(STANDARD_FIELDS);
+            STANDARD_FIELDS.forEach(extras::remove);
             for (String key : extras) {
                 json.put(key, properties.getProperty(key));
             }
