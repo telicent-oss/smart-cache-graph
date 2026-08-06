@@ -55,7 +55,7 @@ class TestVersionInfoServlet {
         assertFalse(scgSystem.path("buildEnv").textValue().isBlank());
     }
 
-    private void startServer() throws IOException {
+    private void startServer() {
         Properties properties = new Properties();
         properties.put(AuthConstants.ENV_JWKS_URL, AuthConstants.AUTH_DISABLED);
         Configurator.setSingleSource(new PropertiesSource(properties));
