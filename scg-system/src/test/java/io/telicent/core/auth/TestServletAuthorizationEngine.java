@@ -113,9 +113,10 @@ public class TestServletAuthorizationEngine {
     private static Stream<Arguments> otherPaths() {
         //@formatter:off
         return Stream.of(
-                // The /$/ping endpoint has no policy, this is because in normal use it's excluded from Authentication
+                // Health/version endpoints have no policy because in normal use they're excluded from Authentication
                 // so AuthZ would never apply anyway
                 Arguments.of("/$/ping", null),
+                Arguments.of("/version-info", null),
                 // Some random unrecognised paths
                 Arguments.of(null, "/no-such-path"),
                 Arguments.of(null, "/deeply/nested/path/to/nothing.txt"),

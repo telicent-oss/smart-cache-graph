@@ -121,6 +121,11 @@
         </dependency>
         <dependency>
             <groupId>io.telicent.smart-caches</groupId>
+            <artifactId>observability-core</artifactId>
+            <version>${dependency.smart-caches-core}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.telicent.smart-caches</groupId>
             <artifactId>jwt-auth-common</artifactId>
         </dependency>
         <dependency>
