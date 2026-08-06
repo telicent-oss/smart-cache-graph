@@ -47,7 +47,6 @@ Copyright (C) 2026 Telicent Limited
             ] ;
         ] ;
         ## Updates will be generate an RDF patch which is sent to the Kafka topic.
-        ## This exposes update to all users and should only be applied in development environments. Pending access admin/user pools solution.
         fuseki:endpoint [
             # CQRS update service on "/knowledge/update"
             fuseki:operation cqrs:update ;
@@ -123,18 +122,6 @@ Copyright (C) 2026 Telicent Limited
                 ja:cxtValue "120000,120000"
             ] ;
         ] ;
-        ## Updates will be generate an RDF patch which is sent to the Kafka topic.
-        ## This exposes update to all users and should only be applied in development environments. Pending access admin/user pools solution.
-        fuseki:endpoint [
-            # CQRS update service on "/simple-knowledge/update"
-            fuseki:operation cqrs:update ;
-            # This name (ja:cxtValue) must agree with the connector below.
-            ja:context [
-                ja:cxtName "kafka:topic" ;
-                ja:cxtValue "simple-knowledge"
-            ];
-            fuseki:name "update"
-        ];
         fuseki:endpoint [
             # GraphQL operations
             fuseki:operation graphql:graphql ;
@@ -149,12 +136,7 @@ Copyright (C) 2026 Telicent Limited
             fuseki:operation fuseki:gsp-r ;
             fuseki:name "get"
         ] ;
-        fuseki:endpoint [
-            # SHACL validation on "/simple-knowledge/shacl"
-            fuseki:operation fuseki:shacl ;
-            fuseki:name "shacl"
-        ] ;
-        # Knowledge dataset to use
+        # Dataset to use
         fuseki:dataset :datasetAuth ;
         .
     ## Dataset with security labels / ABAC.
@@ -193,7 +175,6 @@ Copyright (C) 2026 Telicent Limited
             fuseki:name "query"
         ] ;
         ## Updates will be generate an RDF patch which is sent to the Kafka topic.
-        ## This exposes update to all users and should only be applied in development environments. Pending access admin/user pools solution.
         fuseki:endpoint [
             # CQRS update service on "/ontology/update"
             fuseki:operation cqrs:update ;
