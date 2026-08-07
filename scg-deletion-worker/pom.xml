@@ -33,6 +33,7 @@
     <properties>
         <dependency.spring-boot>4.1.0</dependency.spring-boot>
         <dependency.tomcat>11.0.24</dependency.tomcat>
+        <skipPublishing>true</skipPublishing>
     </properties>
 
     <dependencyManagement>
