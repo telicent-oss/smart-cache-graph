@@ -3,6 +3,7 @@ package io.telicent;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import io.telicent.core.FMod_InitialCompaction;
+import io.telicent.core.FMod_VersionInfo;
 import io.telicent.core.auth.FMod_JwtServletAuth;
 import io.telicent.core.SmartCacheGraph;
 import io.telicent.jena.abac.core.Attributes;
@@ -99,6 +100,7 @@ public class TestJwtServletAuth {
         List<PathExclusion> expectedList = List.of(
                 new PathExclusion("/$/ping"),
                 new PathExclusion("/$/ready"),
+                new PathExclusion("/version-info"),
                 new PathExclusion("/$/metrics"),
                 new PathExclusion("/$/stats/*")
         );
@@ -118,8 +120,9 @@ public class TestJwtServletAuth {
     public void test_exclusionLogic() {
         FMod_JwtServletAuth jwtServletAuth = new FMod_JwtServletAuth();
         FMod_InitialCompaction initialCompaction = new FMod_InitialCompaction ();
+        FMod_VersionInfo versionInfo = new FMod_VersionInfo();
         Attributes.buildStore(emptyGraph);
-        FusekiServer server = FusekiMain.builder(FusekiModules.create(jwtServletAuth, initialCompaction), "--port=0", "--empty")
+        FusekiServer server = FusekiMain.builder(FusekiModules.create(jwtServletAuth, initialCompaction, versionInfo), "--port=0", "--empty")
                 .setServletAttribute(ATTRIBUTE_JWT_VERIFIER, new TestJwtVerifier())
                 .enablePing(true)
                 .enableMetrics(true)
@@ -133,6 +136,10 @@ public class TestJwtServletAuth {
         // Correct path
         HttpResponse<InputStream> metricsResponse = makePOSTCallWithPath(server, "$/metrics");
         assertEquals(200, metricsResponse.statusCode());
+
+        // Correct path
+        HttpResponse<InputStream> versionInfoResponse = makeGETCallWithPath(server, "version-info");
+        assertEquals(200, versionInfoResponse.statusCode());
 
         // Fails - due to missing path but NOT due to Auth.
         HttpResponse<InputStream> statsResponse = makePOSTCallWithPath(server, "$/stats/unrecognised");
@@ -176,6 +183,15 @@ public class TestJwtServletAuth {
                         .method(METHOD_POST, HttpRequest.BodyPublishers.noBody());
         return execute(HttpEnv.getDftHttpClient(), builder.build());
     }
+
+    public static HttpResponse<InputStream> makeGETCallWithPath(FusekiServer server, String path) {
+        HttpRequest.Builder builder =
+                HttpLib.requestBuilderFor(server.serverURL())
+                        .uri(toRequestURI(server.serverURL() + path))
+                        .GET();
+        return execute(HttpEnv.getDftHttpClient(), builder.build());
+    }
+
     public static HttpResponse<InputStream> makeAuthPOSTCallWithPath(FusekiServer server, String path, String user) {
         return makeAuthCallWithPathForMethod(server, path, user, METHOD_POST);
     }

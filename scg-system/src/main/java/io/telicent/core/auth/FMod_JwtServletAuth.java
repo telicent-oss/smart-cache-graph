@@ -64,7 +64,7 @@ public class FMod_JwtServletAuth implements FusekiModule {
         // should we enable these features in future
         serverBuilder.setServletAttribute(JwtServletConstants.ATTRIBUTE_PATH_EXCLUSIONS,
                                           PathExclusion.parsePathPatterns(
-                                                  "/$/ping,/$/ready,/$/metrics,/$/stats/*"));
+                                                  "/$/ping,/$/ready,/version-info,/$/metrics,/$/stats/*"));
 
         // Register the filter
         serverBuilder.addFilter("/*", new FusekiJwtAuthFilter());

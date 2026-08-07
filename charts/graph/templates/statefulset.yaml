@@ -157,7 +157,7 @@ spec:
           successThreshold: {{ .Values.readinessProbe.successThreshold }}
         livenessProbe:
           httpGet:
-            path: /$/ping
+            path: /version-info
             port: 3030
             scheme: HTTP
           initialDelaySeconds: {{ .Values.livenessProbe.initialDelaySeconds }}
