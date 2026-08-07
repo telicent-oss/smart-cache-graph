@@ -25,6 +25,15 @@ jobs:
       USES_DOCKERHUB_IMAGES: true
       PUBLISH_SNAPSHOTS: true
       MAIN_BRANCH: main
+      # The Deletion Worker is a standalone application, not a library, so nothing from this
+      # workflow goes to Maven Central.  Publishing of scg-base/scg-system is owned solely by
+      # the SC Graph Build workflow; without these two settings this workflow races it and one
+      # of the two Central deployments is rejected for duplicate coordinates.
+      #   - stopping at "install" means the deploy phase, which the central-publishing plugin
+      #     binds its publish goal to, is never reached
+      #   - skipPublishing disables that plugin outright, in case a deploy goal is reintroduced
+      MAVEN_DEPLOY_GOALS: install
+      MAVEN_ARGS: -DskipPublishing=true
       MAVEN_DEBUG_ARGS: -Dlogback.configurationFile=logback-debug.xml
       RUN_WINDOWS_BUILD: false
       JAVA_VERSION: 21
