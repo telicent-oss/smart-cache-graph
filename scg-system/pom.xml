@@ -138,6 +138,13 @@
             <artifactId>data-security-core</artifactId>
             <version>${dependency.smart-caches-core}</version>
         </dependency>
+        <dependency>
+            <groupId>io.telicent.smart-caches</groupId>
+            <artifactId>data-security-plugin-rdf-abac-registration</artifactId>
+            <version>${dependency.smart-caches-core}</version>
+            <!-- Until we roll out dynamic security plugin loading need explicit dependency on the RDF-ABAC plugin -->
+            <!--<scope>test</scope>-->
+        </dependency>
         <!-- GraphQL -->
         <dependency>
             <groupId>io.telicent.jena.graphql</groupId>
@@ -212,19 +219,6 @@
             <artifactId>jwt-servlet-auth-core</artifactId>
             <version>${dependency.jwt-servlet-auth}</version>
             <classifier>tests</classifier>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.telicent.smart-caches</groupId>
-            <artifactId>data-security-plugin-rdf-abac</artifactId>
-            <version>${dependency.smart-caches-core}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <!-- Provides the RdfAbacPlugin for testing purposes -->
-            <groupId>io.telicent.smart-caches</groupId>
-            <artifactId>data-security-plugin-rdf-abac-registration</artifactId>
-            <version>${dependency.smart-caches-core}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
