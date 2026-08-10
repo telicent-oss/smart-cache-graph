@@ -229,7 +229,7 @@ docker-compose up --build
 # Start Kafka (e.g., via docker-compose)
 docker compose -f scg-docker/docker-compose-kafka.yml up -d --build
 # Run the application
-java -jar target/scg-deletion-worker-1.0.10-SNAPSHOT.jar \
+java -jar target/scg-deletion-worker-1.1.0-SNAPSHOT.jar \
   --deletion-worker.kafka.bootstrap-servers=localhost:9092 \
   --deletion-worker.topic=RDF
 ```

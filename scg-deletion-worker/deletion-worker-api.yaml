@@ -6,7 +6,7 @@ info:
   title: SCG Deletion Worker API
   description: |
     OpenAPI Specification for interacting with the SCG Deletion Worker API for triggering and monitoring RDF distribution deletion jobs in Kafka event streams.
-  version: 1.0.11-SNAPSHOT
+  version: 1.1.0-SNAPSHOT
 servers:
   - url: http://localhost:8080
     description: Local development server
