@@ -1,5 +1,9 @@
 # Smart Cache Graph
 
+## 1.1.1
+
+- Fix dependency scope issue that was preventing the RDF-ABAC security plugin from loading
+
 ## 1.1.0
 
 - Data security is now supplied through the Smart Caches Core `DataSecurityPlugin` API rather than depending on
