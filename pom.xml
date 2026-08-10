@@ -71,6 +71,7 @@
     <plugin.clean>3.3.2</plugin.clean>
     <plugin.compiler>3.15.0</plugin.compiler>
     <plugin.cyclonedx>2.9.3</plugin.cyclonedx>
+    <plugin.buildnumber>3.3.0</plugin.buildnumber>
     <plugin.dependency>3.11.0</plugin.dependency>
     <plugin.deploy>3.1.4</plugin.deploy>
     <plugin.enforcer>3.4.1</plugin.enforcer>
@@ -530,6 +531,32 @@
     <pluginManagement>
       <plugins>
         <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>buildnumber-maven-plugin</artifactId>
+          <version>${plugin.buildnumber}</version>
+          <executions>
+            <execution>
+              <phase>generate-resources</phase>
+              <goals>
+                <goal>create-metadata</goal>
+              </goals>
+            </execution>
+          </executions>
+          <configuration>
+            <doCheck>true</doCheck>
+            <doUpdate>true</doUpdate>
+            <outputName>${project.artifactId}.version</outputName>
+            <addOutputDirectoryToResources>true</addOutputDirectoryToResources>
+            <timestampFormat>yyyy-MM-dd HH:mm:ss</timestampFormat>
+            <properties>
+              <artifactId>${project.artifactId}</artifactId>
+              <groupId>${project.groupId}</groupId>
+              <buildEnv>${os.name} ${os.version} (${os.arch})</buildEnv>
+            </properties>
+          </configuration>
+        </plugin>
+
+        <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-compiler-plugin</artifactId>
           <version>${plugin.compiler}</version>
@@ -683,6 +710,12 @@
     </pluginManagement>
 
     <plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>buildnumber-maven-plugin</artifactId>
+        <version>${plugin.buildnumber}</version>
+      </plugin>
+
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-gpg-plugin</artifactId>

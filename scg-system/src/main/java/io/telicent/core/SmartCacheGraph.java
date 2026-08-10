@@ -128,6 +128,7 @@ public class SmartCacheGraph {
                 new FMod_JwtServletAuth()
                 , new FMod_OpenTelemetry()
                 , new FMod_MemoryInfo()
+                , new FMod_VersionInfo()
                 , new FMod_TelicentGraphQL()
                 , new FMod_RequestIDFilter()
                 , new FMod_DatasetAvailabilityFilter()
