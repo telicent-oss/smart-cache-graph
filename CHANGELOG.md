@@ -1,5 +1,14 @@
 # Smart Cache Graph
 
+## 1.1.2
+
+- Upgrades dependencies to pick up a fix for a bug that was causing label stores to be closed prematurely preventing
+  data access operations from succeeding
+- Build improvements:
+    - Fuseki Kafka upgraded to 3.1.1
+    - RDF-ABAC upgraded to 3.1.6
+    - Smart Caches Core upgraded to 1.2.1
+
 ## 1.1.1
 
 - Fix dependency scope issue that was preventing the RDF-ABAC security plugin from loading
