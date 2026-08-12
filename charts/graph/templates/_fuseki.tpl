@@ -20,9 +20,11 @@ Copyright (C) 2026 Telicent Limited
         ## Data services enabled.
         fuseki:services (
             :knowledgeService
-            :simpleKnowledgeService
             :ontologyService
             :catalogService
+            {{- if .Values.graph.simpleKnowledgeEnabled }}
+            :simpleKnowledgeService
+            {{- end }}
         ) .
     ## --------
     :knowledgeService rdf:type fuseki:Service ;
@@ -137,10 +139,10 @@ Copyright (C) 2026 Telicent Limited
             fuseki:name "get"
         ] ;
         # Dataset to use
-        fuseki:dataset :datasetAuth ;
+        fuseki:dataset :simpleDatasetAuth ;
         .
     ## Dataset with security labels / ABAC.
-    :datasetAuth rdf:type authz:DatasetAuthz ;
+    :simpleDatasetAuth rdf:type authz:DatasetAuthz ;
         ## Config item where labels are stored
         authz:labelsStore [ 
           authz:labelsStorePath "/fuseki/databases/simpleKnowledgeLabels.db" ;
@@ -150,13 +152,13 @@ Copyright (C) 2026 Telicent Limited
           authz:labelsStoreByHashFunction "xx128" ;
           {{- end }}
         ] ;
-        authz:dataset :datasetAuthBase;
+        authz:dataset :simpleDatasetAuthBase;
         authz:tripleDefaultLabels "!";
         ## Use Telicent Auth Server
         authz:authServer true;
         .
     ## Storage of data on filesystem.
-    :datasetAuthBase rdf:type      tdb2:DatasetTDB2 ;
+    :simpleDatasetAuthBase rdf:type      tdb2:DatasetTDB2 ;
         tdb2:location "/fuseki/databases/simple-knowledge";
         .
     {{- end }}
@@ -315,7 +317,8 @@ Copyright (C) 2026 Telicent Limited
         fk:replayTopic      false;
         fk:stateFile        "/fuseki/databases/Replay-RDF.state";
         .
-    <#connector> rdf:type fk:Connector ;
+    {{- if .Values.graph.simpleKnowledgeEnabled }}
+    <#simpleKnowledgeConnector> rdf:type fk:Connector ;
         fk:cluster             <#kafkaCluster> ;
         fk:topic               "simple-knowledge";
         fk:dlqTopic            "simple-knowledge.dlq";
@@ -327,6 +330,7 @@ Copyright (C) 2026 Telicent Limited
         fk:replayTopic      false;
         fk:stateFile        "/fuseki/databases/Replay-Simple-Knowledge-RDF.state";
         .
+    {{- end }}
     <#ontologyConnector> rdf:type fk:Connector ;
         fk:cluster             <#kafkaCluster> ;
         fk:topic               "ontology";
