@@ -1,5 +1,34 @@
 # Smart Cache Graph
 
+## 1.1.1
+
+- Fix dependency scope issue that was preventing the RDF-ABAC security plugin from loading
+
+## 1.1.0
+
+- Data security is now supplied through the Smart Caches Core `DataSecurityPlugin` API rather than depending on
+  RDF-ABAC directly.  ABAC remains the default and is provided by the `data-security-plugin-rdf-abac` implementation.
+- New `scg-deletion-worker` service that lets system administrators delete a Distribution.  It consumes the Kafka
+  topic and emits delete patches for every event belonging to the given `Distribution-ID`, and ships with its own
+  Helm chart and build/promotion workflows.
+- New `/$/ready` readiness endpoint that reports Distribution Lifecycle status, and is now used as the readiness
+  probe for the graph StatefulSet.
+- Events for unregistered Distributions are now rejected and ignored when routing Kafka events into named graphs.
+- Deleting a distributed graph now also deletes the labels associated with it.
+- Build improvements:
+  - Smart Caches Core upgraded to 1.0.5
+  - Apache Jena upgraded to 6.2.0
+  - Jackson upgraded to 2.22.1
+  - Jetty upgraded to 12.1.11
+  - JWT Servlet Auth upgraded to 4.1.4
+  - Logback upgraded to 1.6.1
+  - OpenTelemetry SDK upgraded to 1.64.0
+  - Bouncy Castle upgraded to 1.85
+  - Kotlin upgraded to 2.4.10
+  - JUnit upgraded to 6.1.2
+  - Spring Boot upgraded to 4.1.0 and Tomcat Embed to 11.0.24 in the deletion worker
+  - Removed expired dependency exclusions
+
 ## 1.0.10
 - Build improvements:
   - Reduced release size payloads

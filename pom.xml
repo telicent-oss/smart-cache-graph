@@ -22,7 +22,7 @@
   <groupId>io.telicent.smart-caches.graph</groupId>
   <artifactId>scg-base</artifactId>
   <packaging>pom</packaging>
-  <version>1.0.11-SNAPSHOT</version>
+  <version>1.1.2-SNAPSHOT</version>
 
   <name>Telicent Smart Cache Graph - Parent</name>
   <description>Telicent Smart Cache Graph</description>
@@ -56,7 +56,7 @@
   <properties>
     <!-- Build properties -->
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <project.build.outputTimestamp>2026-07-14T07:22:43Z</project.build.outputTimestamp>
+    <project.build.outputTimestamp>2026-08-10T13:00:04Z</project.build.outputTimestamp>
     <java.version>21</java.version>
 
     <!-- Skip Test Jar generation -->
@@ -71,6 +71,7 @@
     <plugin.clean>3.3.2</plugin.clean>
     <plugin.compiler>3.15.0</plugin.compiler>
     <plugin.cyclonedx>2.9.3</plugin.cyclonedx>
+    <plugin.buildnumber>3.3.0</plugin.buildnumber>
     <plugin.dependency>3.11.0</plugin.dependency>
     <plugin.deploy>3.1.4</plugin.deploy>
     <plugin.enforcer>3.4.1</plugin.enforcer>
@@ -82,9 +83,13 @@
     <plugin.resources>3.5.0</plugin.resources>
     <plugin.shade>3.4.1</plugin.shade>
     <plugin.site>3.9.1</plugin.site>
+    <plugin.sonar>5.7.0.6970</plugin.sonar>
     <plugin.source>3.4.0</plugin.source>
     <plugin.surefire>3.5.6</plugin.surefire>
     <plugin.versions>2.21.0</plugin.versions>
+
+    <!-- SonarQube analysis, invoked from CI via mvn sonar:sonar -->
+    <sonar.projectKey>telicent-oss_smart-cache-graph</sonar.projectKey>
 
     <!-- Dependency versions -->
     <!-- Internal dependencies -->
@@ -93,7 +98,7 @@
     <dependency.jena>6.2.0</dependency.jena>
     <dependency.graphql>0.12.2</dependency.graphql>
     <dependency.jwt-servlet-auth>4.1.4</dependency.jwt-servlet-auth>
-    <dependency.smart-caches-core>1.0.5</dependency.smart-caches-core>
+    <dependency.smart-caches-core>1.1.0</dependency.smart-caches-core>
 
     <!-- External dependencies -->
     <dependency.awaitility>4.3.0</dependency.awaitility>
@@ -101,8 +106,8 @@
     <dependency.bouncycastle>1.85</dependency.bouncycastle>
     <dependency.kafka>3.9.2</dependency.kafka>
     <dependency.kotlin>2.4.10</dependency.kotlin>
-    <dependency.lz4>1.11.1</dependency.lz4>
-    <dependency.otel>1.64.0</dependency.otel>
+    <dependency.lz4>1.11.2</dependency.lz4>
+    <dependency.otel>1.65.0</dependency.otel>
 
     <!-- Logging dependencies -->
     <dependency.log4j2>2.26.1</dependency.log4j2>
@@ -111,8 +116,8 @@
 
     <!-- Test dependencies -->
     <dependency.jmh>1.37</dependency.jmh>
-    <dependency.junit5>6.1.2</dependency.junit5>
-    <dependency.junit5-platform>6.1.2</dependency.junit5-platform>
+    <dependency.junit5>6.1.3</dependency.junit5>
+    <dependency.junit5-platform>6.1.3</dependency.junit5-platform>
     <dependency.mockito>5.23.0</dependency.mockito>
     <dependency.testcontainers>1.21.4</dependency.testcontainers>
     <dependency.yaml-config>2.0.2</dependency.yaml-config>
@@ -123,7 +128,7 @@
     <!-- CVE-2025-28976 -->
     <dependency.commons-fileupload2>2.0.0-M5</dependency.commons-fileupload2>
     <!-- CVE-2026-1605 -->
-    <dependency.jetty>12.1.11</dependency.jetty>
+    <dependency.jetty>12.1.12</dependency.jetty>
 
   </properties>
 
@@ -526,6 +531,32 @@
     <pluginManagement>
       <plugins>
         <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>buildnumber-maven-plugin</artifactId>
+          <version>${plugin.buildnumber}</version>
+          <executions>
+            <execution>
+              <phase>generate-resources</phase>
+              <goals>
+                <goal>create-metadata</goal>
+              </goals>
+            </execution>
+          </executions>
+          <configuration>
+            <doCheck>true</doCheck>
+            <doUpdate>true</doUpdate>
+            <outputName>${project.artifactId}.version</outputName>
+            <addOutputDirectoryToResources>true</addOutputDirectoryToResources>
+            <timestampFormat>yyyy-MM-dd HH:mm:ss</timestampFormat>
+            <properties>
+              <artifactId>${project.artifactId}</artifactId>
+              <groupId>${project.groupId}</groupId>
+              <buildEnv>${os.name} ${os.version} (${os.arch})</buildEnv>
+            </properties>
+          </configuration>
+        </plugin>
+
+        <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-compiler-plugin</artifactId>
           <version>${plugin.compiler}</version>
@@ -642,6 +673,12 @@
         </plugin>
 
         <plugin>
+          <groupId>org.sonarsource.scanner.maven</groupId>
+          <artifactId>sonar-maven-plugin</artifactId>
+          <version>${plugin.sonar}</version>
+        </plugin>
+
+        <plugin>
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>versions-maven-plugin</artifactId>
           <version>${plugin.versions}</version>
@@ -673,6 +710,12 @@
     </pluginManagement>
 
     <plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>buildnumber-maven-plugin</artifactId>
+        <version>${plugin.buildnumber}</version>
+      </plugin>
+
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-gpg-plugin</artifactId>
