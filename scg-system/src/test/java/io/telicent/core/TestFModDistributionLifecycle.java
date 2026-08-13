@@ -38,12 +38,10 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Properties;
 
+import static io.telicent.smart.cache.distribution.lifecycle.config.DistributionLifecycleConfiguration.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 public class TestFModDistributionLifecycle {
 
@@ -150,7 +148,7 @@ public class TestFModDistributionLifecycle {
     void routeToNamedGraphsDisabled_registersNoTracker_evenWhenLifecycleIsEnabled() {
         // given
         Properties properties = new Properties();
-        properties.setProperty(FMod_DistributionLifecycle.ENABLE_DISTRIBUTION_LIFECYCLE, "true");
+        properties.setProperty(DISTRIBUTION_LIFECYCLE_ENABLED, "true");
         Configurator.setSingleSource(new PropertiesSource(properties));
         FusekiServer server = FusekiServer.create().port(0).add("/ds", DatasetGraphFactory.createTxnMem()).build();
         server.start();
@@ -267,6 +265,41 @@ public class TestFModDistributionLifecycle {
     }
 
     @Test
+    void listenerThreads_defaultsAndIsConfigurable() {
+        // given
+        Configurator.setSingleSource(new PropertiesSource(new Properties()));
+
+        // when, then
+        assertEquals(FMod_DistributionLifecycle.DEFAULT_LISTENER_THREADS,
+                     FMod_DistributionLifecycle.listenerThreads(),
+                     "Listener threads must default to four so that a slow deletion cannot block other listeners");
+        assertEquals(4, FMod_DistributionLifecycle.listenerThreads(), "The default listener thread count must be four");
+
+        // given
+        final Properties properties = new Properties();
+        properties.setProperty(DISTRIBUTION_LIFECYCLE_LISTENER_THREADS, "8");
+        Configurator.setSingleSource(new PropertiesSource(properties));
+
+        // when, then
+        assertEquals(8, FMod_DistributionLifecycle.listenerThreads(), "Listener threads should be configurable");
+    }
+
+    @Test
+    void listenerThreads_invalidValuesFallBackToTheDefault() {
+        // given
+        for (final String invalid : List.of("0", "-1", "not-a-number")) {
+            final Properties properties = new Properties();
+            properties.setProperty(DISTRIBUTION_LIFECYCLE_LISTENER_THREADS, invalid);
+            Configurator.setSingleSource(new PropertiesSource(properties));
+
+            // when, then
+            assertEquals(FMod_DistributionLifecycle.DEFAULT_LISTENER_THREADS,
+                         FMod_DistributionLifecycle.listenerThreads(),
+                         "Listener threads should fall back to the default for value " + invalid);
+        }
+    }
+
+    @Test
     void stateFilePath_defaultsAndIsConfigurable() {
         // given
         Configurator.setSingleSource(new PropertiesSource(new Properties()));
@@ -277,7 +310,7 @@ public class TestFModDistributionLifecycle {
 
         // given
         Properties properties = new Properties();
-        properties.setProperty(FMod_DistributionLifecycle.DISTRIBUTION_LIFECYCLE_STATE_FILE, "/tmp/custom.state");
+        properties.setProperty(DISTRIBUTION_LIFECYCLE_STATE_FILE, "/tmp/custom.state");
         Configurator.setSingleSource(new PropertiesSource(properties));
 
         // when, then

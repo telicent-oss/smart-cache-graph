@@ -66,6 +66,7 @@ import java.util.Map;
 import static graphql.Assert.assertFalse;
 import static io.telicent.LibTestsSCG.queryNoToken;
 import static io.telicent.LibTestsSCG.queryWithToken;
+import static io.telicent.smart.cache.distribution.lifecycle.config.DistributionLifecycleConfiguration.DISTRIBUTION_LIFECYCLE_STATE_FILE;
 import static org.junit.jupiter.api.Assertions.*;
 
 public abstract class AbstractSmartCacheGraphSinkTests {
@@ -537,12 +538,12 @@ public abstract class AbstractSmartCacheGraphSinkTests {
     private static void withDistributionLifecycleConfig(Path stateFile, String applicationId, ThrowingRunnable action)
             throws IOException {
         String previousRouteToNamedGraphs = System.getProperty("ROUTE_TO_NAMED_GRAPHS");
-        String previousStateFile = System.getProperty(FMod_DistributionLifecycle.DISTRIBUTION_LIFECYCLE_STATE_FILE);
+        String previousStateFile = System.getProperty(DISTRIBUTION_LIFECYCLE_STATE_FILE);
         String previousAppId = System.getProperty(FMod_DistributionLifecycle.DISTRIBUTION_LIFECYCLE_APP_ID);
         try {
             Configurator.addSource(SystemPropertiesSource.INSTANCE);
             System.setProperty("ROUTE_TO_NAMED_GRAPHS", "true");
-            System.setProperty(FMod_DistributionLifecycle.DISTRIBUTION_LIFECYCLE_STATE_FILE, stateFile.toString());
+            System.setProperty(DISTRIBUTION_LIFECYCLE_STATE_FILE, stateFile.toString());
             if (applicationId != null) {
                 System.setProperty(FMod_DistributionLifecycle.DISTRIBUTION_LIFECYCLE_APP_ID, applicationId);
             } else {
@@ -551,7 +552,7 @@ public abstract class AbstractSmartCacheGraphSinkTests {
             action.run();
         } finally {
             restoreProperty("ROUTE_TO_NAMED_GRAPHS", previousRouteToNamedGraphs);
-            restoreProperty(FMod_DistributionLifecycle.DISTRIBUTION_LIFECYCLE_STATE_FILE, previousStateFile);
+            restoreProperty(DISTRIBUTION_LIFECYCLE_STATE_FILE, previousStateFile);
             restoreProperty(FMod_DistributionLifecycle.DISTRIBUTION_LIFECYCLE_APP_ID, previousAppId);
             Files.deleteIfExists(stateFile);
         }
@@ -673,7 +674,7 @@ public abstract class AbstractSmartCacheGraphSinkTests {
     }
 
     private RdfAbacSink createNamedGraphSink(DatasetGraphABAC dataset) {
-        String lifecycleStateFile = Configurator.get(FMod_DistributionLifecycle.DISTRIBUTION_LIFECYCLE_STATE_FILE);
+        String lifecycleStateFile = Configurator.get(DISTRIBUTION_LIFECYCLE_STATE_FILE);
         String applicationId = Configurator.get(FMod_DistributionLifecycle.DISTRIBUTION_LIFECYCLE_APP_ID);
         DistributionLifecycleStateFile lifecycleState =
                 StringUtils.isNotBlank(lifecycleStateFile) ?

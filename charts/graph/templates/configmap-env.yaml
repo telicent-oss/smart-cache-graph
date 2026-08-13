@@ -24,6 +24,12 @@ data:
 
   ROUTE_TO_NAMED_GRAPHS: {{ .Values.graph.routeToNamedGraphs | quote }}
 
+  {{- if .Values.graph.routeToNamedGraphs }}
+  DISTRIBUTION_LIFECYCLE_ENABLED: "true"
+  DISTRIBUTION_LIFECYCLE_STATE_FILE: {{ .Values.graph.distributionLifecycle.stateFile | quote }}
+  DISTRIBUTION_LIFECYCLE_LISTENER_THREADS: {{ .Values.graph.distributionLifecycle.listenerThreads | quote }}
+  {{- end }}
+
   {{- if .Values.global.enterprise }}
   SEARCH_API_URL: {{  printf "http://%s" (include "graph.hostSearch" .) | quote }}
   {{- end }}
