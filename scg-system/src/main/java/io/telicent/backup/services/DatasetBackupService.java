@@ -691,13 +691,17 @@ public class DatasetBackupService {
         response.put("delete-id", deleteID);
         response.put("date", DateTimeUtils.nowAsString(DATE_FORMAT));
         response.put("deletePath", deletePath);
-        if (!checkPathExistsAndIsDir(deletePath) && !checkPathExistsAndIsFile(deletePath + JSON_INFO_SUFFIX) && !checkPathExistsAndIsFile(deletePath + ZIP_SUFFIX)) {
+        if (!checkPathExistsAndIsDir(deletePath) &&
+                !checkPathExistsAndIsFile(deletePath + JSON_INFO_SUFFIX) &&
+                !checkPathExistsAndIsFile(deletePath + ZIP_SUFFIX) &&
+                !checkPathExistsAndIsFile(deletePath + ZIP_SUFFIX + ENCRYPTION_SUFFIX)) {
             response.put("reason", "Backup path unsuitable: " + deletePath);
             response.put("success", false);
         } else {
             executeDeleteBackup(deletePath);
             executeDeleteBackup(deletePath + JSON_INFO_SUFFIX);
             executeDeleteBackup(deletePath + ZIP_SUFFIX);
+            executeDeleteBackup(deletePath + ZIP_SUFFIX + ENCRYPTION_SUFFIX);
             deleteFilesRegEx(getBackUpDir(), deleteID + WILDCARD_REPORT_SUFFIX);
             response.put("success", true);
         }

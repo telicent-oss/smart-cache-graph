@@ -123,9 +123,50 @@ public class TestDatasetBackupService {
         ObjectNode result = cut.deleteBackup(existingID);
 
         // then
-        assertEquals(3, DatasetBackupService_Test.getCallCount(DELETE_BACKUP_DIR));
+        assertEquals(4, DatasetBackupService_Test.getCallCount(DELETE_BACKUP_DIR));
         assertTrue(result.has("success"));
         assertTrue(result.get("success").asBoolean());
+    }
+
+    @Test
+    @DisplayName("Delete backup recognises and removes an encryption-only (.zip.enc) backup")
+    public void test_delete_encryptedOnlyBackup() throws IOException {
+        // given - a completed encrypted backup can survive as nothing but <id>.zip.enc
+        final DataSecurityPlugin mockPlugin = mock(DataSecurityPlugin.class);
+        final DatasetBackupService realService = new DatasetBackupService(mockRegistry, mockPlugin);
+        final String id = "31";
+        final Path encFile = baseDir.resolve(id + ".zip.enc");
+        Files.createFile(encFile);
+
+        // when
+        final ObjectNode result = realService.deleteBackup(id);
+
+        // then - it must be treated as a valid backup and the encrypted file physically removed
+        assertTrue(result.has("success"));
+        assertTrue(result.get("success").asBoolean());
+        assertFalse(Files.exists(encFile), "Encrypted backup file should have been deleted");
+    }
+
+    @Test
+    @DisplayName("Delete backup removes the encrypted artifact of a full encrypted backup")
+    public void test_delete_fullEncryptedBackup_removesEncFile() throws IOException {
+        // given - a full encrypted backup on disk: <id>.zip.enc plus its metadata <id>_info.json
+        final DataSecurityPlugin mockPlugin = mock(DataSecurityPlugin.class);
+        final DatasetBackupService realService = new DatasetBackupService(mockRegistry, mockPlugin);
+        final String id = "31";
+        final Path encFile = baseDir.resolve(id + ".zip.enc");
+        final Path infoFile = baseDir.resolve(id + "_info.json");
+        Files.createFile(encFile);
+        Files.createFile(infoFile);
+
+        // when
+        final ObjectNode result = realService.deleteBackup(id);
+
+        // then - the encrypted artifact must not be left behind (previously it was leaked)
+        assertTrue(result.has("success"));
+        assertTrue(result.get("success").asBoolean());
+        assertFalse(Files.exists(encFile), "Encrypted backup file should have been deleted");
+        assertFalse(Files.exists(infoFile), "Backup metadata file should have been deleted");
     }
 
     /*
