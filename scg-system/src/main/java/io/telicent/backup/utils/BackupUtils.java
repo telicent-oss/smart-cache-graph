@@ -52,7 +52,7 @@ public class BackupUtils extends ServletUtils {
 
     public static final Logger LOG = LoggerFactory.getLogger(BackupUtils.class);
 
-    private static final Pattern NUMBERED_ITEM_PATTERN = Pattern.compile("^(\\d+)(\\.zip)?$");
+    private static final Pattern NUMBERED_ITEM_PATTERN = Pattern.compile("^(\\d+)(\\.zip(\\.enc)?)?$");
 
     /**
      * Configuration parameter for determining location of backups (if unset defaults to PWD/backups)
