@@ -21,6 +21,7 @@ import java.nio.file.Path;
 import java.util.Properties;
 
 import static io.telicent.backup.utils.JsonFileUtils.OBJECT_MAPPER;
+import static io.telicent.smart.cache.distribution.lifecycle.config.DistributionLifecycleConfiguration.DISTRIBUTION_LIFECYCLE_STATE_FILE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -55,7 +56,7 @@ class TestDistributionLifecycleReadinessServlet {
     void readinessEndpoint_whenLifecycleStateUnavailable_returns503() throws IOException, InterruptedException {
         Properties properties = new Properties();
         properties.setProperty(FMod_DistributionLifecycle.ROUTE_TO_NAMED_GRAPHS, "true");
-        properties.setProperty(FMod_DistributionLifecycle.DISTRIBUTION_LIFECYCLE_STATE_FILE,
+        properties.setProperty(DISTRIBUTION_LIFECYCLE_STATE_FILE,
                                "target/missing-readiness-state.json");
         startServer(properties);
 
@@ -81,7 +82,7 @@ class TestDistributionLifecycleReadinessServlet {
 
         Properties properties = new Properties();
         properties.setProperty(FMod_DistributionLifecycle.ROUTE_TO_NAMED_GRAPHS, "true");
-        properties.setProperty(FMod_DistributionLifecycle.DISTRIBUTION_LIFECYCLE_STATE_FILE, stateFile.toString());
+        properties.setProperty(DISTRIBUTION_LIFECYCLE_STATE_FILE, stateFile.toString());
         startServer(properties);
 
         HttpResponse<String> response = getReady();
@@ -93,7 +94,7 @@ class TestDistributionLifecycleReadinessServlet {
         assertEquals("Distribution lifecycle state is usable.", body.path("reasons").get(0).textValue());
     }
 
-    private void startServer(Properties properties) throws IOException {
+    private void startServer(Properties properties) {
         properties.put(AuthConstants.ENV_JWKS_URL, AuthConstants.AUTH_DISABLED);
         Configurator.setSingleSource(new PropertiesSource(properties));
         LibTestsSCG.disableInitialCompaction();

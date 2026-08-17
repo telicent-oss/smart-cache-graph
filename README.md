@@ -147,6 +147,16 @@ applied to the dataset as authored, and the `Distribution-ID` header is ignored.
 
 This is the prerequisite for distribution lifecycle filtering described below.
 
+### `DISTRIBUTION_LIFECYCLE_ENABLED`
+
+When set to `true` (and [`ROUTE_TO_NAMED_GRAPHS`](#route_to_named_graphs) is also `true`) the distribution lifecycle
+tracker is started. The tracker consumes the distribution lifecycle Kafka topic, maintains the state file described
+below and acts on delete events by deleting the corresponding named graph and its labels. When unset, or set to `false`,
+no tracker is started.
+
+The Helm chart sets this for you when `graph.routeToNamedGraphs` is enabled — see the
+[chart README](charts/graph/README.md).
+
 ### `DISTRIBUTION_LIFECYCLE_STATE_FILE`
 
 Path to a JSON file that describes the lifecycle state of each known distribution. When set (and
@@ -155,10 +165,13 @@ only named graphs whose corresponding distribution is currently in the `Active` 
 Distributions in any other state (`Unregistered`, `Registered`, `Withdrawn`, `Deleted`, or any unrecognised value) are
 hidden from query results regardless of the user's attributes.
 
-The file is expected to be written by an external lifecycle manager (see the
-[CORE-1275 `distribution-lifecycle` module](https://github.com/telicent-oss/smart-caches-core)) and is re-read on demand
-whenever its modification time or size changes. Atomic update via a sibling `<file>.tmp` file is supported, and a
-`<file>.bak` is used as a fallback if the primary file is unreadable. The expected JSON shape is:
+The file is written by this server's own lifecycle tracker as it consumes the lifecycle topic, provided
+[`DISTRIBUTION_LIFECYCLE_ENABLED`](#distribution_lifecycle_enabled) is `true`. Its format is defined by the
+[`distribution-lifecycle` module](https://github.com/telicent-oss/smart-caches-core) in Smart Caches Core.
+
+The read side is decoupled from the write side: the file is re-read on demand whenever its modification time or size
+changes, atomic update via a sibling `<file>.tmp` file is supported, and a `<file>.bak` is used as a fallback if the
+primary file is unreadable. The expected JSON shape is:
 
 ```json
 {
@@ -175,6 +188,11 @@ If the file is missing, malformed, or refers to a different application (see
 
 Has no effect when `ROUTE_TO_NAMED_GRAPHS` is not enabled; a warning will be logged at server startup in that case.
 
+The file must be held on persistent storage. If it is lost between restarts then this server's view of the lifecycle
+state and the event driven view of it get out of step and the lifecycle can no longer be reliably enforced. The Helm
+chart therefore defaults it to `/fuseki/databases/distribution-lifecycle-state.json`, alongside the Kafka state files on
+the datasets volume.
+
 ### `DISTRIBUTION_LIFECYCLE_APP_ID`
 
 Optional. The application identifier expected to appear in the `application` field of
@@ -182,6 +200,13 @@ Optional. The application identifier expected to appear in the `application` fie
 field does not match this value is rejected (and no graphs are exposed) — this prevents an SC-Graph instance from
 accidentally consuming a lifecycle state file intended for a different application. When unset, the `application` field
 in the state file is not checked.
+
+### `DISTRIBUTION_LIFECYCLE_LISTENER_THREADS`
+
+Optional. The number of threads used to dispatch distribution lifecycle events to listeners, defaulting to `4`. This
+should be greater than `1`: deleting a distribution can take some time and with a single thread one slow deletion blocks
+the listeners for subsequent events. Responding to non-deletion events is effectively a no-op, so there is no reason to
+have them queued behind a deletion.
 
 ### `ENABLE_LABELS_QUERY`
 

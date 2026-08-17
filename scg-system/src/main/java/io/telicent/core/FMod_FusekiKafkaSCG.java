@@ -50,6 +50,7 @@ import java.util.function.Function;
 import static io.telicent.backup.services.DatasetBackupService.sanitiseName;
 import static io.telicent.backup.utils.JsonFileUtils.OBJECT_MAPPER;
 import static io.telicent.otel.FMod_OpenTelemetry.fixupName;
+import static io.telicent.smart.cache.distribution.lifecycle.config.DistributionLifecycleConfiguration.DISTRIBUTION_LIFECYCLE_STATE_FILE;
 import static org.apache.jena.kafka.FusekiKafka.LOG;
 
 /**
@@ -72,7 +73,7 @@ public class FMod_FusekiKafkaSCG extends FMod_FusekiKafka {
     @Override
     protected Function<DatasetGraph, Sink<Event<Bytes, RdfPayload>>> getSinkBuilder() {
         final boolean routeToNamedGraphs = Configurator.get("ROUTE_TO_NAMED_GRAPHS", Boolean::parseBoolean, false);
-        final String lifecycleStateFileName = Configurator.get(FMod_DistributionLifecycle.DISTRIBUTION_LIFECYCLE_STATE_FILE);
+        final String lifecycleStateFileName = Configurator.get(DISTRIBUTION_LIFECYCLE_STATE_FILE);
         final String applicationId = Configurator.get(FMod_DistributionLifecycle.DISTRIBUTION_LIFECYCLE_APP_ID);
         final DistributionLifecycleStateFile lifecycleStateFile =
                 routeToNamedGraphs && StringUtils.isNotBlank(lifecycleStateFileName) ?
