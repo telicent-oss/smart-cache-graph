@@ -445,6 +445,36 @@ public class TestBackupUtils {
     }
 
     @Test
+    @DisplayName("getHighestDirectoryNumber counts encrypted (.zip.enc) backup artifacts")
+    public void test_getHighestDirectoryNumber_countsEncryptedArtifact() throws IOException {
+        // given - a completed encrypted backup leaves only <id>.zip.enc (+ <id>_info.json) behind:
+        // the source directory and the intermediate .zip are both deleted during encryption.
+        final Path parentDir = Files.createDirectory(tempDir.resolve("highest_encrypted"));
+        Files.createFile(parentDir.resolve("31.zip.enc"));
+        Files.createFile(parentDir.resolve("31_info.json"));
+        // when
+        final int highest = getHighestDirectoryNumber(parentDir.toAbsolutePath().toString());
+        // then - the encrypted artifact must be recognised so it is not overwritten
+        assertEquals(31, highest);
+    }
+
+    @Test
+    @DisplayName("getNextDirectoryNumberAndCreate does not reuse an ID whose backup exists only as .zip.enc")
+    public void test_getNextDirectoryNumberAndCreate_doesNotReuseEncryptedId() throws IOException {
+        // given - reproduces the backup-id 31 collision: the previous encrypted backup survives
+        // only as 31.zip.enc, which the numbering logic previously failed to see.
+        final Path parentDir = Files.createDirectory(tempDir.resolve("next_encrypted"));
+        Files.createFile(parentDir.resolve("31.zip.enc"));
+        Files.createFile(parentDir.resolve("31_info.json"));
+        // when
+        final int nextNum = getNextDirectoryNumberAndCreate(parentDir.toAbsolutePath().toString());
+        // then - the next backup gets a fresh ID rather than clobbering 31.zip.enc
+        assertEquals(32, nextNum);
+        assertTrue(Files.isDirectory(parentDir.resolve("32")));
+        assertTrue(Files.exists(parentDir.resolve("31.zip.enc")));
+    }
+
+    @Test
     @DisplayName("Tests getNextDirectoryNumberAndCreate with a null path")
     public void test_getNextDirectoryNumberAndCreate_nullPath() {
         // given

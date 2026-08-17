@@ -113,8 +113,23 @@
             "properties": {
                 "routeToNamedGraphs": {
                     "type": "boolean",
-                    "description": "Enable or disable routing to named graphs. When set to true, data will be routed into named graphs based on the Distribution-ID header set on the incoming Kafka events.",
+                    "description": "Enable or disable routing to named graphs. When set to true, data will be routed into named graphs based on the Distribution-ID header set on the incoming Kafka events. This also enables the Distribution Lifecycle feature, setting the DISTRIBUTION_LIFECYCLE_ENABLED, DISTRIBUTION_LIFECYCLE_STATE_FILE and DISTRIBUTION_LIFECYCLE_LISTENER_THREADS environment variables.",
                     "default": false
+                },
+                "distributionLifecycle": {
+                    "type": "object",
+                    "properties": {
+                        "stateFile": {
+                            "type": "string",
+                            "description": "Path to the Distribution Lifecycle state file, which MUST be on a persistent volume. Only used when graph.routeToNamedGraphs is true.",
+                            "default": "/fuseki/databases/distribution-lifecycle-state.json"
+                        },
+                        "listenerThreads": {
+                            "type": "number",
+                            "description": "Number of threads used to fire Distribution Lifecycle listeners. MUST be greater than 1 so that a slow deletion does not block other listeners. Only used when graph.routeToNamedGraphs is true.",
+                            "default": 4
+                        }
+                    }
                 },
                 "legacyLabels": {
                     "type": "boolean",

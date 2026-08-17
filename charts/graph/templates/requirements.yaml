@@ -5,3 +5,18 @@
 {{- if and .Values.graph.routeToNamedGraphs .Values.graph.legacyLabels }}
 {{- $_ := required "graph.legacyLabels MUST be false when graph.routeToNamedGraphs is enabled" "" }}
 {{- end }}
+
+{{- if .Values.graph.routeToNamedGraphs }}
+{{- $stateFile := required "graph.distributionLifecycle.stateFile is required when graph.routeToNamedGraphs is enabled" .Values.graph.distributionLifecycle.stateFile }}
+{{- /* The state file MUST be persistent, otherwise the lifecycle state and the event driven view of it get out of
+       step and distribution lifecycle can no longer be reliably enforced.  Only check against the volumes this chart
+       creates; if extra volume mounts have been supplied the layout is the operator's to define. */}}
+{{- if not .Values.extraVolumeMounts }}
+{{- if not (or (hasPrefix "/fuseki/databases/" $stateFile) (hasPrefix "/fuseki/backups/" $stateFile)) }}
+{{- $_ := required "graph.distributionLifecycle.stateFile MUST be under /fuseki/databases/ or /fuseki/backups/ so that it is held on a persistent volume" "" }}
+{{- end }}
+{{- end }}
+{{- if le (int .Values.graph.distributionLifecycle.listenerThreads) 1 }}
+{{- $_ := required "graph.distributionLifecycle.listenerThreads MUST be greater than 1 so that slow deletions do not block other listeners" "" }}
+{{- end }}
+{{- end }}

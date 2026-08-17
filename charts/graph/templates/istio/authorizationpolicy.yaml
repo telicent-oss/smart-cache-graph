@@ -23,6 +23,10 @@ spec:
           {{- include "graph.ingressPrincipal" . | nindent 8 }}
     to:
     - operation:
+        paths: 
+        - /version-info
+        methods: ["GET"]
+    - operation:
         paths:
         - /knowledge/sparql
         - /knowledge/sparql/*

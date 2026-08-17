@@ -46,3 +46,13 @@ jobs:
           quay-username: ${{ secrets.QUAY_USERNAME }}
           quay-token: ${{ secrets.QUAY_TOKEN }}
           role-to-assume: ${{ secrets.AWS_ROLE_DEPLOY }}
+          # Code health report. The project key lives in the parent pom, not a
+          # sonar-project.properties, so it is supplied directly and the file
+          # lookup (and the checkout it needs) is skipped.
+          sonar-token: ${{ secrets.SONAR_TOKEN }}
+          sonar-host-url: ${{ secrets.SONAR_HOST_URL }}
+          sonar-project-key: telicent-oss_smart-cache-graph
+          sonar-project-file: ""
+          sonar-report-s3-uri: s3://${{ secrets.RELEASE_ARTEFACT_BUCKET_NAME }}/smart-cache-graph/${{ needs.get-version.outputs.version }}/SAST/
+          sonar-report-aws-region: eu-west-2
+          sonar-report-aws-role: ${{ secrets.SONAR_ROLE_TO_ASSUME }}
