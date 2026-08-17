@@ -1,5 +1,15 @@
 # Smart Cache Graph
 
+## 1.1.4
+
+- Build improvements:
+  - Release workflows now publish SonarQube code health (SAST) reports for both the graph and the deletion worker
+  - Authorisation policy updated for /version-info endpoint 
+  
+## 1.1.3
+- Build improvements: 
+  - Fixes encrypted backups not being recognised.
+
 ## 1.1.2
 
 - Upgrades dependencies to pick up a fix for a bug that was causing label stores to be closed prematurely preventing
