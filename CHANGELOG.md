@@ -1,5 +1,11 @@
 # Smart Cache Graph
 
+## 1.1.5
+
+- Build improvements:
+    - Upgrades Logback to 1.6.3
+    - Upgrades Telicent Java 21 Base Image to 1.2.59
+
 ## 1.1.4
 
 - Build improvements:
