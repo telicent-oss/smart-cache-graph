@@ -27,21 +27,20 @@ You can find further example configurations later under [Try It Out](#try-it-out
 
 ## Debug / Performance Image Builds
 
-The container build now accepts a `JAVA_BASE_IMAGE` build argument so local
-diagnostic images can be produced without editing the Dockerfile.
+Several variant Dockerfiles are provided and can be selected via the `DOCKERFILE` environment variable.
 
 Examples:
 
 ```bash
+DOCKERFILE=Dockerfile.debug \
 docker build \
-  --build-arg JAVA_BASE_IMAGE=telicent/telicent-java21-debug:latest \
   -f scg-docker/Dockerfile \
   -t telicent/smart-cache-graph:debug .
 ```
 
 ```bash
+DOCKERFILE=Dockerfile.perf \
 docker build \
-  --build-arg JAVA_BASE_IMAGE=telicent/telicent-java21-perf:latest \
   -f scg-docker/Dockerfile \
   -t telicent/smart-cache-graph:perf .
 ```

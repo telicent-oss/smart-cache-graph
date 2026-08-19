@@ -107,7 +107,7 @@ function buildImage() {
     "-t"
     "${IMAGE_NAME}:${DOCKER_TAG}"
     "-f"
-    "${SCRIPT_DIR}/scg-docker/Dockerfile"
+    "${SCRIPT_DIR}/scg-docker/${DOCKERFILE:-Dockerfile}"
     "--build-arg"
     "PROJECT_VERSION=${PROJECT_VERSION}"
   )
