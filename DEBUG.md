@@ -5,8 +5,7 @@ Java base images, pushing the resulting image to ECR, deploying it and then inte
 
 ## Build Smart Cache Graph on the perf base
 
-The Graph Dockerfile already supports overriding the Java base image with
-`JAVA_BASE_IMAGE`.
+The performance base image can be used by overriding the `DOCKERFILE` in use.
 
 Build the app:
 
@@ -18,7 +17,7 @@ Then build and push the PERF variant (note the example tags 1.2.50 & 1.0.2):
 
 ```bash
 TARGET_PLATFORMS=linux/amd64 \
-EXTRA_BUILD_ARGS='--build-arg JAVA_BASE_IMAGE=098669589541.dkr.ecr.eu-west-2.amazonaws.com/telicent-java21-perf:1.2.50' \
+DOCKERFILE=Dockerfile.perf \
 ./docker-build.sh 1.0.2-PERF 098669589541.dkr.ecr.eu-west-2.amazonaws.com
 ```
 

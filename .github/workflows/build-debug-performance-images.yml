@@ -50,7 +50,7 @@ jobs:
         with:
           app-name: smart-cache-graph
           app-name-prefix: ""
-          dockerfile: scg-docker/Dockerfile
+          dockerfile: scg-docker/Dockerfile.debug
           version: ${{ needs.maven-build.outputs.version }}-DEBUG
           target: smart-cache-graph
           java-version: 21
@@ -62,7 +62,6 @@ jobs:
           enable-buildkit-cache: "true"
           build-args: |
             PROJECT_VERSION=${{ needs.maven-build.outputs.version }}
-            JAVA_BASE_IMAGE=telicent/telicent-java21-debug:latest
 
   docker-build-perf:
     name: Build and push smart-cache-graph PERF
@@ -78,7 +77,7 @@ jobs:
         with:
           app-name: smart-cache-graph
           app-name-prefix: ""
-          dockerfile: scg-docker/Dockerfile
+          dockerfile: scg-docker/Dockerfile.perf
           version: ${{ needs.maven-build.outputs.version }}-PERF
           target: smart-cache-graph
           java-version: 21
@@ -90,4 +89,3 @@ jobs:
           enable-buildkit-cache: "true"
           build-args: |
             PROJECT_VERSION=${{ needs.maven-build.outputs.version }}
-            JAVA_BASE_IMAGE=telicent/telicent-java21-perf:latest
