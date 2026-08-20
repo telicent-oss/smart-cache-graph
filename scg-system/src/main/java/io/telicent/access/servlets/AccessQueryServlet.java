@@ -30,7 +30,7 @@ import static io.telicent.utils.ServletUtils.processResponse;
 
 public class AccessQueryServlet extends HttpServlet {
 
-    private final static Logger LOG = FusekiKafka.LOG;
+    private static final Logger LOG = FusekiKafka.LOG;
 
     private final AccessQueryService queryService;
 

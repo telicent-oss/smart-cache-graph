@@ -27,7 +27,7 @@ import org.slf4j.LoggerFactory;
 
 public class MainSmartCacheGraph {
 
-    public final static Logger LOG = LoggerFactory.getLogger(MainSmartCacheGraph.class);
+    public static final Logger LOG = LoggerFactory.getLogger(MainSmartCacheGraph.class);
 
     /*
     To test with Open Telemetry metrics you'll need to adjust the run configuration for this class to attach the Java

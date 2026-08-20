@@ -42,15 +42,15 @@ public class TestBackupAndRestoreWithEncryption {
 
     protected static String BASE_URI;
 
-    protected final static URL CONFIG_URL = TestLabelsQuery.class.getClassLoader().getResource("config-labels-query-test.ttl");
+    protected static final URL CONFIG_URL = TestLabelsQuery.class.getClassLoader().getResource("config-labels-query-test.ttl");
 
-    private final static URL DATA1_URL = TestLabelsQuery.class.getClassLoader().getResource("test-data-labelled-1.trig");
+    private static final URL DATA1_URL = TestLabelsQuery.class.getClassLoader().getResource("test-data-labelled-1.trig");
 
-    private final static URL DATA2_URL = TestLabelsQuery.class.getClassLoader().getResource("test-data-labelled-2.trig");
+    private static final URL DATA2_URL = TestLabelsQuery.class.getClassLoader().getResource("test-data-labelled-2.trig");
 
-    private final static String DATASET1_NAME = "securedDataset1";
+    private static final String DATASET1_NAME = "securedDataset1";
 
-    private final static String DATASET2_NAME = "securedDataset2";
+    private static final String DATASET2_NAME = "securedDataset2";
 
     static {
         // Add Bouncy castle to JVM

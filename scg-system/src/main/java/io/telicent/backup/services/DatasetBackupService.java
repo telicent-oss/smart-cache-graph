@@ -75,7 +75,7 @@ public class DatasetBackupService {
 
     public static final Logger LOG = LoggerFactory.getLogger(DatasetBackupService.class);
 
-    private final static String BACKUP_SUFFIX = "_backup";
+    private static final String BACKUP_SUFFIX = "_backup";
 
     private final ReentrantLock lock;
 
@@ -87,8 +87,8 @@ public class DatasetBackupService {
 
     private final DataSecurityPlugin dataSecurityPlugin;
 
-    final static ConcurrentHashMap<String, TriConsumer<DataAccessPoint, String, ObjectNode>> backupConsumerMap = new ConcurrentHashMap<>();
-    final static ConcurrentHashMap<String, TriConsumer<DataAccessPoint, String, ObjectNode>> restoreConsumerMap = new ConcurrentHashMap<>();
+    static final ConcurrentHashMap<String, TriConsumer<DataAccessPoint, String, ObjectNode>> backupConsumerMap = new ConcurrentHashMap<>();
+    static final ConcurrentHashMap<String, TriConsumer<DataAccessPoint, String, ObjectNode>> restoreConsumerMap = new ConcurrentHashMap<>();
 
     public DatasetBackupService(DataAccessPointRegistry dapRegistry, KeyPair keyPair, DataSecurityPlugin dataSecurityPlugin) throws URISyntaxException, IOException, PGPException {
         LOG.info("Backup encryption is enabled.");
