@@ -254,7 +254,11 @@ public class TestRestoreWithKafkaPause {
                     + resultNode.path(DATASET_NAME).path("reason").asText("<none>"));
             assertTrue(DatasetBackupService_Test.getCallCount(DatasetBackupService_Test.RESTORE_TDB) >= 1,
                        "restoreTDB should have been invoked");
-            assertFalse(projector.isAtPausePoint(), "Projector should have been resumed after the restore");
+            // Resume is asynchronous: FKS.resumeProjectors() only clears the pause flag and notifies,
+            // the projector thread clears atPausePoint itself once it wakes.  Poll rather than
+            // assert instantaneously, otherwise this races the projector thread on a loaded runner.
+            waitFor(() -> !projector.isAtPausePoint(), Duration.ofSeconds(10),
+                    "Projector was not resumed after the restore");
         } finally {
             setPauseTimeoutForTest(originalTimeout);
             driver.cancel();

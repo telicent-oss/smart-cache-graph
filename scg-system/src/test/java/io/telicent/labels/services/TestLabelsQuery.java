@@ -107,7 +107,7 @@ public class TestLabelsQuery {
                     "subject" : "http://dbpedia.org/resource/London",
                     "predicate" : "http://dbpedia.org/ontology/populationTotal",
                     "object" : "\\"8799800\\"",
-                    "labels" : [ "(&& admin census)" ]
+                    "labels" : [ "admin && census" ]
                   } ]
                 }""";
         callAndAssert(jsonRequestBody, expectedJsonResponse, DATASET1_NAME);
