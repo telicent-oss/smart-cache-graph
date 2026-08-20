@@ -91,6 +91,82 @@
     <!-- SonarQube analysis, invoked from CI via mvn sonar:sonar -->
     <sonar.projectKey>telicent-oss_smart-cache-graph</sonar.projectKey>
 
+    <!-- ===================================================================== -->
+    <!-- SonarQube issue exclusions [CORE-1445]                                -->
+    <!--                                                                       -->
+    <!-- These are scanner side exclusions and must stay in this root pom:      -->
+    <!-- since SonarQube 7.6 sonar.issue.ignore.* is read at project level      -->
+    <!-- only, and resourceKey patterns resolve against the project base        -->
+    <!-- directory, hence the leading **/ on every pattern.                     -->
+    <!--                                                                       -->
+    <!-- Maven inherits these properties into each child module, so the scanner -->
+    <!-- logs "Specifying issue exclusions at module level is not supported     -->
+    <!-- anymore" once per module. That warning is benign; the root level       -->
+    <!-- values are the ones actually applied (SONAR-11850).                    -->
+    <!--                                                                       -->
+    <!-- Mirror any change here in SonarQube > Project Settings > General       -->
+    <!-- Settings > Analysis Scope, or SonarQube for IDE will not honour them.  -->
+    <!-- ===================================================================== -->
+    <sonar.issue.ignore.multicriteria>s1948servlets,s1948compaction,s2654,s1186tests,s2699,s2187,s3577,s115,s117,s101,s116</sonar.issue.ignore.multicriteria>
+
+    <!-- S1948: non transient field in a Serializable class.                    -->
+    <!-- HttpServlet implements Serializable only as a legacy artefact. SCG     -->
+    <!-- runs on embedded Jetty via Fuseki: there is no web.xml, no             -->
+    <!-- distributable webapp and no session replication, so a servlet is never -->
+    <!-- serialized and the injected service fields cannot leak. sonar-java's   -->
+    <!-- own exception for this is hard coded to javax.servlet.http.HttpServlet -->
+    <!-- and therefore never applies to our jakarta.servlet classes.            -->
+    <sonar.issue.ignore.multicriteria.s1948servlets.ruleKey>java:S1948</sonar.issue.ignore.multicriteria.s1948servlets.ruleKey>
+    <sonar.issue.ignore.multicriteria.s1948servlets.resourceKey>**/servlets/**/*.java</sonar.issue.ignore.multicriteria.s1948servlets.resourceKey>
+
+    <!-- Same rule, same reasoning: the CompactOne/CompactAll/CompactionJobs    -->
+    <!-- servlets are nested classes of FMod_InitialCompaction rather than      -->
+    <!-- living under a servlets package.                                      -->
+    <sonar.issue.ignore.multicriteria.s1948compaction.ruleKey>java:S1948</sonar.issue.ignore.multicriteria.s1948compaction.ruleKey>
+    <sonar.issue.ignore.multicriteria.s1948compaction.resourceKey>**/FMod_InitialCompaction.java</sonar.issue.ignore.multicriteria.s1948compaction.resourceKey>
+
+    <!-- S2654: "JEE applications should not use threads or synchronization".   -->
+    <!-- The rule fires on every Runnable in a module it classifies as Jakarta  -->
+    <!-- EE, with no carve out for a plain ExecutorService, and its prescribed  -->
+    <!-- remedy (inject a container ManagedExecutorService) has no meaning for  -->
+    <!-- a standalone Fuseki process on embedded Jetty. Premise does not hold.  -->
+    <sonar.issue.ignore.multicriteria.s2654.ruleKey>java:S2654</sonar.issue.ignore.multicriteria.s2654.ruleKey>
+    <sonar.issue.ignore.multicriteria.s2654.resourceKey>**/*.java</sonar.issue.ignore.multicriteria.s2654.resourceKey>
+
+    <!-- S1186: empty method. Deliberately inert methods are normal in test     -->
+    <!-- doubles and stubs (for example the RDFChanges implementation in        -->
+    <!-- RDFPatchInverterTest). Still enforced in main code.                    -->
+    <sonar.issue.ignore.multicriteria.s1186tests.ruleKey>java:S1186</sonar.issue.ignore.multicriteria.s1186tests.ruleKey>
+    <sonar.issue.ignore.multicriteria.s1186tests.resourceKey>**/src/test/java/**/*.java</sonar.issue.ignore.multicriteria.s1186tests.resourceKey>
+
+    <!-- S2699: test with no assertion. Several tests deliberately assert only  -->
+    <!-- that a call completes without throwing.                               -->
+    <sonar.issue.ignore.multicriteria.s2699.ruleKey>java:S2699</sonar.issue.ignore.multicriteria.s2699.ruleKey>
+    <sonar.issue.ignore.multicriteria.s2699.resourceKey>**/src/test/java/**/*.java</sonar.issue.ignore.multicriteria.s2699.resourceKey>
+
+    <!-- S2187 / S3577: class looks like a test but has no test methods, and    -->
+    <!-- test class naming convention. We use the *_Test suffix for hand        -->
+    <!-- written test doubles and fixtures, which are not test classes.         -->
+    <sonar.issue.ignore.multicriteria.s2187.ruleKey>java:S2187</sonar.issue.ignore.multicriteria.s2187.ruleKey>
+    <sonar.issue.ignore.multicriteria.s2187.resourceKey>**/src/test/java/**/*.java</sonar.issue.ignore.multicriteria.s2187.resourceKey>
+    <sonar.issue.ignore.multicriteria.s3577.ruleKey>java:S3577</sonar.issue.ignore.multicriteria.s3577.ruleKey>
+    <sonar.issue.ignore.multicriteria.s3577.resourceKey>**/src/test/java/**/*.java</sonar.issue.ignore.multicriteria.s3577.resourceKey>
+
+    <!-- Naming convention rules. Telicent uses deliberate identifier          -->
+    <!-- conventions (for example the TF_ / JF_ prefixed Kafka header constants -->
+    <!-- in TelicentKafka) that do not match Sonar's default regexes. Suppressed -->
+    <!-- as a policy decision rather than reviewed case by case.                -->
+    <!--   S115 constant naming, S116 field naming,                            -->
+    <!--   S117 local variable and parameter naming, S101 class naming.         -->
+    <sonar.issue.ignore.multicriteria.s115.ruleKey>java:S115</sonar.issue.ignore.multicriteria.s115.ruleKey>
+    <sonar.issue.ignore.multicriteria.s115.resourceKey>**/*.java</sonar.issue.ignore.multicriteria.s115.resourceKey>
+    <sonar.issue.ignore.multicriteria.s117.ruleKey>java:S117</sonar.issue.ignore.multicriteria.s117.ruleKey>
+    <sonar.issue.ignore.multicriteria.s117.resourceKey>**/*.java</sonar.issue.ignore.multicriteria.s117.resourceKey>
+    <sonar.issue.ignore.multicriteria.s101.ruleKey>java:S101</sonar.issue.ignore.multicriteria.s101.ruleKey>
+    <sonar.issue.ignore.multicriteria.s101.resourceKey>**/*.java</sonar.issue.ignore.multicriteria.s101.resourceKey>
+    <sonar.issue.ignore.multicriteria.s116.ruleKey>java:S116</sonar.issue.ignore.multicriteria.s116.ruleKey>
+    <sonar.issue.ignore.multicriteria.s116.resourceKey>**/*.java</sonar.issue.ignore.multicriteria.s116.resourceKey>
+
     <!-- Dependency versions -->
     <!-- Internal dependencies -->
     <dependency.rdf-abac>3.1.6</dependency.rdf-abac>
