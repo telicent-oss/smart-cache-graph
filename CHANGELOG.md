@@ -1,5 +1,16 @@
 # Smart Cache Graph
 
+## 1.1.6
+
+- Restoring a backup no longer fails on a dataset whose Kafka topic is caught up.  Such restores previously aborted
+  with `Timed out ... waiting for Kafka projectors ... to reach a safe pause point`, because a projector that had been
+  idle for a while never observed the pause request.
+- Label expressions in labels query responses (`/$/labels/{dataset}`) are now returned in infix form
+  (`admin && census`) rather than prefix form (`(&& admin census)`).
+- Build improvements:
+    - Upgrades Fuseki Kafka to 3.2.0
+    - Upgrades Smart Caches Core to 1.2.2, which also moves the transitive `rdf-abac-core` from 3.1.5 to 3.1.6
+
 ## 1.1.5
 
 - Build improvements:
