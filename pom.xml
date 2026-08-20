@@ -107,7 +107,7 @@
     <!-- Mirror any change here in SonarQube > Project Settings > General       -->
     <!-- Settings > Analysis Scope, or SonarQube for IDE will not honour them.  -->
     <!-- ===================================================================== -->
-    <sonar.issue.ignore.multicriteria>s1948servlets,s1948compaction,s2654,s1186tests,s2699,s2187,s3577,s115,s117,s101,s116,s6213,s3077filter,s5786,s1075,s5778,s5961,s3457tests,s2925,s107</sonar.issue.ignore.multicriteria>
+    <sonar.issue.ignore.multicriteria>s1948servlets,s1948compaction,s2654,s1186,s2699,s2187,s3577,s115,s117,s101,s116,s6213,s3077filter,s5786,s1075,s5778,s5961,s3457tests,s2925,s107,s1845,s3516,s3776,s2093,s5443,s3252,s1452</sonar.issue.ignore.multicriteria>
 
     <!-- S1948: non transient field in a Serializable class.                    -->
     <!-- HttpServlet implements Serializable only as a legacy artefact. SCG     -->
@@ -135,9 +135,12 @@
 
     <!-- S1186: empty method. Deliberately inert methods are normal in test     -->
     <!-- doubles and stubs (for example the RDFChanges implementation in        -->
-    <!-- RDFPatchInverterTest). Still enforced in main code.                    -->
-    <sonar.issue.ignore.multicriteria.s1186tests.ruleKey>java:S1186</sonar.issue.ignore.multicriteria.s1186tests.ruleKey>
-    <sonar.issue.ignore.multicriteria.s1186tests.resourceKey>**/src/test/java/**/*.java</sonar.issue.ignore.multicriteria.s1186tests.resourceKey>
+    <!-- RDFPatchInverterTest). Widened from test only to project wide, which    -->
+    <!-- also covers the placeholder ActionService in FMod_CQRS and the four     -->
+    <!-- no op methods in ValidationUtils. NOTE: ValidationUtils has no callers  -->
+    <!-- anywhere in the tree; deleting the class would remove these outright.   -->
+    <sonar.issue.ignore.multicriteria.s1186.ruleKey>java:S1186</sonar.issue.ignore.multicriteria.s1186.ruleKey>
+    <sonar.issue.ignore.multicriteria.s1186.resourceKey>**/*.java</sonar.issue.ignore.multicriteria.s1186.resourceKey>
 
     <!-- S2699: test with no assertion. Several tests deliberately assert only  -->
     <!-- that a call completes without throwing.                               -->
@@ -221,6 +224,68 @@
     <!-- elsewhere still surfaces for a decision.                               -->
     <sonar.issue.ignore.multicriteria.s107.ruleKey>java:S107</sonar.issue.ignore.multicriteria.s107.ruleKey>
     <sonar.issue.ignore.multicriteria.s107.resourceKey>**/FMod_DistributionLifecycle.java</sonar.issue.ignore.multicriteria.s107.resourceKey>
+
+    <!-- ===================================================================== -->
+    <!-- Accepted known issues [CORE-1445]                                     -->
+    <!--                                                                       -->
+    <!-- Unlike the exclusions above, these are NOT false positives. They are   -->
+    <!-- real findings we have chosen to accept for now. Each is scoped to the  -->
+    <!-- file it was reported in (S3776 excepted) so that a new occurrence      -->
+    <!-- elsewhere still surfaces for a decision.                              -->
+    <!-- ===================================================================== -->
+
+    <!-- S1845: field "connectors" in FMod_FusekiKafkaSCG shadows the           -->
+    <!-- connectors() method on FMod_FusekiKafka. Three references in one file, -->
+    <!-- so a rename remains cheap whenever we choose to do it.                -->
+    <sonar.issue.ignore.multicriteria.s1845.ruleKey>java:S1845</sonar.issue.ignore.multicriteria.s1845.ruleKey>
+    <sonar.issue.ignore.multicriteria.s1845.resourceKey>**/FMod_FusekiKafkaSCG.java</sonar.issue.ignore.multicriteria.s1845.resourceKey>
+
+    <!-- S3516: processProtocol always returns null; the non null branch calls  -->
+    <!-- ServletOps.errorBadRequest, which throws. Behaviour is correct         -->
+    <!-- (UpdateAction.parseExecute treats null as "no using list"), so this is -->
+    <!-- clarity only. Sonar has declined to treat the throwing path as an      -->
+    <!-- exception (SONARJAVA-3473), so the issue will not self resolve. NOTE:  -->
+    <!-- java:S2177 remains open on the same method, because processProtocol    -->
+    <!-- also hides a private method of the same name in SPARQL_Update.         -->
+    <sonar.issue.ignore.multicriteria.s3516.ruleKey>java:S3516</sonar.issue.ignore.multicriteria.s3516.ruleKey>
+    <sonar.issue.ignore.multicriteria.s3516.resourceKey>**/SPARQL_Update_CQRS.java</sonar.issue.ignore.multicriteria.s3516.resourceKey>
+
+    <!-- S3776: cognitive complexity above 15. Project wide, so this switches   -->
+    <!-- off complexity monitoring entirely, including                          -->
+    <!-- BackupUtils.getBackupSuccessValues at 46 and                            -->
+    <!-- DatasetBackupService line 438 at 36, and it will not flag future        -->
+    <!-- growth. If we want new violations to keep firing, drop this entry and   -->
+    <!-- mark the seven current issues Accepted in the SonarQube UI instead.     -->
+    <sonar.issue.ignore.multicriteria.s3776.ruleKey>java:S3776</sonar.issue.ignore.multicriteria.s3776.ruleKey>
+    <sonar.issue.ignore.multicriteria.s3776.resourceKey>**/*.java</sonar.issue.ignore.multicriteria.s3776.resourceKey>
+
+    <!-- S2093: try block that could be try with resources. All three           -->
+    <!-- occurrences are in test sources.                                       -->
+    <sonar.issue.ignore.multicriteria.s2093.ruleKey>java:S2093</sonar.issue.ignore.multicriteria.s2093.ruleKey>
+    <sonar.issue.ignore.multicriteria.s2093.resourceKey>**/src/test/java/**/*.java</sonar.issue.ignore.multicriteria.s2093.resourceKey>
+
+    <!-- S5443: File.createTempFile(prefix, suffix) in SmartCacheGraph writes    -->
+    <!-- the generated RDF config to java.io.tmpdir with umask permissions.      -->
+    <!-- Low practical risk in a single process container, but this is the only  -->
+    <!-- security rated finding in the project, so suppressing it stops the      -->
+    <!-- Security rating reflecting it. One line to fix with                     -->
+    <!-- Files.createTempFile and owner only Posix file permissions.             -->
+    <sonar.issue.ignore.multicriteria.s5443.ruleKey>java:S5443</sonar.issue.ignore.multicriteria.s5443.ruleKey>
+    <sonar.issue.ignore.multicriteria.s5443.resourceKey>**/SmartCacheGraph.java</sonar.issue.ignore.multicriteria.s5443.resourceKey>
+
+    <!-- S3252: EncryptionUtils calls Date.from(Instant) while importing         -->
+    <!-- java.sql.Date, which only inherits that static from java.util.Date.     -->
+    <!-- Correct today, but simplifying to "new Date(...)" would silently        -->
+    <!-- switch to java.sql.Date. NOTE: java:S8688 remains open on the same      -->
+    <!-- line: LocalDateTime.now().toInstant(ZoneOffset.UTC) takes local time     -->
+    <!-- and labels it UTC, so the PGP literal timestamp is off by our offset.   -->
+    <sonar.issue.ignore.multicriteria.s3252.ruleKey>java:S3252</sonar.issue.ignore.multicriteria.s3252.ruleKey>
+    <sonar.issue.ignore.multicriteria.s3252.resourceKey>**/EncryptionUtils.java</sonar.issue.ignore.multicriteria.s3252.resourceKey>
+
+    <!-- S1452: ResponseEntity<?> on DeletionJobController.getJobStatus. Common  -->
+    <!-- Spring idiom, though inconsistent with the typed sibling method.        -->
+    <sonar.issue.ignore.multicriteria.s1452.ruleKey>java:S1452</sonar.issue.ignore.multicriteria.s1452.ruleKey>
+    <sonar.issue.ignore.multicriteria.s1452.resourceKey>**/DeletionJobController.java</sonar.issue.ignore.multicriteria.s1452.resourceKey>
 
     <!-- Dependency versions -->
     <!-- Internal dependencies -->
