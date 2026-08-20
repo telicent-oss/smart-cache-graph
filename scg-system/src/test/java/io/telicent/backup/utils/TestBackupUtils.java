@@ -1167,4 +1167,65 @@ public class TestBackupUtils {
         Optional<ZonedDateTime> time = readTime(path, "end-time");
         assertFalse(time.isPresent());
     }
+
+    @Test
+    @DisplayName("Tests getBackupSuccessValues rolls up nested arrays of section results")
+    public void test_getBackupSuccessValues_withNestedArrayResults() {
+        // given
+        ObjectNode result = OBJECT_MAPPER.createObjectNode();
+        ObjectNode dataset = result.putArray("datasets").addObject();
+        dataset.put("dataset-name", "securedDataset1");
+        ObjectNode kafka = dataset.putObject("kafka");
+        kafka.put("success", true);
+        kafka.putArray("connectors").addObject().put("success", true);
+        ObjectNode response = OBJECT_MAPPER.createObjectNode();
+        // when
+        getBackupSuccessValues(result, response);
+        // then
+        ObjectNode rollup = (ObjectNode) response.get("backup-success").get("securedDataset1");
+        assertTrue(rollup.get("kafka-success").asBoolean());
+        assertTrue(rollup.get("kafka-connectors-success").asBoolean());
+    }
+
+    @Test
+    @DisplayName("Tests getBackupSuccessValues reports false when no section succeeded")
+    public void test_getBackupSuccessValues_withNoSuccesses() {
+        // given
+        ObjectNode result = OBJECT_MAPPER.createObjectNode();
+        ObjectNode dataset = result.putArray("datasets").addObject();
+        dataset.put("dataset-name", "securedDataset1");
+        dataset.putObject("tdb").put("success", false);
+        ObjectNode response = OBJECT_MAPPER.createObjectNode();
+        // when
+        getBackupSuccessValues(result, response);
+        // then
+        assertEquals("false", response.get("backup-success").asText());
+    }
+
+    @Test
+    @DisplayName("Tests getBackupSuccessValues ignores datasets with no name and entries that are not objects")
+    public void test_getBackupSuccessValues_withUnnamedAndNonObjectEntries() {
+        // given
+        ObjectNode result = OBJECT_MAPPER.createObjectNode();
+        // A dataset entry that is not an object, followed by one that is but carries no "dataset-name".
+        ObjectNode unnamed = result.putArray("datasets").add("not-an-object").addObject();
+        unnamed.putObject("tdb").put("success", true);
+        ObjectNode response = OBJECT_MAPPER.createObjectNode();
+        // when
+        getBackupSuccessValues(result, response);
+        // then
+        // Neither entry is usable, so nothing rolled up and the summary is the literal "false".
+        assertEquals("false", response.get("backup-success").asText());
+    }
+
+    @Test
+    @DisplayName("Tests getBackupSuccessValues with no datasets node leaves the response untouched")
+    public void test_getBackupSuccessValues_withoutDatasetsNode() {
+        // given
+        ObjectNode response = OBJECT_MAPPER.createObjectNode();
+        // when
+        getBackupSuccessValues(OBJECT_MAPPER.createObjectNode(), response);
+        // then
+        assertTrue(response.isEmpty());
+    }
 }
