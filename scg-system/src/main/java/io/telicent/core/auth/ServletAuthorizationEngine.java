@@ -20,8 +20,10 @@ import java.util.Objects;
  * </p>
  */
 class ServletAuthorizationEngine extends TelicentAuthorizationEngine<ServletAuthorizationContext> {
-    private final Map<PathExclusion, Policy> rolesPolicies, permissionsPolicies;
-    private final Policy rolesFallback, permissionsFallback;
+    private final Map<PathExclusion, Policy> rolesPolicies;
+    private final Map<PathExclusion, Policy> permissionsPolicies;
+    private final Policy rolesFallback;
+    private final Policy permissionsFallback;
 
     /**
      * Creates a new authorization engine
