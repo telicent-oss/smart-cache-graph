@@ -107,7 +107,7 @@
     <!-- Mirror any change here in SonarQube > Project Settings > General       -->
     <!-- Settings > Analysis Scope, or SonarQube for IDE will not honour them.  -->
     <!-- ===================================================================== -->
-    <sonar.issue.ignore.multicriteria>s1948servlets,s1948compaction,s2654,s1186tests,s2699,s2187,s3577,s115,s117,s101,s116</sonar.issue.ignore.multicriteria>
+    <sonar.issue.ignore.multicriteria>s1948servlets,s1948compaction,s2654,s1186tests,s2699,s2187,s3577,s115,s117,s101,s116,s6213,s3077filter,s5786,s1075,s5778,s5961,s3457tests,s2925,s107</sonar.issue.ignore.multicriteria>
 
     <!-- S1948: non transient field in a Serializable class.                    -->
     <!-- HttpServlet implements Serializable only as a legacy artefact. SCG     -->
@@ -166,6 +166,61 @@
     <sonar.issue.ignore.multicriteria.s101.resourceKey>**/*.java</sonar.issue.ignore.multicriteria.s101.resourceKey>
     <sonar.issue.ignore.multicriteria.s116.ruleKey>java:S116</sonar.issue.ignore.multicriteria.s116.ruleKey>
     <sonar.issue.ignore.multicriteria.s116.resourceKey>**/*.java</sonar.issue.ignore.multicriteria.s116.resourceKey>
+
+    <!-- S6213: variable matches a restricted identifier. Every occurrence is a  -->
+    <!-- variable named "record" in the Kafka producer/consumer code and its     -->
+    <!-- tests, as in "for (ConsumerRecord<Bytes, Bytes> record : records)".     -->
+    <!-- "record" is a restricted, not a reserved, identifier: this is legal     -->
+    <!-- Java 21 and it is the naming used throughout the Kafka client docs.     -->
+    <sonar.issue.ignore.multicriteria.s6213.ruleKey>java:S6213</sonar.issue.ignore.multicriteria.s6213.ruleKey>
+    <sonar.issue.ignore.multicriteria.s6213.resourceKey>**/*.java</sonar.issue.ignore.multicriteria.s6213.resourceKey>
+
+    <!-- S3077: volatile is not enough for a non thread safe type. Scoped to     -->
+    <!-- FMod_DatasetAvailabilityFilter, where both fields hold immutable        -->
+    <!-- Set.copyOf / Map.copyOf values that are only ever replaced wholesale,   -->
+    <!-- so a volatile reference is precisely the right idiom. The rule looks at -->
+    <!-- the declared type, not the usage. NOT suppressed elsewhere: the other   -->
+    <!-- four occurrences (volatile ObjectNode shared between job and servlet    -->
+    <!-- threads) are genuine and remain open.                                  -->
+    <sonar.issue.ignore.multicriteria.s3077filter.ruleKey>java:S3077</sonar.issue.ignore.multicriteria.s3077filter.ruleKey>
+    <sonar.issue.ignore.multicriteria.s3077filter.resourceKey>**/FMod_DatasetAvailabilityFilter.java</sonar.issue.ignore.multicriteria.s3077filter.resourceKey>
+
+    <!-- S5786: redundant public modifiers on JUnit 5 tests. Jupiter does not    -->
+    <!-- require them; carried over from JUnit 4. Style only.                    -->
+    <sonar.issue.ignore.multicriteria.s5786.ruleKey>java:S5786</sonar.issue.ignore.multicriteria.s5786.ruleKey>
+    <sonar.issue.ignore.multicriteria.s5786.resourceKey>**/src/test/java/**/*.java</sonar.issue.ignore.multicriteria.s5786.resourceKey>
+
+    <!-- S1075: hard coded path delimiter. A portability rule aimed at Android;  -->
+    <!-- SCG only ever ships as a Linux container. Note that                     -->
+    <!-- DatasetBackupService line 440 is a path traversal guard                 -->
+    <!-- (restoreId.contains("/")) and must not be "fixed" to File.separator.    -->
+    <sonar.issue.ignore.multicriteria.s1075.ruleKey>java:S1075</sonar.issue.ignore.multicriteria.s1075.ruleKey>
+    <sonar.issue.ignore.multicriteria.s1075.resourceKey>**/*.java</sonar.issue.ignore.multicriteria.s1075.resourceKey>
+
+    <!-- S5778: more than one throwing invocation inside an assertThrows lambda. -->
+    <sonar.issue.ignore.multicriteria.s5778.ruleKey>java:S5778</sonar.issue.ignore.multicriteria.s5778.ruleKey>
+    <sonar.issue.ignore.multicriteria.s5778.resourceKey>**/src/test/java/**/*.java</sonar.issue.ignore.multicriteria.s5778.resourceKey>
+
+    <!-- S5961: more than 25 assertions in a test method. Arbitrary threshold.   -->
+    <sonar.issue.ignore.multicriteria.s5961.ruleKey>java:S5961</sonar.issue.ignore.multicriteria.s5961.ruleKey>
+    <sonar.issue.ignore.multicriteria.s5961.resourceKey>**/src/test/java/**/*.java</sonar.issue.ignore.multicriteria.s5961.resourceKey>
+
+    <!-- S3457: printf style formatting, mainly \n instead of %n. Linux only     -->
+    <!-- deployment. Test sources only: the single main code occurrence          -->
+    <!-- (DatasetBackupService, a redundant toString) stays open.                -->
+    <sonar.issue.ignore.multicriteria.s3457tests.ruleKey>java:S3457</sonar.issue.ignore.multicriteria.s3457tests.ruleKey>
+    <sonar.issue.ignore.multicriteria.s3457tests.resourceKey>**/src/test/java/**/*.java</sonar.issue.ignore.multicriteria.s3457tests.resourceKey>
+
+    <!-- S2925: Thread.sleep in tests. Unavoidable in the Kafka and             -->
+    <!-- Testcontainers integration tests.                                      -->
+    <sonar.issue.ignore.multicriteria.s2925.ruleKey>java:S2925</sonar.issue.ignore.multicriteria.s2925.ruleKey>
+    <sonar.issue.ignore.multicriteria.s2925.resourceKey>**/src/test/java/**/*.java</sonar.issue.ignore.multicriteria.s2925.resourceKey>
+
+    <!-- S107: too many method parameters. Scoped to FMod_DistributionLifecycle, -->
+    <!-- where the two long signatures are accepted, so that a new violation     -->
+    <!-- elsewhere still surfaces for a decision.                               -->
+    <sonar.issue.ignore.multicriteria.s107.ruleKey>java:S107</sonar.issue.ignore.multicriteria.s107.ruleKey>
+    <sonar.issue.ignore.multicriteria.s107.resourceKey>**/FMod_DistributionLifecycle.java</sonar.issue.ignore.multicriteria.s107.resourceKey>
 
     <!-- Dependency versions -->
     <!-- Internal dependencies -->
