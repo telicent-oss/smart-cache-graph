@@ -424,7 +424,7 @@ public class TestInitialCompaction {
     public void test_compactWithExistingLock() throws IOException {
         // given
         DatasetGraphSwitchable dsgPersists = createPersistentSwitchableDataset();
-        DatasetGraphSwitchable mockedDsg = Mockito.spy(dsgPersists);
+        DatasetGraphSwitchable mockedDsg = spy(dsgPersists);
 
         when(mockedDsg.tryExclusiveMode(false)).thenReturn(false);
         server = SmartCacheGraph.smartCacheGraphBuilder().port(0).add("test", mockedDsg).build().start();
@@ -446,7 +446,7 @@ public class TestInitialCompaction {
     public void test_compactOne_withExistingLockReturnsSummary() throws IOException {
         // given
         DatasetGraphSwitchable dsgPersists = createPersistentSwitchableDataset();
-        DatasetGraphSwitchable mockedDsg = Mockito.spy(dsgPersists);
+        DatasetGraphSwitchable mockedDsg = spy(dsgPersists);
 
         when(mockedDsg.tryExclusiveMode(false)).thenReturn(false);
         server = SmartCacheGraph.smartCacheGraphBuilder().port(0).add("test", mockedDsg).build().start();
@@ -469,7 +469,7 @@ public class TestInitialCompaction {
     public void test_compactOne_failureReturnsError() throws IOException {
         // given
         DatasetGraphSwitchable dsgPersists = createPersistentSwitchableDataset();
-        DatasetGraphSwitchable mockedDsg = Mockito.spy(dsgPersists);
+        DatasetGraphSwitchable mockedDsg = spy(dsgPersists);
         when(mockedDsg.tryExclusiveMode(false)).thenReturn(false);
         server = SmartCacheGraph.smartCacheGraphBuilder().port(0).add("test", mockedDsg).build().start();
         when(mockedDsg.tryExclusiveMode(false)).thenThrow(new RuntimeException("failure"));
@@ -575,7 +575,7 @@ public class TestInitialCompaction {
     public void test_compactAll_mixedOutcomesReturnsSummary() throws IOException {
         // Given
         DatasetGraphSwitchable dsgPersists = createPersistentSwitchableDataset();
-        DatasetGraphSwitchable mockedDsg = Mockito.spy(dsgPersists);
+        DatasetGraphSwitchable mockedDsg = spy(dsgPersists);
         DatasetGraph memDsg = DatasetGraphFactory.createTxnMem();
         when(mockedDsg.tryExclusiveMode(false)).thenReturn(false);
         server = SmartCacheGraph.smartCacheGraphBuilder()
@@ -603,7 +603,7 @@ public class TestInitialCompaction {
     public void test_compactAll_failureInDatasetReturnsError() throws IOException {
         // Given
         DatasetGraphSwitchable dsgPersists = createPersistentSwitchableDataset();
-        DatasetGraphSwitchable mockedDsg = Mockito.spy(dsgPersists);
+        DatasetGraphSwitchable mockedDsg = spy(dsgPersists);
         when(mockedDsg.tryExclusiveMode(false)).thenReturn(false);
         server = SmartCacheGraph.smartCacheGraphBuilder().port(0).add("test", mockedDsg).build().start();
         when(mockedDsg.tryExclusiveMode(false)).thenThrow(new RuntimeException("failure"));
@@ -716,7 +716,7 @@ public class TestInitialCompaction {
         // given
         mockDatabaseMgr.when(() -> DatabaseMgr.compact(any(), anyBoolean())).thenAnswer(invocationOnMock -> null);
         DatasetGraphSwitchable dsgPersists = createPersistentSwitchableDataset();
-        DatasetGraphSwitchable mockedDsg = Mockito.spy(dsgPersists);
+        DatasetGraphSwitchable mockedDsg = spy(dsgPersists);
         when(mockedDsg.tryExclusiveMode(false)).thenReturn(true);
         doAnswer(invocation -> {
             Optional<FMod_InitialCompaction.CompactionIndicator> indicator =

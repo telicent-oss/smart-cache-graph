@@ -14,7 +14,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -28,13 +27,13 @@ import static org.mockito.Mockito.*;
 public class TestUserInfoFilter {
 
     private UserInfoLookup mockLookup(UserInfo info) throws UserInfoLookupException {
-        UserInfoLookup lookup = Mockito.mock(UserInfoLookup.class);
+        UserInfoLookup lookup = mock(UserInfoLookup.class);
         when(lookup.lookup(any())).thenReturn(info);
         return lookup;
     }
 
     private static HttpServletRequest mockRequest(String username) {
-        HttpServletRequest request = Mockito.mock(HttpServletRequest.class);
+        HttpServletRequest request = mock(HttpServletRequest.class);
         if (username != null) {
             when(request.getAttribute(eq(JwtServletConstants.REQUEST_ATTRIBUTE_RAW_JWT))).thenReturn("token");
             when(request.getRemoteUser()).thenReturn(username);
@@ -52,8 +51,8 @@ public class TestUserInfoFilter {
         // Given
         UserInfoFilter filter = new UserInfoFilter(lookup);
         HttpServletRequest request = mockRequest(username);
-        HttpServletResponse response = Mockito.mock(HttpServletResponse.class);
-        FilterChain filterChain = Mockito.mock(FilterChain.class);
+        HttpServletResponse response = mock(HttpServletResponse.class);
+        FilterChain filterChain = mock(FilterChain.class);
 
         // When
         filter.doFilter(request, response, filterChain);
@@ -197,7 +196,7 @@ public class TestUserInfoFilter {
     public void givenNonRetrievableUserInfo_whenFiltering_thenNoAttributes() throws UserInfoLookupException,
             ServletException, IOException {
         // Given
-        UserInfoLookup lookup = Mockito.mock(UserInfoLookup.class);
+        UserInfoLookup lookup = mock(UserInfoLookup.class);
         when(lookup.lookup(any())).thenThrow(new UserInfoLookupException("failed"));
 
         // When
@@ -211,7 +210,7 @@ public class TestUserInfoFilter {
     @Test
     public void givenNoAuthentication_whenFiltering_thenNoAttributes() throws ServletException, IOException {
         // Given
-        UserInfoLookup lookup = Mockito.mock(UserInfoLookup.class);
+        UserInfoLookup lookup = mock(UserInfoLookup.class);
 
         // When
         HttpServletRequest request = applyFilter(lookup, null);
@@ -223,7 +222,7 @@ public class TestUserInfoFilter {
     @Test
     public void givenFailsOnCloseLookup_whenDestroyingFilter_thenOk() throws IOException {
         // Given
-        UserInfoLookup lookup = Mockito.mock(UserInfoLookup.class);
+        UserInfoLookup lookup = mock(UserInfoLookup.class);
         doThrow(new RuntimeException("failed")).when(lookup).close();
 
         // When and Then
