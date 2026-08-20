@@ -32,6 +32,12 @@
     <name>Telicent Smart Cache Graph - System</name>
     <description>System code - plugins, extensions, entrypoints etc. - for Smart Cache Graph</description>
 
+    <properties>
+        <!-- Part of the telicent-oss_smart-cache-graph Sonar project; skipped by
+             the sonar-deletion-worker profile. -->
+        <sonar.skip>${scg.sonar.skip.graph}</sonar.skip>
+    </properties>
+
     <dependencies>
 
         <!-- Internal dependencies -->

@@ -33,7 +33,14 @@ jobs:
       #     binds its publish goal to, is never reached
       #   - skipPublishing disables that plugin outright, in case a deploy goal is reintroduced
       MAVEN_DEPLOY_GOALS: install
-      MAVEN_ARGS: -DskipPublishing=true
+      # -Dscg.sonar.deletionWorker activates the sonar-deletion-worker profile in the parent
+      # pom, so this workflow's SonarQube analysis covers only scg-deletion-worker and reports
+      # to telicent-oss_smart-cache-graph-deletion-worker.  Without it this workflow and the
+      # SC Graph Build workflow both analysed the whole repository under the graph's key and
+      # overwrote each other.  MAVEN_ARGS reaches the scan because maven.yml forwards it to the
+      # mvn-sast-scanning action; it is also on the build command, where it has no effect since
+      # the profile only sets sonar.* properties.
+      MAVEN_ARGS: -DskipPublishing=true -Dscg.sonar.deletionWorker
       MAVEN_DEBUG_ARGS: -Dlogback.configurationFile=logback-debug.xml
       RUN_WINDOWS_BUILD: false
       JAVA_VERSION: 21
