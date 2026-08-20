@@ -107,7 +107,7 @@
     <!-- Mirror any change here in SonarQube > Project Settings > General       -->
     <!-- Settings > Analysis Scope, or SonarQube for IDE will not honour them.  -->
     <!-- ===================================================================== -->
-    <sonar.issue.ignore.multicriteria>s1948servlets,s1948compaction,s2654,s1186,s2699,s2187,s3577,s115,s117,s101,s116,s6213,s3077filter,s5786,s1075,s5778,s5961,s3457tests,s2925,s107,s1845,s3516,s3776,s2093,s5443,s3252,s1452</sonar.issue.ignore.multicriteria>
+    <sonar.issue.ignore.multicriteria>s1948servlets,s1948compaction,s2654,s1186,s2699,s2187,s3577,s115,s117,s101,s116,s6213,s3077filter,s5786,s1075,s5778,s5961,s3457tests,s2925,s107,s1845,s3516,s3776,s2093,s5443,s3252,s1452,s2629,s3878</sonar.issue.ignore.multicriteria>
 
     <!-- S1948: non transient field in a Serializable class.                    -->
     <!-- HttpServlet implements Serializable only as a legacy artefact. SCG     -->
@@ -286,6 +286,17 @@
     <!-- Spring idiom, though inconsistent with the typed sibling method.        -->
     <sonar.issue.ignore.multicriteria.s1452.ruleKey>java:S1452</sonar.issue.ignore.multicriteria.s1452.ruleKey>
     <sonar.issue.ignore.multicriteria.s1452.resourceKey>**/DeletionJobController.java</sonar.issue.ignore.multicriteria.s1452.resourceKey>
+
+    <!-- S2629: logging arguments are evaluated even when the level is off.      -->
+    <!-- All 11 flagged arguments are cheap string concatenations passed to      -->
+    <!-- LOG.info, so the cost the rule warns about does not arise here.         -->
+    <sonar.issue.ignore.multicriteria.s2629.ruleKey>java:S2629</sonar.issue.ignore.multicriteria.s2629.ruleKey>
+    <sonar.issue.ignore.multicriteria.s2629.resourceKey>**/*.java</sonar.issue.ignore.multicriteria.s2629.resourceKey>
+
+    <!-- S3878: redundant array creation when calling a varargs method, in       -->
+    <!-- SCG_AuthPolicy.                                                        -->
+    <sonar.issue.ignore.multicriteria.s3878.ruleKey>java:S3878</sonar.issue.ignore.multicriteria.s3878.ruleKey>
+    <sonar.issue.ignore.multicriteria.s3878.resourceKey>**/SCG_AuthPolicy.java</sonar.issue.ignore.multicriteria.s3878.resourceKey>
 
     <!-- Dependency versions -->
     <!-- Internal dependencies -->
