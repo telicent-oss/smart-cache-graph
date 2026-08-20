@@ -30,6 +30,9 @@
     </parent>
 
     <properties>
+        <!-- Part of the telicent-oss_smart-cache-graph Sonar project; skipped by
+             the sonar-deletion-worker profile. -->
+        <sonar.skip>${scg.sonar.skip.graph}</sonar.skip>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <gpg.skip>true</gpg.skip>
     </properties>

@@ -90,6 +90,17 @@
 
     <!-- SonarQube analysis, invoked from CI via mvn sonar:sonar -->
     <sonar.projectKey>telicent-oss_smart-cache-graph</sonar.projectKey>
+    <sonar.projectName>Telicent Smart Cache Graph</sonar.projectName>
+
+    <!-- Which modules take part in an analysis. The graph and the deletion      -->
+    <!-- worker are separate SonarQube projects produced by separate runs, so     -->
+    <!-- each run has to leave the other's sources alone; otherwise both report   -->
+    <!-- to one key and overwrite each other. Flipped by the                      -->
+    <!-- sonar-deletion-worker profile at the foot of this pom. Consumed by       -->
+    <!-- scg-system, scg-server, scg-docker and scg-deletion-worker;              -->
+    <!-- scg-benchmark opts out of analysis entirely.                             -->
+    <scg.sonar.skip.graph>false</scg.sonar.skip.graph>
+    <scg.sonar.skip.deletionWorker>true</scg.sonar.skip.deletionWorker>
 
     <!-- Dependency versions -->
     <!-- Internal dependencies -->
@@ -793,6 +804,53 @@
           <family>!Windows</family>
         </os>
       </activation>
+    </profile>
+
+    <!--
+      Analyses the deletion worker as its own SonarQube project:
+
+          mvn sonar:sonar -Dscg.sonar.deletionWorker
+
+      Activated by that property rather than by -P deliberately: naming a
+      profile with -P suppresses every activeByDefault profile, which would
+      silently switch off the "docker" profile above and change what the build
+      runs.
+
+      Without the profile, a run analyses the graph modules and reports to
+      telicent-oss_smart-cache-graph. With it, only scg-deletion-worker is
+      analysed and it reports to
+      telicent-oss_smart-cache-graph-deletion-worker. The two runs therefore
+      cover disjoint file sets rather than overwriting one another, and each
+      project gets its own quality gate and new code baseline.
+
+      Both runs still need to happen: the SC Graph Build workflow performs the
+      first and the Deletion Worker Build workflow the second, the latter by
+      putting the activating property in MAVEN_ARGS, which maven.yml forwards
+      to its mvn-sast-scanning step.
+
+      Any sonar.issue.ignore.* exclusions declared in this pom are inherited by
+      both projects, so a rule accepted for the graph does not have to be
+      accepted again for the deletion worker.
+    -->
+    <profile>
+      <id>sonar-deletion-worker</id>
+      <activation>
+        <property>
+          <name>scg.sonar.deletionWorker</name>
+        </property>
+      </activation>
+      <properties>
+        <sonar.projectKey>telicent-oss_smart-cache-graph-deletion-worker</sonar.projectKey>
+        <sonar.projectName>Telicent Smart Cache Graph - Deletion Worker</sonar.projectName>
+        <scg.sonar.skip.graph>true</scg.sonar.skip.graph>
+        <scg.sonar.skip.deletionWorker>false</scg.sonar.skip.deletionWorker>
+        <!-- sonar.skip covers the other modules, but the aggregator pom is the
+             analysis root and is always included. Exclude it here so that a pom
+             level issue does not have to be answered twice, once per project.
+             Project relative, so it matches only this file and not
+             scg-deletion-worker/pom.xml. -->
+        <sonar.exclusions>pom.xml</sonar.exclusions>
+      </properties>
     </profile>
   </profiles>
 </project>

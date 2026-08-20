@@ -34,6 +34,9 @@
         <dependency.spring-boot>4.1.0</dependency.spring-boot>
         <dependency.tomcat>11.0.25</dependency.tomcat>
         <skipPublishing>true</skipPublishing>
+        <!-- Analysed as its own Sonar project, telicent-oss_smart-cache-graph-deletion-worker,
+             and therefore skipped by a default run. Enable with -Dscg.sonar.deletionWorker. -->
+        <sonar.skip>${scg.sonar.skip.deletionWorker}</sonar.skip>
     </properties>
 
     <dependencyManagement>
