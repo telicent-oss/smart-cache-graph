@@ -24,11 +24,14 @@ import io.telicent.jena.abac.labels.LabelsStoreMem;
 import io.telicent.smart.cache.payloads.RdfPayload;
 import io.telicent.smart.cache.projectors.Projector;
 import io.telicent.smart.cache.projectors.driver.ProjectorDriver;
+import io.telicent.smart.cache.projectors.sinks.NullSink;
 import io.telicent.smart.cache.sources.Event;
+import io.telicent.smart.cache.sources.EventSource;
 import org.apache.jena.fuseki.kafka.FKS;
 import org.apache.jena.fuseki.server.DataAccessPoint;
 import org.apache.jena.fuseki.server.DataAccessPointRegistry;
 import org.apache.jena.fuseki.server.DataService;
+import org.apache.jena.kafka.KConnectorDesc;
 import org.apache.jena.kafka.common.FusekiProjector;
 import org.apache.jena.sparql.core.DatasetGraphFactory;
 import org.apache.kafka.common.utils.Bytes;
@@ -42,8 +45,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.LockSupport;
 
 import static io.telicent.backup.utils.JsonFileUtils.OBJECT_MAPPER;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -54,13 +61,13 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@SuppressWarnings("deprecation")
 public class TestRestoreWithKafkaPause {
 
     private static final String DATASET_NAME = "restore-test-ds";
     private static final String DAP_NAME = "/" + DATASET_NAME;
 
     private DataAccessPointRegistry mockRegistry;
+    private DatasetGraphABAC dsg;
     private DatasetBackupService_Test cut;
     private ObjectNode resultNode;
     private Path baseDir;
@@ -72,11 +79,11 @@ public class TestRestoreWithKafkaPause {
 
         mockRegistry = mock(DataAccessPointRegistry.class);
 
-        DatasetGraphABAC dsg = ABAC.authzDataset(DatasetGraphFactory.createTxnMem(),
-                                                  null,
-                                                  LabelsStoreMem.create(),
-                                                  SysABAC.allowLabel,
-                                                  null);
+        dsg = ABAC.authzDataset(DatasetGraphFactory.createTxnMem(),
+                                 null,
+                                 LabelsStoreMem.create(),
+                                 SysABAC.allowLabel,
+                                 null);
         DataAccessPoint dap = new DataAccessPoint(DAP_NAME,
                                                   DataService.newBuilder().dataset(dsg).build());
         when(mockRegistry.get(DAP_NAME)).thenReturn(dap);
@@ -201,6 +208,65 @@ public class TestRestoreWithKafkaPause {
     }
 
     // -----------------------------------------------------------------------------------
+    // Real projector + real driver, i.e. the quiet dataset case seen in system-release where a
+    // restore aborted with "Timed out ... waiting for Kafka projectors ... to reach a safe pause
+    // point".  Every other test here stubs isAtPausePoint(), so only this one exercises the
+    // handshake the deployed code actually performs.
+    // -----------------------------------------------------------------------------------
+
+    @Test
+    public void givenQuietTopicWithRealProjector_whenRestoreDataset_thenPauseHandshakeSucceeds()
+            throws Exception {
+        // Given -- a real projector driven by a real driver over a caught up topic.  The driver
+        // only notifies the projector of the FIRST of a run of consecutive stalls, so we wait until
+        // we are several stalls deep before restoring: at that point the pause request can only be
+        // observed via the driver's idle() callback.
+        QuietEventSource source = new QuietEventSource();
+        FusekiProjector projector = FusekiProjector.builder()
+                                                  .connector(mockConnector())
+                                                  .source(source)
+                                                  .dataset(dsg)
+                                                  .batchSize(100)
+                                                  .maxTransactionDuration(Duration.ofSeconds(30))
+                                                  .build();
+        ProjectorDriver<Bytes, RdfPayload, Event<Bytes, RdfPayload>> driver =
+                ProjectorDriver.<Bytes, RdfPayload, Event<Bytes, RdfPayload>>create()
+                               .source(source)
+                               .projector(projector)
+                               .destination(NullSink.of())
+                               .unlimited()
+                               .pollTimeout(Duration.ofMillis(200))
+                               .build();
+        registerDrivers(DAP_NAME, driver);
+
+        CompletableFuture<Void> driverRun = CompletableFuture.runAsync(driver);
+        // Fail fast rather than sitting out the production 30s timeout if the handshake regresses
+        Duration originalTimeout = setPauseTimeoutForTest(Duration.ofSeconds(5));
+        try {
+            waitFor(() -> driver.getConsecutiveStalls() >= 3, Duration.ofSeconds(10),
+                    "Driver did not stall repeatedly on the quiet source");
+
+            // When
+            boolean ok = cut.restoreDataset(baseDir.resolve("1").toString(), DATASET_NAME, resultNode);
+
+            // Then
+            assertTrue(ok, "Restore should succeed once the projector reaches its pause point, reason: "
+                    + resultNode.path(DATASET_NAME).path("reason").asText("<none>"));
+            assertTrue(DatasetBackupService_Test.getCallCount(DatasetBackupService_Test.RESTORE_TDB) >= 1,
+                       "restoreTDB should have been invoked");
+            // Resume is asynchronous: FKS.resumeProjectors() only clears the pause flag and notifies,
+            // the projector thread clears atPausePoint itself once it wakes.  Poll rather than
+            // assert instantaneously, otherwise this races the projector thread on a loaded runner.
+            waitFor(() -> !projector.isAtPausePoint(), Duration.ofSeconds(10),
+                    "Projector was not resumed after the restore");
+        } finally {
+            setPauseTimeoutForTest(originalTimeout);
+            driver.cancel();
+            driverRun.get(10, TimeUnit.SECONDS);
+        }
+    }
+
+    // -----------------------------------------------------------------------------------
     // Reflection helpers
     // -----------------------------------------------------------------------------------
 
@@ -234,5 +300,79 @@ public class TestRestoreWithKafkaPause {
         Duration previous = (Duration) f.get(null);
         f.set(null, newTimeout);
         return previous;
+    }
+
+    private static KConnectorDesc mockConnector() {
+        KConnectorDesc connector = mock(KConnectorDesc.class);
+        when(connector.getTopics()).thenReturn(List.of("test-topic"));
+        when(connector.getMaxTransactionDuration()).thenReturn(Duration.ofSeconds(30));
+        when(connector.getBatchSizeBytes()).thenReturn(1024L * 1024L);
+        when(connector.getHighLagThreshold()).thenReturn(10_000L);
+        when(connector.getLowVolumeBatchSizeThreshold()).thenReturn(100);
+        when(connector.getBatchSizeTrackingWindow()).thenReturn(10);
+        return connector;
+    }
+
+    private static void waitFor(java.util.function.BooleanSupplier condition, Duration timeout,
+                                String failureMessage) {
+        long deadline = System.nanoTime() + timeout.toNanos();
+        while (System.nanoTime() < deadline) {
+            if (condition.getAsBoolean()) {
+                return;
+            }
+            LockSupport.parkNanos(Duration.ofMillis(10).toNanos());
+        }
+        throw new AssertionError(failureMessage + " (within " + timeout + ")");
+    }
+
+    /**
+     * An event source that is caught up but not exhausted, i.e. every poll blocks for the timeout
+     * and then yields nothing.  Models a quiet Kafka topic, the state a dataset is in when a
+     * restore is run on a system that has processed everything.
+     */
+    private static final class QuietEventSource implements EventSource<Bytes, RdfPayload> {
+
+        private volatile boolean closed = false;
+
+        @Override
+        public boolean availableImmediately() {
+            return false;
+        }
+
+        @Override
+        public boolean isExhausted() {
+            // Caught up is not the same as exhausted, more events may arrive later
+            return this.closed;
+        }
+
+        @Override
+        public void close() {
+            this.closed = true;
+        }
+
+        @Override
+        public boolean isClosed() {
+            return this.closed;
+        }
+
+        @Override
+        public Event<Bytes, RdfPayload> poll(Duration timeout) {
+            try {
+                Thread.sleep(timeout.toMillis());
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            return null;
+        }
+
+        @Override
+        public Long remaining() {
+            return 0L;
+        }
+
+        @Override
+        public void processed(Collection<Event<?, ?>> processedEvents) {
+            // No-op
+        }
     }
 }
