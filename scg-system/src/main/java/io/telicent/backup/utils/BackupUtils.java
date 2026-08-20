@@ -50,6 +50,9 @@ import static io.telicent.backup.utils.JsonFileUtils.OBJECT_MAPPER;
  */
 public class BackupUtils extends ServletUtils {
 
+    // JSON response key
+    private static final String SUCCESS = "success";
+
     public static final Logger LOG = LoggerFactory.getLogger(BackupUtils.class);
 
     private static final Pattern NUMBERED_ITEM_PATTERN = Pattern.compile("^(\\d+)(\\.zip(\\.enc)?)?$");
@@ -676,8 +679,8 @@ public class BackupUtils extends ServletUtils {
 
                 if (!(sectionValue instanceof ObjectNode section)) continue;
 
-                if (section.has("success")) {
-                    boolean success = section.get("success").asBoolean(false);
+                if (section.has(SUCCESS)) {
+                    boolean success = section.get(SUCCESS).asBoolean(false);
                     String key = sectionName + "-success";
                     datasetSuccess.put(sanitizeKey(key), success);
                     if (success) isAnyTrue = true;
@@ -691,8 +694,8 @@ public class BackupUtils extends ServletUtils {
 
                     if (nestedValue.isArray()) {
                         for (JsonNode arrayItem : nestedValue) {
-                            if (arrayItem instanceof ObjectNode && arrayItem.has("success")) {
-                                boolean nestedSuccess = arrayItem.get("success").asBoolean(false);
+                            if (arrayItem instanceof ObjectNode && arrayItem.has(SUCCESS)) {
+                                boolean nestedSuccess = arrayItem.get(SUCCESS).asBoolean(false);
                                 String composedKey = sectionName + "-" + nestedKey + "-success";
                                 datasetSuccess.put(sanitizeKey(composedKey), nestedSuccess);
                                 if (nestedSuccess) isAnyTrue = true;

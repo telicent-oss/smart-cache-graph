@@ -35,6 +35,9 @@ import static io.telicent.backup.utils.JsonFileUtils.OBJECT_MAPPER;
 
 public class BackupJobManager {
 
+    // JSON response key
+    private static final String ERROR = "error";
+
     public static final String STATUS_PENDING = "PENDING";
     public static final String STATUS_RUNNING = "RUNNING";
     public static final String STATUS_SUCCEEDED = "SUCCEEDED";
@@ -72,7 +75,7 @@ public class BackupJobManager {
             } catch (Exception e) {
                 LOG.error("[{}] <<<< Async job {} FAILED with an unhandled error", operation, job.jobId, e);
                 final ObjectNode body = OBJECT_MAPPER.createObjectNode();
-                body.put("error", e.getMessage());
+                body.put(ERROR, e.getMessage());
                 job.markFailed(new BackupOperationResponse(500, body));
             }
         });
@@ -122,7 +125,7 @@ public class BackupJobManager {
             this.completedAt = Instant.now();
             this.httpStatus = response.statusCode();
             this.result = response.body().deepCopy();
-            this.message = response.body().has("error") ? response.body().get("error").asText() :
+            this.message = response.body().has(ERROR) ? response.body().get(ERROR).asText() :
                            "Job completed successfully.";
         }
 
@@ -131,7 +134,7 @@ public class BackupJobManager {
             this.completedAt = Instant.now();
             this.httpStatus = response.statusCode();
             this.result = response.body().deepCopy();
-            this.message = response.body().has("error") ? response.body().get("error").asText() :
+            this.message = response.body().has(ERROR) ? response.body().get(ERROR).asText() :
                            "Job failed.";
         }
 

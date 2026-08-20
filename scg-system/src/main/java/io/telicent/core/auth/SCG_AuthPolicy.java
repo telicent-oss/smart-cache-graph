@@ -22,6 +22,10 @@ import java.util.Set;
  */
 public class SCG_AuthPolicy {
 
+    // repeated policy literals
+    private static final String PERMISSIONS = "permissions";
+    private static final String COMPACTION_JOBS_PATH = "/$/compaction/jobs/";
+
     /**
      * Default roles policy applied to all recognised dataset endpoints
      */
@@ -33,19 +37,19 @@ public class SCG_AuthPolicy {
     /**
      * Permissions policy for backup related read-only endpoints
      */
-    public static final Policy BACKUP_READ_ONLY = Policy.requireAll("permissions", TelicentPermissions.Backup.READ);
+    public static final Policy BACKUP_READ_ONLY = Policy.requireAll(PERMISSIONS, TelicentPermissions.Backup.READ);
     /**
      * Permissions policy for backup creation endpoint
      */
-    public static final Policy BACKUP_CREATE = Policy.requireAll("permissions", TelicentPermissions.Backup.WRITE);
+    public static final Policy BACKUP_CREATE = Policy.requireAll(PERMISSIONS, TelicentPermissions.Backup.WRITE);
     /**
      * Permissions policy for backup restore endpoint
      */
-    public static final Policy BACKUP_RESTORE = Policy.requireAll("permissions", TelicentPermissions.Backup.RESTORE);
+    public static final Policy BACKUP_RESTORE = Policy.requireAll(PERMISSIONS, TelicentPermissions.Backup.RESTORE);
     /**
      * Permissions policy for backup delete endpoint
      */
-    public static final Policy BACKUP_DELETE = Policy.requireAll("permissions", TelicentPermissions.Backup.DELETE);
+    public static final Policy BACKUP_DELETE = Policy.requireAll(PERMISSIONS, TelicentPermissions.Backup.DELETE);
 
     /**
      * Known Fuseki operations (either Core, or from Telicent modules) that are read-only operations
@@ -105,8 +109,8 @@ public class SCG_AuthPolicy {
 
         // Compact endpoint for this dataset
         addPolicy(policies, "/$/compact/" + datasetName, ADMIN_ROLES);
-        addPolicy(policies, "/$/compaction/jobs/" + datasetName, ADMIN_ROLES);
-        addPolicy(policies, "/$/compaction/jobs/" + datasetName + "/*", ADMIN_ROLES);
+        addPolicy(policies, COMPACTION_JOBS_PATH + datasetName, ADMIN_ROLES);
+        addPolicy(policies, COMPACTION_JOBS_PATH + datasetName + "/*", ADMIN_ROLES);
 
         // Fuseki will also capture requests to the root dataset path and try to dynamically route them based on the
         // request method and body, allow this provided users have the default roles
@@ -135,10 +139,10 @@ public class SCG_AuthPolicy {
 
         // Compact endpoints
         Policy compactPolicy =
-                Policy.requireAll("permissions", TelicentPermissions.compactPermission(datasetName));
+                Policy.requireAll(PERMISSIONS, TelicentPermissions.compactPermission(datasetName));
         addPolicy(policies, "/$/compact/" + datasetName, compactPolicy);
-        addPolicy(policies, "/$/compaction/jobs/" + datasetName, compactPolicy);
-        addPolicy(policies, "/$/compaction/jobs/" + datasetName + "/*", compactPolicy);
+        addPolicy(policies, COMPACTION_JOBS_PATH + datasetName, compactPolicy);
+        addPolicy(policies, COMPACTION_JOBS_PATH + datasetName + "/*", compactPolicy);
         addOrUpdatePolicy(policies, "/$/compactall", compactPolicy);
         addOrUpdatePolicy(policies, "/$/compaction/jobs/all", compactPolicy);
         addOrUpdatePolicy(policies, "/$/compaction/jobs/all/*", compactPolicy);
@@ -281,7 +285,7 @@ public class SCG_AuthPolicy {
      */
     private static Policy readPermissions(String datasetName) {
         //@formatter:off
-        return Policy.requireAll("permissions", new String[] {
+        return Policy.requireAll(PERMISSIONS, new String[] {
                 TelicentPermissions.readPermission(Strings.CI.removeStart(datasetName, "/"))
         });
         //@formatter:on
@@ -295,7 +299,7 @@ public class SCG_AuthPolicy {
      * @return Policy
      */
     private static Policy readWritePermissions(String datasetName) {
-        return Policy.requireAll("permissions",
+        return Policy.requireAll(PERMISSIONS,
                                  TelicentPermissions.readWritePermissions(Strings.CI.removeStart(datasetName, "/")));
     }
 

@@ -7,6 +7,9 @@ import java.util.function.BooleanSupplier;
 
 final class DistributionLifecycleReadiness {
 
+    // default readiness reason
+    private static final String FILTERING_DISABLED_REASON = "Distribution lifecycle filtering is disabled.";
+
     enum State {
         DISABLED,
         EXTERNAL_ONLY,
@@ -23,7 +26,7 @@ final class DistributionLifecycleReadiness {
     private volatile boolean filteringEnabled;
     private volatile boolean trackerEnabled;
     private volatile State state = State.DISABLED;
-    private volatile String reason = "Distribution lifecycle filtering is disabled.";
+    private volatile String reason = FILTERING_DISABLED_REASON;
     private volatile DistributionLifecycleStateFile stateFile;
     private volatile BooleanSupplier trackerRunningProbe = () -> false;
 
@@ -35,7 +38,7 @@ final class DistributionLifecycleReadiness {
         this.filteringEnabled = false;
         this.trackerEnabled = false;
         this.state = State.DISABLED;
-        this.reason = "Distribution lifecycle filtering is disabled.";
+        this.reason = FILTERING_DISABLED_REASON;
         this.stateFile = null;
         this.trackerRunningProbe = () -> false;
     }
@@ -48,7 +51,7 @@ final class DistributionLifecycleReadiness {
         this.trackerRunningProbe = trackerRunningProbe != null ? trackerRunningProbe : () -> false;
         if (!filteringEnabled) {
             this.state = State.DISABLED;
-            this.reason = "Distribution lifecycle filtering is disabled.";
+            this.reason = FILTERING_DISABLED_REASON;
         } else if (!trackerEnabled) {
             this.state = State.EXTERNAL_ONLY;
             this.reason = "Distribution lifecycle filtering is enabled and waiting for lifecycle state to become usable.";
