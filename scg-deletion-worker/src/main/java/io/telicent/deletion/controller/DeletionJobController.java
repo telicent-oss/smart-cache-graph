@@ -30,6 +30,9 @@ import java.util.Map;
 @RestController
 @RequestMapping("/jobs")
 public class DeletionJobController {
+
+    // JSON response key
+    private static final String ERROR = "error";
     private final DeletionJobService jobService;
     private final JobRegistry registry;
     private final UserInfoService userInfoService;
@@ -46,24 +49,24 @@ public class DeletionJobController {
             @RequestHeader(value = "Authorization", required = false) String authorization) {
         if (authorization == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                     .body(Map.of("error", "Authorization header is required"));
+                     .body(Map.of(ERROR, "Authorization header is required"));
         }
 
         switch (userInfoService.checkAdminRole(authorization)) {
             case UNAUTHORIZED -> {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(Map.of("error", "Invalid or expired session"));
+                        .body(Map.of(ERROR, "Invalid or expired session"));
             }
             case FORBIDDEN -> {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                        .body(Map.of("error", "ROLE_ADMIN_SYSTEM required"));
+                        .body(Map.of(ERROR, "ROLE_ADMIN_SYSTEM required"));
             }
             case AUTHORIZED -> {}
         }
 
         if (distributionId.isBlank()) {
             return ResponseEntity.badRequest()
-                    .body(Map.of("error", "distributionId is required"));
+                    .body(Map.of(ERROR, "distributionId is required"));
         }
         JobState jobState = registry.register(distributionId);
         jobService.runDeletionJob(jobState);
@@ -77,16 +80,16 @@ public class DeletionJobController {
             @PathVariable("jobId") String jobId) {
         if (authorization == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("error", "Authorization header is required"));
+                    .body(Map.of(ERROR, "Authorization header is required"));
         }
         switch (userInfoService.checkAdminRole(authorization)) {
             case UNAUTHORIZED -> {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(Map.of("error", "Invalid or expired session"));
+                        .body(Map.of(ERROR, "Invalid or expired session"));
             }
             case FORBIDDEN -> {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                        .body(Map.of("error", "ROLE_ADMIN_SYSTEM required"));
+                        .body(Map.of(ERROR, "ROLE_ADMIN_SYSTEM required"));
             }
             case AUTHORIZED -> {}
         }

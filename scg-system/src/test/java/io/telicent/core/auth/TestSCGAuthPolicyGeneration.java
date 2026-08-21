@@ -14,13 +14,13 @@ import org.apache.jena.fuseki.server.Operation;
 import org.apache.jena.sys.JenaSystem;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class TestSCGAuthPolicyGeneration {
@@ -32,7 +32,7 @@ public class TestSCGAuthPolicyGeneration {
     protected static final Operation CUSTOM_OP = Operation.alloc("https.//example.org/custom-op", "custom", "custom");
 
     public static DataAccessPoint mockDataset(String datasetName) {
-        DataAccessPoint dap = Mockito.mock(DataAccessPoint.class);
+        DataAccessPoint dap = mock(DataAccessPoint.class);
         when(dap.getName()).thenReturn(datasetName);
         List<Endpoint> endpoints = new ArrayList<>();
         endpoints.add(Endpoint.create(Operation.Query, "query"));
@@ -40,7 +40,7 @@ public class TestSCGAuthPolicyGeneration {
         endpoints.add(Endpoint.create(SysGraphQL.OP_GRAPHQL, "graphql"));
         endpoints.add(Endpoint.create(CQRS.Vocab.operationUpdateCQRS, "cqrs"));
         endpoints.add(Endpoint.create(CUSTOM_OP, "custom"));
-        DataService ds = Mockito.mock(DataService.class);
+        DataService ds = mock(DataService.class);
         when(ds.getEndpoints()).thenReturn(endpoints);
         when(dap.getDataService()).thenReturn(ds);
         return dap;

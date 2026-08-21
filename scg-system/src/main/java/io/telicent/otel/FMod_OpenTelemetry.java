@@ -169,7 +169,7 @@ public class FMod_OpenTelemetry implements FusekiModule {
         name = name.replace(' ', '_');
         name = name.replace('/', '_');
         name = name.replace('(', '-');
-        name = name.replaceAll("\\)", "");
+        name = name.replace(")", "");
         return name;
     }
 }

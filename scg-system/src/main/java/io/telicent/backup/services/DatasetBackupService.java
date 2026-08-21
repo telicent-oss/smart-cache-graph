@@ -75,7 +75,19 @@ public class DatasetBackupService {
 
     public static final Logger LOG = LoggerFactory.getLogger(DatasetBackupService.class);
 
-    private final static String BACKUP_SUFFIX = "_backup";
+    private static final String BACKUP_SUFFIX = "_backup";
+
+    // JSON keys of the backup/restore response contract
+    private static final String SUCCESS = "success";
+    private static final String REASON = "reason";
+    private static final String ERROR = "error";
+    private static final String BACKUP_ID = "backup-id";
+    private static final String BACKUP_SUCCESS = "backup-success";
+    private static final String DATASETS = "datasets";
+    private static final String DATASET_NAME = "dataset-name";
+    private static final String DESCRIPTION = "description";
+    private static final String START_TIME = "start-time";
+    private static final String END_TIME = "end-time";
 
     private final ReentrantLock lock;
 
@@ -87,8 +99,8 @@ public class DatasetBackupService {
 
     private final DataSecurityPlugin dataSecurityPlugin;
 
-    final static ConcurrentHashMap<String, TriConsumer<DataAccessPoint, String, ObjectNode>> backupConsumerMap = new ConcurrentHashMap<>();
-    final static ConcurrentHashMap<String, TriConsumer<DataAccessPoint, String, ObjectNode>> restoreConsumerMap = new ConcurrentHashMap<>();
+    static final ConcurrentHashMap<String, TriConsumer<DataAccessPoint, String, ObjectNode>> backupConsumerMap = new ConcurrentHashMap<>();
+    static final ConcurrentHashMap<String, TriConsumer<DataAccessPoint, String, ObjectNode>> restoreConsumerMap = new ConcurrentHashMap<>();
 
     public DatasetBackupService(DataAccessPointRegistry dapRegistry, KeyPair keyPair, DataSecurityPlugin dataSecurityPlugin) throws URISyntaxException, IOException, PGPException {
         LOG.info("Backup encryption is enabled.");
@@ -128,7 +140,7 @@ public class DatasetBackupService {
     public BackupOperationRequest captureRequest(final HttpServletRequest request) {
         return new BackupOperationRequest(request.getPathInfo(),
                                           request.getRemoteUser(),
-                                          request.getParameter("description"),
+                                          request.getParameter(DESCRIPTION),
                                           request.getParameter("backup-name"));
     }
 
@@ -155,7 +167,7 @@ public class DatasetBackupService {
             }
             if (!lockAcquired) {
                 LOG.warn("[{}] Rejected - another conflicting maintenance operation is already in progress", operation);
-                resultNode.put("error", "Another conflicting operation is already in progress. Please try again later.");
+                resultNode.put(ERROR, "Another conflicting operation is already in progress. Please try again later.");
                 operationResponse = new BackupOperationResponse(HttpServletResponse.SC_CONFLICT, resultNode);
                 return operationResponse;
             }
@@ -172,7 +184,7 @@ public class DatasetBackupService {
             resultNode.put("date", DateTimeUtils.nowAsString(DATE_FORMAT));
             resultNode.put("user", request.remoteUser());
             if (request.description() != null) {
-                resultNode.put("description", request.description());
+                resultNode.put(DESCRIPTION, request.description());
             }
             if (request.backupName() != null) {
                 resultNode.put("backup-name", request.backupName());
@@ -188,11 +200,11 @@ public class DatasetBackupService {
             return operationResponse;
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            resultNode.put("error", "Interrupted while waiting to perform backup operation.");
+            resultNode.put(ERROR, "Interrupted while waiting to perform backup operation.");
             operationResponse = new BackupOperationResponse(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, resultNode);
             return operationResponse;
         } catch (Exception exception) {
-            resultNode.put("error", exception.getMessage());
+            resultNode.put(ERROR, exception.getMessage());
             operationResponse = new BackupOperationResponse(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, resultNode);
             return operationResponse;
         } finally {
@@ -242,13 +254,13 @@ public class DatasetBackupService {
             return false;
         }
         final ObjectNode body = response.body();
-        if (body.has("error")) {
+        if (body.has(ERROR)) {
             return false;
         }
-        if (body.has("success") && !body.get("success").asBoolean()) {
+        if (body.has(SUCCESS) && !body.get(SUCCESS).asBoolean()) {
             return false;
         }
-        return !(body.has("backup-success") && !body.get("backup-success").asBoolean());
+        return !(body.has(BACKUP_SUCCESS) && !body.get(BACKUP_SUCCESS).asBoolean());
     }
 
     /**
@@ -259,11 +271,11 @@ public class DatasetBackupService {
      */
     private static String failureReason(final BackupOperationResponse response) {
         final ObjectNode body = response.body();
-        if (body.has("error")) {
-            return body.get("error").asText();
+        if (body.has(ERROR)) {
+            return body.get(ERROR).asText();
         }
-        if (body.has("reason")) {
-            return body.get("reason").asText();
+        if (body.has(REASON)) {
+            return body.get(REASON).asText();
         }
         return "see operation result for per-dataset details";
     }
@@ -279,7 +291,7 @@ public class DatasetBackupService {
         String backupPath = getBackUpDir();
         int backupID = getNextDirectoryNumberAndCreate(backupPath);
         String backupIDPath = backupPath + "/" + backupID;
-        response.put("backup-id", backupID);
+        response.put(BACKUP_ID, backupID);
         response.put("date", DateTimeUtils.nowAsString(DATE_FORMAT));
 
         ArrayNode datasetNodes = OBJECT_MAPPER.createArrayNode();
@@ -288,10 +300,10 @@ public class DatasetBackupService {
             String sanitizedDataAccessPointName = sanitiseName(dataAccessPointName);
             if (requestIsEmpty(datasetName) || sanitizedDataAccessPointName.equalsIgnoreCase(datasetName)) {
                 ObjectNode datasetJSON = OBJECT_MAPPER.createObjectNode();
-                datasetJSON.put("dataset-name", sanitizedDataAccessPointName);
+                datasetJSON.put(DATASET_NAME, sanitizedDataAccessPointName);
                 if (dataAccessPoint.getDataService() == null) {
-                    datasetJSON.put("reason", sanitizedDataAccessPointName + " does not exist");
-                    datasetJSON.put("success", false);
+                    datasetJSON.put(REASON, sanitizedDataAccessPointName + " does not exist");
+                    datasetJSON.put(SUCCESS, false);
                     datasetNodes.add(datasetJSON);
                     continue;
                 }
@@ -302,8 +314,8 @@ public class DatasetBackupService {
                 if (maintenance.isEmpty()) {
                     LOG.warn("[BACKUP] Skipping dataset {} - another maintenance operation is already in progress",
                              sanitizedDataAccessPointName);
-                    datasetJSON.put("reason", "Another maintenance operation is already in progress.");
-                    datasetJSON.put("success", false);
+                    datasetJSON.put(REASON, "Another maintenance operation is already in progress.");
+                    datasetJSON.put(SUCCESS, false);
                 } else {
                     LOG.info("[BACKUP] Backing up dataset {} (backup-id {}) to {}",
                              sanitizedDataAccessPointName, backupID, backupIDPath + "/" + sanitizedDataAccessPointName);
@@ -314,22 +326,22 @@ public class DatasetBackupService {
                     } finally {
                         DatasetMaintenanceRegistry.end(maintenance.get());
                     }
-                    if (datasetJSON.path("success").asBoolean(true)
-                            && datasetJSON.path("tdb").path("success").asBoolean(true)) {
+                    if (datasetJSON.path(SUCCESS).asBoolean(true)
+                            && datasetJSON.path("tdb").path(SUCCESS).asBoolean(true)) {
                         LOG.info("[BACKUP] Finished backing up dataset {} (backup-id {})",
                                  sanitizedDataAccessPointName, backupID);
                     } else {
                         LOG.error("[BACKUP] Failed to fully back up dataset {} (backup-id {}): {}",
                                   sanitizedDataAccessPointName, backupID,
-                                  datasetJSON.path("tdb").path("reason").asText(
-                                          datasetJSON.path("reason").asText("see operation result for details")));
+                                  datasetJSON.path("tdb").path(REASON).asText(
+                                          datasetJSON.path(REASON).asText("see operation result for details")));
                     }
                 }
                 datasetNodes.add(datasetJSON);
             }
         }
-        response.set("datasets", datasetNodes);
-        response.put("start-time", startTime.toString());
+        response.set(DATASETS, datasetNodes);
+        response.put(START_TIME, startTime.toString());
         compressAndStoreBackupMetadata(response, backupIDPath);
     }
 
@@ -346,14 +358,14 @@ public class DatasetBackupService {
             String modBackupPath = backupPath + "/" + entry.getKey() + "/";
             node.put("folder", modBackupPath);
             if (!createPathIfNotExists(modBackupPath)) {
-                node.put("reason", "Cannot create backup directory: " + modBackupPath);
-                node.put("success", false);
+                node.put(REASON, "Cannot create backup directory: " + modBackupPath);
+                node.put(SUCCESS, false);
             } else {
                 try {
                     entry.getValue().accept(dataAccessPoint, modBackupPath, node);
                 } catch (RuntimeException e) {
-                    node.put("reason", e.getMessage());
-                    node.put("success", false);
+                    node.put(REASON, e.getMessage());
+                    node.put(SUCCESS, false);
                 }
             }
             moduleJSON.set(entry.getKey(), node);
@@ -382,7 +394,7 @@ public class DatasetBackupService {
      */
     void executeBackupTDB(DatasetGraph dsg, String backupFile, ObjectNode node) {
         Backup.backup(dsg, dsg, backupFile);
-        node.put("success", true);
+        node.put(SUCCESS, true);
     }
 
     /**
@@ -398,8 +410,8 @@ public class DatasetBackupService {
         if(securityLabelsBackup.isPresent()){
             securityLabelsBackup.get().backup(dsg, backupPath, node);
         } else {
-            node.put("reason", "No security labels backup store is available");
-            node.put("success", false);
+            node.put(REASON, "No security labels backup store is available");
+            node.put(SUCCESS, false);
         }
     }
 
@@ -452,24 +464,24 @@ public class DatasetBackupService {
         response.put("restorePath", restorePath);
 
         if (!checkPathExistsAndIsDir(restorePath) && !checkPathExistsAndIsFile(restorePath + ZIP_SUFFIX) && !checkPathExistsAndIsFile(restorePath + ZIP_SUFFIX + ENCRYPTION_SUFFIX)) {
-            response.put("backup-success", false);
+            response.put(BACKUP_SUCCESS, false);
         }
         else {
             ObjectNode result = OBJECT_MAPPER.createObjectNode();
-            result.put("description", "Rollback point backup for restore " + restoreId);
+            result.put(DESCRIPTION, "Rollback point backup for restore " + restoreId);
             if (specificDatasetIfAny.isEmpty()) {
                 backupDataset(null, result);
             } else {
                 backupDataset(specificDatasetIfAny, result);
             }
-            if (result.get("datasets") != null && result.get("datasets").isArray() && result.get("datasets").isEmpty()) {
-                response.put("backup-success", false);
+            if (result.get(DATASETS) != null && result.get(DATASETS).isArray() && result.get(DATASETS).isEmpty()) {
+                response.put(BACKUP_SUCCESS, false);
             }
-            else if (result.has("backup-id")) {
-                response.put("rollback-point-backup-id", result.get("backup-id").asText());
-                LOG.info("Rollback point backup {} created", result.get("backup-id").asText());
+            else if (result.has(BACKUP_ID)) {
+                response.put("rollback-point-backup-id", result.get(BACKUP_ID).asText());
+                LOG.info("Rollback point backup {} created", result.get(BACKUP_ID).asText());
             }
-            if (response.get("backup-success") == null) {
+            if (response.get(BACKUP_SUCCESS) == null) {
                 getBackupSuccessValues(result, response);
             }
         }
@@ -487,13 +499,13 @@ public class DatasetBackupService {
             decompressDir = true;
         }
         if (!checkPathExistsAndIsDir(restorePath)) {
-            response.put("reason", "Restore path unsuitable: " + restorePath);
-            response.put("success", false);
+            response.put(REASON, "Restore path unsuitable: " + restorePath);
+            response.put(SUCCESS, false);
         } else {
             List<String> datasets = getSubdirectoryNames(restorePath);
             if (datasets.isEmpty()) {
-                response.put("reason", "Restore path unsuitable: " + restorePath);
-                response.put("success", false);
+                response.put(REASON, "Restore path unsuitable: " + restorePath);
+                response.put(SUCCESS, false);
             } else {
                 boolean noMatches = true;
                 boolean successSoFar = true;
@@ -504,10 +516,10 @@ public class DatasetBackupService {
                     }
                 }
                 if(noMatches) {
-                    response.put("reason", "No matches for dataset.");
-                    response.put("success", false);
+                    response.put(REASON, "No matches for dataset.");
+                    response.put(SUCCESS, false);
                 } else {
-                    response.put("success", successSoFar);
+                    response.put(SUCCESS, successSoFar);
                 }
             }
         }
@@ -528,13 +540,13 @@ public class DatasetBackupService {
      */
     boolean restoreDataset(String restorePath, String datasetName, ObjectNode responseNode) {
         ObjectNode response = OBJECT_MAPPER.createObjectNode();
-        response.put("dataset-name", datasetName);
+        response.put(DATASET_NAME, datasetName);
         responseNode.set(datasetName, response);
         DataAccessPoint dataAccessPoint = getDataAccessPoint(datasetName);
         if (dataAccessPoint == null || dataAccessPoint.getDataService() == null) {
             LOG.error("[RESTORE] Cannot restore dataset {} - it does not exist", datasetName);
-            response.put("reason", datasetName + " does not exist");
-            response.put("success", false);
+            response.put(REASON, datasetName + " does not exist");
+            response.put(SUCCESS, false);
             return false;
         }
         DatasetGraph dsg = dataAccessPoint.getDataService().getDataset();
@@ -544,8 +556,8 @@ public class DatasetBackupService {
         if (maintenance.isEmpty()) {
             LOG.warn("[RESTORE] Skipping dataset {} - another maintenance operation is already in progress",
                      datasetName);
-            response.put("reason", "Another maintenance operation is already in progress.");
-            response.put("success", false);
+            response.put(REASON, "Another maintenance operation is already in progress.");
+            response.put(SUCCESS, false);
             return false;
         }
 
@@ -557,17 +569,17 @@ public class DatasetBackupService {
             FKS.pauseProjectors(fksKey);
             boolean paused = FKS.waitForPause(fksKey, KAFKA_PAUSE_TIMEOUT);
             if (!paused) {
-                response.put("reason", "Timed out after " + KAFKA_PAUSE_TIMEOUT
+                response.put(REASON, "Timed out after " + KAFKA_PAUSE_TIMEOUT
                                         + " waiting for Kafka projectors on " + fksKey
                                         + " to reach a safe pause point; aborting restore");
-                response.put("success", false);
+                response.put(SUCCESS, false);
                 return false;
             }
             Txn.executeWrite(dsg, () -> applyRestoreMethods(response, dataAccessPoint, restorePath + "/" + datasetName));
         } catch (RuntimeException ex) {
             LOG.error("[RESTORE] Error while restoring dataset {}: {}", datasetName, ex.getMessage(), ex);
-            response.put("reason", ex.getMessage());
-            response.put("success", false);
+            response.put(REASON, ex.getMessage());
+            response.put(SUCCESS, false);
         } finally {
             // ALWAYS resume Kafka ingest -- even if the restore threw
             try {
@@ -576,13 +588,13 @@ public class DatasetBackupService {
             } finally {
                 DatasetMaintenanceRegistry.end(maintenance.get());
             }
-            if (response.path("success").asBoolean(true)
-                    && response.path("tdb").path("success").asBoolean(true)) {
+            if (response.path(SUCCESS).asBoolean(true)
+                    && response.path("tdb").path(SUCCESS).asBoolean(true)) {
                 LOG.info("[RESTORE] <<<< Finished restoring dataset {} SUCCESSFULLY", datasetName);
             } else {
                 LOG.error("[RESTORE] <<<< Restore of dataset {} FAILED: {}", datasetName,
-                          response.path("reason").asText(
-                                  response.path("tdb").path("reason").asText("see operation result for details")));
+                          response.path(REASON).asText(
+                                  response.path("tdb").path(REASON).asText("see operation result for details")));
             }
         }
         return true;
@@ -599,16 +611,16 @@ public class DatasetBackupService {
         String tdbRestoreFile = restorePath + "/" + sanitiseName(dataAccessPoint.getName()) + BACKUP_SUFFIX + RDF_BACKUP_SUFFIX;
         node.put("restorePath", tdbRestoreFile);
         if (!checkPathExistsAndIsFile(tdbRestoreFile)) {
-            node.put("reason", "Restore file not found: " + tdbRestoreFile);
-            node.put("success", false);
+            node.put(REASON, "Restore file not found: " + tdbRestoreFile);
+            node.put(SUCCESS, false);
         } else {
             try {
                 DatasetGraph dsg = dataAccessPoint.getDataService().getDataset();
                 executeRestoreTDB(dsg, tdbRestoreFile);
-                node.put("success", true);
+                node.put(SUCCESS, true);
             } catch (Exception e) {
-                node.put("reason", e.getMessage());
-                node.put("success", false);
+                node.put(REASON, e.getMessage());
+                node.put(SUCCESS, false);
             }
         }
     }
@@ -626,14 +638,14 @@ public class DatasetBackupService {
             String modRestorePath = restorePath + "/" + entry.getKey() + "/";
             node.put("folder", modRestorePath);
             if (!checkPathExistsAndIsDir(modRestorePath)) {
-                node.put("reason", "Restore path not found: " + modRestorePath);
-                node.put("success", false);
+                node.put(REASON, "Restore path not found: " + modRestorePath);
+                node.put(SUCCESS, false);
             } else {
                 try {
                     entry.getValue().accept(dataAccessPoint, modRestorePath, node);
                 } catch (RuntimeException | DataSecurityException e) {
-                    node.put("reason", e.getMessage());
-                    node.put("success", false);
+                    node.put(REASON, e.getMessage());
+                    node.put(SUCCESS, false);
                 }
             }
             moduleJSON.set(entry.getKey(), node);
@@ -674,8 +686,8 @@ public class DatasetBackupService {
         if(securityLabelsRestore.isPresent()) {
             securityLabelsRestore.get().restore(datasetGraph, restorePath, node);
         } else {
-            node.put("reason", "No security labels backup store is available");
-            node.put("success", false);
+            node.put(REASON, "No security labels backup store is available");
+            node.put(SUCCESS, false);
         }
     }
 
@@ -695,15 +707,15 @@ public class DatasetBackupService {
                 !checkPathExistsAndIsFile(deletePath + JSON_INFO_SUFFIX) &&
                 !checkPathExistsAndIsFile(deletePath + ZIP_SUFFIX) &&
                 !checkPathExistsAndIsFile(deletePath + ZIP_SUFFIX + ENCRYPTION_SUFFIX)) {
-            response.put("reason", "Backup path unsuitable: " + deletePath);
-            response.put("success", false);
+            response.put(REASON, "Backup path unsuitable: " + deletePath);
+            response.put(SUCCESS, false);
         } else {
             executeDeleteBackup(deletePath);
             executeDeleteBackup(deletePath + JSON_INFO_SUFFIX);
             executeDeleteBackup(deletePath + ZIP_SUFFIX);
             executeDeleteBackup(deletePath + ZIP_SUFFIX + ENCRYPTION_SUFFIX);
             deleteFilesRegEx(getBackUpDir(), deleteID + WILDCARD_REPORT_SUFFIX);
-            response.put("success", true);
+            response.put(SUCCESS, true);
         }
         return response;
     }
@@ -729,11 +741,11 @@ public class DatasetBackupService {
         }
         if (!checkPathExistsAndIsDir(validatePath + datasetName)) {
             response.setStatus(HttpServletResponse.SC_NOT_FOUND);
-            resultNode.put("reason", "Validation path unsuitable: " + validatePath + datasetName);
-            resultNode.put("success", false);
+            resultNode.put(REASON, "Validation path unsuitable: " + validatePath + datasetName);
+            resultNode.put(SUCCESS, false);
         } else {
             final Set<String> datasetDirs = listDirectories(validatePath, validateParams);
-            resultNode.put("backup-id", validateParams[0]);
+            resultNode.put(BACKUP_ID, validateParams[0]);
             resultNode.put("date", DateTimeUtils.nowAsString(DATE_FORMAT));
             resultNode.put("validate-path", validatePath + datasetName);
             final ObjectNode datasetResult = OBJECT_MAPPER.createObjectNode();
@@ -764,13 +776,13 @@ public class DatasetBackupService {
             final Model model = RDFDataMgr.loadModel(reportPathString);
             try (final ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
                 RDFDataMgr.write(baos, model, Lang.RDFJSON);
-                resultNode.put("backup-id", backupId);
-                resultNode.put("dataset-name", datasetName);
+                resultNode.put(BACKUP_ID, backupId);
+                resultNode.put(DATASET_NAME, datasetName);
                 return resultNode.set("result", OBJECT_MAPPER.readValue(baos.toString(StandardCharsets.UTF_8), ObjectNode.class));
             }
         } else {
             response.setStatus(HttpServletResponse.SC_NOT_FOUND);
-            resultNode.put("error", "Invalid path or file: " + reportPathString);
+            resultNode.put(ERROR, "Invalid path or file: " + reportPathString);
             return resultNode;
         }
     }
@@ -783,7 +795,7 @@ public class DatasetBackupService {
     public ObjectNode getDetails(final String backupId) {
         final ObjectNode resultNode = OBJECT_MAPPER.createObjectNode();
         final String detailsPathString = getBackUpDir() + "/" + backupId;
-        resultNode.put("backup-id", backupId);
+        resultNode.put(BACKUP_ID, backupId);
         resultNode.put("details-path", detailsPathString);
 
         if (checkPathExistsAndIsFile(detailsPathString + ZIP_SUFFIX)) {
@@ -798,10 +810,10 @@ public class DatasetBackupService {
                 kafkaState.ifPresent(offsets -> resultNode.putPOJO("kafka-state", offsets));
                 // times
                 String jsonPath = getBackUpDir() + "/" + backupId + JSON_INFO_SUFFIX;
-                Optional<ZonedDateTime> startTime = readTime(jsonPath, "start-time");
-                Optional<ZonedDateTime> endTime = readTime(jsonPath, "end-time");
-                startTime.ifPresent(time -> resultNode.put("start-time", time.toString()));
-                endTime.ifPresent(time -> resultNode.put("end-time", time.toString()));
+                Optional<ZonedDateTime> startTime = readTime(jsonPath, START_TIME);
+                Optional<ZonedDateTime> endTime = readTime(jsonPath, END_TIME);
+                startTime.ifPresent(time -> resultNode.put(START_TIME, time.toString()));
+                endTime.ifPresent(time -> resultNode.put(END_TIME, time.toString()));
                 if (startTime.isPresent() && endTime.isPresent()) {
                     Duration duration = Duration.between(startTime.get(), endTime.get());
                     resultNode.put("backup-duration", humanReadableDuration(duration));
@@ -894,10 +906,10 @@ public class DatasetBackupService {
             final ValidationReport report = ShaclValidator.get().validate(shapes, dataGraph);
             writeValidationReport(report, datasetDir, Path.of(validatePath));
             cleanUp(tempPaths);
-            response.put("success", true);
+            response.put(SUCCESS, true);
         } catch (Exception ex) {
-            response.put("reason", (ex.getMessage() == null) ? ex.getClass().getName() : ex.getMessage());
-            response.put("success", false);
+            response.put(REASON, (ex.getMessage() == null) ? ex.getClass().getName() : ex.getMessage());
+            response.put(SUCCESS, false);
         }
         return response;
     }
@@ -966,7 +978,7 @@ public class DatasetBackupService {
             }
         }
         ZonedDateTime endTime = ZonedDateTime.now();
-        response.put("end-time", endTime.toString());
+        response.put(END_TIME, endTime.toString());
         writeObjectNodeToFile(response, dirPath + JSON_INFO_SUFFIX);
     }
 

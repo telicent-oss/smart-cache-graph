@@ -20,8 +20,8 @@ import static io.telicent.backup.utils.JsonFileUtils.OBJECT_MAPPER;
  */
 public class ServletUtils {
 
-    public final static String HTTP = "http://";
-    public final static String HTTPS = "https://";
+    public static final String HTTP = "http://";
+    public static final String HTTPS = "https://";
 
     /**
      * Populate an HTTP Response from given JSON Node

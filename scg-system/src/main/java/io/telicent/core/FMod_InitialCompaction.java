@@ -49,6 +49,10 @@ import static io.telicent.utils.ServletUtils.processResponse;
 
 public class FMod_InitialCompaction implements FusekiAutoModule {
 
+    // JSON response keys
+    private static final String ERROR = "error";
+    private static final String STATUS = "status";
+
     public static final Logger LOG = LoggerFactory.getLogger(FMod_InitialCompaction.class);
     private static final String ALL_DATASETS_SCOPE = "__ALL_DATASETS__";
     private final CompactionJobManager jobManager = new CompactionJobManager();
@@ -186,14 +190,14 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
                 this.completedAt = Instant.now();
                 this.httpStatus = response.statusCode();
                 this.result = response.body().deepCopy();
-                this.message = response.body().has("error") ? response.body().get("error").asText() : "Job failed.";
+                this.message = response.body().has(ERROR) ? response.body().get(ERROR).asText() : "Job failed.";
             }
 
             private ObjectNode submission() {
                 final ObjectNode node = OBJECT_MAPPER.createObjectNode();
                 node.put("job-id", this.jobId);
                 node.put("operation", this.operation);
-                node.put("status", this.status);
+                node.put(STATUS, this.status);
                 node.put("status-path", this.statusPath);
                 node.put("message", "Job accepted for asynchronous execution.");
                 return node;
@@ -203,7 +207,7 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
                 final ObjectNode node = OBJECT_MAPPER.createObjectNode();
                 node.put("job-id", this.jobId);
                 node.put("operation", this.operation);
-                node.put("status", this.status);
+                node.put(STATUS, this.status);
                 node.put("status-path", this.statusPath);
                 node.put("message", this.message);
                 node.put("submitted-at", this.submittedAt.toString());
@@ -458,7 +462,7 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
                                                                properties.getProperty("updatedAt"),
                                                                parseLongProperty(properties.getProperty("sizeBefore")),
                                                                parseLongProperty(properties.getProperty("sizeAfter")),
-                                                               properties.getProperty("error")));
+                                                               properties.getProperty(ERROR)));
                 } catch (IOException | IllegalArgumentException e) {
                     return Optional.empty();
                 }
@@ -554,7 +558,7 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
         properties.setProperty("sizeBefore", Long.toString(indicator.sizeBefore()));
         properties.setProperty("sizeAfter", Long.toString(indicator.sizeAfter()));
         if (indicator.error() != null) {
-            properties.setProperty("error", indicator.error());
+            properties.setProperty(ERROR, indicator.error());
         }
 
         File indicatorFile = getCompactionIndicatorFile(dsg);
@@ -674,7 +678,7 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
                 processResponse(res, resultNode);
             }, () -> {
                 res.setStatus(HttpServletResponse.SC_NOT_FOUND);
-                resultNode.put("error", "Unknown compaction job id: " + jobId);
+                resultNode.put(ERROR, "Unknown compaction job id: " + jobId);
                 processResponse(res, resultNode);
             });
         }
@@ -728,13 +732,13 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
 
     private static CompactionOperationResponse compactionFailureResponse(final String details) {
         final ObjectNode body = OBJECT_MAPPER.createObjectNode();
-        body.put("error", details != null ? details : "Compaction failed.");
+        body.put(ERROR, details != null ? details : "Compaction failed.");
         return new CompactionOperationResponse(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, body);
     }
 
     private static void writeSyncResponse(final HttpServletResponse res, final CompactionOperationResponse response) {
         if (response.statusCode() >= 400) {
-            ServletOps.errorOccurred(response.body().path("error").asText("Compaction failed."));
+            ServletOps.errorOccurred(response.body().path(ERROR).asText("Compaction failed."));
             return;
         }
         res.setStatus(response.statusCode());
@@ -749,7 +753,7 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
 
     private static ObjectNode toCompactionSummaryJson(final Map<String, CompactionStatus> outcomes) {
         final ObjectNode body = OBJECT_MAPPER.createObjectNode();
-        body.put("status", "ok");
+        body.put(STATUS, "ok");
         final ObjectNode datasetsNode = body.putObject("datasets");
         outcomes.forEach((datasetName, outcome) -> datasetsNode.put(datasetName, outcome.name()));
         return body;

@@ -36,17 +36,17 @@ public class TestLabelsQuery {
 
     private static String BASE_URI;
 
-    private final static URL BACKUP_URL = TestLabelsQuery.class.getClassLoader().getResource("config-labels-query-test.ttl");
+    private static final URL BACKUP_URL = TestLabelsQuery.class.getClassLoader().getResource("config-labels-query-test.ttl");
 
-    private final static URL DATA1_URL = TestLabelsQuery.class.getClassLoader().getResource("test-data-labelled-1.trig");
+    private static final URL DATA1_URL = TestLabelsQuery.class.getClassLoader().getResource("test-data-labelled-1.trig");
 
-    private final static URL DATA2_URL = TestLabelsQuery.class.getClassLoader().getResource("test-data-labelled-2.trig");
+    private static final URL DATA2_URL = TestLabelsQuery.class.getClassLoader().getResource("test-data-labelled-2.trig");
 
-    private final static String JSON_HEADER = "application/json";
+    private static final String JSON_HEADER = "application/json";
 
-    private final static String DATASET1_NAME = "securedDataset1";
+    private static final String DATASET1_NAME = "securedDataset1";
 
-    private final static String DATASET2_NAME = "securedDataset2";
+    private static final String DATASET2_NAME = "securedDataset2";
 
 
     @BeforeAll

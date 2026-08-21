@@ -17,11 +17,11 @@ import static org.mockito.Mockito.when;
  * Class that extends DatasetBackupService purely for testing purposes
  */
 public class DatasetBackupService_Test extends DatasetBackupService {
-    public final static String BACKUP_TDB = "executeBackupTDB";
-    public final static String BACKUP_LABELS = "executeBackupLabelStore";
-    public final static String RESTORE_TDB = "executeRestoreTDB";
-    public final static String RESTORE_LABELS = "executeRestoreLabelStore";
-    public final static String DELETE_BACKUP_DIR = "executeDeleteBackup";
+    public static final String BACKUP_TDB = "executeBackupTDB";
+    public static final String BACKUP_LABELS = "executeBackupLabelStore";
+    public static final String RESTORE_TDB = "executeRestoreTDB";
+    public static final String RESTORE_LABELS = "executeRestoreLabelStore";
+    public static final String DELETE_BACKUP_DIR = "executeDeleteBackup";
 
     public static Map<String, Integer> callCounts = new HashMap<>();
     public static Map<String, String> throwExceptions = new HashMap<>();

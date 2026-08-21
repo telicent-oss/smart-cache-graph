@@ -56,7 +56,7 @@ public class SmartCacheGraph {
      */
     public static final String VERSION = version();
 
-    public final static Logger log = LoggerFactory.getLogger(SmartCacheGraph.class);
+    public static final Logger log = LoggerFactory.getLogger(SmartCacheGraph.class);
 
     private static String version() {
         return Version.versionForClass(SmartCacheGraph.class).orElse("<development>");

@@ -58,6 +58,9 @@ import static org.apache.jena.kafka.FusekiKafka.LOG;
  */
 public class FMod_FusekiKafkaSCG extends FMod_FusekiKafka {
 
+    // JSON response key
+    private static final String SUCCESS = "success";
+
     public FMod_FusekiKafkaSCG() {
         super();
     }
@@ -139,7 +142,7 @@ public class FMod_FusekiKafkaSCG extends FMod_FusekiKafka {
         IOX.copy(conn.getStateFile(), filename);
         resultNode.put("source", conn.getStateFile());
         resultNode.put("destination", filename);
-        resultNode.put("success", true);
+        resultNode.put(SUCCESS, true);
         return resultNode;
     }
 
@@ -154,7 +157,7 @@ public class FMod_FusekiKafkaSCG extends FMod_FusekiKafka {
                     "Unable to restore Kafka for dataset (%s) as restore file (%s) not suitable.",
                     dataset, filename);
             LOG.warn("Unable to restore Kafka for dataset {} as restore file {} not suitable.", dataset, filename);
-            resultNode.put("success", false);
+            resultNode.put(SUCCESS, false);
             resultNode.put("reason", errorMessage);
             return resultNode;
         }
@@ -173,7 +176,7 @@ public class FMod_FusekiKafkaSCG extends FMod_FusekiKafka {
             }
         }
         resultNode.set("offsets", offsets);
-        resultNode.put("success", true);
+        resultNode.put(SUCCESS, true);
         return resultNode;
     }
 }

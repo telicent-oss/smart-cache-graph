@@ -10,12 +10,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.mockito.Mockito;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class TestServletAuthorizationEngine {
@@ -104,7 +104,7 @@ public class TestServletAuthorizationEngine {
     }
 
     private static ServletAuthorizationContext prepareContext(String servletPath, String pathInfo) {
-        HttpServletRequest request = Mockito.mock(HttpServletRequest.class);
+        HttpServletRequest request = mock(HttpServletRequest.class);
         when(request.getServletPath()).thenReturn(servletPath);
         when(request.getPathInfo()).thenReturn(pathInfo);
         return new ServletAuthorizationContext(request);

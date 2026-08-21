@@ -28,11 +28,11 @@ import static io.telicent.utils.ServletUtils.processResponse;
 
 public class LabelsQueryServlet extends HttpServlet {
 
-    private final static Logger LOG = FusekiKafka.LOG;
+    private static final Logger LOG = FusekiKafka.LOG;
 
-    private final static String HTTP = "http://";
-    private final static String HTTPS = "https://";
-    private final static String WILDCARD = "*";
+    private static final String HTTP = "http://";
+    private static final String HTTPS = "https://";
+    private static final String WILDCARD = "*";
 
     private final LabelsQueryService queryService;
 
