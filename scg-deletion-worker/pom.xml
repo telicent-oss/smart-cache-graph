@@ -31,7 +31,7 @@
     <description>Kafka consumer that applies deletion requests to Smart Cache Graph</description>
 
     <properties>
-        <dependency.spring-boot>4.1.0</dependency.spring-boot>
+        <dependency.spring-boot>4.1.1</dependency.spring-boot>
         <dependency.tomcat>11.0.25</dependency.tomcat>
         <skipPublishing>true</skipPublishing>
         <!-- Analysed as its own Sonar project, telicent-oss_smart-cache-graph-deletion-worker,

@@ -321,7 +321,7 @@
 
     <!-- External dependencies -->
     <dependency.awaitility>4.3.0</dependency.awaitility>
-    <dependency.jackson>2.22.1</dependency.jackson>
+    <dependency.jackson>2.22.2</dependency.jackson>
     <dependency.bouncycastle>1.85</dependency.bouncycastle>
     <dependency.kafka>3.9.2</dependency.kafka>
     <dependency.kotlin>2.4.10</dependency.kotlin>
