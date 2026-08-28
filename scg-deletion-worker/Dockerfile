@@ -1,4 +1,4 @@
-FROM telicent/telicent-java21:1.2.59 AS scg-deletion-worker
+FROM telicent/telicent-java21:1.2.60 AS scg-deletion-worker
 USER root
 ARG PROJECT_VERSION
 COPY --chown=user:user scg-deletion-worker/target/scg-deletion-worker-${PROJECT_VERSION}.jar app.jar
