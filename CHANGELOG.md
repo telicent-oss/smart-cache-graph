@@ -1,5 +1,18 @@
 # Smart Cache Graph
 
+## 1.1.7
+
+- The Distribution Lifecycle tracker now flushes its persisted state on a timer (every 20 seconds) where the state
+  store requires it.  Previously a burst of lifecycle actions could be acknowledged without the resulting lifecycle
+  state or consumer offsets ever being persisted, so the state was lost on restart.
+- Build improvements:
+    - Telicent Java 21 Base Image upgraded to 1.2.60 for both the graph and the deletion worker
+    - Jackson upgraded to 2.22.2
+    - Spring Boot upgraded to 4.1.1 in the deletion worker
+    - The deletion worker is now analysed as its own SonarQube project rather than sharing the graph's
+    - Numerous SonarQube code quality issues addressed, plus additional test coverage for backup job management and
+      backup utilities
+
 ## 1.1.6
 
 - Restoring a backup no longer fails on a dataset whose Kafka topic is caught up.  Such restores previously aborted
