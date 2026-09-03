@@ -34,6 +34,10 @@ import org.apache.jena.sparql.core.DatasetGraphWrapper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
 import java.util.Properties;
@@ -96,6 +100,81 @@ public class TestFModDistributionLifecycle {
 
         // then
         verify(abac, never()).setFilterProvider(any());
+    }
+
+    @Test
+    void configured_lifecycleFilteringDisabled_recordsNoFilteredDataAccessPoints() {
+        // given
+        Configurator.setSingleSource(new PropertiesSource(new Properties()));
+        FMod_DistributionLifecycle module = new FMod_DistributionLifecycle();
+
+        // when
+        module.configured(null, null, null);
+
+        // then
+        assertTrue(module.filteredDataAccessPoints().isEmpty(),
+                   "No datasets should be recorded as filtered when lifecycle filtering is disabled");
+    }
+
+    private static void enableLifecycleFiltering() throws IOException {
+        Path stateFile = Files.createTempFile("distribution-lifecycle", ".json");
+        stateFile.toFile().deleteOnExit();
+        Files.writeString(stateFile, """
+                                     {
+                                       "distributions" : { }
+                                     }
+                                     """, StandardCharsets.UTF_8);
+        Properties properties = new Properties();
+        properties.setProperty(FMod_DistributionLifecycle.ROUTE_TO_NAMED_GRAPHS, "true");
+        properties.setProperty(DISTRIBUTION_LIFECYCLE_STATE_FILE, stateFile.toString());
+        Configurator.setSingleSource(new PropertiesSource(properties));
+    }
+
+    @Test
+    void configured_installsLifecycleFilter_andRecordsEveryFilteredDataAccessPoint() throws IOException {
+        // given
+        enableLifecycleFiltering();
+
+        DatasetGraphABAC abac = newAbacDataset();
+        DataService abacService = DataService.newBuilder(abac).addEndpoint(Operation.Query).build();
+        DataAccessPoint dap = new DataAccessPoint("/knowledge", abacService);
+        DataAccessPointRegistry dapRegistry = mock(DataAccessPointRegistry.class);
+        when(dapRegistry.accessPoints()).thenReturn(List.of(dap));
+        FMod_DistributionLifecycle module = new FMod_DistributionLifecycle();
+
+        // when
+        module.configured(null, dapRegistry, null);
+
+        // then
+        assertEquals(List.of("/knowledge"), List.copyOf(module.filteredDataAccessPoints()),
+                     "The lifecycle filter should be recorded against every dataset it was installed on");
+        assertNotNull(abac.getFilterProvider(), "A lifecycle aware filter provider should have been installed");
+    }
+
+    @Test
+    void configured_datasetSharedBySeveralDataAccessPoints_recordsAllOfThemAsFiltered() throws IOException {
+        // given - two data access points backed by the same dataset, e.g. an alias for the same store.
+        //         installIfConfigured() only returns true for the first of them, so a naive implementation would
+        //         report the second as unfiltered even though it queries the very same filtered dataset.
+        enableLifecycleFiltering();
+
+        DatasetGraphABAC abac = newAbacDataset();
+        DataAccessPoint primary =
+                new DataAccessPoint("/knowledge", DataService.newBuilder(abac).addEndpoint(Operation.Query).build());
+        DataAccessPoint alias = new DataAccessPoint("/knowledge-alias",
+                                                    DataService.newBuilder(abac)
+                                                               .addEndpoint(Operation.Query)
+                                                               .build());
+        DataAccessPointRegistry dapRegistry = mock(DataAccessPointRegistry.class);
+        when(dapRegistry.accessPoints()).thenReturn(List.of(primary, alias));
+        FMod_DistributionLifecycle module = new FMod_DistributionLifecycle();
+
+        // when
+        module.configured(null, dapRegistry, null);
+
+        // then
+        assertEquals(List.of("/knowledge", "/knowledge-alias"), List.copyOf(module.filteredDataAccessPoints()),
+                     "Every data access point sharing a filtered dataset should be recorded as filtered");
     }
 
     @Test
