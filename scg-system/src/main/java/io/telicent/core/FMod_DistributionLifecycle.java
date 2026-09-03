@@ -69,6 +69,7 @@ import static io.telicent.smart.cache.distribution.lifecycle.config.Distribution
  *     <li>A distribution lifecycle tracker that responds to delete messages and acts accordingly.</li>
  * </ol>
  */
+@SuppressWarnings("java:S3077")
 public class FMod_DistributionLifecycle implements FusekiModule {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FMod_DistributionLifecycle.class);
