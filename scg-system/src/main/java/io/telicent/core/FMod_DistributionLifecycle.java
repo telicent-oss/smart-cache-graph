@@ -69,7 +69,6 @@ import static io.telicent.smart.cache.distribution.lifecycle.config.Distribution
  *     <li>A distribution lifecycle tracker that responds to delete messages and acts accordingly.</li>
  * </ol>
  */
-@SuppressWarnings("java:S3077")
 public class FMod_DistributionLifecycle implements FusekiModule {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FMod_DistributionLifecycle.class);
@@ -91,6 +90,7 @@ public class FMod_DistributionLifecycle implements FusekiModule {
     private static final AtomicInteger TRACKER_STARTER_THREAD_ID = new AtomicInteger();
 
     private final DistributionLifecycleReadiness readiness = DistributionLifecycleReadiness.getInstance();
+    @SuppressWarnings("java:S3077")
     private volatile List<String> filteredDataAccessPoints = List.of();
     private DistributionLifecycleTracker tracker;
     private DistributionLifecycleStateStore stateStore;
@@ -169,7 +169,7 @@ public class FMod_DistributionLifecycle implements FusekiModule {
                 // installed on it by an earlier call.  Logged so an unexpectedly unfiltered dataset shows up at
                 // startup rather than as a silent data leak.
                 unfiltered.add(dap.getName());
-                LOGGER.info(
+                LOGGER.warn(
                         "Distribution lifecycle filter NOT installed on dataset {} ({}), endpoints: {} - queries "
                         + "against this dataset do not enforce distribution lifecycle", dap.getName(),
                         dataset.getClass().getSimpleName(), endpointNames(dap));
