@@ -147,6 +147,19 @@
             <version>${dependency.smart-caches-core}</version>
         </dependency>
 
+        <!-- Distribution ID message key support -->
+        <dependency>
+            <groupId>io.telicent.smart-caches</groupId>
+            <artifactId>event-source-kafka</artifactId>
+            <version>${dependency.smart-caches-core}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.telicent.smart-caches</groupId>
+            <artifactId>configurator</artifactId>
+            <version>${dependency.smart-caches-core}</version>
+        </dependency>
+
         <!-- Test -->
         <dependency>
             <!--

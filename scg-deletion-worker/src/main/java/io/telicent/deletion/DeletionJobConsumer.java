@@ -16,7 +16,7 @@
 
 package io.telicent.deletion;
 
-import io.telicent.smart.cache.sources.TelicentHeaders;
+import io.telicent.smart.cache.sources.kafka.KafkaDistributionKeys;
 import org.apache.kafka.clients.consumer.*;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.header.Header;
@@ -136,8 +136,10 @@ public class DeletionJobConsumer implements AutoCloseable {
                     return;
                 }
 
-                // Skip all other distribution-ids
-                String recordDistributionId = headerValue(record, TelicentHeaders.DISTRIBUTION_ID);
+                // Skip all other distribution-ids.  Per the Core Data Management design the message key is
+                // authoritative and the Distribution-Id header is only the fallback, so records produced before
+                // message keys were adopted still match on their header.
+                String recordDistributionId = KafkaDistributionKeys.resolve(record);
                 if (!distributionId.equals(recordDistributionId)) {
                     continue;
                 }

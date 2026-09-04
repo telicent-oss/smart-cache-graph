@@ -130,8 +130,13 @@ class DeletionJobProducerIntegrationTest extends KafkaIntegrationTestBase{
         assertEquals("delete", new String(operation.value(), StandardCharsets.UTF_8));
     }
 
+    /**
+     * A delete patch belongs to a NEW distribution, so it is keyed by that new Distribution ID rather than by the
+     * key of the record it was derived from.  Anything else would leave the key disagreeing with the
+     * Distribution-Id header, and the key is authoritative.
+     */
     @Test
-    void sentDeletePatchHasOriginalKey() throws Exception {
+    void sentDeletePatchIsKeyedByTheDeletionDistribution() throws Exception {
         ConsumerRecord<Bytes, Bytes> record = buildRecord(0L, DISTRIBUTION_ID, nquadsPayload("1", "Alice"));
 
         try (DeletionJobProducer producer = new DeletionJobProducer(
@@ -142,7 +147,20 @@ class DeletionJobProducerIntegrationTest extends KafkaIntegrationTestBase{
         List<ConsumerRecord<Bytes, Bytes>> allRecords = readAllRecords(1);
         ConsumerRecord<Bytes, Bytes> patch = allRecords.getFirst();
 
-        assertArrayEquals(record.key().get(), patch.key().get());
+        String expectedDistributionId = DISTRIBUTION_ID + DELETION_JOB_SUFFIX;
+        assertNotNull(patch.key(), "Delete patch should be keyed by its Distribution ID");
+        assertEquals(expectedDistributionId, new String(patch.key().get(), StandardCharsets.UTF_8));
+
+        // The key and the header must agree, otherwise the patch is attributed to the wrong distribution
+        Header distId = patch.headers().lastHeader(TelicentHeaders.DISTRIBUTION_ID);
+        assertNotNull(distId);
+        assertEquals(new String(patch.key().get(), StandardCharsets.UTF_8),
+                     new String(distId.value(), StandardCharsets.UTF_8));
+
+        // ...and it is deliberately NOT the key of the record it was derived from
+        assertNotEquals(new String(record.key().get(), StandardCharsets.UTF_8),
+                        new String(patch.key().get(), StandardCharsets.UTF_8),
+                        "Delete patch must not inherit the inbound record's key");
     }
 
     @Test
@@ -416,8 +434,12 @@ class DeletionJobProducerIntegrationTest extends KafkaIntegrationTestBase{
         assertTrue(changes.hasTransaction);
     }
 
+    /**
+     * Even where the inbound record carried no key at all, the delete patch is still keyed by the deletion
+     * distribution - the key is derived from the new Distribution ID, never copied.
+     */
     @Test
-    void recordWithNullKeyProducesPatchWithNullKey() throws Exception {
+    void recordWithNullKeyStillProducesPatchKeyedByTheDeletionDistribution() throws Exception {
         ConsumerRecord<Bytes, Bytes> record = new ConsumerRecord<>(
                 topic, 0, 0L,
                 null,
@@ -435,7 +457,9 @@ class DeletionJobProducerIntegrationTest extends KafkaIntegrationTestBase{
         }
 
         ConsumerRecord<Bytes, Bytes> patch = readAllRecords(1).getFirst();
-        assertNull(patch.key());
+        assertNotNull(patch.key(), "Delete patch should be keyed even when the inbound record was not");
+        assertEquals(DISTRIBUTION_ID + DELETION_JOB_SUFFIX,
+                     new String(patch.key().get(), StandardCharsets.UTF_8));
     }
 
     private byte[] turtlePayload(String subject, String name) {

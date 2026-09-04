@@ -17,7 +17,10 @@
 package io.telicent.deletion;
 
 import io.telicent.jena.abac.labels.node.LabelToNodeGenerator;
+import io.telicent.smart.cache.configuration.Configurator;
+import io.telicent.smart.cache.sources.DistributionKeyStrategy;
 import io.telicent.smart.cache.sources.TelicentHeaders;
+import io.telicent.smart.cache.sources.kafka.KafkaDistributionKeys;
 import org.apache.jena.rdfpatch.RDFPatch;
 import org.apache.jena.rdfpatch.RDFPatchOps;
 import org.apache.jena.rdfpatch.changes.RDFChangesApply;
@@ -78,6 +81,24 @@ public class DeletionJobProducer implements AutoCloseable {
         this.distributionId = distributionId;
         this.jobId = jobId;
         this.producer = producer;
+    }
+
+    /**
+     * Gets the configured Distribution ID message key strategy, falling back to the platform default if the
+     * configured value is not recognised
+     *
+     * @return Key strategy
+     */
+    private static DistributionKeyStrategy distributionKeyStrategy() {
+        String configured = Configurator.get(new String[] { DistributionKeyStrategy.CONFIG_KEY },
+                                             DistributionKeyStrategy.DEFAULT.configValue());
+        try {
+            return DistributionKeyStrategy.parse(configured);
+        } catch (IllegalArgumentException e) {
+            LOGGER.warn("Ignoring invalid {} value '{}', using {} instead", DistributionKeyStrategy.CONFIG_KEY,
+                    configured, DistributionKeyStrategy.DEFAULT.configValue());
+            return DistributionKeyStrategy.DEFAULT;
+        }
     }
 
     private KafkaProducer<Bytes, Bytes> createProducer(String bootstrapServers, String configFilePath) {
@@ -157,9 +178,17 @@ public class DeletionJobProducer implements AutoCloseable {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         RDFPatchOps.write(baos, patch.get());
 
+        // NB - The delete patch belongs to a NEW distribution, not the one it was derived from, so its message key
+        //      MUST be derived from that new Distribution ID rather than copied from the inbound record.  Copying the
+        //      inbound key would leave the key and the Distribution-Id header set below disagreeing, and since the
+        //      key is authoritative per the Core Data Management design the patch would be attributed to the wrong
+        //      distribution.
+        String newDistributionId = distributionId + DELETION_JOB_SUFFIX;
+        Bytes outputKey = KafkaDistributionKeys.toBytesKey(newDistributionId, distributionKeyStrategy());
+
         ProducerRecord<Bytes, Bytes> output = new ProducerRecord<>(
                 topic,
-                record.key(),
+                outputKey,
                 Bytes.wrap(baos.toByteArray())
         );
 
@@ -183,7 +212,6 @@ public class DeletionJobProducer implements AutoCloseable {
                 DELETION_JOB_ID,
                 jobId.getBytes(StandardCharsets.UTF_8)
         );
-        String newDistributionId = distributionId + DELETION_JOB_SUFFIX;
         output.headers().remove(DISTRIBUTION_ID);
         output.headers().add(DISTRIBUTION_ID, newDistributionId.getBytes(StandardCharsets.UTF_8));
 

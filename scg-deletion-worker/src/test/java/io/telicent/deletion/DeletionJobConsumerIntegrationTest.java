@@ -105,6 +105,54 @@ class DeletionJobConsumerIntegrationTest extends KafkaIntegrationTestBase{
     }
 
     @Test
+    void readsFromBeginningAndFiltersCorrectDistributionForKeyedRecords() throws Exception {
+        publishKeyedRecord(DISTRIBUTION_ID, null, "triple one");
+        publishKeyedRecord(OTHER_DISTRIBUTION_ID, null, "other distribution");
+        publishKeyedRecord(DISTRIBUTION_ID, null, "triple two");
+
+        List<ConsumerRecord<Bytes, Bytes>> handled = new ArrayList<>();
+        try (DeletionJobConsumer consumer = new DeletionJobConsumer(
+                kafka.getBootstrapServers(), null, topic, DISTRIBUTION_ID, jobId)) {
+            consumer.process(handled::add);
+        }
+        assertEquals(2, handled.size());
+    }
+
+    @Test
+    void stopsOnOwnJobIdForKeyedRecords() throws Exception {
+        publishKeyedRecord(DISTRIBUTION_ID, null, "triple one");
+        publishKeyedRecord(DISTRIBUTION_ID, null, "triple two");
+        publishKeyedRecord(DISTRIBUTION_ID, jobId, "our own delete patch");
+        publishKeyedRecord(DISTRIBUTION_ID, null, "triple four");
+
+        List<ConsumerRecord<Bytes, Bytes>> handled = new ArrayList<>();
+        try (DeletionJobConsumer consumer = new DeletionJobConsumer(
+                kafka.getBootstrapServers(), null, topic, DISTRIBUTION_ID, jobId)) {
+            consumer.process(handled::add);
+        }
+        assertEquals(2, handled.size());
+    }
+
+    /**
+     * A topic mid-rollout holds both shapes at once - records keyed by their Distribution ID and older records
+     * carrying it in the header only.  Both must be picked up by the same job.
+     */
+    @Test
+    void readsBothKeyedAndHeaderOnlyRecords() throws Exception {
+        publishKeyedRecord(DISTRIBUTION_ID, null, "keyed triple");
+        publishRecord(DISTRIBUTION_ID, null, "header only triple");
+        publishKeyedRecord(OTHER_DISTRIBUTION_ID, null, "other distribution, keyed");
+        publishRecord(OTHER_DISTRIBUTION_ID, null, "other distribution, header only");
+
+        List<ConsumerRecord<Bytes, Bytes>> handled = new ArrayList<>();
+        try (DeletionJobConsumer consumer = new DeletionJobConsumer(
+                kafka.getBootstrapServers(), null, topic, DISTRIBUTION_ID, jobId)) {
+            consumer.process(handled::add);
+        }
+        assertEquals(2, handled.size());
+    }
+
+    @Test
     void handlesEmptyTopicGracefully() {
         List<ConsumerRecord<Bytes, Bytes>> handled = new ArrayList<>();
         try (DeletionJobConsumer consumer = new DeletionJobConsumer(

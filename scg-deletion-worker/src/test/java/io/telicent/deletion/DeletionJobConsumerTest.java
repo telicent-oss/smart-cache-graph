@@ -69,6 +69,20 @@ class DeletionJobConsumerTest {
         assertEquals(1, handled.size());    }
 
     @Test
+    void handlerUsesDistributionKeyInPreferenceToHeader() {
+        addRecord(0L, DISTRIBUTION_ID, OTHER_DISTRIBUTION_ID, null, "key wins");
+        addEndOfTopic(1L);
+
+        List<ConsumerRecord<Bytes, Bytes>> handled = new ArrayList<>();
+        try (DeletionJobConsumer consumer = new DeletionJobConsumer(
+                mockConsumer, TOPIC, DISTRIBUTION_ID, JOB_ID)) {
+            consumer.process(handled::add);
+        }
+
+        assertEquals(1, handled.size());
+    }
+
+    @Test
     void handlerIsNotCalledForDifferentDistribution() {
         addRecord(0L, OTHER_DISTRIBUTION_ID, null, "other triple data");
         addEndOfTopic(1L);
@@ -140,19 +154,21 @@ class DeletionJobConsumerTest {
     }
 
     private void addRecord(long offset, String distributionId, String deletionJobId, String payload) {
-        addRecord(offset, distributionId, deletionJobId, null, payload);
+        // Existing-pipeline compatibility: no distribution key, Distribution-Id in the header.
+        addRecord(offset, null, distributionId, deletionJobId, payload);
     }
 
-    private void addRecord(long offset, String distributionId, String deletionJobId, String originalOffset, String payload) {
+    private void addRecord(long offset, String keyDistributionId, String headerDistributionId, String deletionJobId,
+                           String payload) {
         ConsumerRecord<Bytes, Bytes> record = new ConsumerRecord<>(
                 TOPIC, 0, offset,
-                Bytes.wrap("key".getBytes(StandardCharsets.UTF_8)),
+                keyDistributionId != null ? Bytes.wrap(keyDistributionId.getBytes(StandardCharsets.UTF_8)) : null,
                 Bytes.wrap(payload.getBytes(StandardCharsets.UTF_8))
         );
-        if (distributionId != null) {
+        if (headerDistributionId != null) {
             record.headers().add(
                     TelicentHeaders.DISTRIBUTION_ID,
-                    distributionId.getBytes(StandardCharsets.UTF_8)
+                    headerDistributionId.getBytes(StandardCharsets.UTF_8)
             );
         }
         if (deletionJobId != null) {

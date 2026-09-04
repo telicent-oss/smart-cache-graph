@@ -127,6 +127,12 @@ public class FMod_CQRS implements FusekiModule {
                 }
 
                 KConnectorDesc conn = FKRegistry.get().getConnectorDescriptor(topicName);
+                if (conn == null) {
+                    String message = "No Kafka connector configured for CQRS update endpoint "
+                                     + endpointName(dap, endpoint) + " using topic " + topicName;
+                    LOG.error(message);
+                    throw new FusekiConfigException(message);
+                }
                 // NB - It's safe to just pass the same set of Consumer Properties to the Producer, it will simply
                 //      ignore the properties that are consumer specific
                 //      If we don't pass these in as-in any extra configuration a user has provided, e.g. for Kafka

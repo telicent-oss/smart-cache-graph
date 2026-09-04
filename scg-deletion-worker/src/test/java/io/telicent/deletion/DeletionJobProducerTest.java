@@ -101,6 +101,21 @@ class DeletionJobProducerTest {
     }
 
     @Test
+    void sentRecordKeyMatchesRewrittenDistributionId() {
+        ConsumerRecord<Bytes, Bytes> record = buildRecord(DISTRIBUTION_ID, "application/n-quads");
+        try (DeletionJobProducer producer = new DeletionJobProducer(
+                mockProducer, rdfPatchInverter, TOPIC, DISTRIBUTION_ID, JOB_ID)) {
+            producer.sendDeletePatch(record);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        ProducerRecord<Bytes, Bytes> sent = mockProducer.history().getFirst();
+        assertEquals(DISTRIBUTION_ID + DELETION_JOB_SUFFIX,
+                     new String(sent.key().get(), StandardCharsets.UTF_8));
+    }
+
+    @Test
     void sentRecordHasOperationDeleteHeader() {
         ConsumerRecord<Bytes, Bytes> record = buildRecord(DISTRIBUTION_ID, "application/n-quads");
         try (DeletionJobProducer producer = new DeletionJobProducer(

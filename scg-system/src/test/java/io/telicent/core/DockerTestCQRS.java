@@ -8,6 +8,7 @@ import io.telicent.smart.cache.sources.kafka.config.KafkaConfiguration;
 import org.apache.jena.atlas.lib.FileOps;
 import org.apache.jena.fuseki.main.FusekiServer;
 import org.apache.jena.fuseki.system.FusekiLogging;
+import org.apache.jena.fuseki.FusekiConfigException;
 import org.apache.jena.sparql.exec.RowSet;
 import org.apache.jena.sparql.exec.RowSetOps;
 import org.apache.jena.sparql.exec.RowSetRewindable;
@@ -23,6 +24,8 @@ import java.time.Duration;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.telicent.TestSmartCacheGraphIntegration.launchServer;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class DockerTestCQRS {
 
@@ -42,6 +45,7 @@ public class DockerTestCQRS {
     public static final String QUERY_ENDPOINT = "/query";
     public static final String UPDATE_ENDPOINT = "/update";
     public static final String SCG_CQRS_CONFIG = "config-cqrs.ttl";
+    public static final String SCG_CQRS_MISSING_CONNECTOR_CONFIG = "config-cqrs-missing-connector.ttl";
     public static final String ADMIN = "admin";
     public static final Duration DEFAULT_POLL_DELAY = Duration.ofSeconds(2);
     private static final AtomicInteger CONSUMER_ID = new AtomicInteger(0);
@@ -212,6 +216,15 @@ public class DockerTestCQRS {
     private void verifyNothingVisible(String user, Duration pollDelay) {
         String token = LibTestsSCG.tokenForUser(user, DATASET_NAME);
         verifyDataVisible(url(QUERY_ENDPOINT), QUERY, token, pollDelay, 0);
+    }
+
+    @Test
+    public void givenCqrsEndpointWithUnknownTopic_whenStartingServer_thenConfigurationFailsClearly() {
+        FusekiConfigException exception = assertThrows(FusekiConfigException.class,
+                                                       () -> launchServer(SCG_CQRS_MISSING_CONNECTOR_CONFIG));
+
+        assertTrue(exception.getMessage().contains("No Kafka connector configured"));
+        assertTrue(exception.getMessage().contains("missing-topic"));
     }
 
     @Test

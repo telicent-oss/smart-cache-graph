@@ -1,5 +1,14 @@
 # Smart Cache Graph
 
+## 1.1.7
+
+- Distribution Lifecycle improvements:
+    - The Deletion Worker's consumer now resolves a record's Distribution ID from its message key first, falling back
+      to the `Distribution-Id` header
+    - Named graph routing resolves the Distribution ID the same way, via the `RdfAbacSink` change in Smart Caches Core
+- Build improvements:
+    - Smart Caches Core upgraded to 1.3.1
+
 ## 1.1.6
 
 - Restoring a backup no longer fails on a dataset whose Kafka topic is caught up.  Such restores previously aborted

@@ -109,11 +109,40 @@ public abstract class KafkaIntegrationTestBase {
         }
     }
 
+    /**
+     * Publishes a record in the "legacy" shape, i.e. carrying the Distribution ID only in its header with no message
+     * key, as produced by pipelines predating the Distribution ID message key.
+     */
     protected void publishRecord(String distributionId, String deletionJobId, String payload)
+            throws ExecutionException, InterruptedException {
+        publishRecord(distributionId, deletionJobId, payload, null);
+    }
+
+    /**
+     * Publishes a record in the current shape, i.e. keyed by its Distribution ID as well as carrying the
+     * Distribution-Id header.
+     */
+    protected void publishKeyedRecord(String distributionId, String deletionJobId, String payload)
+            throws ExecutionException, InterruptedException {
+        publishRecord(distributionId, deletionJobId, payload,
+                      distributionId == null ? null : Bytes.wrap(distributionId.getBytes(StandardCharsets.UTF_8)));
+    }
+
+    /**
+     * Publishes a record with an explicit message key.
+     * <p>
+     * NB - A key that is neither {@code null} nor the Distribution ID (a document ID, say, as older pipelines
+     * produced) is deliberately NOT exercised by the suites: the consumer resolves the Distribution ID key-first, so
+     * such a record is currently skipped even though its Distribution-Id header is correct.  Whether that is the
+     * intended contract is a CORE-1502 decision; once it is settled this overload is the hook for a test that pins
+     * it down.
+     * </p>
+     */
+    protected void publishRecord(String distributionId, String deletionJobId, String payload, Bytes key)
             throws ExecutionException, InterruptedException {
         ProducerRecord<Bytes, Bytes> record = new ProducerRecord<>(
                 getTopic(),
-                Bytes.wrap("key".getBytes(StandardCharsets.UTF_8)),
+                key,
                 Bytes.wrap(payload.getBytes(StandardCharsets.UTF_8))
         );
         if (distributionId != null) {
@@ -135,11 +164,28 @@ public abstract class KafkaIntegrationTestBase {
         getSetUpProducer().send(record).get();
     }
 
+    /**
+     * Publishes a raw payload in the "legacy" shape, i.e. Distribution ID in the header only, no message key.
+     */
     protected void publishRawRecord(String distributionId, byte[] payload)
+            throws ExecutionException, InterruptedException {
+        publishRawRecord(distributionId, payload, null);
+    }
+
+    /**
+     * Publishes a raw payload in the current shape, i.e. keyed by its Distribution ID.
+     */
+    protected void publishKeyedRawRecord(String distributionId, byte[] payload)
+            throws ExecutionException, InterruptedException {
+        publishRawRecord(distributionId, payload,
+                         distributionId == null ? null : Bytes.wrap(distributionId.getBytes(StandardCharsets.UTF_8)));
+    }
+
+    protected void publishRawRecord(String distributionId, byte[] payload, Bytes key)
             throws ExecutionException, InterruptedException {
         ProducerRecord<Bytes, Bytes> record = new ProducerRecord<>(
                 getTopic(),
-                Bytes.wrap("key".getBytes(StandardCharsets.UTF_8)),
+                key,
                 Bytes.wrap(payload)
         );
         record.headers().add(

@@ -1164,6 +1164,54 @@ public abstract class AbstractSmartCacheGraphSinkTests {
     }
 
     @Test
+    final void processorSCG_namedGraph_distributionVisibilityReloadsWhenStateBecomesWithdrawn() throws IOException {
+        String graph = "http://example/graph1";
+        Path lifecycleState = Files.createTempFile("distribution-lifecycle", ".json");
+        writeLifecycleStateFile(lifecycleState, """
+                {
+                  "distributions" : {
+                    "%s" : "Active"
+                  }
+                }
+                """.formatted(graph));
+
+        TestAction action =
+                (Sink<Event<Bytes, RdfPayload>> proc, FusekiServer server, DatasetGraph dsgBase, DatasetGraph dsg) -> {
+                    dsg.begin(TxnType.WRITE);
+                    sendEventWithDistributionId(dsg, proc, """
+                            PREFIX : <http://example/>
+                            :s :p "value1" .
+                            """, WebContent.contentTypeTurtle, attrPermit, graph);
+                    dsg.commit();
+
+                    verifyNamedGraphsHaveData(dsgBase, graph);
+
+                    String URL = server.datasetURL(dsName);
+                    verifyCounts(URL, queryAll, 1L, 0L);
+                    verifyCounts(URL, queryUnion, 1L, 0L);
+
+                    try {
+                        writeLifecycleStateFile(lifecycleState, """
+                                {
+                                  "distributions" : {
+                                    "%s" : "Withdrawn"
+                                  }
+                                }
+                                """.formatted(graph));
+                    } catch (IOException e) {
+                        fail("Failed to update lifecycle state file", e);
+                    }
+
+                    // The underlying named graph remains populated, but the lifecycle filter should now hide it.
+                    verifyNamedGraphsHaveData(dsgBase, graph);
+                    verifyCounts(URL, queryAll, 0L, 0L);
+                    verifyCounts(URL, queryUnion, 0L, 0L);
+                };
+
+        withDistributionLifecycleConfig(lifecycleState, null, () -> runTestProcessorSCGWithAuthNamedGraph(action));
+    }
+
+    @Test
     final void processorSCG_namedGraph_distributionVisibilityReloadsSameSizeSameTimestampStateChange()
             throws IOException {
         String graph = "http://example/graph1";
