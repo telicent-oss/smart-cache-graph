@@ -129,13 +129,21 @@ public abstract class KafkaIntegrationTestBase {
     }
 
     /**
+     * Publishes a record keyed by something that is NOT its Distribution ID, as pipelines predating message keys
+     * produced.  Its Distribution-Id header remains the trustworthy source.
+     */
+    protected void publishDocumentKeyedRecord(String distributionId, String documentKey, String deletionJobId,
+                                              String payload) throws ExecutionException, InterruptedException {
+        publishRecord(distributionId, deletionJobId, payload,
+                      documentKey == null ? null : Bytes.wrap(documentKey.getBytes(StandardCharsets.UTF_8)));
+    }
+
+    /**
      * Publishes a record with an explicit message key.
      * <p>
-     * NB - A key that is neither {@code null} nor the Distribution ID (a document ID, say, as older pipelines
-     * produced) is deliberately NOT exercised by the suites: the consumer resolves the Distribution ID key-first, so
-     * such a record is currently skipped even though its Distribution-Id header is correct.  Whether that is the
-     * intended contract is a CORE-1502 decision; once it is settled this overload is the hook for a test that pins
-     * it down.
+     * Use this for a key that is neither {@code null} nor the Distribution ID - a document ID, say, as older
+     * pipelines produced.  Such a record is still matched on its Distribution-Id header, because resolution
+     * reconciles the two and prefers the header where they disagree.
      * </p>
      */
     protected void publishRecord(String distributionId, String deletionJobId, String payload, Bytes key)

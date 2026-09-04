@@ -134,6 +134,24 @@ class DeletionJobConsumerIntegrationTest extends KafkaIntegrationTestBase{
     }
 
     /**
+     * A record keyed by a document ID rather than its Distribution ID - the shape older pipelines produced - is
+     * still picked up on the strength of its Distribution-Id header.
+     */
+    @Test
+    void readsRecordsKeyedBySomethingOtherThanTheDistribution() throws Exception {
+        publishDocumentKeyedRecord(DISTRIBUTION_ID, "document-1", null, "triple one");
+        publishDocumentKeyedRecord(DISTRIBUTION_ID, "document-2", null, "triple two");
+        publishDocumentKeyedRecord(OTHER_DISTRIBUTION_ID, "document-3", null, "other distribution");
+
+        List<ConsumerRecord<Bytes, Bytes>> handled = new ArrayList<>();
+        try (DeletionJobConsumer consumer = new DeletionJobConsumer(
+                kafka.getBootstrapServers(), null, topic, DISTRIBUTION_ID, jobId)) {
+            consumer.process(handled::add);
+        }
+        assertEquals(2, handled.size());
+    }
+
+    /**
      * A topic mid-rollout holds both shapes at once - records keyed by their Distribution ID and older records
      * carrying it in the header only.  Both must be picked up by the same job.
      */

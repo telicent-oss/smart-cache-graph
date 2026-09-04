@@ -69,8 +69,9 @@ class DeletionJobConsumerTest {
         assertEquals(1, handled.size());    }
 
     @Test
-    void handlerUsesDistributionKeyInPreferenceToHeader() {
-        addRecord(0L, DISTRIBUTION_ID, OTHER_DISTRIBUTION_ID, null, "key wins");
+    void handlerIsCalledWhenDistributionKeyAndHeaderAgree() {
+        // The steady state once message keys are adopted - producers write the key and the header together
+        addRecord(0L, DISTRIBUTION_ID, DISTRIBUTION_ID, null, "keyed and headed");
         addEndOfTopic(1L);
 
         List<ConsumerRecord<Bytes, Bytes>> handled = new ArrayList<>();
@@ -80,6 +81,37 @@ class DeletionJobConsumerTest {
         }
 
         assertEquals(1, handled.size());
+    }
+
+    @Test
+    void handlerIsCalledWhenKeyIsNotADistributionIdAndTheHeaderMatches() {
+        // A key carrying something that is not a Distribution ID, e.g. a document ID, as older pipelines produced.
+        // The record must still be picked up on the strength of its header, otherwise deletions silently skip it.
+        addRecord(0L, "document-1", DISTRIBUTION_ID, null, "document keyed");
+        addEndOfTopic(1L);
+
+        List<ConsumerRecord<Bytes, Bytes>> handled = new ArrayList<>();
+        try (DeletionJobConsumer consumer = new DeletionJobConsumer(
+                mockConsumer, TOPIC, DISTRIBUTION_ID, JOB_ID)) {
+            consumer.process(handled::add);
+        }
+
+        assertEquals(1, handled.size());
+    }
+
+    @Test
+    void handlerIsNotCalledWhenTheHeaderNamesADifferentDistribution() {
+        // ...and the converse - a key that happens to match must not drag in a record belonging elsewhere
+        addRecord(0L, DISTRIBUTION_ID, OTHER_DISTRIBUTION_ID, null, "header wins");
+        addEndOfTopic(1L);
+
+        List<ConsumerRecord<Bytes, Bytes>> handled = new ArrayList<>();
+        try (DeletionJobConsumer consumer = new DeletionJobConsumer(
+                mockConsumer, TOPIC, DISTRIBUTION_ID, JOB_ID)) {
+            consumer.process(handled::add);
+        }
+
+        assertEquals(0, handled.size());
     }
 
     @Test

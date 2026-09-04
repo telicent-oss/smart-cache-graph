@@ -136,9 +136,11 @@ public class DeletionJobConsumer implements AutoCloseable {
                     return;
                 }
 
-                // Skip all other distribution-ids.  Per the Core Data Management design the message key is
-                // authoritative and the Distribution-Id header is only the fallback, so records produced before
-                // message keys were adopted still match on their header.
+                // Skip all other distribution-ids.  Resolution reconciles the message key with the
+                // Distribution-Id header: the key is used where the two agree or where there is no header, and the
+                // header wins where they disagree, since a key that is not a Distribution ID key (a document ID,
+                // say) is indistinguishable from one that is.  So records keyed by anything other than their
+                // Distribution ID - as pipelines predating message keys produced - still match on their header.
                 String recordDistributionId = KafkaDistributionKeys.resolve(record);
                 if (!distributionId.equals(recordDistributionId)) {
                     continue;

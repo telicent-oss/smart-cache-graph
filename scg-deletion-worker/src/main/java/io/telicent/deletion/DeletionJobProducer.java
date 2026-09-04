@@ -180,9 +180,10 @@ public class DeletionJobProducer implements AutoCloseable {
 
         // NB - The delete patch belongs to a NEW distribution, not the one it was derived from, so its message key
         //      MUST be derived from that new Distribution ID rather than copied from the inbound record.  Copying the
-        //      inbound key would leave the key and the Distribution-Id header set below disagreeing, and since the
-        //      key is authoritative per the Core Data Management design the patch would be attributed to the wrong
-        //      distribution.
+        //      inbound key would leave the key and the Distribution-Id header set below disagreeing, which consumers
+        //      resolve by falling back to the header - so the key would be dead weight at best, and a consumer
+        //      reading the key alone would attribute the patch to the wrong distribution.  Writing both from the
+        //      same value keeps them consistent.
         String newDistributionId = distributionId + DELETION_JOB_SUFFIX;
         Bytes outputKey = KafkaDistributionKeys.toBytesKey(newDistributionId, distributionKeyStrategy());
 
