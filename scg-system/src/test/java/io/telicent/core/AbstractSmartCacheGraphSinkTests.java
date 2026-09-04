@@ -55,6 +55,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -83,6 +84,8 @@ public abstract class AbstractSmartCacheGraphSinkTests {
     private static final String queryAll = "SELECT * { { ?s ?p ?o } UNION { GRAPH ?g { ?s ?p ?o } } }";
     private static final String queryDefault = "SELECT * { ?s ?p ?o }";
     private static final String queryUnion = "SELECT * { GRAPH <urn:x-arq:UnionGraph> { ?s ?p ?o } }";
+    // How long to wait for a distribution lifecycle state change to become visible through the query endpoint
+    private static final long LIFECYCLE_POLL_TIMEOUT_MS = 10_000L;
     // Fuseki service name. ABAC Dataset.
     private static final String dsName = "/ds";
     // Fuseki service name. Access to the non-ABAC storage database for test inspection.
@@ -562,6 +565,21 @@ public abstract class AbstractSmartCacheGraphSinkTests {
         Files.writeString(lifecycleState, content, StandardCharsets.UTF_8);
     }
 
+    /**
+     * As {@link #writeLifecycleStateFile(Path, String)} but usable from within a {@link TestAction}, i.e. for
+     * changing the lifecycle state of a running server.
+     *
+     * @param lifecycleState Lifecycle state file
+     * @param content        New state file content
+     */
+    private static void updateLifecycleStateFile(Path lifecycleState, String content) {
+        try {
+            writeLifecycleStateFile(lifecycleState, content);
+        } catch (IOException e) {
+            throw new UncheckedIOException("Failed to update the lifecycle state file", e);
+        }
+    }
+
     private static void restoreProperty(String key, String value) {
         if (value != null) {
             System.setProperty(key, value);
@@ -748,6 +766,43 @@ public abstract class AbstractSmartCacheGraphSinkTests {
         assertEquals(expectedWithPermitAttribute, c1, "Count (user:permit)");
         long c2 = count(URL, query, userOther);
         assertEquals(expectedWithOtherAttribute, c2, "Count (user:other)");
+    }
+
+    /**
+     * A SPARQL query that names a graph explicitly, i.e. the shape a client uses when it already knows the
+     * distribution URI.
+     *
+     * @param graph Named graph URI
+     * @return Query string
+     */
+    private static String namedGraphQuery(String graph) {
+        return "SELECT * { GRAPH <" + graph + "> { ?s ?p ?o } }";
+    }
+
+    /**
+     * Polls the public query endpoint until it returns the expected number of results, failing if it hasn't done so
+     * within {@value #LIFECYCLE_POLL_TIMEOUT_MS}ms.  Lifecycle state changes are picked up from the state file, so a
+     * change made against a running server may not be visible to the very next query.
+     *
+     * @param URL      Dataset URL
+     * @param query    Query to run
+     * @param user     User to run the query as
+     * @param expected Expected result count
+     */
+    private void awaitCount(String URL, String query, String user, long expected) {
+        long deadline = System.currentTimeMillis() + LIFECYCLE_POLL_TIMEOUT_MS;
+        long actual = count(URL, query, user);
+        while (actual != expected && System.currentTimeMillis() < deadline) {
+            try {
+                Thread.sleep(50);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
+            }
+            actual = count(URL, query, user);
+        }
+        assertEquals(expected, actual,
+                     "Timed out waiting for the query endpoint to report " + expected + " result(s) for user " + user);
     }
 
     @Test
@@ -1046,9 +1101,86 @@ public abstract class AbstractSmartCacheGraphSinkTests {
                     String URL = server.datasetURL(dsName);
                     verifyCounts(URL, queryAll, 0L, 0L);
                     verifyCounts(URL, queryUnion, 0L, 0L);
+                    // ...including a query that names the graph explicitly, which must not bypass the filter
+                    verifyCounts(URL, namedGraphQuery(graph), 0L, 0L);
                 };
 
         withDistributionLifecycleConfig(lifecycleState, null, () -> runTestProcessorSCGWithAuthNamedGraph(action));
+    }
+
+    /**
+     * Regression test for the live {@code Active -> Withdrawn -> Active} sequence observed on a real deployment.
+     * <p>
+     * The other lifecycle tests start the server with a state file that already records the final state, so they
+     * never exercised a state change against a running server, and they only ever queried via {@code GRAPH ?g} /
+     * the union graph.  A query that names the distribution's graph explicitly took a different code path which
+     * bypassed the lifecycle filter entirely, so a withdrawn distribution stayed queryable.
+     * </p>
+     */
+    @Test
+    final void processorSCG_namedGraph_lifecycleStateChangesAreAppliedToARunningServer() throws IOException {
+        String graph = "http://example/live";
+        String activeState = """
+                {
+                  "application" : "scg-test",
+                  "distributions" : {
+                    "%s" : "Active"
+                  }
+                }
+                """.formatted(graph);
+        String withdrawnState = """
+                {
+                  "application" : "scg-test",
+                  "distributions" : {
+                    "%s" : "Withdrawn"
+                  }
+                }
+                """.formatted(graph);
+
+        Path lifecycleState = Files.createTempFile("distribution-lifecycle", ".json");
+        writeLifecycleStateFile(lifecycleState, activeState);
+
+        TestAction action =
+                (Sink<Event<Bytes, RdfPayload>> proc, FusekiServer server, DatasetGraph dsgBase, DatasetGraph dsg) -> {
+                    String URL = server.datasetURL(dsName);
+                    String namedGraph = namedGraphQuery(graph);
+
+                    // Active - ingest and check the data is visible
+                    dsg.begin(TxnType.WRITE);
+                    sendEventWithDistributionId(dsg, proc, """
+                            PREFIX : <http://example/>
+                            :s :p "live" .
+                            """, WebContent.contentTypeTurtle, attrPermit, graph);
+                    dsg.commit();
+
+                    verifyNamedGraphsHaveData(dsgBase, graph);
+                    verifyCounts(URL, namedGraph, 1L, 0L);
+                    verifyCounts(URL, queryAll, 1L, 0L);
+                    verifyCounts(URL, queryUnion, 1L, 0L);
+
+                    // Withdraw the distribution on the running server, exactly as the lifecycle tracker does when it
+                    // processes an Active -> Withdrawn event
+                    updateLifecycleStateFile(lifecycleState, withdrawnState);
+
+                    // Withdrawn - the data must no longer be queryable, however it is asked for
+                    awaitCount(URL, namedGraph, userPermit, 0L);
+                    verifyCounts(URL, namedGraph, 0L, 0L);
+                    verifyCounts(URL, queryAll, 0L, 0L);
+                    verifyCounts(URL, queryUnion, 0L, 0L);
+
+                    // ...but it must still be physically present, because it may be reactivated later
+                    verifyNamedGraphsHaveData(dsgBase, graph);
+
+                    // Withdrawn -> Active - the existing data becomes queryable again, with no re-ingest
+                    updateLifecycleStateFile(lifecycleState, activeState);
+
+                    awaitCount(URL, namedGraph, userPermit, 1L);
+                    verifyCounts(URL, namedGraph, 1L, 0L);
+                    verifyCounts(URL, queryAll, 1L, 0L);
+                    verifyCounts(URL, queryUnion, 1L, 0L);
+                };
+
+        withDistributionLifecycleConfig(lifecycleState, "scg-test", () -> runTestProcessorSCGWithAuthNamedGraph(action));
     }
 
     @Test

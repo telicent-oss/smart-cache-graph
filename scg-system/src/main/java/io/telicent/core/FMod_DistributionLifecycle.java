@@ -90,6 +90,8 @@ public class FMod_DistributionLifecycle implements FusekiModule {
     private static final AtomicInteger TRACKER_STARTER_THREAD_ID = new AtomicInteger();
 
     private final DistributionLifecycleReadiness readiness = DistributionLifecycleReadiness.getInstance();
+    @SuppressWarnings("java:S3077")
+    private volatile List<String> filteredDataAccessPoints = List.of();
     private DistributionLifecycleTracker tracker;
     private DistributionLifecycleStateStore stateStore;
     private ExecutorService trackerStarter;
@@ -101,14 +103,23 @@ public class FMod_DistributionLifecycle implements FusekiModule {
 
     @Override
     public void configured(FusekiServer.Builder serverBuilder, DataAccessPointRegistry dapRegistry, Model configModel) {
-        if (StringUtils.isBlank(Configurator.get(DISTRIBUTION_LIFECYCLE_STATE_FILE))) {
+        this.filteredDataAccessPoints = List.of();
+
+        final String configuredStateFile = Configurator.get(DISTRIBUTION_LIFECYCLE_STATE_FILE);
+        if (StringUtils.isBlank(configuredStateFile)) {
+            LOGGER.info("Distribution lifecycle filtering is DISABLED: {} is not configured",
+                        DISTRIBUTION_LIFECYCLE_STATE_FILE);
             return;
         }
         if (!routeToNamedGraphsEnabled()) {
-            LOGGER.warn("Distribution lifecycle filtering ignored because {} is disabled", ROUTE_TO_NAMED_GRAPHS);
+            LOGGER.warn("Distribution lifecycle filtering is DISABLED: {} is configured but {} is disabled",
+                        DISTRIBUTION_LIFECYCLE_STATE_FILE, ROUTE_TO_NAMED_GRAPHS);
             return;
         }
         if (dapRegistry == null) {
+            LOGGER.warn(
+                    "Distribution lifecycle filtering is ENABLED but there is no Data Access Point Registry, so the "
+                    + "lifecycle filter has NOT been installed on any dataset");
             return;
         }
         // NB - Deliberately the RAW configured value, not applicationId(): the read side only verifies the state
@@ -117,17 +128,83 @@ public class FMod_DistributionLifecycle implements FusekiModule {
         //      and its default keeps the two sides consistent when an id is explicitly configured or left unset.
         final String application = Configurator.get(DISTRIBUTION_LIFECYCLE_APP_ID);
         final String stateFile = stateFilePath();
+        LOGGER.info(
+                "Distribution lifecycle filtering is ENABLED: state file '{}', application id '{}' (state file "
+                + "application is {} on the read side)",
+                stateFile, StringUtils.defaultIfBlank(application, applicationId()),
+                StringUtils.isBlank(application) ? "not verified" : "verified");
+
         final DataSecurityPlugin dataSecurityPlugin = DataSecurityPluginLoader.load();
-        final Optional<DistributionLifecycleFilters> distributionLifecycleFilters = dataSecurityPlugin.prepareDistributionLifecycleFilters();
-        if (distributionLifecycleFilters.isPresent()) {
-            final DistributionLifecycleFilters dlfs = distributionLifecycleFilters.get();
-            for (DataAccessPoint dap : dapRegistry.accessPoints()) {
-                dlfs.installIfConfigured(dap.getDataService().getDataset(), application, stateFile);
-            }
-        } else {
-            LOGGER.info("No distribution lifecycle filters configured.");
+        final Optional<DistributionLifecycleFilters> distributionLifecycleFilters =
+                dataSecurityPlugin.prepareDistributionLifecycleFilters();
+        if (distributionLifecycleFilters.isEmpty()) {
+            // Deliberately an error - the deployment has asked for lifecycle filtering but the loaded Data Security
+            // Plugin cannot provide it, so withdrawn distributions would silently remain queryable.
+            LOGGER.error(
+                    "Distribution lifecycle filtering is ENABLED but the loaded Data Security Plugin ({}) provides no "
+                    + "DistributionLifecycleFilters implementation.  Distributions that are not Active will NOT be "
+                    + "hidden from queries!", dataSecurityPlugin.getClass().getName());
+            return;
         }
 
+        final DistributionLifecycleFilters dlfs = distributionLifecycleFilters.get();
+        // NB - Several data access points can share a single dataset, and installIfConfigured() only returns true for
+        //      the first access point that presents a given dataset.  So the decision is made once per dataset, keyed
+        //      by identity, and the outcome is then attributed to every access point that uses that dataset.  Keying
+        //      on access point names alone would report the second and subsequent access points of a shared, and
+        //      correctly filtered, dataset as unfiltered.
+        final Map<DatasetGraph, Boolean> filteredDatasets = new IdentityHashMap<>();
+        final List<String> filtered = new ArrayList<>();
+        final List<String> unfiltered = new ArrayList<>();
+        for (DataAccessPoint dap : dapRegistry.accessPoints()) {
+            final DatasetGraph dataset = dap.getDataService().getDataset();
+            final boolean isFiltered =
+                    filteredDatasets.computeIfAbsent(dataset, d -> dlfs.installIfConfigured(d, application, stateFile));
+            if (isFiltered) {
+                filtered.add(dap.getName());
+                LOGGER.info("Distribution lifecycle filter installed on dataset {} ({}), endpoints: {}",
+                            dap.getName(), dataset.getClass().getSimpleName(), endpointNames(dap));
+            } else {
+                // Either the dataset isn't one the Data Security Plugin can filter, or a lifecycle filter was already
+                // installed on it by an earlier call.  Logged so an unexpectedly unfiltered dataset shows up at
+                // startup rather than as a silent data leak.
+                unfiltered.add(dap.getName());
+                LOGGER.warn(
+                        "Distribution lifecycle filter NOT installed on dataset {} ({}), endpoints: {} - queries "
+                        + "against this dataset do not enforce distribution lifecycle", dap.getName(),
+                        dataset.getClass().getSimpleName(), endpointNames(dap));
+            }
+        }
+        this.filteredDataAccessPoints = List.copyOf(filtered);
+
+        if (filtered.isEmpty()) {
+            LOGGER.error(
+                    "Distribution lifecycle filtering is ENABLED but the lifecycle filter was not installed on ANY "
+                    + "dataset.  Distributions that are not Active will NOT be hidden from queries!");
+        } else {
+            final long filteredDatasetCount = filteredDatasets.values().stream().filter(Boolean::booleanValue).count();
+            LOGGER.info(
+                    "Distribution lifecycle filter active on {} dataset(s), covering data access point(s) {}; "
+                    + "unfiltered data access point(s): {}", filteredDatasetCount, filtered,
+                    unfiltered.isEmpty() ? "none" : unfiltered);
+        }
+    }
+
+    /**
+     * The names of the Fuseki data access points that the distribution lifecycle filter was successfully installed
+     * on during {@link #configured(FusekiServer.Builder, DataAccessPointRegistry, Model)}.
+     *
+     * @return Data access point names, empty if lifecycle filtering is disabled or nothing could be filtered
+     */
+    Collection<String> filteredDataAccessPoints() {
+        return this.filteredDataAccessPoints;
+    }
+
+    private static String endpointNames(DataAccessPoint dap) {
+        final List<String> names = new ArrayList<>();
+        dap.getDataService().forEachEndpoint(endpoint -> names.add(
+                endpoint.isUnnamed() ? dap.getName() : dap.getName() + "/" + endpoint.getName()));
+        return String.join(", ", names);
     }
 
     @Override

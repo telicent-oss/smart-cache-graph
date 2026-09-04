@@ -1,5 +1,12 @@
 # Smart Cache Graph
 
+## 1.1.8
+
+- Fixed distributions that are not `Active` remaining queryable through a query that names their graph explicitly,
+  e.g. `ASK { GRAPH <distribution-uri> { ?s ?p ?o } }`.  
+- Build improvements:
+    - Upgrades Smart Caches Core to 1.3.2, which carries the distribution lifecycle query filter fix
+
 ## 1.1.7
 
 - The Distribution Lifecycle tracker now flushes its persisted state on a timer (every 20 seconds) where the state
