@@ -101,6 +101,8 @@ graph:
     publicKeyUrl: "file:///fuseki/backups/keys/public.asc"
     # @key graph.backupEncryption.existingSecret Name of an existing secret containing the backup encryption passphrase. The secret must contain 1 key: 'passphrase'. Public and private keys are generated from this passphrase on first run.
     existingSecret: ""
+  # @key graph.simpleKnowledgeEnabled Enable or disable the simple knowledge service. When set to true, an additional Fuseki service is exposed at `/simple-knowledge`, backed by its own ABAC secured TDB2 dataset, providing SPARQL query, GraphQL and Graph Store Protocol (read) endpoints.
+  simpleKnowledgeEnabled: false
 
 #
 # @section ConfigMap Parameters

@@ -160,6 +160,11 @@
                             "default": ""
                         }
                     }
+                },
+                "simpleKnowledgeEnabled": {
+                    "type": "boolean",
+                    "description": "Enable or disable the simple knowledge service. When set to true, an additional Fuseki service is exposed at `/simple-knowledge`, backed by its own ABAC secured TDB2 dataset, providing SPARQL query, GraphQL and Graph Store Protocol (read) endpoints.",
+                    "default": false
                 }
             }
         },
