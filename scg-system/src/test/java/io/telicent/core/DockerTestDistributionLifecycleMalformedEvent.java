@@ -141,7 +141,7 @@ class DockerTestDistributionLifecycleMalformedEvent {
                 assertEquals(malformed, deadLetter.key());
                 assertTrue(deadLetter.lastHeader(TelicentHeaders.DEAD_LETTER_REASON)
                                      .contains("LifecycleEventRejectedException"));
-                assertEquals("io.telicent.smart.cache.distribution.lifecycle.tracker.LifecycleEventRejectedException",
+                assertEquals("io.telicent.smart.cache.distribution.lifecycle.LifecycleEventRejectedException",
                              deadLetter.lastHeader(TelicentHeaders.DEAD_LETTER_EXCEPTION_CLASS));
                 assertNotNull(deadLetter.lastHeader(TelicentHeaders.DEAD_LETTER_SOURCE_TOPIC));
                 assertNotNull(deadLetter.lastHeader(TelicentHeaders.DEAD_LETTER_SOURCE_PARTITION));
