@@ -2165,6 +2165,97 @@ public class TestDatasetBackupService {
         assertEquals(1, DatasetBackupService_Test.getCallCount(RESTORE_LABELS));
     }
 
+    /**
+     * Create the on-disk layout (TDB backup file and labels directory) that a backup of the given
+     * dataset produces, within the given backup directory.
+     */
+    private void createDatasetBackupFiles(File backupDir, String datasetName) throws IOException {
+        File datasetDir = new File(backupDir, datasetName);
+        assertTrue(datasetDir.mkdir());
+        datasetDir.deleteOnExit();
+
+        File tdbDir = new File(datasetDir, "tdb");
+        assertTrue(tdbDir.mkdir());
+        tdbDir.deleteOnExit();
+
+        File tdbFile = new File(tdbDir, datasetName + "_backup.nq.gz");
+        assertTrue(tdbFile.createNewFile());
+        tdbFile.deleteOnExit();
+
+        File labelsDir = new File(datasetDir, "labels");
+        assertTrue(labelsDir.mkdir());
+        labelsDir.deleteOnExit();
+    }
+
+    /**
+     * An ABAC dataset access point backed by its own DatasetGraph, so that each one is treated as a
+     * distinct dataset by the maintenance registry.
+     */
+    private DataAccessPoint abacDataAccessPoint(String datasetName) {
+        LegacyLabelsStoreRocksDB mockRocksDbLabelStore = mock(LegacyLabelsStoreRocksDB.class);
+        when(mockRocksDbLabelStore.getTransactional()).thenReturn(DatasetGraphFactory.createTxnMem());
+        DatasetGraphABAC dsgABAC = ABAC.authzDataset(DatasetGraphFactory.createTxnMem(),
+                null,
+                mockRocksDbLabelStore,
+                null,
+                null);
+        return new DataAccessPoint(datasetName, DataService.newBuilder().dataset(dsgABAC).build());
+    }
+
+    @Test
+    @DisplayName("Restoring a single dataset only takes a rollback point backup of that dataset")
+    public void test_restoreDatasets_partialDataSet_rollbackBackupIsScopedToRequestedDataset() throws Exception {
+        // given - a backup holding two datasets, both registered
+        String restoreID = "1";
+        File backupDir = new File(baseDir.toString() + "/" + restoreID);
+        assertTrue(backupDir.mkdir());
+        backupDir.deleteOnExit();
+
+        String datasetName = "dataset-name";
+        String otherDatasetName = "other-dataset-name";
+        createDatasetBackupFiles(backupDir, datasetName);
+        createDatasetBackupFiles(backupDir, otherDatasetName);
+
+        DataAccessPoint dap = abacDataAccessPoint(datasetName);
+        DataAccessPoint otherDap = abacDataAccessPoint(otherDatasetName);
+        when(mockRegistry.get(datasetName)).thenReturn(dap);
+        when(mockRegistry.get(otherDatasetName)).thenReturn(otherDap);
+        when(mockRegistry.accessPoints()).thenReturn(List.of(dap, otherDap));
+
+        // when - only one of the two datasets is restored
+        ObjectNode result = OBJECT_MAPPER.createObjectNode();
+        cut.restoreDatasets(restoreID + "/" + datasetName, result);
+
+        // then - the restore itself touched only the requested dataset
+        assertTrue(result.has("success"));
+        assertTrue(result.get("success").asBoolean());
+        assertTrue(result.has(datasetName));
+        assertFalse(result.has(otherDatasetName));
+        assertEquals(1, DatasetBackupService_Test.getCallCount(RESTORE_TDB));
+        assertEquals(1, DatasetBackupService_Test.getCallCount(RESTORE_LABELS));
+
+        // and - the rollback point backup taken beforehand covered only the requested dataset
+        assertEquals(1, DatasetBackupService_Test.getCallCount(BACKUP_TDB));
+        assertEquals(1, DatasetBackupService_Test.getCallCount(BACKUP_LABELS));
+
+        assertTrue(result.has("backup-success"));
+        JsonNode backupSuccess = result.get("backup-success");
+        assertEquals(1, backupSuccess.size());
+        assertTrue(backupSuccess.has(datasetName));
+        assertFalse(backupSuccess.has(otherDatasetName));
+
+        // and - the rollback point backup recorded on disk lists only the requested dataset
+        assertTrue(result.has("rollback-point-backup-id"));
+        String rollbackBackupID = result.get("rollback-point-backup-id").asText();
+        assertNotEquals(restoreID, rollbackBackupID);
+        Path rollbackInfo = baseDir.resolve(rollbackBackupID + "_info.json");
+        assertTrue(Files.exists(rollbackInfo), "expected rollback point backup metadata at " + rollbackInfo);
+        JsonNode rollbackDatasets = OBJECT_MAPPER.readTree(rollbackInfo.toFile()).get("datasets");
+        assertNotNull(rollbackDatasets);
+        assertEquals(1, rollbackDatasets.size());
+        assertEquals(datasetName, rollbackDatasets.get(0).get("dataset-name").asText());
+    }
+
     @Test
     @DisplayName("Restore partial dataset with ABAC and RocksDB labels (happy path - differing case)")
     public void test_restoreDatasets_abac_rocksDB_partialDataSet_differingCase() throws Exception {
