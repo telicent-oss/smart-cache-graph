@@ -18,6 +18,7 @@ import org.apache.jena.fuseki.server.DataAccessPoint;
 import org.apache.jena.fuseki.server.DataAccessPointRegistry;
 import org.apache.jena.rdf.model.Model;
 
+import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -75,6 +76,19 @@ public class FMod_JwtServletAuth implements FusekiModule {
             String userInfoEndpoint = Configurator.get(AuthConstants.ENV_USERINFO_URL);
             if (StringUtils.isNotBlank(userInfoEndpoint)) {
                 UserInfoLookup userInfoLookup = new RemoteUserInfoLookup(userInfoEndpoint);
+
+                // Add user info caching, default is enabled
+                int cacheSize = Configurator.get("USERINFO_CACHE_SIZE", Integer::parseInt, 10_000);
+                Duration cacheDuration =
+                        Configurator.get("USERINFO_CACHE_DURATION", Duration::parse, Duration.ofSeconds(60));
+                if (cacheSize > 0) {
+                    userInfoLookup = CachingUserInfoLookup.builder()
+                                                          .delegate(userInfoLookup)
+                                                          .cacheSize(cacheSize)
+                                                          .cacheDuration(cacheDuration)
+                                                          .build();
+                }
+
                 serverBuilder.addFilter("/*", new UserInfoFilter(userInfoLookup));
             }
             // Register an Authorization filter

@@ -52,7 +52,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -314,7 +313,6 @@ public class FMod_DistributionLifecycle implements FusekiModule {
                 try {
                     createTracker(server, bootstrapServers, kafkaProperties, application, topic, dlqTopic,
                             consumerGroup, stateFile);
-                    this.stateStore.flush();
                     this.readiness.markReady();
                     LOGGER.info(
                             "Distribution lifecycle tracker enabled: consuming topic '{}' from {} (consumer group '{}', application '{}')",
@@ -384,7 +382,6 @@ public class FMod_DistributionLifecycle implements FusekiModule {
                 .listenerThreads(listenerThreads())
                 .listeners(List.of(listener))
                 .stateStore(this.stateStore)
-                .flushFrequency(this.stateStore.requiresFlush() ? Duration.ofSeconds(20) : Duration.ZERO)
                 .trackerStartupTimeout(resolveTrackerStartupTimeout())
                 .build();
     }

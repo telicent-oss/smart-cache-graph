@@ -1,10 +1,12 @@
 package io.telicent.core;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.telicent.LibTestsSCG;
 import io.telicent.smart.cache.sources.TelicentHeaders;
 import io.telicent.smart.cache.sources.kafka.BasicKafkaTestCluster;
 import io.telicent.smart.cache.sources.kafka.KafkaTestCluster;
 import io.telicent.smart.cache.sources.kafka.config.KafkaConfiguration;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.jena.atlas.lib.FileOps;
 import org.apache.jena.fuseki.main.FusekiServer;
 import org.apache.jena.fuseki.system.FusekiLogging;
@@ -13,13 +15,19 @@ import org.apache.jena.sparql.exec.RowSetOps;
 import org.apache.jena.sparql.exec.RowSetRewindable;
 import org.apache.jena.sparql.exec.http.QueryExecHTTPBuilder;
 import org.apache.jena.sparql.exec.http.UpdateExecHTTPBuilder;
+import org.apache.jena.web.HttpSC;
 import org.awaitility.Awaitility;
-import org.junit.Assert;
 import org.junit.jupiter.api.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.telicent.TestSmartCacheGraphIntegration.launchServer;
@@ -27,6 +35,8 @@ import static io.telicent.TestSmartCacheGraphIntegration.launchServer;
 public class DockerTestCQRS {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DockerTestCQRS.class);
+
+    private HttpClient httpClient;
 
     protected static final String DIR = "target/databases";
     private static final String QUERY = "SELECT * {?s ?p ?o}";
@@ -111,6 +121,8 @@ public class DockerTestCQRS {
         }
         System.setProperty(KafkaConfiguration.CONSUMER_GROUP, "cqrs-consumer-" + CONSUMER_ID.incrementAndGet());
         System.setProperty(KafkaConfiguration.BOOTSTRAP_SERVERS, KAFKA.getBootstrapServers());
+
+        this.httpClient = HttpClient.newHttpClient();
     }
 
     @AfterEach
@@ -122,6 +134,7 @@ public class DockerTestCQRS {
         }
         System.clearProperty(KafkaConfiguration.BOOTSTRAP_SERVERS);
         System.clearProperty(KafkaConfiguration.CONSUMER_GROUP);
+        this.httpClient.close();
     }
 
     private String url(String x) {
@@ -245,7 +258,7 @@ public class DockerTestCQRS {
 
         // Then
         RowSetRewindable results = verifyDataVisible(url(QUERY_ENDPOINT), FIND_NAME_QUERY, u1, 1);
-        Assert.assertEquals("John Smith", results.next().get("name").getLiteralLexicalForm());
+        Assertions.assertEquals("John Smith", results.next().get("name").getLiteralLexicalForm());
     }
 
     @Test
@@ -261,7 +274,7 @@ public class DockerTestCQRS {
 
         // Then
         RowSetRewindable results = verifyDataVisible(url(QUERY_ENDPOINT), QUERY, token, 1);
-        Assert.assertEquals("Johnathon Frederick Smith", results.next().get("o").getLiteralLexicalForm());
+        Assertions.assertEquals("Johnathon Frederick Smith", results.next().get("o").getLiteralLexicalForm());
 
         // And
         verifyNothingVisible(USER_2, Duration.ZERO);
@@ -341,5 +354,33 @@ public class DockerTestCQRS {
         verifyNothingVisible(USER_1);
         verifyNothingVisible(USER_2, Duration.ZERO);
         verifyNothingVisible(ADMIN, Duration.ZERO);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    public void givenServer_whenCheckingReadiness_thenKafkaPollThreadsReported() throws IOException,
+            InterruptedException {
+        // Given
+        server = launchServer(SCG_CQRS_CONFIG);
+
+        // When
+        final HttpRequest request = HttpRequest.newBuilder()
+                                               .uri(URI.create(server.serverURL() + "$/ready"))
+                                               .header("Content-type", "application/json")
+                                               .GET()
+                                               .build();
+        final HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+        // Then
+        Assertions.assertEquals(HttpSC.OK_200, response.statusCode());
+        Assertions.assertFalse(StringUtils.isBlank(response.body()), "Readiness probe response should not be blank");
+        Map<String, Object> healthStatus = new ObjectMapper().readValue(response.body(), Map.class);
+        Assertions.assertTrue(healthStatus.containsKey("config"));
+        Map<String, Object> config = (Map<String, Object>) healthStatus.get("config");
+        Assertions.assertTrue((Boolean) healthStatus.get("healthy"));
+        Assertions.assertNotNull(config);
+        Assertions.assertTrue(config.containsKey("launchedKafkaPollThreads"));
+        Assertions.assertTrue(config.containsKey("failedKafkaPollThreads"));
+        Assertions.assertTrue(config.containsKey("runningKafkaPollThreads"));
     }
 }
