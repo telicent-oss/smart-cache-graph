@@ -176,8 +176,8 @@ public class EncryptionUtils {
 
         final Object obj = pgpObjectFactory.nextObject();
         //The first object might be a marker packet
-        final PGPEncryptedDataList pgpEncryptedDataList = (obj instanceof PGPEncryptedDataList)
-                ? (PGPEncryptedDataList) obj : (PGPEncryptedDataList) pgpObjectFactory.nextObject();
+        final PGPEncryptedDataList pgpEncryptedDataList = (obj instanceof PGPEncryptedDataList encryptedDataList)
+                ? encryptedDataList : (PGPEncryptedDataList) pgpObjectFactory.nextObject();
 
         PGPPrivateKey pgpPrivateKey = null;
         PGPPublicKeyEncryptedData publicKeyEncryptedData = null;

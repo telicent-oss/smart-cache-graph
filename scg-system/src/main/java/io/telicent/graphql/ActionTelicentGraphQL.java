@@ -77,8 +77,8 @@ public class ActionTelicentGraphQL extends ActionGraphQL { //implements ABAC_Pro
      */
     private String findAuthToken(HttpAction httpAction) {
         Object rawJwt = httpAction.getRequest().getAttribute(JwtServletConstants.REQUEST_ATTRIBUTE_RAW_JWT);
-        if (rawJwt instanceof String) {
-            return (String) rawJwt;
+        if (rawJwt instanceof String rawJwtString) {
+            return rawJwtString;
         }
         return null;
     }
