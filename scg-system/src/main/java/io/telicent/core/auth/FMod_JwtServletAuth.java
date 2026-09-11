@@ -72,7 +72,7 @@ public class FMod_JwtServletAuth implements FusekiModule {
         serverBuilder.addFilter("/*", new FusekiJwtAuthFilter());
 
         // Register the necessary filters for roles and permissions based authorization
-        if (Configurator.get(AuthConstants.FEATURE_FLAG_AUTHORIZATION, Boolean::parseBoolean, true)) {
+        if (Boolean.TRUE.equals(Configurator.get(AuthConstants.FEATURE_FLAG_AUTHORIZATION, Boolean::parseBoolean, true))) {
             // Create and register for User Info lookups
             String userInfoEndpoint = Configurator.get(AuthConstants.ENV_USERINFO_URL);
             if (StringUtils.isNotBlank(userInfoEndpoint)) {
