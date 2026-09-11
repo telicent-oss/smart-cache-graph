@@ -34,7 +34,6 @@ import java.net.http.HttpResponse;
 import static org.apache.jena.graph.Graph.emptyGraph;
 import static org.apache.jena.http.HttpLib.execute;
 import static org.apache.jena.http.HttpLib.toRequestURI;
-import static org.apache.jena.riot.web.HttpNames.METHOD_OPTIONS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
@@ -101,7 +100,7 @@ class TestCORSHeadersSCG {
         HttpRequest.Builder builder =
                 HttpLib.requestBuilderFor(server.serverURL())
                        .uri(toRequestURI(server.serverURL()))
-                       .method(METHOD_OPTIONS, HttpRequest.BodyPublishers.noBody())
+                       .method("OPTIONS", HttpRequest.BodyPublishers.noBody())
                         .headers("Access-Control-Request-Method", "POST",
                         "Access-Control-Request-Headers",accessControlRequestHeaders,
                         "Origin", "http://localhost:5173")
