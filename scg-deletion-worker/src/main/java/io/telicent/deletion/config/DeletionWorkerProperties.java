@@ -19,6 +19,13 @@ package io.telicent.deletion.config;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties(prefix = "deletion-worker")
-public record DeletionWorkerProperties(Kafka kafka, String topic) {
+public record DeletionWorkerProperties(Kafka kafka, String topic, Auth auth) {
+
     public record Kafka(String bootstrapServers, String configFilePath) {}
+
+    /**
+     * @param userinfoUrl The {@code /userinfo} endpoint of the Auth Server, used to validate the presented JWT and
+     *                    obtain the authoritative roles for the user
+     */
+    public record Auth(String userinfoUrl) {}
 }
