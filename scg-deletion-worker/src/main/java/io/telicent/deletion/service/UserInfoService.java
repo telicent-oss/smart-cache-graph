@@ -21,6 +21,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.telicent.deletion.config.DeletionWorkerProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -47,6 +48,7 @@ public class UserInfoService {
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
 
+    @Autowired
     public UserInfoService(DeletionWorkerProperties properties) {
         this(userInfoUrl(properties), HttpClient.newBuilder().connectTimeout(CONNECT_TIMEOUT).build(),
              new ObjectMapper());
