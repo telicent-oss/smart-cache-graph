@@ -143,12 +143,10 @@ public class MockKeyServer {
     }
 
     private static final class UserInfoServlet extends HttpServlet {
-        private final JwkSet jwks;
         private final SignedJwtVerifier verifier;
         private final ObjectMapper json = new ObjectMapper();
 
         public UserInfoServlet(JwkSet jwks) {
-            this.jwks = jwks;
             this.verifier = new SignedJwtVerifier(new LocatorAdapter<Key>() {
                 @Override
                 protected Key locate(JwsHeader header) {
