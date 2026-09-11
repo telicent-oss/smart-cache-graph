@@ -118,7 +118,7 @@
     <!-- Mirror any change here in SonarQube > Project Settings > General       -->
     <!-- Settings > Analysis Scope, or SonarQube for IDE will not honour them.  -->
     <!-- ===================================================================== -->
-    <sonar.issue.ignore.multicriteria>s1948servlets,s1948compaction,s2654,s1186,s2699,s2187,s3577,s115,s117,s101,s116,s6213,s3077filter,s5786,s1075,s5778,s5961,s3457tests,s2925,s107,s1845,s3516,s3776,s2093,s5443,s1452,s2629,s3878,s125tests,s5976tests,s1130tests,s1181compaction,s1181cqrsmod,s1181asyncbackup,s1181userinfo,s1141compaction,s1141distlifecycle,s1141main,s3077lifecycle,s2177cqrs,s8786user,s8786backup,s5850backup,s135backup,s5738jwtauth,s1181cqrsupdate,s1068cqrsupdate</sonar.issue.ignore.multicriteria>
+    <sonar.issue.ignore.multicriteria>s1948servlets,s1948compaction,s2654,s1186,s2699,s2187,s3577,s115,s117,s101,s116,s6213,s3077filter,s5786,s1075,s5778,s5961,s3457tests,s2925,s107,s1845,s3516,s3776,s2093,s5443,s1452,s2629,s3878,s125tests,s5976tests,s1130tests,s1181compaction,s1181cqrsmod,s1181asyncbackup,s1181userinfo,s1141compaction,s1141distlifecycle,s1141main,s3077lifecycle,s2177cqrs,s8786user,s8786backup,s5850backup,s135backup,s5738jwtauth,s1181cqrsupdate,s1068cqrsupdate,s1134userinfo</sonar.issue.ignore.multicriteria>
 
     <!-- S1948: non transient field in a Serializable class.                    -->
     <!-- HttpServlet implements Serializable only as a legacy artefact. SCG     -->
@@ -497,6 +497,17 @@
     <!-- this copy is next reconciled with upstream.                            -->
     <sonar.issue.ignore.multicriteria.s1068cqrsupdate.ruleKey>java:S1068</sonar.issue.ignore.multicriteria.s1068cqrsupdate.ruleKey>
     <sonar.issue.ignore.multicriteria.s1068cqrsupdate.resourceKey>**/SPARQL_Update_CQRS.java</sonar.issue.ignore.multicriteria.s1068cqrsupdate.resourceKey>
+
+    <!-- S1134: FIXME comment. UserInfoFilter records that ATTR_ABAC_USERNAME     -->
+    <!-- ("abac.user") is copied by hand from RDF ABAC's UserInfoEnrichmentFilter -->
+    <!-- to avoid a direct dependency, and that a better solution is needed.      -->
+    <!-- Suppressed to keep the queue clean, but the comment is deliberately      -->
+    <!-- LEFT IN THE SOURCE: if RDF ABAC ever changes that attribute key this     -->
+    <!-- filter silently stops propagating the username to the authorization      -->
+    <!-- layer, with no compile error and no test failure. Belongs in a ticket,   -->
+    <!-- not in a lint queue.                                                     -->
+    <sonar.issue.ignore.multicriteria.s1134userinfo.ruleKey>java:S1134</sonar.issue.ignore.multicriteria.s1134userinfo.ruleKey>
+    <sonar.issue.ignore.multicriteria.s1134userinfo.resourceKey>**/UserInfoFilter.java</sonar.issue.ignore.multicriteria.s1134userinfo.resourceKey>
 
     <!-- Dependency versions -->
     <!-- Internal dependencies -->
