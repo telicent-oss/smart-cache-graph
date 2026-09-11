@@ -50,7 +50,7 @@ public class MockKeyServer {
         this.publicKeys = publicJwks.build();
 
         this.keyIds = new ArrayList<>();
-        this.publicKeys.getKeys().stream().forEach(k -> this.keyIds.add(k.getId()));
+        this.publicKeys.getKeys().forEach(k -> this.keyIds.add(k.getId()));
 
         this.server = JettyServer.create()
                                  .port(this.port)
