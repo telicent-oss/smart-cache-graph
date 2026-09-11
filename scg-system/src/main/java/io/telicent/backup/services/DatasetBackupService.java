@@ -851,11 +851,9 @@ public class DatasetBackupService {
     /**
      * Remove a given key from the both backup/restore methods registry.
      *
-     * @param key             the name of the module being backed up or restored.
-     * @param backupConsumer  method that backs up the modules data
-     * @param restoreConsumer method that recovers the module
+     * @param key the name of the module being backed up or restored.
      */
-    public static void deRegisterMethods(String key, TriConsumer<DataAccessPoint, String, ObjectNode> backupConsumer, TriConsumer<DataAccessPoint, String, ObjectNode> restoreConsumer) {
+    public static void deRegisterMethods(String key) {
         deRegisterMethod(backupConsumerMap, key);
         deRegisterMethod(restoreConsumerMap, key);
     }

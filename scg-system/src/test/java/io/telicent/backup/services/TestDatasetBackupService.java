@@ -2719,7 +2719,7 @@ public class TestDatasetBackupService {
             throw new RuntimeException(ex);
         }
         finally {
-            deRegisterMethods("test", this::doNothing, this::doNothing);
+            deRegisterMethods("test");
         }
     }
 
@@ -2745,7 +2745,7 @@ public class TestDatasetBackupService {
             throw new RuntimeException(ex);
         }
         finally {
-            deRegisterMethods("test", this::doNothing, this::doNothing);
+            deRegisterMethods("test");
         }
     }
 
@@ -2771,7 +2771,7 @@ public class TestDatasetBackupService {
             throw new RuntimeException(ex);
         }
         finally {
-            deRegisterMethods("test", this::doNothing, this::doNothing);
+            deRegisterMethods("test");
         }
     }
 
@@ -2807,7 +2807,7 @@ public class TestDatasetBackupService {
             throw new RuntimeException(ex);
         }
         finally {
-            deRegisterMethods("test", this::doNothing, this::doNothing);
+            deRegisterMethods("test");
         }
     }
 
@@ -2833,7 +2833,7 @@ public class TestDatasetBackupService {
             throw new RuntimeException(ex);
         }
         finally {
-            deRegisterMethods("test", this::doNothing, this::doNothing);
+            deRegisterMethods("test");
         }
     }
 
@@ -2860,7 +2860,7 @@ public class TestDatasetBackupService {
             throw new RuntimeException(ex);
         }
         finally {
-            deRegisterMethods("test", this::doNothing, this::doNothing);
+            deRegisterMethods("test");
         }
     }
 
