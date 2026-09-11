@@ -35,7 +35,7 @@ public class TestUserInfoFilter {
     private static HttpServletRequest mockRequest(String username) {
         HttpServletRequest request = mock(HttpServletRequest.class);
         if (username != null) {
-            when(request.getAttribute(eq(JwtServletConstants.REQUEST_ATTRIBUTE_RAW_JWT))).thenReturn("token");
+            when(request.getAttribute(JwtServletConstants.REQUEST_ATTRIBUTE_RAW_JWT)).thenReturn("token");
             when(request.getRemoteUser()).thenReturn(username);
         }
         return request;
