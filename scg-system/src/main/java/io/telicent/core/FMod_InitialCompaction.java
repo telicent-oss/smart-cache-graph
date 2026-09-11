@@ -630,6 +630,17 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
             }
             writeSyncResponse(res, executeCompactOne(this.dsg, this.datasetName));
         }
+
+        private static CompactionOperationResponse executeCompactOne(final DatasetGraph dsg, final String datasetName) {
+            try {
+                final CompactionStatus outcome = compactDatasetGraphDatabase(dsg, datasetName);
+                return new CompactionOperationResponse(HttpServletResponse.SC_OK,
+                                                       toCompactionSummaryJson(Map.of(datasetName, outcome)));
+            } catch (Throwable t) {
+                FmtLog.error(Fuseki.configLog, "Error while compacting dataset " + datasetName, t);
+                return compactionFailureResponse(compactionFailureDetails(datasetName, t));
+            }
+        }
     }
 
     private static class CompactAllServlet extends HttpServlet {
@@ -655,6 +666,40 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
             writeSyncResponse(res, executeCompactAll(this.dapRegistry));
         }
 
+        private static CompactionOperationResponse executeCompactAll(final DataAccessPointRegistry dapRegistry) {
+            if (dapRegistry == null) {
+                return compactionFailureResponse("No DataAccessPoint registry configured");
+            }
+
+            final Map<String, CompactionStatus> outcomes = new LinkedHashMap<>();
+            final Map<String, String> failures = new LinkedHashMap<>();
+            for (DataAccessPoint dataAccessPoint : dapRegistry.accessPoints()) {
+                final DataService dataService = dataAccessPoint.getDataService();
+                final String datasetName = dataAccessPoint.getName();
+                try {
+                    final CompactionStatus outcome = compactDatasetGraphDatabase(dataService.getDataset(), datasetName);
+                    outcomes.put(datasetName, outcome);
+                } catch (Throwable t) {
+                    failures.put(datasetName, t.getMessage() != null ? t.getMessage() : t.getClass().getName());
+                    FmtLog.error(Fuseki.configLog, "Error while compacting dataset " + datasetName, t);
+                }
+            }
+
+            if (!failures.isEmpty()) {
+                StringBuilder details = new StringBuilder("Compaction failed for one or more datasets: ");
+                boolean first = true;
+                for (Map.Entry<String, String> entry : failures.entrySet()) {
+                    if (!first) {
+                        details.append("; ");
+                    }
+                    first = false;
+                    details.append(entry.getKey()).append("=").append(entry.getValue());
+                }
+                FmtLog.error(Fuseki.configLog, details.toString());
+                return compactionFailureResponse(details.toString());
+            }
+            return new CompactionOperationResponse(HttpServletResponse.SC_OK, toCompactionSummaryJson(outcomes));
+        }
     }
 
     private static final class CompactionJobsServlet extends HttpServlet {
@@ -686,52 +731,6 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
                 processResponse(res, resultNode);
             });
         }
-    }
-
-    private static CompactionOperationResponse executeCompactOne(final DatasetGraph dsg, final String datasetName) {
-        try {
-            final CompactionStatus outcome = compactDatasetGraphDatabase(dsg, datasetName);
-            return new CompactionOperationResponse(HttpServletResponse.SC_OK,
-                                                   toCompactionSummaryJson(Map.of(datasetName, outcome)));
-        } catch (Throwable t) {
-            FmtLog.error(Fuseki.configLog, "Error while compacting dataset " + datasetName, t);
-            return compactionFailureResponse(compactionFailureDetails(datasetName, t));
-        }
-    }
-
-    private static CompactionOperationResponse executeCompactAll(final DataAccessPointRegistry dapRegistry) {
-        if (dapRegistry == null) {
-            return compactionFailureResponse("No DataAccessPoint registry configured");
-        }
-
-        final Map<String, CompactionStatus> outcomes = new LinkedHashMap<>();
-        final Map<String, String> failures = new LinkedHashMap<>();
-        for (DataAccessPoint dataAccessPoint : dapRegistry.accessPoints()) {
-            final DataService dataService = dataAccessPoint.getDataService();
-            final String datasetName = dataAccessPoint.getName();
-            try {
-                final CompactionStatus outcome = compactDatasetGraphDatabase(dataService.getDataset(), datasetName);
-                outcomes.put(datasetName, outcome);
-            } catch (Throwable t) {
-                failures.put(datasetName, t.getMessage() != null ? t.getMessage() : t.getClass().getName());
-                FmtLog.error(Fuseki.configLog, "Error while compacting dataset " + datasetName, t);
-            }
-        }
-
-        if (!failures.isEmpty()) {
-            StringBuilder details = new StringBuilder("Compaction failed for one or more datasets: ");
-            boolean first = true;
-            for (Map.Entry<String, String> entry : failures.entrySet()) {
-                if (!first) {
-                    details.append("; ");
-                }
-                first = false;
-                details.append(entry.getKey()).append("=").append(entry.getValue());
-            }
-            FmtLog.error(Fuseki.configLog, details.toString());
-            return compactionFailureResponse(details.toString());
-        }
-        return new CompactionOperationResponse(HttpServletResponse.SC_OK, toCompactionSummaryJson(outcomes));
     }
 
     private static CompactionOperationResponse compactionFailureResponse(final String details) {
