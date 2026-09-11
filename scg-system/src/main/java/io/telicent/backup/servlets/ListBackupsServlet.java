@@ -26,6 +26,7 @@ import org.apache.jena.atlas.lib.DateTimeUtils;
 import static io.telicent.backup.utils.BackupConstants.DATE_FORMAT;
 import static io.telicent.backup.utils.BackupUtils.*;
 import static io.telicent.backup.utils.JsonFileUtils.OBJECT_MAPPER;
+import static io.telicent.utils.ServletUtils.processResponse;
 
 /**
  * Servlet class responsible for information on available back-ups.

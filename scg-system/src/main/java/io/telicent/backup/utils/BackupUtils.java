@@ -22,7 +22,6 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.telicent.smart.cache.configuration.Configurator;
-import io.telicent.utils.ServletUtils;
 import jakarta.servlet.http.HttpServletResponse;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
@@ -44,11 +43,12 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 import static io.telicent.backup.utils.JsonFileUtils.OBJECT_MAPPER;
+import static io.telicent.utils.ServletUtils.processResponse;
 
 /**
  * Utility class for carrying out common back-up operations and file I/O.
  */
-public class BackupUtils extends ServletUtils {
+public class BackupUtils {
 
     // JSON response key
     private static final String SUCCESS = "success";

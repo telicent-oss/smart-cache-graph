@@ -69,6 +69,7 @@ import static io.telicent.backup.utils.BackupUtils.*;
 import static io.telicent.backup.utils.CompressionUtils.*;
 import static io.telicent.backup.utils.JsonFileUtils.OBJECT_MAPPER;
 import static io.telicent.backup.utils.JsonFileUtils.writeObjectNodeToFile;
+import static io.telicent.utils.ServletUtils.processResponse;
 import static org.apache.jena.riot.Lang.NQUADS;
 
 public class DatasetBackupService {

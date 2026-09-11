@@ -8,6 +8,7 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import static io.telicent.backup.utils.BackupUtils.*;
 import static io.telicent.backup.utils.JsonFileUtils.OBJECT_MAPPER;
+import static io.telicent.utils.ServletUtils.processResponse;
 
 public class ReportServlet extends HttpServlet {
 

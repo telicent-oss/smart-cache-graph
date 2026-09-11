@@ -38,6 +38,7 @@ import java.util.*;
 
 import static io.telicent.backup.utils.BackupUtils.*;
 import static io.telicent.backup.utils.JsonFileUtils.OBJECT_MAPPER;
+import static io.telicent.utils.ServletUtils.processResponse;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
