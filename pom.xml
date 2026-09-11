@@ -118,7 +118,7 @@
     <!-- Mirror any change here in SonarQube > Project Settings > General       -->
     <!-- Settings > Analysis Scope, or SonarQube for IDE will not honour them.  -->
     <!-- ===================================================================== -->
-    <sonar.issue.ignore.multicriteria>s1948servlets,s1948compaction,s2654,s1186,s2699,s2187,s3577,s115,s117,s101,s116,s6213,s3077filter,s5786,s1075,s5778,s5961,s3457tests,s2925,s107,s1845,s3516,s3776,s2093,s5443,s3252,s1452,s2629,s3878,s125tests,s5976tests,s1130tests,s1181compaction,s1181cqrsmod,s1181asyncbackup,s1181userinfo,s1141compaction,s1141distlifecycle,s1141main</sonar.issue.ignore.multicriteria>
+    <sonar.issue.ignore.multicriteria>s1948servlets,s1948compaction,s2654,s1186,s2699,s2187,s3577,s115,s117,s101,s116,s6213,s3077filter,s5786,s1075,s5778,s5961,s3457tests,s2925,s107,s1845,s3516,s3776,s2093,s5443,s3252,s1452,s2629,s3878,s125tests,s5976tests,s1130tests,s1181compaction,s1181cqrsmod,s1181asyncbackup,s1181userinfo,s1141compaction,s1141distlifecycle,s1141main,s3077lifecycle</sonar.issue.ignore.multicriteria>
 
     <!-- S1948: non transient field in a Serializable class.                    -->
     <!-- HttpServlet implements Serializable only as a legacy artefact. SCG     -->
@@ -194,8 +194,11 @@
     <!-- Set.copyOf / Map.copyOf values that are only ever replaced wholesale,   -->
     <!-- so a volatile reference is precisely the right idiom. The rule looks at -->
     <!-- the declared type, not the usage. NOT suppressed elsewhere: the other   -->
-    <!-- four occurrences (volatile ObjectNode shared between job and servlet    -->
-    <!-- threads) are genuine and remain open.                                  -->
+    <!-- two volatile ObjectNode occurrences (FMod_InitialCompaction 162 and   -->
+    <!-- BackupJobManager 109, shared between job and servlet threads) are      -->
+    <!-- genuine and remain open. See s3077lifecycle below for the two newer    -->
+    <!-- DistributionLifecycleReadiness fields, which are the same whole         -->
+    <!-- reference replacement case as this entry.                              -->
     <sonar.issue.ignore.multicriteria.s3077filter.ruleKey>java:S3077</sonar.issue.ignore.multicriteria.s3077filter.ruleKey>
     <sonar.issue.ignore.multicriteria.s3077filter.resourceKey>**/FMod_DatasetAvailabilityFilter.java</sonar.issue.ignore.multicriteria.s3077filter.resourceKey>
 
@@ -402,6 +405,22 @@
 
     <sonar.issue.ignore.multicriteria.s1141main.ruleKey>java:S1141</sonar.issue.ignore.multicriteria.s1141main.ruleKey>
     <sonar.issue.ignore.multicriteria.s1141main.resourceKey>**/io/telicent/core/SmartCacheGraph.java</sonar.issue.ignore.multicriteria.s1141main.resourceKey>
+
+    <!-- S3077: "use a thread safe type; volatile is not enough". Same case as   -->
+    <!-- s3077filter above. DistributionLifecycleReadiness.stateFile and         -->
+    <!-- .trackerRunningProbe are only ever replaced wholesale in reset() and    -->
+    <!-- configure() and read in snapshot(); nothing mutates through either      -->
+    <!-- reference, and the default probe is a stateless lambda. A volatile      -->
+    <!-- reference is precisely the right idiom for safe publication here. The   -->
+    <!-- rule looks at the declared type, not the usage.                         -->
+    <!-- Deliberately narrow: the two volatile ObjectNode fields remain open,    -->
+    <!-- as recorded on s3077filter. They now also look safe (each is assigned   -->
+    <!-- a fresh deepCopy and read back via deepCopy, so the node is never       -->
+    <!-- mutated after publication) but that reverses an earlier conclusion and  -->
+    <!-- is left for whoever recorded it; making result an immutable String      -->
+    <!-- would remove the finding outright rather than by exclusion.             -->
+    <sonar.issue.ignore.multicriteria.s3077lifecycle.ruleKey>java:S3077</sonar.issue.ignore.multicriteria.s3077lifecycle.ruleKey>
+    <sonar.issue.ignore.multicriteria.s3077lifecycle.resourceKey>**/DistributionLifecycleReadiness.java</sonar.issue.ignore.multicriteria.s3077lifecycle.resourceKey>
 
     <!-- Dependency versions -->
     <!-- Internal dependencies -->
