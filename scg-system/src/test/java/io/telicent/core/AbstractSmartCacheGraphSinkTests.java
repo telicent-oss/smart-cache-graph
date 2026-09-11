@@ -1254,17 +1254,13 @@ public abstract class AbstractSmartCacheGraphSinkTests {
                     String URL = server.datasetURL(dsName);
                     verifyCounts(URL, queryAll, 1L, 0L);
 
-                    try {
-                        writeLifecycleStateFile(lifecycleState, """
+                    assertDoesNotThrow(() -> writeLifecycleStateFile(lifecycleState, """
                                 {
                                   "distributions" : {
                                     "%s" : "Deleted"
                                   }
                                 }
-                                """.formatted(graph));
-                    } catch (IOException e) {
-                        fail("Failed to update lifecycle state file", e);
-                    }
+                                """.formatted(graph)), "Failed to update lifecycle state file");
 
                     verifyCounts(URL, queryAll, 0L, 0L);
                     verifyCounts(URL, queryUnion, 0L, 0L);
@@ -1310,14 +1306,12 @@ public abstract class AbstractSmartCacheGraphSinkTests {
                     String URL = server.datasetURL(dsName);
                     verifyCounts(URL, queryAll, 1L, 0L);
 
-                    try {
+                    assertDoesNotThrow(() -> {
                         writeLifecycleStateFile(lifecycleState, hiddenState);
                         assertEquals(originalSize, Files.size(lifecycleState),
                                      "Test fixture must preserve the JSON byte size");
                         Files.setLastModifiedTime(lifecycleState, originalTimestamp);
-                    } catch (IOException e) {
-                        fail("Failed to update lifecycle state file", e);
-                    }
+                    }, "Failed to update lifecycle state file");
 
                     verifyCounts(URL, queryAll, 0L, 0L);
                     verifyCounts(URL, queryUnion, 0L, 0L);

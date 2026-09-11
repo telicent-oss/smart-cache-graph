@@ -371,7 +371,7 @@ public class TestBackupData {
         // when
         HttpResponse<InputStream> createResponse = makeAuthPOSTCallWithPath(server, "$/backups/create/", "test");
         //debug(createResponse);
-        try {
+        assertDoesNotThrow(() -> {
             ObjectMapper objectMapper = new ObjectMapper();
             JsonNode rootNode = objectMapper.readTree(createResponse.body());
             String backupIdString = rootNode.path("backup-id").asText();
@@ -385,9 +385,7 @@ public class TestBackupData {
             assertFalse(zipSize.isEmpty());
             String zipSizeInBytes = rootBackupNode.path("details").path("zip-size-in-bytes").asText();
             assertFalse(zipSizeInBytes.isEmpty());
-        } catch (IOException ex) {
-            Assertions.fail("Unexpected exception: " + ex.getMessage());
-        }
+        });
     }
 
     @Test

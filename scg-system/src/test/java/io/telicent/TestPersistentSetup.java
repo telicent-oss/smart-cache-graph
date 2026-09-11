@@ -58,6 +58,7 @@ import java.util.Map;
 import static io.telicent.LibTestsSCG.tokenHeader;
 import static io.telicent.LibTestsSCG.tokenHeaderValue;
 import static org.apache.jena.atlas.lib.Lib.concatPaths;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
@@ -127,44 +128,43 @@ public class TestPersistentSetup {
         FusekiSink<?> sink = new RdfAbacSink(dsgz, false);
 
         try {
-            server.start();
-            String queryURL = server.datasetURL("/knowledge") + "/sparql";
+            assertDoesNotThrow(() -> {
+                server.start();
+                String queryURL = server.datasetURL("/knowledge") + "/sparql";
 
-            // Batch ???
+                // Batch ???
 
-            // Send files to the FKProcessor
-            sendFile(dsgz, sink, concatPaths(FILES, "data-test-1.ttl"),
-                     Map.of(TelicentHeaders.SECURITY_LABEL, "clearance=ordinary", HttpNames.hContentType,
-                            Lang.TTL.getHeaderString()));
-            sendFile(dsgz, sink, concatPaths(FILES, "data-test-2.ttl"),
-                     Map.of(TelicentHeaders.SECURITY_LABEL, "clearance=secret", HttpNames.hContentType,
-                            Lang.TTL.getHeaderString()));
+                // Send files to the FKProcessor
+                sendFile(dsgz, sink, concatPaths(FILES, "data-test-1.ttl"),
+                         Map.of(TelicentHeaders.SECURITY_LABEL, "clearance=ordinary", HttpNames.hContentType,
+                                Lang.TTL.getHeaderString()));
+                sendFile(dsgz, sink, concatPaths(FILES, "data-test-2.ttl"),
+                         Map.of(TelicentHeaders.SECURITY_LABEL, "clearance=secret", HttpNames.hContentType,
+                                Lang.TTL.getHeaderString()));
 
-            if (false) {
-                dump(dsgz);
-            }
+                if (false) {
+                    dump(dsgz);
+                }
 
-            // User 'user1' can see "ordinary", "secret"
-            query(queryURL, 2, "user1", "SELECT * { ?s ?p ?o}", attributeStore);
-            // User 'public' - "no label" not present.
-            query(queryURL, 0, "public", "SELECT * { ?s ?p ?o}", attributeStore);
+                // User 'user1' can see "ordinary", "secret"
+                query(queryURL, 2, "user1", "SELECT * { ?s ?p ?o}", attributeStore);
+                // User 'public' - "no label" not present.
+                query(queryURL, 0, "public", "SELECT * { ?s ?p ?o}", attributeStore);
 
-            // Send more files to the FKProcessor
-            sendFile(dsgz, sink, concatPaths(FILES, "data-test-3.ttl"),
-                     Map.of(TelicentHeaders.SECURITY_LABEL, "clearance=top-secret", HttpNames.hContentType,
-                            Lang.TTL.getHeaderString()));
-            sendFile(dsgz, sink, concatPaths(FILES, "data-test-4.ttl"),
-                     Map.of(TelicentHeaders.SECURITY_LABEL, "*", HttpNames.hContentType, Lang.TTL.getHeaderString()));
+                // Send more files to the FKProcessor
+                sendFile(dsgz, sink, concatPaths(FILES, "data-test-3.ttl"),
+                         Map.of(TelicentHeaders.SECURITY_LABEL, "clearance=top-secret", HttpNames.hContentType,
+                                Lang.TTL.getHeaderString()));
+                sendFile(dsgz, sink, concatPaths(FILES, "data-test-4.ttl"),
+                         Map.of(TelicentHeaders.SECURITY_LABEL, "*", HttpNames.hContentType, Lang.TTL.getHeaderString()));
 
-            // User 'user1' can see "no label", "ordinary", "secret"
-            query(queryURL, 3, "user1", "SELECT * { ?s ?p ?o}", attributeStore);
-            // User 'public' can see "no label".
-            query(queryURL, 1, "public", "SELECT * { ?s ?p ?o}", attributeStore);
+                // User 'user1' can see "no label", "ordinary", "secret"
+                query(queryURL, 3, "user1", "SELECT * { ?s ?p ?o}", attributeStore);
+                // User 'public' can see "no label".
+                query(queryURL, 1, "public", "SELECT * { ?s ?p ?o}", attributeStore);
 
 
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            Assertions.fail("Unexpected error: " + ex.getMessage());
+            }, "Unexpected error during persistent setup");
         } finally {
             server.stop();
             dsg.close();
