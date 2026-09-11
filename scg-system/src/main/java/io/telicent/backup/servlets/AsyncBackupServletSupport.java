@@ -42,7 +42,6 @@ final class AsyncBackupServletSupport {
 
     static void processAsync(final DatasetBackupService backupService,
                              final HttpServletRequest request,
-                             final HttpServletResponse response,
                              final boolean backup) {
         final AsyncContext asyncContext = request.startAsync();
         final String remoteUser = request.getRemoteUser();

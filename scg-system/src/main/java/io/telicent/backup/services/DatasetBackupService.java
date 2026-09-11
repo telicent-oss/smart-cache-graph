@@ -855,8 +855,8 @@ public class DatasetBackupService {
      * @param restoreConsumer method that recovers the module
      */
     public static void deRegisterMethods(String key, TriConsumer<DataAccessPoint, String, ObjectNode> backupConsumer, TriConsumer<DataAccessPoint, String, ObjectNode> restoreConsumer) {
-        deRegisterMethod(backupConsumerMap, key, backupConsumer);
-        deRegisterMethod(restoreConsumerMap, key, restoreConsumer);
+        deRegisterMethod(backupConsumerMap, key);
+        deRegisterMethod(restoreConsumerMap, key);
     }
 
 
@@ -890,7 +890,7 @@ public class DatasetBackupService {
         map.put(key, consumer);
     }
 
-    private static void deRegisterMethod(Map<String, TriConsumer<DataAccessPoint, String, ObjectNode>> map, String key, TriConsumer<DataAccessPoint, String, ObjectNode> consumer) {
+    private static void deRegisterMethod(Map<String, TriConsumer<DataAccessPoint, String, ObjectNode>> map, String key) {
         map.remove(key);
     }
 

@@ -55,30 +55,35 @@ public class TestSmartCacheGraphIntegration {
 
     @Test
     void integration_graphql_1() {
-        runTest("config-graphql.ttl", DIR+"/data-hierarchies.trig", 2);
+        runTest("config-graphql.ttl", 2);
     }
 
     @Test
     void integration_graphql_2() {
-        runTest("config-graphql-plain.ttl", DIR+"/data-plain.ttl", 4);
+        runTest("config-graphql-plain.ttl", 4);
     }
 
     @Test
     void integration_no_hierarchies() {
-        runTest("config-no-hierarchies.ttl", DIR+"/data-hierarchies.trig", 1);
+        runTest("config-no-hierarchies.ttl", 1);
     }
 
-    private static void runTest(String configFile, String datafile, int expected) {
-            runTest2(configFile, datafile, expected);
+    private static void runTest(String configFile, int expected) {
+            runTest2(configFile, expected);
     }
 
-    private static void runTest2(String configFile, String datafile, int expected) {
+    private static void runTest2(String configFile, int expected) {
         FusekiServer server = launchServer(configFile);
         try {
             int port = server.getHttpPort();
             String URL = "http://localhost:" + port + "/ds";
 
             // Data and labelling.
+            // NOTE: this fixture is hard-coded. It used to be reachable as a "datafile" parameter that
+            // every caller passed but this method ignored, so integration_graphql_2 asks for
+            // data-plain.ttl and actually loads data-hierarchies.trig. The expected counts below were
+            // tuned against what is loaded here, so the parameter has been removed rather than wired
+            // up; making the fixture configurable again needs those counts revisited.
             LibTestsSCG.uploadFile(URL+"/upload", DIR+"/data-hierarchies.trig");
 
             //CxtABAC.systemTrace(Track.DEBUG);

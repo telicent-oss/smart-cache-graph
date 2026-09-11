@@ -525,7 +525,7 @@ public abstract class AbstractSmartCacheGraphSinkTests {
         });
     }
 
-    private void sendEventWithExceptions(DatasetGraph dsg, Sink<Event<Bytes, RdfPayload>> sink, String body,
+    private void sendEventWithExceptions(Sink<Event<Bytes, RdfPayload>> sink, String body,
                                          Map<String, String> headers) {
         Event<Bytes, RdfPayload> event = new SimpleEvent<>(AbstractSmartCacheGraphSinkTests.toHeaders(headers), null,
                                                            RdfPayload.of(headers.get("Content-Type"),
@@ -642,7 +642,7 @@ public abstract class AbstractSmartCacheGraphSinkTests {
         if (distributionId != null) {
             headers.put(TelicentHeaders.DISTRIBUTION_ID, distributionId);
         }
-        sendEventWithExceptions(dsg, sink, body, headers);
+        sendEventWithExceptions(sink, body, headers);
     }
 
     /**
