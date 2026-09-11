@@ -118,7 +118,7 @@
     <!-- Mirror any change here in SonarQube > Project Settings > General       -->
     <!-- Settings > Analysis Scope, or SonarQube for IDE will not honour them.  -->
     <!-- ===================================================================== -->
-    <sonar.issue.ignore.multicriteria>s1948servlets,s1948compaction,s2654,s1186,s2699,s2187,s3577,s115,s117,s101,s116,s6213,s3077filter,s5786,s1075,s5778,s5961,s3457tests,s2925,s107,s1845,s3516,s3776,s2093,s5443,s3252,s1452,s2629,s3878,s125tests,s5976tests,s1130tests</sonar.issue.ignore.multicriteria>
+    <sonar.issue.ignore.multicriteria>s1948servlets,s1948compaction,s2654,s1186,s2699,s2187,s3577,s115,s117,s101,s116,s6213,s3077filter,s5786,s1075,s5778,s5961,s3457tests,s2925,s107,s1845,s3516,s3776,s2093,s5443,s3252,s1452,s2629,s3878,s125tests,s5976tests,s1130tests,s1181compaction,s1181cqrsmod,s1181asyncbackup,s1181userinfo</sonar.issue.ignore.multicriteria>
 
     <!-- S1948: non transient field in a Serializable class.                    -->
     <!-- HttpServlet implements Serializable only as a legacy artefact. SCG     -->
@@ -344,6 +344,40 @@
     <!-- nothing in the body can raise) is NOT covered here and remains open.   -->
     <sonar.issue.ignore.multicriteria.s1130tests.ruleKey>java:S1130</sonar.issue.ignore.multicriteria.s1130tests.ruleKey>
     <sonar.issue.ignore.multicriteria.s1130tests.resourceKey>**/src/test/java/**/*.java</sonar.issue.ignore.multicriteria.s1130tests.resourceKey>
+
+    <!-- S1181: "catch Exception instead of Throwable". The four entries below  -->
+    <!-- cover the seven occurrences that are deliberate last resort isolation, -->
+    <!-- where letting anything escape would take down a background thread or   -->
+    <!-- leave a request hanging:                                               -->
+    <!--   FMod_InitialCompaction 278 (startup compaction failure leaves the    -->
+    <!--     dataset available), 363 (records FAILED then rethrows), 692 and     -->
+    <!--     711 (compaction job threads converting to an HTTP response);        -->
+    <!--   AsyncBackupServletSupport 61 (async executor task, with              -->
+    <!--     asyncContext.complete() in finally, so without this catch the      -->
+    <!--     client would hang until timeout);                                  -->
+    <!--   FMod_CQRS 156 (closing Kafka producers on serverStopped, so one bad  -->
+    <!--     producer does not prevent the rest closing);                       -->
+    <!--   UserInfoFilter 123 (filter destroy()).                               -->
+    <!-- NOT suppressed: SPARQL_Update_CQRS 136 remains open. That one is on    -->
+    <!-- the SPARQL update request path and does not rethrow when the Throwable -->
+    <!-- is an ActionErrorException, unlike the OperationDeniedException arm     -->
+    <!-- above it, so it needs review against upstream Jena rather than         -->
+    <!-- exclusion.                                                             -->
+    <!-- Known limitation of all seven: an Error such as OutOfMemoryError is    -->
+    <!-- logged and discarded. Adding "if (t instanceof Error e) throw e;" as    -->
+    <!-- the first line of each handler would address that without changing the -->
+    <!-- isolation these provide.                                               -->
+    <sonar.issue.ignore.multicriteria.s1181compaction.ruleKey>java:S1181</sonar.issue.ignore.multicriteria.s1181compaction.ruleKey>
+    <sonar.issue.ignore.multicriteria.s1181compaction.resourceKey>**/FMod_InitialCompaction.java</sonar.issue.ignore.multicriteria.s1181compaction.resourceKey>
+
+    <sonar.issue.ignore.multicriteria.s1181cqrsmod.ruleKey>java:S1181</sonar.issue.ignore.multicriteria.s1181cqrsmod.ruleKey>
+    <sonar.issue.ignore.multicriteria.s1181cqrsmod.resourceKey>**/FMod_CQRS.java</sonar.issue.ignore.multicriteria.s1181cqrsmod.resourceKey>
+
+    <sonar.issue.ignore.multicriteria.s1181asyncbackup.ruleKey>java:S1181</sonar.issue.ignore.multicriteria.s1181asyncbackup.ruleKey>
+    <sonar.issue.ignore.multicriteria.s1181asyncbackup.resourceKey>**/AsyncBackupServletSupport.java</sonar.issue.ignore.multicriteria.s1181asyncbackup.resourceKey>
+
+    <sonar.issue.ignore.multicriteria.s1181userinfo.ruleKey>java:S1181</sonar.issue.ignore.multicriteria.s1181userinfo.ruleKey>
+    <sonar.issue.ignore.multicriteria.s1181userinfo.resourceKey>**/UserInfoFilter.java</sonar.issue.ignore.multicriteria.s1181userinfo.resourceKey>
 
     <!-- Dependency versions -->
     <!-- Internal dependencies -->
