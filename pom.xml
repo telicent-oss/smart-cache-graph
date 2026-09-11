@@ -118,7 +118,7 @@
     <!-- Mirror any change here in SonarQube > Project Settings > General       -->
     <!-- Settings > Analysis Scope, or SonarQube for IDE will not honour them.  -->
     <!-- ===================================================================== -->
-    <sonar.issue.ignore.multicriteria>s1948servlets,s1948compaction,s2654,s1186,s2699,s2187,s3577,s115,s117,s101,s116,s6213,s3077filter,s5786,s1075,s5778,s5961,s3457tests,s2925,s107,s1845,s3516,s3776,s2093,s5443,s3252,s1452,s2629,s3878,s125tests,s5976tests</sonar.issue.ignore.multicriteria>
+    <sonar.issue.ignore.multicriteria>s1948servlets,s1948compaction,s2654,s1186,s2699,s2187,s3577,s115,s117,s101,s116,s6213,s3077filter,s5786,s1075,s5778,s5961,s3457tests,s2925,s107,s1845,s3516,s3776,s2093,s5443,s3252,s1452,s2629,s3878,s125tests,s5976tests,s1130tests</sonar.issue.ignore.multicriteria>
 
     <!-- S1948: non transient field in a Serializable class.                    -->
     <!-- HttpServlet implements Serializable only as a legacy artefact. SCG     -->
@@ -333,6 +333,17 @@
     <!-- [1]/[2]/[3]. Style rule with no defect risk.                           -->
     <sonar.issue.ignore.multicriteria.s5976tests.ruleKey>java:S5976</sonar.issue.ignore.multicriteria.s5976tests.ruleKey>
     <sonar.issue.ignore.multicriteria.s5976tests.resourceKey>**/src/test/java/**/*.java</sonar.issue.ignore.multicriteria.s5976tests.resourceKey>
+
+    <!-- S1130: declared exception that cannot be thrown. The four test         -->
+    <!-- occurrences are "throws Exception" on shared fixtures                  -->
+    <!-- (LibTestsSCG.setupAuthentication / teardownAuthentication) invoked     -->
+    <!-- from @BeforeAll and @AfterAll, and on callers of those. That is the     -->
+    <!-- normal JUnit fixture idiom and narrowing it would ripple through every -->
+    <!-- caller for no benefit. The single main code occurrence                 -->
+    <!-- (DatasetBackupService constructor declaring URISyntaxException, which   -->
+    <!-- nothing in the body can raise) is NOT covered here and remains open.   -->
+    <sonar.issue.ignore.multicriteria.s1130tests.ruleKey>java:S1130</sonar.issue.ignore.multicriteria.s1130tests.ruleKey>
+    <sonar.issue.ignore.multicriteria.s1130tests.resourceKey>**/src/test/java/**/*.java</sonar.issue.ignore.multicriteria.s1130tests.resourceKey>
 
     <!-- Dependency versions -->
     <!-- Internal dependencies -->
