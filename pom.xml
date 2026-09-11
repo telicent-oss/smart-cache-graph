@@ -118,7 +118,7 @@
     <!-- Mirror any change here in SonarQube > Project Settings > General       -->
     <!-- Settings > Analysis Scope, or SonarQube for IDE will not honour them.  -->
     <!-- ===================================================================== -->
-    <sonar.issue.ignore.multicriteria>s1948servlets,s1948compaction,s2654,s1186,s2699,s2187,s3577,s115,s117,s101,s116,s6213,s3077filter,s5786,s1075,s5778,s5961,s3457tests,s2925,s107,s1845,s3516,s3776,s2093,s5443,s3252,s1452,s2629,s3878</sonar.issue.ignore.multicriteria>
+    <sonar.issue.ignore.multicriteria>s1948servlets,s1948compaction,s2654,s1186,s2699,s2187,s3577,s115,s117,s101,s116,s6213,s3077filter,s5786,s1075,s5778,s5961,s3457tests,s2925,s107,s1845,s3516,s3776,s2093,s5443,s3252,s1452,s2629,s3878,s125tests</sonar.issue.ignore.multicriteria>
 
     <!-- S1948: non transient field in a Serializable class.                    -->
     <!-- HttpServlet implements Serializable only as a legacy artefact. SCG     -->
@@ -308,6 +308,20 @@
     <!-- SCG_AuthPolicy.                                                        -->
     <sonar.issue.ignore.multicriteria.s3878.ruleKey>java:S3878</sonar.issue.ignore.multicriteria.s3878.ruleKey>
     <sonar.issue.ignore.multicriteria.s3878.resourceKey>**/SCG_AuthPolicy.java</sonar.issue.ignore.multicriteria.s3878.resourceKey>
+
+    <!-- S125: commented out code. 23 of the 28 occurrences are in test        -->
+    <!-- sources and almost all are the uncomment to diagnose idiom:           -->
+    <!-- //debug(createBackupResponse) in TestBackupData (15 sites, each under -->
+    <!-- a "// for debugging" marker), //CxtABAC.systemTrace(Track.DEBUG) and  -->
+    <!-- //RowSetOps.out(rs2) in TestPersistentSetup and                       -->
+    <!-- TestSmartCacheGraphIntegration. The debug(HttpResponse) helper they    -->
+    <!-- switch on is already annotated @SuppressWarnings("unused"), so the     -->
+    <!-- team has recorded this as deliberately dormant tooling. No assertion   -->
+    <!-- is disabled by any of the 28. The five main code occurrences           -->
+    <!-- (CQRS, FMod_CQRS, MainSmartCacheGraph, ActionTelicentGraphQL,          -->
+    <!-- UserUtils) are NOT covered here and remain open.                       -->
+    <sonar.issue.ignore.multicriteria.s125tests.ruleKey>java:S125</sonar.issue.ignore.multicriteria.s125tests.ruleKey>
+    <sonar.issue.ignore.multicriteria.s125tests.resourceKey>**/src/test/java/**/*.java</sonar.issue.ignore.multicriteria.s125tests.resourceKey>
 
     <!-- Dependency versions -->
     <!-- Internal dependencies -->
