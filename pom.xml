@@ -118,7 +118,7 @@
     <!-- Mirror any change here in SonarQube > Project Settings > General       -->
     <!-- Settings > Analysis Scope, or SonarQube for IDE will not honour them.  -->
     <!-- ===================================================================== -->
-    <sonar.issue.ignore.multicriteria>s1948servlets,s1948compaction,s2654,s1186,s2699,s2187,s3577,s115,s117,s101,s116,s6213,s3077filter,s5786,s1075,s5778,s5961,s3457tests,s2925,s107,s1845,s3516,s3776,s2093,s5443,s3252,s1452,s2629,s3878,s125tests,s5976tests,s1130tests,s1181compaction,s1181cqrsmod,s1181asyncbackup,s1181userinfo,s1141compaction,s1141distlifecycle,s1141main,s3077lifecycle,s2177cqrs</sonar.issue.ignore.multicriteria>
+    <sonar.issue.ignore.multicriteria>s1948servlets,s1948compaction,s2654,s1186,s2699,s2187,s3577,s115,s117,s101,s116,s6213,s3077filter,s5786,s1075,s5778,s5961,s3457tests,s2925,s107,s1845,s3516,s3776,s2093,s5443,s3252,s1452,s2629,s3878,s125tests,s5976tests,s1130tests,s1181compaction,s1181cqrsmod,s1181asyncbackup,s1181userinfo,s1141compaction,s1141distlifecycle,s1141main,s3077lifecycle,s2177cqrs,s8786user,s8786backup</sonar.issue.ignore.multicriteria>
 
     <!-- S1948: non transient field in a Serializable class.                    -->
     <!-- HttpServlet implements Serializable only as a legacy artefact. SCG     -->
@@ -434,6 +434,26 @@
     <!-- member.                                                                -->
     <sonar.issue.ignore.multicriteria.s2177cqrs.ruleKey>java:S2177</sonar.issue.ignore.multicriteria.s2177cqrs.ruleKey>
     <sonar.issue.ignore.multicriteria.s2177cqrs.resourceKey>**/SPARQL_Update_CQRS.java</sonar.issue.ignore.multicriteria.s2177cqrs.resourceKey>
+
+    <!-- S8786: "simplify this regular expression, it has super linear          -->
+    <!-- performance". Neither occurrence takes attacker controlled input of    -->
+    <!-- meaningful length:                                                     -->
+    <!--   BackupUtils.sanitizeKey is applied to SCG's own JSON section names   -->
+    <!--     built at lines 684 and 700 from the backup module registry, so the -->
+    <!--     inputs are short and server generated;                             -->
+    <!--   UserUtils.authHeaderPattern separates its \s+ and \S* with the        -->
+    <!--     literal "user:", so the worst case is quadratic rather than         -->
+    <!--     exponential, and the whole path is legacy pending JWT (see the      -->
+    <!--     comment at UserUtils line 43).                                      -->
+    <!-- NOTE while looking at this: the authHeaderPattern literal ends         -->
+    <!-- "(\S*)\s*" with a single backslash, which Java 15+ reads as a string    -->
+    <!-- escape for a literal space, so the compiled regex ends "(\S*) *".       -->
+    <!-- Harmless under matches() but almost certainly not what was intended.    -->
+    <sonar.issue.ignore.multicriteria.s8786user.ruleKey>java:S8786</sonar.issue.ignore.multicriteria.s8786user.ruleKey>
+    <sonar.issue.ignore.multicriteria.s8786user.resourceKey>**/UserUtils.java</sonar.issue.ignore.multicriteria.s8786user.resourceKey>
+
+    <sonar.issue.ignore.multicriteria.s8786backup.ruleKey>java:S8786</sonar.issue.ignore.multicriteria.s8786backup.ruleKey>
+    <sonar.issue.ignore.multicriteria.s8786backup.resourceKey>**/BackupUtils.java</sonar.issue.ignore.multicriteria.s8786backup.resourceKey>
 
     <!-- Dependency versions -->
     <!-- Internal dependencies -->
