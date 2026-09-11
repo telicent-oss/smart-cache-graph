@@ -1,5 +1,24 @@
 # Smart Cache Graph
 
+## 1.1.9
+
+- The `/$/ready` readiness probe is now a general service health check rather than reporting only Distribution
+  Lifecycle status.  It now also reports the service as unhealthy (`503 Service Unavailable`) if any Kafka polling
+  threads have failed, and the response `config` additionally reports the launched, running and failed Kafka poll
+  thread counts and whether authentication is enabled.
+- User info lookups are now cached, reducing the load placed on the user info service.  Caching is enabled by default
+  (10,000 entries, 60 seconds) and is configurable via `USERINFO_CACHE_SIZE` and `USERINFO_CACHE_DURATION` (an
+  ISO-8601 duration, e.g. `PT60S`); setting `USERINFO_CACHE_SIZE` to `0` disables it.
+- Build improvements:
+    - Upgrades Smart Caches Core to 1.4.0, which now takes care of periodically flushing Distribution Lifecycle state,
+      so the graph no longer configures the flush frequency itself
+    - Upgrades Fuseki Kafka to 3.3.0, which provides the Kafka poll thread counters used by the readiness probe
+    - Upgrades Jetty to 12.1.13 and SLF4J to 2.0.19
+    - Telicent Java 21 Base Image upgraded to 1.2.63 for the graph
+    - Maven Compiler and Surefire plugins upgraded to 3.16.0 and 3.6.0 respectively
+    - Additional test coverage for malformed Distribution Lifecycle events (dead-lettered without stalling the
+      tracker or the graph's readiness) and for backup restore
+
 ## 1.1.8
 
 - Fixed distributions that are not `Active` remaining queryable through a query that names their graph explicitly,
