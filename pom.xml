@@ -118,7 +118,7 @@
     <!-- Mirror any change here in SonarQube > Project Settings > General       -->
     <!-- Settings > Analysis Scope, or SonarQube for IDE will not honour them.  -->
     <!-- ===================================================================== -->
-    <sonar.issue.ignore.multicriteria>s1948servlets,s1948compaction,s2654,s1186,s2699,s2187,s3577,s115,s117,s101,s116,s6213,s3077filter,s5786,s1075,s5778,s5961,s3457tests,s2925,s107,s1845,s3516,s3776,s2093,s5443,s1452,s2629,s3878,s125tests,s5976tests,s1130tests,s1181compaction,s1181cqrsmod,s1181asyncbackup,s1181userinfo,s1141compaction,s1141distlifecycle,s1141main,s3077lifecycle,s2177cqrs,s8786user,s8786backup,s5850backup,s135backup,s5738jwtauth,s1181cqrsupdate,s1068cqrsupdate,s1134userinfo,s6541backup,s112backupreport</sonar.issue.ignore.multicriteria>
+    <sonar.issue.ignore.multicriteria>s1948servlets,s1948compaction,s2654,s1186,s2699,s2187,s3577,s115,s117,s101,s116,s6213,s3077filter,s5786,s1075,s5778,s5961,s3457tests,s2925,s107,s1845,s3516,s3776,s2093,s5443,s1452,s2629,s3878,s125tests,s5976tests,s1130tests,s1181compaction,s1181cqrsmod,s1181asyncbackup,s1181userinfo,s1141compaction,s1141distlifecycle,s1141main,s3077lifecycle,s2177cqrs,s8786user,s8786backup,s5850backup,s135backup,s5738jwtauth,s1181cqrsupdate,s1068cqrsupdate,s1134userinfo,s6541backup,s112backupreport,s3077jobresult,s3077compactionjob</sonar.issue.ignore.multicriteria>
 
     <!-- S1948: non transient field in a Serializable class.                    -->
     <!-- HttpServlet implements Serializable only as a legacy artefact. SCG     -->
@@ -193,12 +193,10 @@
     <!-- FMod_DatasetAvailabilityFilter, where both fields hold immutable        -->
     <!-- Set.copyOf / Map.copyOf values that are only ever replaced wholesale,   -->
     <!-- so a volatile reference is precisely the right idiom. The rule looks at -->
-    <!-- the declared type, not the usage. NOT suppressed elsewhere: the other   -->
-    <!-- two volatile ObjectNode occurrences (FMod_InitialCompaction 162 and   -->
-    <!-- BackupJobManager 109, shared between job and servlet threads) are      -->
-    <!-- genuine and remain open. See s3077lifecycle below for the two newer    -->
-    <!-- DistributionLifecycleReadiness fields, which are the same whole         -->
-    <!-- reference replacement case as this entry.                              -->
+    <!-- the declared type, not the usage. All other occurrences of this rule   -->
+    <!-- are now also excluded: see s3077lifecycle and s3077jobresult below.     -->
+    <!-- (This comment previously recorded the volatile ObjectNode fields as     -->
+    <!-- genuine; that assessment was revisited - see s3077jobresult.)           -->
     <sonar.issue.ignore.multicriteria.s3077filter.ruleKey>java:S3077</sonar.issue.ignore.multicriteria.s3077filter.ruleKey>
     <sonar.issue.ignore.multicriteria.s3077filter.resourceKey>**/FMod_DatasetAvailabilityFilter.java</sonar.issue.ignore.multicriteria.s3077filter.resourceKey>
 
@@ -407,12 +405,8 @@
     <!-- reference, and the default probe is a stateless lambda. A volatile      -->
     <!-- reference is precisely the right idiom for safe publication here. The   -->
     <!-- rule looks at the declared type, not the usage.                         -->
-    <!-- Deliberately narrow: the two volatile ObjectNode fields remain open,    -->
-    <!-- as recorded on s3077filter. They now also look safe (each is assigned   -->
-    <!-- a fresh deepCopy and read back via deepCopy, so the node is never       -->
-    <!-- mutated after publication) but that reverses an earlier conclusion and  -->
-    <!-- is left for whoever recorded it; making result an immutable String      -->
-    <!-- would remove the finding outright rather than by exclusion.             -->
+    <!-- The volatile ObjectNode fields are covered separately by               -->
+    <!-- s3077jobresult below.                                                   -->
     <sonar.issue.ignore.multicriteria.s3077lifecycle.ruleKey>java:S3077</sonar.issue.ignore.multicriteria.s3077lifecycle.ruleKey>
     <sonar.issue.ignore.multicriteria.s3077lifecycle.resourceKey>**/DistributionLifecycleReadiness.java</sonar.issue.ignore.multicriteria.s3077lifecycle.resourceKey>
 
@@ -529,6 +523,25 @@
     <!-- disclosure in place.                                                    -->
     <sonar.issue.ignore.multicriteria.s112backupreport.ruleKey>java:S112</sonar.issue.ignore.multicriteria.s112backupreport.ruleKey>
     <sonar.issue.ignore.multicriteria.s112backupreport.resourceKey>**/DatasetBackupService.java</sonar.issue.ignore.multicriteria.s112backupreport.resourceKey>
+
+    <!-- S3077, the volatile ObjectNode job-result fields:                       -->
+    <!--   FMod_InitialCompaction.CompactionJob.result                           -->
+    <!--   BackupJobManager.BackupJob.result                                     -->
+    <!-- An earlier revision of this POM recorded these as genuine findings,     -->
+    <!-- on the grounds that the node is shared between the job thread and the   -->
+    <!-- servlet thread. On re-reading the code they are safe: each write is     -->
+    <!-- "this.result = response.body().deepCopy()", a freshly allocated and     -->
+    <!-- unaliased node, and the only read, status(), takes another deepCopy      -->
+    <!-- before handing it out. The node is therefore never mutated after         -->
+    <!-- publication and a volatile reference is sufficient.                      -->
+    <!-- Note this is an invariant held by convention, not by the type. If a      -->
+    <!-- future change mutates result in place, volatile will not save it; the    -->
+    <!-- durable fix would be to hold the serialized JSON as an immutable String. -->
+    <sonar.issue.ignore.multicriteria.s3077jobresult.ruleKey>java:S3077</sonar.issue.ignore.multicriteria.s3077jobresult.ruleKey>
+    <sonar.issue.ignore.multicriteria.s3077jobresult.resourceKey>**/BackupJobManager.java</sonar.issue.ignore.multicriteria.s3077jobresult.resourceKey>
+
+    <sonar.issue.ignore.multicriteria.s3077compactionjob.ruleKey>java:S3077</sonar.issue.ignore.multicriteria.s3077compactionjob.ruleKey>
+    <sonar.issue.ignore.multicriteria.s3077compactionjob.resourceKey>**/FMod_InitialCompaction.java</sonar.issue.ignore.multicriteria.s3077compactionjob.resourceKey>
 
     <!-- Dependency versions -->
     <!-- Internal dependencies -->
