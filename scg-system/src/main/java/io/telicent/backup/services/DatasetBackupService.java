@@ -972,7 +972,7 @@ public class DatasetBackupService {
             try {
                 final Path encZipFilePath = Path.of(dirPath + ZIP_SUFFIX + ENCRYPTION_SUFFIX);
                 final Path encZipPath = encryptionUtils.encryptFile(zipFilePath, encZipFilePath, keyPair.publicKeyUrl());
-                LOG.debug("Successfully encrypted file: {} as {}", zipFilePath, encZipPath.toString());
+                LOG.debug("Successfully encrypted file: {} as {}", zipFilePath, encZipPath);
                 Files.delete(zipFilePath);
             } catch (IOException | PGPException ex) {
                 LOG.error("Failed to encrypt backup files", ex);
