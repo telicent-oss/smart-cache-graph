@@ -298,7 +298,7 @@ class TestJenaMetrics {
                     .headers(AwsConstants.HEADER_DATA, LibTestsSCG.tokenForUser("test"))
                     .GET()
                     .build();
-            HttpResponse<Void> response = HttpEnv.getDftHttpClient().send(request, HttpResponse.BodyHandlers.discarding());
+            HttpEnv.getDftHttpClient().send(request, HttpResponse.BodyHandlers.discarding());
 
             /*
             attributes={db.name="/ds", db.operation="gsp-rw", db.system="Apache Jena Fuseki", fuseki.endpoint="", fuseki.operation="Graph Store Protocol"}, value=1
@@ -337,7 +337,7 @@ class TestJenaMetrics {
                     .uri(URI.create("http://localhost:"+port+"/ds"))
                     .GET()
                     .build();
-            HttpResponse<Void> response = HttpEnv.getDftHttpClient().send(request, HttpResponse.BodyHandlers.discarding());
+            HttpEnv.getDftHttpClient().send(request, HttpResponse.BodyHandlers.discarding());
 //            server.join();
         } finally {
             server.stop();

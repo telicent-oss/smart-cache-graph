@@ -293,7 +293,7 @@ class DockerTestYamlConfigParser {
                         .httpHeader("Authorization", "Bearer user:" + user)
                         .select()
                         .rewindable();
-        long x = RowSetOps.count(rowSet);
+        RowSetOps.count(rowSet);
         rowSet.reset();
         RowSetOps.out(System.out, rowSet);
         return rowSet;

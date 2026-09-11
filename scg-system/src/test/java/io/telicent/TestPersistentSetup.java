@@ -112,7 +112,6 @@ public class TestPersistentSetup {
         final String CONFIG = concatPaths(DIR, getPersistentConfigurationFile());
 
         final String FILES = "src/test/files/Data";
-        final String TOPIC = "knowledge";
 
         // Load the attributes: this copy is only used for printing information
         AttributesStore attributeStore = Attributes.readAttributesStore(concatPaths(DIR, "attribute-store.ttl"), null);
@@ -123,7 +122,6 @@ public class TestPersistentSetup {
         // -- DatasetGraphABAC and base dataset
         final DatasetGraph dsg = server.getDataAccessPointRegistry().get("/knowledge").getDataService().getDataset();
         final DatasetGraphABAC dsgz = (DatasetGraphABAC) dsg;
-        final DatasetGraph dsgBase = dsgz.getBase();
 
         // Add connectors in such a way we can manually inject requests.
         FusekiSink<?> sink = new RdfAbacSink(dsgz, false);

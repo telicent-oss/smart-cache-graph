@@ -2964,7 +2964,9 @@ public class TestDatasetBackupService {
             }
             // Wait for threads to complete
             executorService.shutdown();
-            boolean ignored = executorService.awaitTermination(1, TimeUnit.SECONDS);
+            if (!executorService.awaitTermination(1, TimeUnit.SECONDS)) {
+                executorService.shutdownNow();
+            }
         }
         verify(response, times(1)).setStatus(409);
     }

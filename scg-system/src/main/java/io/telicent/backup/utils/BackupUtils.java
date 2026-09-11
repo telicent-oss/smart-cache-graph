@@ -614,7 +614,7 @@ public class BackupUtils extends ServletUtils {
                         LOG.info("File content: {}", content);
 
                         Object offsetObj = state.get("offsets");
-                        if (offsetObj instanceof Map<?, ?> map) {
+                        if (offsetObj instanceof Map<?, ?>) {
                             return Optional.of((Map<String, Object>) offsetObj);
                         }
                         return Optional.empty();
