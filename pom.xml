@@ -118,7 +118,7 @@
     <!-- Mirror any change here in SonarQube > Project Settings > General       -->
     <!-- Settings > Analysis Scope, or SonarQube for IDE will not honour them.  -->
     <!-- ===================================================================== -->
-    <sonar.issue.ignore.multicriteria>s1948servlets,s1948compaction,s2654,s1186,s2699,s2187,s3577,s115,s117,s101,s116,s6213,s3077filter,s5786,s1075,s5778,s5961,s3457tests,s2925,s107,s1845,s3516,s3776,s2093,s5443,s3252,s1452,s2629,s3878,s125tests,s5976tests,s1130tests,s1181compaction,s1181cqrsmod,s1181asyncbackup,s1181userinfo,s1141compaction,s1141distlifecycle,s1141main,s3077lifecycle,s2177cqrs,s8786user,s8786backup</sonar.issue.ignore.multicriteria>
+    <sonar.issue.ignore.multicriteria>s1948servlets,s1948compaction,s2654,s1186,s2699,s2187,s3577,s115,s117,s101,s116,s6213,s3077filter,s5786,s1075,s5778,s5961,s3457tests,s2925,s107,s1845,s3516,s3776,s2093,s5443,s3252,s1452,s2629,s3878,s125tests,s5976tests,s1130tests,s1181compaction,s1181cqrsmod,s1181asyncbackup,s1181userinfo,s1141compaction,s1141distlifecycle,s1141main,s3077lifecycle,s2177cqrs,s8786user,s8786backup,s5850backup</sonar.issue.ignore.multicriteria>
 
     <!-- S1948: non transient field in a Serializable class.                    -->
     <!-- HttpServlet implements Serializable only as a legacy artefact. SCG     -->
@@ -454,6 +454,15 @@
 
     <sonar.issue.ignore.multicriteria.s8786backup.ruleKey>java:S8786</sonar.issue.ignore.multicriteria.s8786backup.ruleKey>
     <sonar.issue.ignore.multicriteria.s8786backup.resourceKey>**/BackupUtils.java</sonar.issue.ignore.multicriteria.s8786backup.resourceKey>
+
+    <!-- S5850: "group parts of the regex together to make the intended          -->
+    <!-- operator precedence explicit". BackupUtils.sanitizeKey uses "^-+|-+$"   -->
+    <!-- to strip leading or trailing dashes. Alternation is the lowest          -->
+    <!-- precedence regex operator, so this already parses as (^-+)|(-+$), which -->
+    <!-- is the intended reading. There is no matching bug; adding parentheses   -->
+    <!-- would be cosmetic only.                                                 -->
+    <sonar.issue.ignore.multicriteria.s5850backup.ruleKey>java:S5850</sonar.issue.ignore.multicriteria.s5850backup.ruleKey>
+    <sonar.issue.ignore.multicriteria.s5850backup.resourceKey>**/BackupUtils.java</sonar.issue.ignore.multicriteria.s5850backup.resourceKey>
 
     <!-- Dependency versions -->
     <!-- Internal dependencies -->
