@@ -135,7 +135,7 @@ public class TestInitialCompaction {
     }
 
     @Test
-    @Disabled // Flaky/insufficiently isolated test - works reliably locally but fails on GitHub Actions
+    @Disabled("Flaky/insufficiently isolated test - works reliably locally but fails on GitHub Actions")
     public void test_persistentDataset_sizeSame_ignoredSecondCall() {
         // given
         mockDatabaseMgr.when(() -> DatabaseMgr.compact(any(), anyBoolean())).thenAnswer(invocationOnMock -> null);
@@ -156,7 +156,7 @@ public class TestInitialCompaction {
     }
 
     @Test
-    @Disabled // Flaky/insufficiently isolated test - works reliably locally but fails on GitHub Actions
+    @Disabled("Flaky/insufficiently isolated test - works reliably locally but fails on GitHub Actions")
     public void test_persistentDataset_dictionaryStore_sizeSame_ignoredSecondCall() {
         // given
         mockDatabaseMgr.when(() -> DatabaseMgr.compact(any(), anyBoolean())).thenAnswer(invocationOnMock -> null);
@@ -177,7 +177,7 @@ public class TestInitialCompaction {
     }
 
     @Test
-    @Disabled // Flaky/insufficiently isolated test - works reliably locally but fails on GitHub Actions
+    @Disabled("Flaky/insufficiently isolated test - works reliably locally but fails on GitHub Actions")
     public void test_persistentDataset_sizeDifferent_makeSecondCall() {
         // given
         mockDatabaseMgr.when(() -> DatabaseMgr.compact(any(), anyBoolean())).thenAnswer(invocationOnMock -> null);
@@ -778,7 +778,7 @@ public class TestInitialCompaction {
     }
 
     @Test
-    @Disabled // Flaky/insufficiently isolated test - works reliably locally but fails on GitHub Actions
+    @Disabled("Flaky/insufficiently isolated test - works reliably locally but fails on GitHub Actions")
     public void givenServer_whenPreviouslyCompacted_thenAskingToCompactAgainIsANoOp() {
         // Given
         mockDatabaseMgr.when(() -> DatabaseMgr.compact(any(), anyBoolean())).thenAnswer(invocationOnMock -> null);
