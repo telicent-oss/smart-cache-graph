@@ -55,6 +55,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -287,7 +288,7 @@ public class DatasetBackupService {
      * @param response the node to add metadata of process to
      */
     public void backupDataset(String datasetName, ObjectNode response) {
-        ZonedDateTime startTime = ZonedDateTime.now();
+        ZonedDateTime startTime = ZonedDateTime.now(ZoneId.systemDefault());
         String backupPath = getBackUpDir();
         int backupID = getNextDirectoryNumberAndCreate(backupPath);
         String backupIDPath = backupPath + "/" + backupID;
@@ -977,7 +978,7 @@ public class DatasetBackupService {
                 LOG.error("Failed to encrypt backup files", ex);
             }
         }
-        ZonedDateTime endTime = ZonedDateTime.now();
+        ZonedDateTime endTime = ZonedDateTime.now(ZoneId.systemDefault());
         response.put(END_TIME, endTime.toString());
         writeObjectNodeToFile(response, dirPath + JSON_INFO_SUFFIX);
     }

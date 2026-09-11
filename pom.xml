@@ -118,7 +118,7 @@
     <!-- Mirror any change here in SonarQube > Project Settings > General       -->
     <!-- Settings > Analysis Scope, or SonarQube for IDE will not honour them.  -->
     <!-- ===================================================================== -->
-    <sonar.issue.ignore.multicriteria>s1948servlets,s1948compaction,s2654,s1186,s2699,s2187,s3577,s115,s117,s101,s116,s6213,s3077filter,s5786,s1075,s5778,s5961,s3457tests,s2925,s107,s1845,s3516,s3776,s2093,s5443,s3252,s1452,s2629,s3878,s125tests,s5976tests,s1130tests,s1181compaction,s1181cqrsmod,s1181asyncbackup,s1181userinfo,s1141compaction,s1141distlifecycle,s1141main,s3077lifecycle,s2177cqrs,s8786user,s8786backup,s5850backup,s135backup</sonar.issue.ignore.multicriteria>
+    <sonar.issue.ignore.multicriteria>s1948servlets,s1948compaction,s2654,s1186,s2699,s2187,s3577,s115,s117,s101,s116,s6213,s3077filter,s5786,s1075,s5778,s5961,s3457tests,s2925,s107,s1845,s3516,s3776,s2093,s5443,s1452,s2629,s3878,s125tests,s5976tests,s1130tests,s1181compaction,s1181cqrsmod,s1181asyncbackup,s1181userinfo,s1141compaction,s1141distlifecycle,s1141main,s3077lifecycle,s2177cqrs,s8786user,s8786backup,s5850backup,s135backup</sonar.issue.ignore.multicriteria>
 
     <!-- S1948: non transient field in a Serializable class.                    -->
     <!-- HttpServlet implements Serializable only as a legacy artefact. SCG     -->
@@ -287,15 +287,6 @@
     <!-- Files.createTempFile and owner only Posix file permissions.             -->
     <sonar.issue.ignore.multicriteria.s5443.ruleKey>java:S5443</sonar.issue.ignore.multicriteria.s5443.ruleKey>
     <sonar.issue.ignore.multicriteria.s5443.resourceKey>**/SmartCacheGraph.java</sonar.issue.ignore.multicriteria.s5443.resourceKey>
-
-    <!-- S3252: EncryptionUtils calls Date.from(Instant) while importing         -->
-    <!-- java.sql.Date, which only inherits that static from java.util.Date.     -->
-    <!-- Correct today, but simplifying to "new Date(...)" would silently        -->
-    <!-- switch to java.sql.Date. NOTE: java:S8688 remains open on the same      -->
-    <!-- line: LocalDateTime.now().toInstant(ZoneOffset.UTC) takes local time     -->
-    <!-- and labels it UTC, so the PGP literal timestamp is off by our offset.   -->
-    <sonar.issue.ignore.multicriteria.s3252.ruleKey>java:S3252</sonar.issue.ignore.multicriteria.s3252.ruleKey>
-    <sonar.issue.ignore.multicriteria.s3252.resourceKey>**/EncryptionUtils.java</sonar.issue.ignore.multicriteria.s3252.resourceKey>
 
     <!-- S1452: ResponseEntity<?> on DeletionJobController.getJobStatus. Common  -->
     <!-- Spring idiom, though inconsistent with the typed sibling method.        -->
