@@ -39,7 +39,7 @@ public class AccessQueryServlet extends HttpServlet {
     }
 
     @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) {
         try (final InputStream inputStream = request.getInputStream()) {
             final AccessQuery query = OBJECT_MAPPER.readValue(inputStream, AccessQuery.class);
             final Triple accessQueryTriple = getAccessQueryTriple(query);
@@ -55,6 +55,13 @@ public class AccessQueryServlet extends HttpServlet {
             handleError(response, OBJECT_MAPPER.createObjectNode(), HttpServletResponse.SC_BAD_REQUEST, ex.getMessage());
         } catch (JsonProcessingException ex) {
             handleError(response, OBJECT_MAPPER.createObjectNode(), HttpServletResponse.SC_BAD_REQUEST, "Missing or invalid request body content");
+        } catch (IOException ioex) {
+            // Anything left is a transport-level failure reading the request body (for example the client
+            // disconnecting mid-request), not malformed JSON - that is the JsonProcessingException above.
+            // Report it as a bad request on a best-effort basis rather than letting it escape the servlet.
+            LOG.warn("Failed to read request body", ioex);
+            handleError(response, OBJECT_MAPPER.createObjectNode(), HttpServletResponse.SC_BAD_REQUEST,
+                        "Unable to read request body");
         }
     }
 

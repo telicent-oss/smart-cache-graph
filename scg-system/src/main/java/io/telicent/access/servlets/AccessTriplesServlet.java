@@ -40,7 +40,7 @@ public class AccessTriplesServlet extends HttpServlet {
     }
 
     @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) {
         boolean requireAllVisible = isAllVisibleRequired(request);
         try (final InputStream inputStream = request.getInputStream()) {
             final JsonTriples query = OBJECT_MAPPER.readValue(inputStream, JsonTriples.class);
@@ -56,6 +56,13 @@ public class AccessTriplesServlet extends HttpServlet {
             handleError(response, OBJECT_MAPPER.createObjectNode(), HttpServletResponse.SC_BAD_REQUEST, ex.getMessage());
         } catch (JsonProcessingException jpex) {
             handleError(response, OBJECT_MAPPER.createObjectNode(), HttpServletResponse.SC_BAD_REQUEST, "Unable to interpret JSON request");
+        } catch (IOException ioex) {
+            // Anything left is a transport-level failure reading the request body (for example the client
+            // disconnecting mid-request), not malformed JSON - that is the JsonProcessingException above.
+            // Report it as a bad request on a best-effort basis rather than letting it escape the servlet.
+            LOG.warn("Failed to read request body", ioex);
+            handleError(response, OBJECT_MAPPER.createObjectNode(), HttpServletResponse.SC_BAD_REQUEST,
+                        "Unable to read request body");
         }
     }
 
