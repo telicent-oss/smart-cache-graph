@@ -50,7 +50,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
-import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -103,7 +102,7 @@ public class DatasetBackupService {
     static final ConcurrentHashMap<String, TriConsumer<DataAccessPoint, String, ObjectNode>> backupConsumerMap = new ConcurrentHashMap<>();
     static final ConcurrentHashMap<String, TriConsumer<DataAccessPoint, String, ObjectNode>> restoreConsumerMap = new ConcurrentHashMap<>();
 
-    public DatasetBackupService(DataAccessPointRegistry dapRegistry, KeyPair keyPair, DataSecurityPlugin dataSecurityPlugin) throws URISyntaxException, IOException, PGPException {
+    public DatasetBackupService(DataAccessPointRegistry dapRegistry, KeyPair keyPair, DataSecurityPlugin dataSecurityPlugin) throws IOException, PGPException {
         LOG.info("Backup encryption is enabled.");
         this.keyPair = keyPair;
         this.encryptionUtils = new EncryptionUtils(keyPair.privateKeyUrl().openStream(), keyPair.passphrase());
