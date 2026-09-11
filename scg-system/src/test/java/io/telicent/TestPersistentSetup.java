@@ -256,7 +256,7 @@ public class TestPersistentSetup {
             return;
         }
 
-        attributeStore.attributes(user).attributeValues((attributeValue) -> {
+        attributeStore.attributes(user).attributeValues(attributeValue -> {
             Attribute a = attributeValue.attribute();
             ValueTerm vt = attributeValue.value();
             System.out.printf("    %s %s", a, vt);
