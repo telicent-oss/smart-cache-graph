@@ -38,8 +38,9 @@ public class UserUtils {
 
         String authHeader = action.getRequestHeader(HttpNames.hAuthorization);
         if ( authHeader == null || authHeader.isBlank() ) {
+            // Deliberately returns null rather than raising a bad-request error: a missing
+            // Authorization header means "no user", which callers handle, not a malformed request.
             return null;
-            //ServletOps.errorBadRequest("No Authorization header");
         }
         // Format "Bearer user:...."
         // Anchored pattern

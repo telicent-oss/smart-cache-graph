@@ -95,13 +95,8 @@ public class FMod_CQRS implements FusekiModule {
     public void configDataAccessPoint(DataAccessPoint dap, Model configModel) {
         dap.getDataService().forEachEndpoint(endpoint -> {
             Operation op = endpoint.getOperation();
-            // Upgrade all update operations ...
-//            if ( Operation.Update.equals(op) ) {
-//                if ( topicName != null )
-//                    op = CQRS.Vocab.operationUpdateCQRS;
-//            }
-
-            // Bind a processor to any CQRS Update operation.
+            // Bind a processor to any CQRS Update operation. Note that plain Operation.Update endpoints
+            // are deliberately left alone: only an endpoint already declared as CQRS update is upgraded.
             if (CQRS.Vocab.operationUpdateCQRS.equals(op)) {
                 String topicName = getTopicFromContext(endpoint.getContext());
                 if (topicName == null) {

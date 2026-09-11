@@ -34,7 +34,7 @@ import static io.telicent.utils.ServletUtils.requestContextFrom;
 /**
  * A Fuseki action that evaluates GraphQL Requests that use the Telicent Graph schema
  */
-public class ActionTelicentGraphQL extends ActionGraphQL { //implements ABAC_Processor {
+public class ActionTelicentGraphQL extends ActionGraphQL {
     private final DataSecurityPlugin dataSecurityPlugin;
 
     public ActionTelicentGraphQL(GraphQLOverDatasetExecutor executor, DataSecurityPlugin dataSecurityPlugin) {

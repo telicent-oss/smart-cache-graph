@@ -228,15 +228,6 @@ public class CQRS {
         }
     }
 
-//    private static Header kafkaHeader(String key_value) {
-//        String[] a = key_value.split(":",2);
-//        if ( a.length != 2 )
-//            throw new CmdException("Bad header (format is \"name: value\"): "+key_value);
-//        String key = a[0].trim();
-//        String value = a[1].trim();
-//        return kafkaHeader(key, value);
-//    }
-
     static Header kafkaHeader(String key, String value) {
         return new RecordHeader(key, value.getBytes(StandardCharsets.UTF_8));
     }
