@@ -118,7 +118,7 @@
     <!-- Mirror any change here in SonarQube > Project Settings > General       -->
     <!-- Settings > Analysis Scope, or SonarQube for IDE will not honour them.  -->
     <!-- ===================================================================== -->
-    <sonar.issue.ignore.multicriteria>s1948servlets,s1948compaction,s2654,s1186,s2699,s2187,s3577,s115,s117,s101,s116,s6213,s3077filter,s5786,s1075,s5778,s5961,s3457tests,s2925,s107,s1845,s3516,s3776,s2093,s5443,s1452,s2629,s3878,s125tests,s5976tests,s1130tests,s1181compaction,s1181cqrsmod,s1181asyncbackup,s1181userinfo,s1141compaction,s1141distlifecycle,s1141main,s3077lifecycle,s2177cqrs,s8786user,s8786backup,s5850backup,s135backup,s5738jwtauth,s1181cqrsupdate</sonar.issue.ignore.multicriteria>
+    <sonar.issue.ignore.multicriteria>s1948servlets,s1948compaction,s2654,s1186,s2699,s2187,s3577,s115,s117,s101,s116,s6213,s3077filter,s5786,s1075,s5778,s5961,s3457tests,s2925,s107,s1845,s3516,s3776,s2093,s5443,s1452,s2629,s3878,s125tests,s5976tests,s1130tests,s1181compaction,s1181cqrsmod,s1181asyncbackup,s1181userinfo,s1141compaction,s1141distlifecycle,s1141main,s3077lifecycle,s2177cqrs,s8786user,s8786backup,s5850backup,s135backup,s5738jwtauth,s1181cqrsupdate,s1068cqrsupdate</sonar.issue.ignore.multicriteria>
 
     <!-- S1948: non transient field in a Serializable class.                    -->
     <!-- HttpServlet implements Serializable only as a legacy artefact. SCG     -->
@@ -486,6 +486,17 @@
     <!-- thread, and swallows ActionErrorException without rethrowing.           -->
     <sonar.issue.ignore.multicriteria.s1181cqrsupdate.ruleKey>java:S1181</sonar.issue.ignore.multicriteria.s1181cqrsupdate.ruleKey>
     <sonar.issue.ignore.multicriteria.s1181cqrsupdate.resourceKey>**/SPARQL_Update_CQRS.java</sonar.issue.ignore.multicriteria.s1181cqrsupdate.resourceKey>
+
+    <!-- S1068: unused private field. SPARQL_Update_CQRS declares "resolver",    -->
+    <!-- never referenced, and "getUser", which the constructor validates with   -->
+    <!-- Objects.requireNonNull and then never reads. Both are residue of this   -->
+    <!-- class being a copy of Jena's SPARQL_Update.                            -->
+    <!-- Suppressed rather than fixed because deleting the getUser field naively -->
+    <!-- would also drop the deliberate constructor argument validation; keeping -->
+    <!-- the check while removing the field is a small API change to make when   -->
+    <!-- this copy is next reconciled with upstream.                            -->
+    <sonar.issue.ignore.multicriteria.s1068cqrsupdate.ruleKey>java:S1068</sonar.issue.ignore.multicriteria.s1068cqrsupdate.ruleKey>
+    <sonar.issue.ignore.multicriteria.s1068cqrsupdate.resourceKey>**/SPARQL_Update_CQRS.java</sonar.issue.ignore.multicriteria.s1068cqrsupdate.resourceKey>
 
     <!-- Dependency versions -->
     <!-- Internal dependencies -->
