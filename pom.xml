@@ -118,7 +118,7 @@
     <!-- Mirror any change here in SonarQube > Project Settings > General       -->
     <!-- Settings > Analysis Scope, or SonarQube for IDE will not honour them.  -->
     <!-- ===================================================================== -->
-    <sonar.issue.ignore.multicriteria>s1948servlets,s1948compaction,s2654,s1186,s2699,s2187,s3577,s115,s117,s101,s116,s6213,s3077filter,s5786,s1075,s5778,s5961,s3457tests,s2925,s107,s1845,s3516,s3776,s2093,s5443,s1452,s2629,s3878,s125tests,s5976tests,s1130tests,s1181compaction,s1181cqrsmod,s1181asyncbackup,s1181userinfo,s1141compaction,s1141distlifecycle,s1141main,s3077lifecycle,s2177cqrs,s8786user,s8786backup,s5850backup,s135backup,s5738jwtauth,s1181cqrsupdate,s1068cqrsupdate,s1134userinfo,s6541backup,s112backupreport,s3077jobresult,s3077compactionjob</sonar.issue.ignore.multicriteria>
+    <sonar.issue.ignore.multicriteria>s1948servlets,s1948compaction,s2654,s1186,s2699,s2187,s3577,s115,s117,s101,s116,s6213,s3077filter,s5786,s1075,s5778,s5961,s3457tests,s2925,s107,s1845,s3516,s3776,s2093,s5443,s1452,s2629,s3878,s125tests,s5976tests,s1130tests,s1181compaction,s1181cqrsmod,s1181asyncbackup,s1181userinfo,s1141compaction,s1141distlifecycle,s1141main,s3077lifecycle,s2177cqrs,s8786user,s8786backup,s5850backup,s135backup,s5738jwtauth,s1181cqrsupdate,s1068cqrsupdate,s1134userinfo,s6541backup,s112backupreport,s3077jobresult,s3077compactionjob,s1134pom</sonar.issue.ignore.multicriteria>
 
     <!-- S1948: non transient field in a Serializable class.                    -->
     <!-- HttpServlet implements Serializable only as a legacy artefact. SCG     -->
@@ -542,6 +542,15 @@
 
     <sonar.issue.ignore.multicriteria.s3077compactionjob.ruleKey>java:S3077</sonar.issue.ignore.multicriteria.s3077compactionjob.ruleKey>
     <sonar.issue.ignore.multicriteria.s3077compactionjob.resourceKey>**/FMod_InitialCompaction.java</sonar.issue.ignore.multicriteria.s3077compactionjob.resourceKey>
+
+    <!-- xml:S1134 on this POM itself. The justification comment for the         -->
+    <!-- s1134userinfo exclusion above has to name the tag it is talking about,  -->
+    <!-- so the XML analyzer reads that word as an unresolved marker in this     -->
+    <!-- file. Self inflicted and purely textual - there is no outstanding work  -->
+    <!-- recorded in this POM. Scoped to the POM so the rule keeps firing on     -->
+    <!-- any other XML in the project.                                           -->
+    <sonar.issue.ignore.multicriteria.s1134pom.ruleKey>xml:S1134</sonar.issue.ignore.multicriteria.s1134pom.ruleKey>
+    <sonar.issue.ignore.multicriteria.s1134pom.resourceKey>**/pom.xml</sonar.issue.ignore.multicriteria.s1134pom.resourceKey>
 
     <!-- Dependency versions -->
     <!-- Internal dependencies -->
