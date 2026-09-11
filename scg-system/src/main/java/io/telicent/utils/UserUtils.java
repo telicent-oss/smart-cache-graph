@@ -22,8 +22,7 @@ public class UserUtils {
             String auser = userFromHTTP(action);
             if ( auser != null )
                 return auser;
-            String ruser = null;
-            return ruser;
+            return null;
         };
     }
 
@@ -44,8 +43,7 @@ public class UserUtils {
         Matcher m = authHeaderPattern.matcher(authHeader);
         if ( ! m.matches() )
             ServletOps.errorBadRequest("Bad Authorization header");
-        String auser = m.group(1);
-        return auser;
+        return m.group(1);
     }
 
 }

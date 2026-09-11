@@ -109,7 +109,6 @@ public class TestSmartCacheGraphIntegration {
         System.setProperty("ABAC_HIERARCHIES_URL", lookupHierarchAttribesURL);
         System.setProperty("AWS_REGION", "eu-west-1");
 
-        FusekiServer server = SmartCacheGraph.construct("--port=0", "--conf", DIR+"/"+configFile).start();
-        return server;
+        return SmartCacheGraph.construct("--port=0", "--conf", DIR+"/"+configFile).start();
     }
 }

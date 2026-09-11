@@ -218,8 +218,7 @@ public class CQRS {
         try {
             ProducerRecord<K, V> pRec = new ProducerRecord<>(topic, partition, null, null, body, headers);
             Future<RecordMetadata> f = producer.send(pRec);
-            RecordMetadata res = f.get();
-            return res;
+            return f.get();
         } catch (InterruptedException e) {
             // Restore the interrupt flag before wrapping: f.get() blocks the calling request
             // thread, so swallowing the interrupt would lose a shutdown or cancellation signal.

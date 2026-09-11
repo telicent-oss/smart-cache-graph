@@ -74,8 +74,7 @@ public class MainSmartCacheGraph {
             LOG.info("User attribute store: {}", userAttributeStore);
 
         // SmartCacheGraph.construct does the work of building a configured server.
-        FusekiServer server = SmartCacheGraph.construct(args);
-        return server;
+        return SmartCacheGraph.construct(args);
     }
 
     private static String ENV_USER_ATTRIBUTES_URL = "USER_ATTRIBUTES_URL";
@@ -86,7 +85,6 @@ public class MainSmartCacheGraph {
         String s1 = System.getenv().get(ENV_USER_ATTRIBUTES_URL);
         if ( s1 != null )
             return s1;
-        String s2 = System.getProperty(PROPERTY_USER_ATTRIBUTES_URL);
-        return s2;
+        return System.getProperty(PROPERTY_USER_ATTRIBUTES_URL);
     }
 }

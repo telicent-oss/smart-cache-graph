@@ -485,8 +485,7 @@ public abstract class AbstractSmartCacheGraphSinkTests {
 
     private long count(String URL, String queryString, String user) {
         RowSet rowSet = (user == null) ? queryNoToken(URL, queryString) : queryWithToken(URL, queryString, user);
-        long c = RowSetOps.count(rowSet);
-        return c;
+        return RowSetOps.count(rowSet);
     }
 
     private void checkDatasetSize(DatasetGraph dsg, int expectedCount) {
