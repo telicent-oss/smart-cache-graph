@@ -118,7 +118,7 @@
     <!-- Mirror any change here in SonarQube > Project Settings > General       -->
     <!-- Settings > Analysis Scope, or SonarQube for IDE will not honour them.  -->
     <!-- ===================================================================== -->
-    <sonar.issue.ignore.multicriteria>s1948servlets,s1948compaction,s2654,s1186,s2699,s2187,s3577,s115,s117,s101,s116,s6213,s3077filter,s5786,s1075,s5778,s5961,s3457tests,s2925,s107,s1845,s3516,s3776,s2093,s5443,s1452,s2629,s3878,s125tests,s5976tests,s1130tests,s1181compaction,s1181cqrsmod,s1181asyncbackup,s1181userinfo,s1141compaction,s1141distlifecycle,s1141main,s3077lifecycle,s2177cqrs,s8786user,s8786backup,s5850backup,s135backup</sonar.issue.ignore.multicriteria>
+    <sonar.issue.ignore.multicriteria>s1948servlets,s1948compaction,s2654,s1186,s2699,s2187,s3577,s115,s117,s101,s116,s6213,s3077filter,s5786,s1075,s5778,s5961,s3457tests,s2925,s107,s1845,s3516,s3776,s2093,s5443,s1452,s2629,s3878,s125tests,s5976tests,s1130tests,s1181compaction,s1181cqrsmod,s1181asyncbackup,s1181userinfo,s1141compaction,s1141distlifecycle,s1141main,s3077lifecycle,s2177cqrs,s8786user,s8786backup,s5850backup,s135backup,s5738jwtauth</sonar.issue.ignore.multicriteria>
 
     <!-- S1948: non transient field in a Serializable class.                    -->
     <!-- HttpServlet implements Serializable only as a legacy artefact. SCG     -->
@@ -463,6 +463,20 @@
     <!-- records this same method as accepted at cognitive complexity 46.        -->
     <sonar.issue.ignore.multicriteria.s135backup.ruleKey>java:S135</sonar.issue.ignore.multicriteria.s135backup.ruleKey>
     <sonar.issue.ignore.multicriteria.s135backup.resourceKey>**/BackupUtils.java</sonar.issue.ignore.multicriteria.s135backup.resourceKey>
+
+    <!-- S5738: call to a deprecated field marked for removal.                  -->
+    <!-- FMod_JwtServletAuth uses AuthConstants.FEATURE_FLAG_AUTHORIZATION      -->
+    <!-- (jwt-auth-common), which is @Deprecated(forRemoval = true) and for      -->
+    <!-- which that library ships NO replacement constant. Suppressed as a       -->
+    <!-- decision to keep the flag until the upstream direction is settled.      -->
+    <!--                                                                        -->
+    <!-- WARNING - this exclusion does not make the problem go away. The field   -->
+    <!-- guards whether UserInfoFilter and TelicentAuthorizationFilter are        -->
+    <!-- registered at all, so retiring it is a decision about whether            -->
+    <!-- authorization stays optional. When smart-caches-core drops the field    -->
+    <!-- SCG will fail to COMPILE, and this exclusion will not prevent that.      -->
+    <sonar.issue.ignore.multicriteria.s5738jwtauth.ruleKey>java:S5738</sonar.issue.ignore.multicriteria.s5738jwtauth.ruleKey>
+    <sonar.issue.ignore.multicriteria.s5738jwtauth.resourceKey>**/FMod_JwtServletAuth.java</sonar.issue.ignore.multicriteria.s5738jwtauth.resourceKey>
 
     <!-- Dependency versions -->
     <!-- Internal dependencies -->
