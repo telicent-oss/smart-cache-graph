@@ -118,7 +118,7 @@
     <!-- Mirror any change here in SonarQube > Project Settings > General       -->
     <!-- Settings > Analysis Scope, or SonarQube for IDE will not honour them.  -->
     <!-- ===================================================================== -->
-    <sonar.issue.ignore.multicriteria>s1948servlets,s1948compaction,s2654,s1186,s2699,s2187,s3577,s115,s117,s101,s116,s6213,s3077filter,s5786,s1075,s5778,s5961,s3457tests,s2925,s107,s1845,s3516,s3776,s2093,s5443,s3252,s1452,s2629,s3878,s125tests,s5976tests,s1130tests,s1181compaction,s1181cqrsmod,s1181asyncbackup,s1181userinfo,s1141compaction,s1141distlifecycle,s1141main,s3077lifecycle</sonar.issue.ignore.multicriteria>
+    <sonar.issue.ignore.multicriteria>s1948servlets,s1948compaction,s2654,s1186,s2699,s2187,s3577,s115,s117,s101,s116,s6213,s3077filter,s5786,s1075,s5778,s5961,s3457tests,s2925,s107,s1845,s3516,s3776,s2093,s5443,s3252,s1452,s2629,s3878,s125tests,s5976tests,s1130tests,s1181compaction,s1181cqrsmod,s1181asyncbackup,s1181userinfo,s1141compaction,s1141distlifecycle,s1141main,s3077lifecycle,s2177cqrs</sonar.issue.ignore.multicriteria>
 
     <!-- S1948: non transient field in a Serializable class.                    -->
     <!-- HttpServlet implements Serializable only as a legacy artefact. SCG     -->
@@ -259,8 +259,9 @@
     <!-- (UpdateAction.parseExecute treats null as "no using list"), so this is -->
     <!-- clarity only. Sonar has declined to treat the throwing path as an      -->
     <!-- exception (SONARJAVA-3473), so the issue will not self resolve. NOTE:  -->
-    <!-- java:S2177 remains open on the same method, because processProtocol    -->
-    <!-- also hides a private method of the same name in SPARQL_Update.         -->
+    <!-- java:S2177 fires on the same method because processProtocol hides a    -->
+    <!-- private method of the same name in SPARQL_Update; that is now covered  -->
+    <!-- by s2177cqrs below.                                                    -->
     <sonar.issue.ignore.multicriteria.s3516.ruleKey>java:S3516</sonar.issue.ignore.multicriteria.s3516.ruleKey>
     <sonar.issue.ignore.multicriteria.s3516.resourceKey>**/SPARQL_Update_CQRS.java</sonar.issue.ignore.multicriteria.s3516.resourceKey>
 
@@ -421,6 +422,18 @@
     <!-- would remove the finding outright rather than by exclusion.             -->
     <sonar.issue.ignore.multicriteria.s3077lifecycle.ruleKey>java:S3077</sonar.issue.ignore.multicriteria.s3077lifecycle.ruleKey>
     <sonar.issue.ignore.multicriteria.s3077lifecycle.resourceKey>**/DistributionLifecycleReadiness.java</sonar.issue.ignore.multicriteria.s3077lifecycle.resourceKey>
+
+    <!-- S2177: "rename this method; there is a private method in the parent     -->
+    <!-- class with the same name". SPARQL_Update_CQRS extends Jena's           -->
+    <!-- SPARQL_Update, which declares processProtocol private. Private methods -->
+    <!-- are not virtual, so there is no shadowing or dispatch surprise; the    -->
+    <!-- subclass simply cannot reuse the parent's, which is why line 159 reads -->
+    <!-- "//Necessary copies due to private." Renaming would only obscure the    -->
+    <!-- deliberate parallel with upstream and make future diffs against Jena   -->
+    <!-- harder. Premise of the rule does not hold for an inaccessible parent   -->
+    <!-- member.                                                                -->
+    <sonar.issue.ignore.multicriteria.s2177cqrs.ruleKey>java:S2177</sonar.issue.ignore.multicriteria.s2177cqrs.ruleKey>
+    <sonar.issue.ignore.multicriteria.s2177cqrs.resourceKey>**/SPARQL_Update_CQRS.java</sonar.issue.ignore.multicriteria.s2177cqrs.resourceKey>
 
     <!-- Dependency versions -->
     <!-- Internal dependencies -->
