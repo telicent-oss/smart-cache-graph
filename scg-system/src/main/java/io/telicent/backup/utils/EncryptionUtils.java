@@ -230,10 +230,8 @@ public class EncryptionUtils {
             throw new PGPException("Message is not a simple encrypted file - Type Unknown");
         }
         // Performing Integrity check
-        if (publicKeyEncryptedData.isIntegrityProtected()) {
-            if (!publicKeyEncryptedData.verify()) {
-                throw new PGPException("Message failed integrity check");
-            }
+        if (publicKeyEncryptedData.isIntegrityProtected() && !publicKeyEncryptedData.verify()) {
+            throw new PGPException("Message failed integrity check");
         }
     }
 

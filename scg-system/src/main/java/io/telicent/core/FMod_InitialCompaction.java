@@ -302,12 +302,11 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
             //      before Kafka connectors are started, and again after they are started, this gives us two
             //      opportunities to compact stuff
             long sizeBefore = findDatabaseSize(dsg);
-            if (SIZES.containsKey(name)) {
-                if (sizeBefore <= SIZES.get(name)) {
-                    LOG.info("[Compaction] Additional compaction not required for {} as it is already maximally compacted at {} ({})",
-                             name, humanReadableSize(sizeBefore), sizeBefore);
-                    return CompactionStatus.SKIPPED_ALREADY_COMPACTED;
-                }
+            Long previousSize = SIZES.get(name);
+            if (previousSize != null && sizeBefore <= previousSize) {
+                LOG.info("[Compaction] Additional compaction not required for {} as it is already maximally compacted at {} ({})",
+                         name, humanReadableSize(sizeBefore), sizeBefore);
+                return CompactionStatus.SKIPPED_ALREADY_COMPACTED;
             }
 
             // To avoid redundant work when we complete a compaction we record the compacted size in a file on the
