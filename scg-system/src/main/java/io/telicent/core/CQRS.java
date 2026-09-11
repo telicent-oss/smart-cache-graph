@@ -28,7 +28,6 @@ import java.util.function.Consumer;
 
 import io.telicent.smart.cache.sources.TelicentHeaders;
 import io.telicent.utils.UserUtils;
-import org.apache.jena.atlas.lib.Bytes;
 import org.apache.jena.atlas.logging.Log;
 import org.apache.jena.fuseki.server.Operation;
 import org.apache.jena.fuseki.servlets.ActionService;
@@ -187,7 +186,6 @@ public class CQRS {
             }
             sendToKafka(changesCtl.producer, changesCtl.topic, sendHeaders, kBody);
         } else {
-            System.out.print(Bytes.bytes2string(kBody));
             LOG.info("Send to Kafka: topic={} bytes={}", changesCtl.topic, kBody.length);
         }
         action.getContext().remove(symbol);
