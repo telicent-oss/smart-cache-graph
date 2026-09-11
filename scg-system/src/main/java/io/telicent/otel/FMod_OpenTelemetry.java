@@ -23,7 +23,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.metrics.Meter;
-import io.opentelemetry.api.metrics.ObservableLongGauge;
 import io.opentelemetry.semconv.DbAttributes;
 import io.telicent.core.FMod_InitialCompaction;
 import org.apache.commons.io.FileUtils;
@@ -36,10 +35,7 @@ import org.apache.jena.fuseki.main.FusekiServer;
 import org.apache.jena.fuseki.main.sys.FusekiModule;
 import org.apache.jena.fuseki.server.*;
 import org.apache.jena.rdf.model.Model;
-import org.apache.jena.sparql.core.DatasetGraph;
-import org.apache.jena.sparql.util.DatasetUtils;
 import org.apache.jena.tdb2.store.DatasetGraphSwitchable;
-import org.apache.jena.tdb2.store.DatasetGraphTDB;
 
 @SuppressWarnings("deprecation")
 public class FMod_OpenTelemetry implements FusekiModule {

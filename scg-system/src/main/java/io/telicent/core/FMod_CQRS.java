@@ -37,9 +37,7 @@ import org.apache.jena.fuseki.servlets.HttpAction;
 import org.apache.jena.kafka.KConnectorDesc;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.riot.WebContent;
-import org.apache.jena.sparql.algebra.Op;
 import org.apache.jena.sparql.util.Context;
-import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
 import org.slf4j.Logger;
 

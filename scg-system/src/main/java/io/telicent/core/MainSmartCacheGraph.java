@@ -29,6 +29,10 @@ public class MainSmartCacheGraph {
 
     public static final Logger LOG = LoggerFactory.getLogger(MainSmartCacheGraph.class);
 
+    static {
+        JenaSystem.init();
+    }
+
     /*
     To test with Open Telemetry metrics you'll need to adjust the run configuration for this class to attach the Java
     Agent to the launched JVM by adding the following argument:

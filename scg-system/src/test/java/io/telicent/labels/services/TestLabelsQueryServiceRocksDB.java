@@ -4,8 +4,6 @@ import io.telicent.jena.abac.labels.*;
 import io.telicent.labels.TripleLabels;
 import io.telicent.smart.cache.security.data.labels.SecurityLabelsApplicator;
 import io.telicent.smart.cache.security.data.plugins.DataSecurityPlugin;
-import io.telicent.smart.cache.security.data.plugins.rdf.abac.RdfAbacApplicator;
-import io.telicent.smart.cache.security.data.plugins.rdf.abac.RdfAbacParser;
 import org.apache.commons.io.FileUtils;
 import org.apache.jena.graph.NodeFactory;
 import org.apache.jena.graph.Triple;

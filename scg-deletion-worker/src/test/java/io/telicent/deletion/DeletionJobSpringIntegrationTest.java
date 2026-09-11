@@ -19,7 +19,6 @@ package io.telicent.deletion;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.telicent.deletion.service.UserInfoService;
 import io.telicent.smart.cache.sources.TelicentHeaders;
-import jakarta.servlet.http.HttpServletRequest;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.common.header.Header;

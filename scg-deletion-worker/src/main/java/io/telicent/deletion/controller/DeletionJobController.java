@@ -20,7 +20,6 @@ import io.telicent.deletion.model.JobState;
 import io.telicent.deletion.service.DeletionJobService;
 import io.telicent.deletion.service.JobRegistry;
 import io.telicent.deletion.service.UserInfoService;
-import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

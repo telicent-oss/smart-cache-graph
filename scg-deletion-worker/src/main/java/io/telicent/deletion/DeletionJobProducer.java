@@ -20,7 +20,6 @@ import io.telicent.jena.abac.labels.node.LabelToNodeGenerator;
 import io.telicent.smart.cache.sources.TelicentHeaders;
 import org.apache.jena.rdfpatch.RDFPatch;
 import org.apache.jena.rdfpatch.RDFPatchOps;
-import org.apache.jena.rdfpatch.changes.RDFChangesApply;
 import org.apache.jena.riot.Lang;
 import org.apache.jena.riot.RDFLanguages;
 import org.apache.jena.riot.RDFParser;
