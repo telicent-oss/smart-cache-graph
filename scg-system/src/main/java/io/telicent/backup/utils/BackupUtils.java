@@ -252,10 +252,7 @@ public class BackupUtils extends ServletUtils {
             return false;
         }
         File path = new File(pathString);
-        if (path.exists() && path.isDirectory()) {
-            return true;
-        }
-        return false;
+        return path.exists() && path.isDirectory();
     }
 
     /**
@@ -269,10 +266,7 @@ public class BackupUtils extends ServletUtils {
             return false;
         }
         File path = new File(pathString);
-        if (path.exists() && path.isFile()) {
-            return true;
-        }
-        return false;
+        return path.exists() && path.isFile();
     }
 
     /**

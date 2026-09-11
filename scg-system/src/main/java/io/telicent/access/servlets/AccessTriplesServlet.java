@@ -49,13 +49,9 @@ public class AccessTriplesServlet extends HttpServlet {
             final int requestedTriplesCount = query.triples.size();
             final int visibleTriplesCount = queryService.getVisibleTriplesCount(action, requestedTriples);
             final int notVisibleCount = requestedTriplesCount - visibleTriplesCount;
-            if (notVisibleCount == requestedTriplesCount) {
-                createResponse(response, query, false);
-            } else if (notVisibleCount > 0 && requireAllVisible) {
-                createResponse(response, query, false);
-            } else {
-                createResponse(response, query, true);
-            }
+            final boolean allVisible = notVisibleCount == 0
+                    || (notVisibleCount < requestedTriplesCount && !requireAllVisible);
+            createResponse(response, query, allVisible);
         } catch (SmartCacheGraphException ex) {
             handleError(response, OBJECT_MAPPER.createObjectNode(), HttpServletResponse.SC_BAD_REQUEST, ex.getMessage());
         } catch (JsonProcessingException jpex) {
