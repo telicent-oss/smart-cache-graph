@@ -118,7 +118,7 @@
     <!-- Mirror any change here in SonarQube > Project Settings > General       -->
     <!-- Settings > Analysis Scope, or SonarQube for IDE will not honour them.  -->
     <!-- ===================================================================== -->
-    <sonar.issue.ignore.multicriteria>s1948servlets,s1948compaction,s2654,s1186,s2699,s2187,s3577,s115,s117,s101,s116,s6213,s3077filter,s5786,s1075,s5778,s5961,s3457tests,s2925,s107,s1845,s3516,s3776,s2093,s5443,s1452,s2629,s3878,s125tests,s5976tests,s1130tests,s1181compaction,s1181cqrsmod,s1181asyncbackup,s1181userinfo,s1141compaction,s1141distlifecycle,s1141main,s3077lifecycle,s2177cqrs,s8786user,s8786backup,s5850backup,s135backup,s5738jwtauth</sonar.issue.ignore.multicriteria>
+    <sonar.issue.ignore.multicriteria>s1948servlets,s1948compaction,s2654,s1186,s2699,s2187,s3577,s115,s117,s101,s116,s6213,s3077filter,s5786,s1075,s5778,s5961,s3457tests,s2925,s107,s1845,s3516,s3776,s2093,s5443,s1452,s2629,s3878,s125tests,s5976tests,s1130tests,s1181compaction,s1181cqrsmod,s1181asyncbackup,s1181userinfo,s1141compaction,s1141distlifecycle,s1141main,s3077lifecycle,s2177cqrs,s8786user,s8786backup,s5850backup,s135backup,s5738jwtauth,s1181cqrsupdate</sonar.issue.ignore.multicriteria>
 
     <!-- S1948: non transient field in a Serializable class.                    -->
     <!-- HttpServlet implements Serializable only as a legacy artefact. SCG     -->
@@ -353,11 +353,13 @@
     <!--   FMod_CQRS 156 (closing Kafka producers on serverStopped, so one bad  -->
     <!--     producer does not prevent the rest closing);                       -->
     <!--   UserInfoFilter 123 (filter destroy()).                               -->
-    <!-- NOT suppressed: SPARQL_Update_CQRS 136 remains open. That one is on    -->
-    <!-- the SPARQL update request path and does not rethrow when the Throwable -->
-    <!-- is an ActionErrorException, unlike the OperationDeniedException arm     -->
-    <!-- above it, so it needs review against upstream Jena rather than         -->
-    <!-- exclusion.                                                             -->
+    <!-- SPARQL_Update_CQRS 136 is also covered now (s1181cqrsupdate below),    -->
+    <!-- by decision rather than because it is equivalent: that one is on the   -->
+    <!-- SPARQL update request path and does not rethrow when the Throwable is  -->
+    <!-- an ActionErrorException, unlike the OperationDeniedException arm above -->
+    <!-- it. The whole file is a deliberate copy of Jena's SPARQL_Update, so    -->
+    <!-- the handler matches upstream; revisit it when that copy is next        -->
+    <!-- reconciled.                                                            -->
     <!-- Known limitation of all seven: an Error such as OutOfMemoryError is    -->
     <!-- logged and discarded. Adding "if (t instanceof Error e) throw e;" as    -->
     <!-- the first line of each handler would address that without changing the -->
@@ -477,6 +479,13 @@
     <!-- SCG will fail to COMPILE, and this exclusion will not prevent that.      -->
     <sonar.issue.ignore.multicriteria.s5738jwtauth.ruleKey>java:S5738</sonar.issue.ignore.multicriteria.s5738jwtauth.ruleKey>
     <sonar.issue.ignore.multicriteria.s5738jwtauth.resourceKey>**/FMod_JwtServletAuth.java</sonar.issue.ignore.multicriteria.s5738jwtauth.resourceKey>
+
+    <!-- S1181, continued: SPARQL_Update_CQRS. See the s1181* block above for    -->
+    <!-- the reasoning. Kept as its own entry rather than folded into the        -->
+    <!-- others because this catch is on the request path, not a background      -->
+    <!-- thread, and swallows ActionErrorException without rethrowing.           -->
+    <sonar.issue.ignore.multicriteria.s1181cqrsupdate.ruleKey>java:S1181</sonar.issue.ignore.multicriteria.s1181cqrsupdate.ruleKey>
+    <sonar.issue.ignore.multicriteria.s1181cqrsupdate.resourceKey>**/SPARQL_Update_CQRS.java</sonar.issue.ignore.multicriteria.s1181cqrsupdate.resourceKey>
 
     <!-- Dependency versions -->
     <!-- Internal dependencies -->
