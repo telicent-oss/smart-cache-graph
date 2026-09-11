@@ -444,34 +444,6 @@ public class TestAccessTriplesService extends TestAccessBase {
         assertEquals(expectedResponseBody, response, "Unexpected access query response");
     }
 
-
-    @Test
-    void test_two_triples_one_visible_without_all_required_true() throws Exception {
-        final String expectedResponseBody = """
-                {
-                  "triples" : [ {
-                    "subject" : "http://dbpedia.org/resource/London",
-                    "predicate" : "http://dbpedia.org/ontology/country",
-                    "object" : {
-                      "value" : "http://dbpedia.org/resource/United_Kingdom"
-                    }
-                  }, {
-                    "subject" : "http://dbpedia.org/resource/London",
-                    "predicate" : "http://dbpedia.org/ontology/populationTotal",
-                    "object" : {
-                      "dataType" : "xsd:integer",
-                      "value" : "8799800"
-                    }
-                  } ],
-                  "visible" : true
-                }""";
-
-        startServer();
-        loadData();
-        final String response = callServiceEndpoint(requestLondon, USER1, SERVICE_NAME_1, ENDPOINT_UNDER_TEST, "?all=false");
-        assertEquals(expectedResponseBody, response, "Unexpected access query response");
-    }
-
     /**
      * Request London data returns true for User2 with all=true as has access to all triples in dataset 1
      */

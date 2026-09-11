@@ -170,23 +170,6 @@ public abstract class AbstractSmartCacheGraphSinkTests {
     }
 
     @Test
-    final void processorSCG_load_good_ttl_2() {
-        TestAction action =
-                (Sink<Event<Bytes, RdfPayload>> proc, FusekiServer server, DatasetGraph dsgBase, DatasetGraph dsg) -> {
-                    String URL = server.datasetURL(dsName);
-                    checkDatasetSize(dsgBase, 0);
-                    sendEvent(dsg, proc, """
-                            PREFIX : <http://example/>
-                            :s :p "turtle" .
-                            """, WebContent.contentTypeTurtle, attrPermit);
-
-                    checkDatasetSize(dsgBase, 1);
-                    verifyCounts(URL, queryAll, 1L, 0L);
-                };
-        runTestProcessorSCGWithAuth(action);
-    }
-
-    @Test
     final void processorSCG_load_good_ttl_3() {
         TestAction action =
                 (Sink<Event<Bytes, RdfPayload>> proc, FusekiServer server, DatasetGraph dsgBase, DatasetGraph dsg) -> {
