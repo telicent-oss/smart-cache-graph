@@ -540,7 +540,13 @@ public class BackupUtils extends ServletUtils {
                 }
             }
         }
-        directory.delete();
+        try {
+            Files.delete(directory.toPath());
+        } catch (IOException e) {
+            // Previously the boolean from File.delete() was discarded, so a failed deletion was
+            // silently invisible even though callers go on to report success.
+            LOG.error("Failed to delete {}", directory.getAbsolutePath(), e);
+        }
     }
 
 

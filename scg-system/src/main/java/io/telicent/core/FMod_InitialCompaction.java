@@ -579,7 +579,12 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
             }
         } catch (IOException e) {
             LOG.warn("[Compaction] Unable to move compaction indicator file into place {}", indicatorFile, e);
-            tempFile.delete();
+            try {
+                Files.deleteIfExists(tempFile.toPath());
+            } catch (IOException cleanupError) {
+                LOG.warn("[Compaction] Unable to remove temporary compaction indicator file {}", tempFile,
+                         cleanupError);
+            }
         }
     }
 
