@@ -524,11 +524,6 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
         }
     }
 
-    private static String compactionFailureDetails(String datasetName, Throwable t) {
-        return "Compaction failed for dataset " + datasetName + ": "
-                + (t.getMessage() != null ? t.getMessage() : t.getClass().getName());
-    }
-
     private static void logPreviousCompactionIndicator(DatasetGraphSwitchable dsg, String datasetName) {
         findPreviousCompactionIndicator(dsg).ifPresent(indicator -> {
             if (indicator.state() == CompactionIndicatorState.IN_PROGRESS) {
@@ -640,6 +635,11 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
                 FmtLog.error(Fuseki.configLog, "Error while compacting dataset " + datasetName, t);
                 return compactionFailureResponse(compactionFailureDetails(datasetName, t));
             }
+        }
+
+        private static String compactionFailureDetails(String datasetName, Throwable t) {
+            return "Compaction failed for dataset " + datasetName + ": "
+                    + (t.getMessage() != null ? t.getMessage() : t.getClass().getName());
         }
     }
 
