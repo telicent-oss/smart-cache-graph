@@ -10,6 +10,10 @@ import java.util.regex.Pattern;
 
 public class UserUtils {
 
+    private UserUtils() {
+        // Static utility class, not intended to be instantiated.
+    }
+
     // "Authorization: Bearer: user:NAME"
     private static final Pattern authHeaderPattern = Pattern.compile("\\s*Bearer\\s+user:(\\S*)\s*");
 

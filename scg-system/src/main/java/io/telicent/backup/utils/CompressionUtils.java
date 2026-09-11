@@ -33,6 +33,10 @@ import java.util.zip.ZipInputStream;
 
 public class CompressionUtils {
 
+    private CompressionUtils() {
+        // Static utility class, not intended to be instantiated.
+    }
+
     public static final Logger LOG = LoggerFactory.getLogger(CompressionUtils.class);
     private static final int BUFFER_SIZE = 1024;
 

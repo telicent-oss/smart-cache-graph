@@ -57,6 +57,10 @@ import org.slf4j.LoggerFactory;
 
 public class CQRS {
 
+    private CQRS() {
+        // Static utility class, not intended to be instantiated.
+    }
+
     /** Log for CQRS related messages */
     public static Logger LOG = LoggerFactory.getLogger(CQRS.class);
     /** Context symbol for Kafka topic */

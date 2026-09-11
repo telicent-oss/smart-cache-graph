@@ -51,6 +51,10 @@ import java.util.regex.Pattern;
 
 
 public class SmartCacheGraph {
+
+    private SmartCacheGraph() {
+        // Static utility class, not intended to be instantiated.
+    }
     /**
      * Software version taken from the jar file.
      */
