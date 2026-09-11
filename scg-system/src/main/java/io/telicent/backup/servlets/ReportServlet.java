@@ -17,6 +17,7 @@ public class ReportServlet extends HttpServlet {
         this.backupService = backupService;
     }
 
+    @Override
     protected void doGet(final HttpServletRequest request, final HttpServletResponse response) {
         try {
             final String pathInfo = request.getPathInfo();
