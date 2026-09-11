@@ -220,7 +220,12 @@ public class CQRS {
             Future<RecordMetadata> f = producer.send(pRec);
             RecordMetadata res = f.get();
             return res;
-        } catch (InterruptedException | ExecutionException e) {
+        } catch (InterruptedException e) {
+            // Restore the interrupt flag before wrapping: f.get() blocks the calling request
+            // thread, so swallowing the interrupt would lose a shutdown or cancellation signal.
+            Thread.currentThread().interrupt();
+            throw new JenaKafkaException("Failed to send Kafka message", e);
+        } catch (ExecutionException e) {
             throw new JenaKafkaException("Failed to send Kafka message", e);
         }
     }
