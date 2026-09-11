@@ -146,11 +146,6 @@ public class CQRS {
     /** Used to pass the addition information through the HttpActionLifecycle. */
     private static Symbol symbol = Symbol.create("cqrs:update");
 
-    private static DatasetGraph getOperationDataset(HttpAction action) {
-        UpdateCQRS updateCtl = action.getContext().get(symbol);
-        return updateCtl.dataset;
-    }
-
     // Call just after dsg.begin.
     private static Consumer<HttpAction> onBegin = CQRS::onBegin;
 

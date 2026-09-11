@@ -119,6 +119,10 @@ public abstract class AbstractSmartCacheGraphSinkTests {
                       .toList();
     }
 
+    // Retained debugging aid: the only caller of dumpLabelStore/dumpAttributesStore, meant to be
+    // invoked ad hoc while diagnosing a failing test. Same intent as the commented-out debug()
+    // calls elsewhere in the test tree.
+    @SuppressWarnings("unused")
     private static void dumpState(LabelsStore labelsStore, AttributesStore attributesStore) {
         AbstractSmartCacheGraphSinkTests.dumpLabelStore(labelsStore);
         AbstractSmartCacheGraphSinkTests.dumpAttributesStore(attributesStore);
@@ -496,14 +500,6 @@ public abstract class AbstractSmartCacheGraphSinkTests {
                 assertEquals(expectedCount, c, "Dataset size");
             }
         });
-    }
-
-    private void checkSizeNoAuth(FusekiServer server, String serviceName, long expectedCount) {
-        String URL = server.datasetURL(serviceName);
-        // No auth call.
-        long c = count(URL, queryAll, null);
-        // The storage should have the triple.
-        assertEquals(expectedCount, c);
     }
 
     private void sendEvent(DatasetGraph dsg, Sink<Event<Bytes, RdfPayload>> sink, String body, String contentType,
