@@ -102,6 +102,7 @@ public class DatasetBackupService {
     private static final String DESCRIPTION = "description";
     private static final String START_TIME = "start-time";
     private static final String END_TIME = "end-time";
+    private static final String VALIDATION_PATH_UNSUITABLE = "Validation path unsuitable: ";
 
     private final ReentrantLock lock;
 
@@ -768,7 +769,7 @@ public class DatasetBackupService {
 
         if (!validatePathObj.startsWith(backupBasePath)) {
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            resultNode.put(REASON, "Validation path unsuitable: " + validatePath);
+            resultNode.put(REASON, VALIDATION_PATH_UNSUITABLE + validatePath);
             resultNode.put(SUCCESS, false);
             return resultNode;
         }
@@ -776,7 +777,7 @@ public class DatasetBackupService {
         final Path zippedBackupPathObj = backupBasePath.resolve(validateParams[0] + ZIP_SUFFIX).normalize();
         if (!zippedBackupPathObj.startsWith(backupBasePath)) {
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            resultNode.put(REASON, "Validation path unsuitable: " + zippedBackupPathObj);
+            resultNode.put(REASON, VALIDATION_PATH_UNSUITABLE + zippedBackupPathObj);
             resultNode.put(SUCCESS, false);
             return resultNode;
         }
@@ -789,7 +790,7 @@ public class DatasetBackupService {
         }
         if (!checkPathExistsAndIsDir(validatePath + datasetName)) {
             response.setStatus(HttpServletResponse.SC_NOT_FOUND);
-            resultNode.put(REASON, "Validation path unsuitable: " + validatePath + datasetName);
+            resultNode.put(REASON, VALIDATION_PATH_UNSUITABLE + validatePath + datasetName);
             resultNode.put(SUCCESS, false);
         } else {
             final Set<String> datasetDirs = listDirectories(validatePath, validateParams);
