@@ -773,9 +773,18 @@ public class DatasetBackupService {
             return resultNode;
         }
 
+        final Path zippedBackupPathObj = backupBasePath.resolve(validateParams[0] + ZIP_SUFFIX).normalize();
+        if (!zippedBackupPathObj.startsWith(backupBasePath)) {
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            resultNode.put(REASON, "Validation path unsuitable: " + zippedBackupPathObj);
+            resultNode.put(SUCCESS, false);
+            return resultNode;
+        }
+
+        final String zippedBackupPath = zippedBackupPathObj.toString();
         boolean decompressDir = false;
-        if (checkPathExistsAndIsFile(validatePath + ZIP_SUFFIX)) {
-            unzipDirectory(validatePath + ZIP_SUFFIX, validatePath);
+        if (checkPathExistsAndIsFile(zippedBackupPath)) {
+            unzipDirectory(zippedBackupPath, validatePath);
             decompressDir = true;
         }
         if (!checkPathExistsAndIsDir(validatePath + datasetName)) {
