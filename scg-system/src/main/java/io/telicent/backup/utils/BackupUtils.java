@@ -231,10 +231,11 @@ public class BackupUtils {
      * @return whether the operation was successful or not
      */
     public static boolean createPathIfNotExists(String pathString) {
-        if (null == pathString) {
+        Optional<Path> safePath = getSafeNormalizedPath(pathString);
+        if (safePath.isEmpty()) {
             return false;
         }
-        File path = new File(pathString);
+        File path = safePath.get().toFile();
         if (!path.exists()) {
             return path.mkdirs();
         }
@@ -248,10 +249,11 @@ public class BackupUtils {
      * @return whether the operation was successful or not
      */
     public static boolean checkPathExistsAndIsDir(String pathString) {
-        if (requestIsEmpty(pathString)) {
+        Optional<Path> safePath = getSafeNormalizedPath(pathString);
+        if (safePath.isEmpty()) {
             return false;
         }
-        File path = new File(pathString);
+        File path = safePath.get().toFile();
         return path.exists() && path.isDirectory();
     }
 
@@ -262,11 +264,29 @@ public class BackupUtils {
      * @return whether the operation was successful or not
      */
     public static boolean checkPathExistsAndIsFile(String pathString) {
-        if (requestIsEmpty(pathString)) {
+        Optional<Path> safePath = getSafeNormalizedPath(pathString);
+        if (safePath.isEmpty()) {
             return false;
         }
-        File path = new File(pathString);
+        File path = safePath.get().toFile();
         return path.exists() && path.isFile();
+    }
+
+    private static Optional<Path> getSafeNormalizedPath(String pathString) {
+        if (requestIsEmpty(pathString)) {
+            return Optional.empty();
+        }
+        try {
+            Path normalized = Paths.get(pathString).normalize();
+            for (Path part : normalized) {
+                if ("..".equals(part.toString())) {
+                    return Optional.empty();
+                }
+            }
+            return Optional.of(normalized);
+        } catch (InvalidPathException e) {
+            return Optional.empty();
+        }
     }
 
     /**
