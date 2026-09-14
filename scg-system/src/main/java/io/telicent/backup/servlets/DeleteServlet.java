@@ -43,10 +43,16 @@ public class DeleteServlet extends HttpServlet {
         ObjectNode resultNode = OBJECT_MAPPER.createObjectNode();
         try {
             String deleteId = request.getPathInfo();
-            if (deleteId.startsWith("/")) {
+            if (deleteId == null) {
+                // No path supplied at all: leave the id empty and let deleteBackup reject it,
+                // which reports the failure in the response body rather than as a server error.
+                deleteId = "";
+            } else if (deleteId.startsWith("/")) {
                 deleteId = deleteId.substring(1);
             }
-            deleteId = requireSafePathComponent(deleteId, "delete-id");
+            if (!deleteId.isEmpty()) {
+                deleteId = requireSafePathComponent(deleteId, "delete-id");
+            }
             resultNode.put("delete-id", deleteId);
             resultNode.put("date", DateTimeUtils.nowAsString(DATE_FORMAT));
             resultNode.set("delete", backupService.deleteBackup(deleteId));
