@@ -758,11 +758,21 @@ public class DatasetBackupService {
      * @return an Object Node with the results
      */
     public ObjectNode validateBackup(final String[] validateParams, final InputStream shapeInputStream, final HttpServletResponse response) throws IOException {
-        final String validatePath = getBackUpDir() + "/" + validateParams[0];
+        final Path backupBasePath = Path.of(getBackUpDir()).toAbsolutePath().normalize();
+        final Path validatePathObj = backupBasePath.resolve(validateParams[0]).normalize();
+        final String validatePath = validatePathObj.toString();
         final Model shapesModel = getShapeModel(shapeInputStream);
         final Graph shapesGraph = shapesModel.getGraph();
         final ObjectNode resultNode = OBJECT_MAPPER.createObjectNode();
         final String datasetName = (validateParams.length > 1) ? "/" + validateParams[1] : "";
+
+        if (!validatePathObj.startsWith(backupBasePath)) {
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            resultNode.put(REASON, "Validation path unsuitable: " + validatePath);
+            resultNode.put(SUCCESS, false);
+            return resultNode;
+        }
+
         boolean decompressDir = false;
         if (checkPathExistsAndIsFile(validatePath + ZIP_SUFFIX)) {
             unzipDirectory(validatePath + ZIP_SUFFIX, validatePath);
