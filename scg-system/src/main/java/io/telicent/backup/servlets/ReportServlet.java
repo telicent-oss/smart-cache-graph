@@ -22,8 +22,16 @@ public class ReportServlet extends HttpServlet {
     protected void doGet(final HttpServletRequest request, final HttpServletResponse response) {
         try {
             final String pathInfo = request.getPathInfo();
+            if (pathInfo == null || !pathInfo.startsWith("/")) {
+                throw new IllegalArgumentException("Invalid report path");
+            }
             final String[] pathElems = pathInfo.substring(1).split("/");
-            final ObjectNode report = backupService.getReport(pathElems[0], pathElems[1], response);
+            if (pathElems.length != 2) {
+                throw new IllegalArgumentException("Invalid report path");
+            }
+            final String backupId = requireSafePathComponent(pathElems[0], "backup-id");
+            final String datasetName = requireSafePathComponent(pathElems[1], "dataset-name");
+            final ObjectNode report = backupService.getReport(backupId, datasetName, response);
             processResponse(response, report);
         } catch (Exception exception) {
             final ObjectNode resultNode = OBJECT_MAPPER.createObjectNode();

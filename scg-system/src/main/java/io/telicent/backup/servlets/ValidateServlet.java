@@ -53,7 +53,15 @@ public class ValidateServlet extends HttpServlet {
             final HttpServletRequest request,
             final HttpServletResponse response) throws IOException {
         final String pathInfo = request.getPathInfo();
+        if (pathInfo == null || !pathInfo.startsWith("/")) {
+            throw new IllegalArgumentException("Invalid validation path");
+        }
         final String[] validateParams = pathInfo.substring(1).split("/");
+        if (validateParams.length != 2) {
+            throw new IllegalArgumentException("Invalid validation path");
+        }
+        validateParams[0] = requireSafePathComponent(validateParams[0], "backup-id");
+        validateParams[1] = requireSafePathComponent(validateParams[1], "dataset-name");
         try (final InputStream inputStream = request.getInputStream()) {
             final ObjectNode resultNode = backupService.validateBackup(validateParams, inputStream, response);
             processResponse(response, resultNode);

@@ -45,6 +45,7 @@ public class DetailsServlet extends HttpServlet {
             if (backupId.startsWith("/")) {
                 backupId = backupId.substring(1);
             }
+            backupId = requireSafePathComponent(backupId, "backup-id");
             resultNode.put("backup-id", backupId);
             resultNode.put("date", DateTimeUtils.nowAsString(DATE_FORMAT));
             resultNode.set("details", backupService.getDetails(backupId));

@@ -270,6 +270,34 @@ public class BackupUtils {
     }
 
     /**
+     * Validates that the input is a safe single path component.
+     * Rejects null/blank values, path separators and parent-directory traversal tokens.
+     *
+     * @param value value to validate
+     * @return true if safe
+     */
+    public static boolean isSafePathComponent(String value) {
+        if (requestIsEmpty(value)) {
+            return false;
+        }
+        return !value.contains("..") && !value.contains("/") && !value.contains("\\");
+    }
+
+    /**
+     * Validates and returns a safe single path component.
+     *
+     * @param value     value to validate
+     * @param fieldName logical field name for error messages
+     * @return validated value
+     */
+    public static String requireSafePathComponent(String value, String fieldName) {
+        if (!isSafePathComponent(value)) {
+            throw new IllegalArgumentException("Invalid " + fieldName);
+        }
+        return value;
+    }
+
+    /**
      * Takes a string path and returns the list of sub-directories
      * as a list of strings
      *
