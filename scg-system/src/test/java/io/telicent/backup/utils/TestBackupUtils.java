@@ -1229,4 +1229,75 @@ public class TestBackupUtils {
         // then
         assertTrue(response.isEmpty());
     }
+
+    // ---- path-safety helpers added with the CodeQL path-injection hardening ----
+
+    @Test
+    @DisplayName("Tests checkPathExistsAndIsDir rejects a parent-directory traversal")
+    public void test_checkPathExistsAndIsDir_rejectsTraversal() {
+        // given, when, then - a leading ".." survives normalisation, so the path is refused
+        assertFalse(checkPathExistsAndIsDir("../" + tempDir.getFileName()));
+    }
+
+    @Test
+    @DisplayName("Tests checkPathExistsAndIsFile rejects a parent-directory traversal")
+    public void test_checkPathExistsAndIsFile_rejectsTraversal() {
+        // given, when, then
+        assertFalse(checkPathExistsAndIsFile("../some-file"));
+    }
+
+    @Test
+    @DisplayName("Tests createPathIfNotExists rejects a parent-directory traversal")
+    public void test_createPathIfNotExists_rejectsTraversal() {
+        // given, when, then
+        assertFalse(createPathIfNotExists("../should-not-be-created"));
+    }
+
+    @Test
+    @DisplayName("Tests the path checks reject a string that is not a usable path")
+    public void test_pathChecks_rejectInvalidPath() {
+        // given - a NUL character cannot appear in a path, so Paths.get throws InvalidPathException
+        String invalid = "bad" + (char) 0 + "path";
+        // when, then
+        assertFalse(checkPathExistsAndIsDir(invalid));
+        assertFalse(checkPathExistsAndIsFile(invalid));
+        assertFalse(createPathIfNotExists(invalid));
+    }
+
+    @Test
+    @DisplayName("Tests isSafePathComponent accepts a plain single component")
+    public void test_isSafePathComponent_accepts() {
+        // given, when, then
+        assertTrue(isSafePathComponent("12"));
+        assertTrue(isSafePathComponent("backup_name-1.2"));
+    }
+
+    @Test
+    @DisplayName("Tests isSafePathComponent rejects empty, traversal and separators")
+    public void test_isSafePathComponent_rejects() {
+        // given, when, then
+        assertFalse(isSafePathComponent(null));
+        assertFalse(isSafePathComponent(""));
+        assertFalse(isSafePathComponent("  "));
+        assertFalse(isSafePathComponent(".."));
+        assertFalse(isSafePathComponent("a/b"));
+        assertFalse(isSafePathComponent("a\\b"));
+    }
+
+    @Test
+    @DisplayName("Tests requireSafePathComponent returns the value when it is safe")
+    public void test_requireSafePathComponent_returnsValue() {
+        // given, when, then
+        assertEquals("12", requireSafePathComponent("12", "backup-id"));
+    }
+
+    @Test
+    @DisplayName("Tests requireSafePathComponent throws naming the offending field")
+    public void test_requireSafePathComponent_throws() {
+        // given, when
+        IllegalArgumentException e =
+                assertThrows(IllegalArgumentException.class, () -> requireSafePathComponent("../x", "backup-id"));
+        // then
+        assertTrue(e.getMessage().contains("backup-id"));
+    }
 }

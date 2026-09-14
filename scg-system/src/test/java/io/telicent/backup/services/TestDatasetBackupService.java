@@ -3024,4 +3024,78 @@ public class TestDatasetBackupService {
         Files.writeString(dataDir.resolve("marker.txt"), "x");
         return new DatasetGraphSwitchable(container, null, DatasetGraphFactory.createTxnMem());
     }
+
+    /*
+     * BACKUP ID VALIDATION (added with the CodeQL path-injection hardening)
+     */
+
+    @Test
+    @DisplayName("Delete backup rejects a null id without touching the filesystem")
+    public void test_delete_rejectsNullId() {
+        // when
+        final ObjectNode result = cut.deleteBackup(null);
+        // then
+        assertFalse(result.get("success").asBoolean());
+        assertEquals("Invalid backup id", result.get("reason").asText());
+        assertFalse(result.has("deletePath"));
+    }
+
+    @Test
+    @DisplayName("Delete backup rejects a blank id")
+    public void test_delete_rejectsBlankId() {
+        // when
+        final ObjectNode result = cut.deleteBackup("   ");
+        // then
+        assertFalse(result.get("success").asBoolean());
+        assertEquals("Invalid backup id", result.get("reason").asText());
+    }
+
+    @Test
+    @DisplayName("Delete backup rejects an id containing a parent-directory traversal")
+    public void test_delete_rejectsTraversalId() {
+        // when
+        final ObjectNode result = cut.deleteBackup("../etc");
+        // then
+        assertFalse(result.get("success").asBoolean());
+        assertEquals("Invalid backup id", result.get("reason").asText());
+        assertFalse(result.has("deletePath"));
+    }
+
+    @Test
+    @DisplayName("Delete backup rejects an id containing a path separator")
+    public void test_delete_rejectsSeparatorInId() {
+        // when
+        final ObjectNode forward = cut.deleteBackup("a/b");
+        final ObjectNode back = cut.deleteBackup("a\\b");
+        // then
+        assertFalse(forward.get("success").asBoolean());
+        assertFalse(back.get("success").asBoolean());
+        assertEquals("Invalid backup id", forward.get("reason").asText());
+        assertEquals("Invalid backup id", back.get("reason").asText());
+    }
+
+    @Test
+    @DisplayName("Delete backup rejects an id outside the permitted character set")
+    public void test_delete_rejectsUnexpectedCharacters() {
+        // when
+        final ObjectNode result = cut.deleteBackup("backup id!");
+        // then
+        assertFalse(result.get("success").asBoolean());
+        assertEquals("Invalid backup id", result.get("reason").asText());
+    }
+
+    @Test
+    @DisplayName("Validate backup refuses a backup id that escapes the backup directory")
+    public void test_validate_refusesEscapingId() throws Exception {
+        try (final InputStream inputStream = getShapeInputStream()) {
+            final HttpServletResponse mockResponse = mock(HttpServletResponse.class);
+            // when - resolving this against the backup root lands outside it
+            final ObjectNode result =
+                    cut.validateBackup(new String[]{"../outside"}, inputStream, mockResponse);
+            // then
+            assertFalse(result.get("success").asBoolean());
+            assertTrue(result.get("reason").asText().contains("Validation path unsuitable"));
+            verify(mockResponse).setStatus(HttpServletResponse.SC_BAD_REQUEST);
+        }
+    }
 }
