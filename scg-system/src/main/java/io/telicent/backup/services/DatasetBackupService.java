@@ -58,6 +58,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Pattern;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -73,6 +74,18 @@ import static io.telicent.utils.ServletUtils.processResponse;
 import static org.apache.jena.riot.Lang.NQUADS;
 
 public class DatasetBackupService {
+
+    private static final Pattern BACKUP_ID_PATTERN = Pattern.compile("^[A-Za-z0-9._-]+$");
+
+    private static boolean isValidBackupId(String backupId) {
+        if (backupId == null || backupId.isBlank()) {
+            return false;
+        }
+        if (backupId.contains("/") || backupId.contains("\\") || backupId.contains("..")) {
+            return false;
+        }
+        return BACKUP_ID_PATTERN.matcher(backupId).matches();
+    }
 
     public static final Logger LOG = LoggerFactory.getLogger(DatasetBackupService.class);
 
@@ -699,10 +712,25 @@ public class DatasetBackupService {
      * @return an Object Node with the results
      */
     public ObjectNode deleteBackup(String deleteID) {
-        String deletePath = getBackUpDir() + "/" + deleteID;
         ObjectNode response = OBJECT_MAPPER.createObjectNode();
         response.put("delete-id", deleteID);
         response.put("date", DateTimeUtils.nowAsString(DATE_FORMAT));
+
+        if (!isValidBackupId(deleteID)) {
+            response.put(REASON, "Invalid backup id");
+            response.put(SUCCESS, false);
+            return response;
+        }
+
+        Path backupRoot = Path.of(getBackUpDir()).toAbsolutePath().normalize();
+        Path deletePathResolved = backupRoot.resolve(deleteID).normalize().toAbsolutePath();
+        if (!deletePathResolved.startsWith(backupRoot)) {
+            response.put(REASON, "Invalid backup path");
+            response.put(SUCCESS, false);
+            return response;
+        }
+
+        String deletePath = deletePathResolved.toString();
         response.put("deletePath", deletePath);
         if (!checkPathExistsAndIsDir(deletePath) &&
                 !checkPathExistsAndIsFile(deletePath + JSON_INFO_SUFFIX) &&
