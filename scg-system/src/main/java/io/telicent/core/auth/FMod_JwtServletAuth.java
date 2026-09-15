@@ -12,6 +12,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.jena.atlas.lib.Version;
 import org.apache.jena.atlas.logging.FmtLog;
 import org.apache.jena.fuseki.Fuseki;
+import org.apache.jena.fuseki.FusekiConfigException;
 import org.apache.jena.fuseki.main.FusekiServer;
 import org.apache.jena.fuseki.main.sys.FusekiModule;
 import org.apache.jena.fuseki.server.DataAccessPoint;
@@ -53,7 +54,7 @@ public class FMod_JwtServletAuth implements FusekiModule {
             FmtLog.error(Fuseki.configLog,
                          "Failed to configure JWT Authentication, %s environment variable was missing or contained invalid value",
                          AuthConstants.ENV_JWKS_URL);
-            throw new RuntimeException("Failed to configure JWT Authentication");
+            throw new FusekiConfigException("Failed to configure JWT Authentication");
         } else {
             FmtLog.info(Fuseki.configLog, "JWT Authentication engine is %s",
                         adaptor.getAttribute(JwtServletConstants.ATTRIBUTE_JWT_ENGINE));
@@ -71,7 +72,7 @@ public class FMod_JwtServletAuth implements FusekiModule {
         serverBuilder.addFilter("/*", new FusekiJwtAuthFilter());
 
         // Register the necessary filters for roles and permissions based authorization
-        if (Configurator.get(AuthConstants.FEATURE_FLAG_AUTHORIZATION, Boolean::parseBoolean, true)) {
+        if (Boolean.TRUE.equals(Configurator.get(AuthConstants.FEATURE_FLAG_AUTHORIZATION, Boolean::parseBoolean, true))) {
             // Create and register for User Info lookups
             String userInfoEndpoint = Configurator.get(AuthConstants.ENV_USERINFO_URL);
             if (StringUtils.isNotBlank(userInfoEndpoint)) {

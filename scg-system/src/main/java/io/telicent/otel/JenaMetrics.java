@@ -91,11 +91,10 @@ public class JenaMetrics {
      */
     public static Meter getMeter(String library, String version) {
         synchronized (lock) {
-            Meter m = METER_CACHE.computeIfAbsent(String.format("%s-%s", library, version),
-                                                  k -> get().meterBuilder(library)
-                                                            .setInstrumentationVersion(version)
-                                                            .build());
-            return m;
+            return METER_CACHE.computeIfAbsent(String.format("%s-%s", library, version),
+                                               k -> get().meterBuilder(library)
+                                                         .setInstrumentationVersion(version)
+                                                         .build());
         }
     }
 

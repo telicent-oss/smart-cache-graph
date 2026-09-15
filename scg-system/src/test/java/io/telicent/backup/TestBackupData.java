@@ -34,7 +34,6 @@ import org.apache.jena.fuseki.main.sys.FusekiModules;
 import org.apache.jena.fuseki.server.DataAccessPointRegistry;
 import org.apache.jena.fuseki.system.FusekiLogging;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -371,7 +370,7 @@ public class TestBackupData {
         // when
         HttpResponse<InputStream> createResponse = makeAuthPOSTCallWithPath(server, "$/backups/create/", "test");
         //debug(createResponse);
-        try {
+        assertDoesNotThrow(() -> {
             ObjectMapper objectMapper = new ObjectMapper();
             JsonNode rootNode = objectMapper.readTree(createResponse.body());
             String backupIdString = rootNode.path("backup-id").asText();
@@ -385,9 +384,7 @@ public class TestBackupData {
             assertFalse(zipSize.isEmpty());
             String zipSizeInBytes = rootBackupNode.path("details").path("zip-size-in-bytes").asText();
             assertFalse(zipSizeInBytes.isEmpty());
-        } catch (IOException ex) {
-            Assertions.fail("Unexpected exception: " + ex.getMessage());
-        }
+        });
     }
 
     @Test

@@ -189,7 +189,7 @@ class TestYamlConfigParserAuthz {
     void yaml_config_abac_attributes_store() {
         Graph g = RDFParser.source(DIR + "/yaml/attribute-store.ttl").toGraph();
         AttributesStore attrStore = Attributes.buildStore(g);
-        String mockServerURL = SimpleAttributesStore.run(3132, attrStore);
+        SimpleAttributesStore.run(3132, attrStore);
 
         List<String> arguments = List.of("--conf", DIR + "/yaml/config-abac-remote-attributes.yaml");
         server = construct(arguments.toArray(new String[0])).start();

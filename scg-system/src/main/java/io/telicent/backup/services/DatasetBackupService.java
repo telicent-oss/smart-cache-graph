@@ -50,14 +50,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
-import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Pattern;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -69,9 +70,22 @@ import static io.telicent.backup.utils.BackupUtils.*;
 import static io.telicent.backup.utils.CompressionUtils.*;
 import static io.telicent.backup.utils.JsonFileUtils.OBJECT_MAPPER;
 import static io.telicent.backup.utils.JsonFileUtils.writeObjectNodeToFile;
+import static io.telicent.utils.ServletUtils.processResponse;
 import static org.apache.jena.riot.Lang.NQUADS;
 
 public class DatasetBackupService {
+
+    private static final Pattern BACKUP_ID_PATTERN = Pattern.compile("^[A-Za-z0-9._-]+$");
+
+    private static boolean isValidBackupId(String backupId) {
+        if (backupId == null || backupId.isBlank()) {
+            return false;
+        }
+        if (backupId.contains("/") || backupId.contains("\\") || backupId.contains("..")) {
+            return false;
+        }
+        return BACKUP_ID_PATTERN.matcher(backupId).matches();
+    }
 
     public static final Logger LOG = LoggerFactory.getLogger(DatasetBackupService.class);
 
@@ -88,6 +102,7 @@ public class DatasetBackupService {
     private static final String DESCRIPTION = "description";
     private static final String START_TIME = "start-time";
     private static final String END_TIME = "end-time";
+    private static final String VALIDATION_PATH_UNSUITABLE = "Validation path unsuitable: ";
 
     private final ReentrantLock lock;
 
@@ -102,7 +117,7 @@ public class DatasetBackupService {
     static final ConcurrentHashMap<String, TriConsumer<DataAccessPoint, String, ObjectNode>> backupConsumerMap = new ConcurrentHashMap<>();
     static final ConcurrentHashMap<String, TriConsumer<DataAccessPoint, String, ObjectNode>> restoreConsumerMap = new ConcurrentHashMap<>();
 
-    public DatasetBackupService(DataAccessPointRegistry dapRegistry, KeyPair keyPair, DataSecurityPlugin dataSecurityPlugin) throws URISyntaxException, IOException, PGPException {
+    public DatasetBackupService(DataAccessPointRegistry dapRegistry, KeyPair keyPair, DataSecurityPlugin dataSecurityPlugin) throws IOException, PGPException {
         LOG.info("Backup encryption is enabled.");
         this.keyPair = keyPair;
         this.encryptionUtils = new EncryptionUtils(keyPair.privateKeyUrl().openStream(), keyPair.passphrase());
@@ -287,7 +302,7 @@ public class DatasetBackupService {
      * @param response the node to add metadata of process to
      */
     public void backupDataset(String datasetName, ObjectNode response) {
-        ZonedDateTime startTime = ZonedDateTime.now();
+        ZonedDateTime startTime = ZonedDateTime.now(ZoneId.systemDefault());
         String backupPath = getBackUpDir();
         int backupID = getNextDirectoryNumberAndCreate(backupPath);
         String backupIDPath = backupPath + "/" + backupID;
@@ -698,10 +713,25 @@ public class DatasetBackupService {
      * @return an Object Node with the results
      */
     public ObjectNode deleteBackup(String deleteID) {
-        String deletePath = getBackUpDir() + "/" + deleteID;
         ObjectNode response = OBJECT_MAPPER.createObjectNode();
         response.put("delete-id", deleteID);
         response.put("date", DateTimeUtils.nowAsString(DATE_FORMAT));
+
+        if (!isValidBackupId(deleteID)) {
+            response.put(REASON, "Invalid backup id");
+            response.put(SUCCESS, false);
+            return response;
+        }
+
+        Path backupRoot = Path.of(getBackUpDir()).toAbsolutePath().normalize();
+        Path deletePathResolved = backupRoot.resolve(deleteID).normalize().toAbsolutePath();
+        if (!deletePathResolved.startsWith(backupRoot)) {
+            response.put(REASON, "Invalid backup path");
+            response.put(SUCCESS, false);
+            return response;
+        }
+
+        String deletePath = deletePathResolved.toString();
         response.put("deletePath", deletePath);
         if (!checkPathExistsAndIsDir(deletePath) &&
                 !checkPathExistsAndIsFile(deletePath + JSON_INFO_SUFFIX) &&
@@ -729,19 +759,38 @@ public class DatasetBackupService {
      * @return an Object Node with the results
      */
     public ObjectNode validateBackup(final String[] validateParams, final InputStream shapeInputStream, final HttpServletResponse response) throws IOException {
-        final String validatePath = getBackUpDir() + "/" + validateParams[0];
+        final Path backupBasePath = Path.of(getBackUpDir()).toAbsolutePath().normalize();
+        final Path validatePathObj = backupBasePath.resolve(validateParams[0]).normalize();
+        final String validatePath = validatePathObj.toString();
         final Model shapesModel = getShapeModel(shapeInputStream);
         final Graph shapesGraph = shapesModel.getGraph();
         final ObjectNode resultNode = OBJECT_MAPPER.createObjectNode();
         final String datasetName = (validateParams.length > 1) ? "/" + validateParams[1] : "";
+
+        if (!validatePathObj.startsWith(backupBasePath)) {
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            resultNode.put(REASON, VALIDATION_PATH_UNSUITABLE + validatePath);
+            resultNode.put(SUCCESS, false);
+            return resultNode;
+        }
+
+        final Path zippedBackupPathObj = backupBasePath.resolve(validateParams[0] + ZIP_SUFFIX).normalize();
+        if (!zippedBackupPathObj.startsWith(backupBasePath)) {
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            resultNode.put(REASON, VALIDATION_PATH_UNSUITABLE + zippedBackupPathObj);
+            resultNode.put(SUCCESS, false);
+            return resultNode;
+        }
+
+        final String zippedBackupPath = zippedBackupPathObj.toString();
         boolean decompressDir = false;
-        if (checkPathExistsAndIsFile(validatePath + ZIP_SUFFIX)) {
-            unzipDirectory(validatePath + ZIP_SUFFIX, validatePath);
+        if (checkPathExistsAndIsFile(zippedBackupPath)) {
+            unzipDirectory(zippedBackupPath, validatePath);
             decompressDir = true;
         }
         if (!checkPathExistsAndIsDir(validatePath + datasetName)) {
             response.setStatus(HttpServletResponse.SC_NOT_FOUND);
-            resultNode.put(REASON, "Validation path unsuitable: " + validatePath + datasetName);
+            resultNode.put(REASON, VALIDATION_PATH_UNSUITABLE + validatePath + datasetName);
             resultNode.put(SUCCESS, false);
         } else {
             final Set<String> datasetDirs = listDirectories(validatePath, validateParams);
@@ -850,13 +899,11 @@ public class DatasetBackupService {
     /**
      * Remove a given key from the both backup/restore methods registry.
      *
-     * @param key             the name of the module being backed up or restored.
-     * @param backupConsumer  method that backs up the modules data
-     * @param restoreConsumer method that recovers the module
+     * @param key the name of the module being backed up or restored.
      */
-    public static void deRegisterMethods(String key, TriConsumer<DataAccessPoint, String, ObjectNode> backupConsumer, TriConsumer<DataAccessPoint, String, ObjectNode> restoreConsumer) {
-        deRegisterMethod(backupConsumerMap, key, backupConsumer);
-        deRegisterMethod(restoreConsumerMap, key, restoreConsumer);
+    public static void deRegisterMethods(String key) {
+        deRegisterMethod(backupConsumerMap, key);
+        deRegisterMethod(restoreConsumerMap, key);
     }
 
 
@@ -890,7 +937,7 @@ public class DatasetBackupService {
         map.put(key, consumer);
     }
 
-    private static void deRegisterMethod(Map<String, TriConsumer<DataAccessPoint, String, ObjectNode>> map, String key, TriConsumer<DataAccessPoint, String, ObjectNode> consumer) {
+    private static void deRegisterMethod(Map<String, TriConsumer<DataAccessPoint, String, ObjectNode>> map, String key) {
         map.remove(key);
     }
 
@@ -971,13 +1018,13 @@ public class DatasetBackupService {
             try {
                 final Path encZipFilePath = Path.of(dirPath + ZIP_SUFFIX + ENCRYPTION_SUFFIX);
                 final Path encZipPath = encryptionUtils.encryptFile(zipFilePath, encZipFilePath, keyPair.publicKeyUrl());
-                LOG.debug("Successfully encrypted file: {} as {}", zipFilePath, encZipPath.toString());
+                LOG.debug("Successfully encrypted file: {} as {}", zipFilePath, encZipPath);
                 Files.delete(zipFilePath);
             } catch (IOException | PGPException ex) {
                 LOG.error("Failed to encrypt backup files", ex);
             }
         }
-        ZonedDateTime endTime = ZonedDateTime.now();
+        ZonedDateTime endTime = ZonedDateTime.now(ZoneId.systemDefault());
         response.put(END_TIME, endTime.toString());
         writeObjectNodeToFile(response, dirPath + JSON_INFO_SUFFIX);
     }

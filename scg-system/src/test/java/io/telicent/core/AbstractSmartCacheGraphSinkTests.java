@@ -119,6 +119,10 @@ public abstract class AbstractSmartCacheGraphSinkTests {
                       .toList();
     }
 
+    // Retained debugging aid: the only caller of dumpLabelStore/dumpAttributesStore, meant to be
+    // invoked ad hoc while diagnosing a failing test. Same intent as the commented-out debug()
+    // calls elsewhere in the test tree.
+    @SuppressWarnings("unused")
     private static void dumpState(LabelsStore labelsStore, AttributesStore attributesStore) {
         AbstractSmartCacheGraphSinkTests.dumpLabelStore(labelsStore);
         AbstractSmartCacheGraphSinkTests.dumpAttributesStore(attributesStore);
@@ -160,23 +164,6 @@ public abstract class AbstractSmartCacheGraphSinkTests {
                     // Check base has changed.
                     checkDatasetSize(dsgBase, 1);
                     // Check visibility
-                    verifyCounts(URL, queryAll, 1L, 0L);
-                };
-        runTestProcessorSCGWithAuth(action);
-    }
-
-    @Test
-    final void processorSCG_load_good_ttl_2() {
-        TestAction action =
-                (Sink<Event<Bytes, RdfPayload>> proc, FusekiServer server, DatasetGraph dsgBase, DatasetGraph dsg) -> {
-                    String URL = server.datasetURL(dsName);
-                    checkDatasetSize(dsgBase, 0);
-                    sendEvent(dsg, proc, """
-                            PREFIX : <http://example/>
-                            :s :p "turtle" .
-                            """, WebContent.contentTypeTurtle, attrPermit);
-
-                    checkDatasetSize(dsgBase, 1);
                     verifyCounts(URL, queryAll, 1L, 0L);
                 };
         runTestProcessorSCGWithAuth(action);
@@ -485,8 +472,7 @@ public abstract class AbstractSmartCacheGraphSinkTests {
 
     private long count(String URL, String queryString, String user) {
         RowSet rowSet = (user == null) ? queryNoToken(URL, queryString) : queryWithToken(URL, queryString, user);
-        long c = RowSetOps.count(rowSet);
-        return c;
+        return RowSetOps.count(rowSet);
     }
 
     private void checkDatasetSize(DatasetGraph dsg, int expectedCount) {
@@ -497,14 +483,6 @@ public abstract class AbstractSmartCacheGraphSinkTests {
                 assertEquals(expectedCount, c, "Dataset size");
             }
         });
-    }
-
-    private void checkSizeNoAuth(FusekiServer server, String serviceName, long expectedCount) {
-        String URL = server.datasetURL(serviceName);
-        // No auth call.
-        long c = count(URL, queryAll, null);
-        // The storage should have the triple.
-        assertEquals(expectedCount, c);
     }
 
     private void sendEvent(DatasetGraph dsg, Sink<Event<Bytes, RdfPayload>> sink, String body, String contentType,
@@ -530,7 +508,7 @@ public abstract class AbstractSmartCacheGraphSinkTests {
         });
     }
 
-    private void sendEventWithExceptions(DatasetGraph dsg, Sink<Event<Bytes, RdfPayload>> sink, String body,
+    private void sendEventWithExceptions(Sink<Event<Bytes, RdfPayload>> sink, String body,
                                          Map<String, String> headers) {
         Event<Bytes, RdfPayload> event = new SimpleEvent<>(AbstractSmartCacheGraphSinkTests.toHeaders(headers), null,
                                                            RdfPayload.of(headers.get("Content-Type"),
@@ -637,7 +615,7 @@ public abstract class AbstractSmartCacheGraphSinkTests {
         }
     }
 
-    private void sendEventWithDistributionId(DatasetGraph dsg, Sink<Event<Bytes, RdfPayload>> sink, String body,
+    private void sendEventWithDistributionId(Sink<Event<Bytes, RdfPayload>> sink, String body,
                                              String contentType, AttributeValue securityLabel, String distributionId) {
         Map<String, String> headers = new HashMap<>();
         headers.put(HttpNames.hContentType, contentType);
@@ -647,7 +625,7 @@ public abstract class AbstractSmartCacheGraphSinkTests {
         if (distributionId != null) {
             headers.put(TelicentHeaders.DISTRIBUTION_ID, distributionId);
         }
-        sendEventWithExceptions(dsg, sink, body, headers);
+        sendEventWithExceptions(sink, body, headers);
     }
 
     /**
@@ -721,7 +699,7 @@ public abstract class AbstractSmartCacheGraphSinkTests {
                 (Sink<Event<Bytes, RdfPayload>> proc, FusekiServer server, DatasetGraph dsgBase, DatasetGraph dsg) -> {
                     checkDatasetSize(dsgBase, 0);
                     dsg.begin(TxnType.WRITE);
-                    sendEventWithDistributionId(dsg, proc, """
+                    sendEventWithDistributionId(proc, """
                             PREFIX : <http://example/>
                             :s :p "turtle" .
                             """, WebContent.contentTypeTurtle, attrPermit, namedGraph);
@@ -743,7 +721,7 @@ public abstract class AbstractSmartCacheGraphSinkTests {
         TestAction action =
                 (Sink<Event<Bytes, RdfPayload>> proc, FusekiServer server, DatasetGraph dsgBase, DatasetGraph dsg) -> {
                     dsg.begin(TxnType.WRITE);
-                    sendEventWithDistributionId(dsg, proc, """
+                    sendEventWithDistributionId(proc, """
                             PREFIX : <http://example/>
                             :s :p "turtle" .
                             """, WebContent.contentTypeTurtle, attrPermit, namedGraph);
@@ -811,7 +789,7 @@ public abstract class AbstractSmartCacheGraphSinkTests {
                 (Sink<Event<Bytes, RdfPayload>> proc, FusekiServer server, DatasetGraph dsgBase, DatasetGraph dsg) -> {
                     checkDatasetSize(dsgBase, 0);
                     JenaKafkaException ex =
-                            assertThrows(JenaKafkaException.class, () -> sendEventWithDistributionId(dsg, proc, """
+                            assertThrows(JenaKafkaException.class, () -> sendEventWithDistributionId(proc, """
                                     PREFIX : <http://example/>
                                     :s :p "turtle" .
                                     """, WebContent.contentTypeTurtle, attrPermit, null));
@@ -839,7 +817,7 @@ public abstract class AbstractSmartCacheGraphSinkTests {
         TestAction action =
                 (Sink<Event<Bytes, RdfPayload>> proc, FusekiServer server, DatasetGraph dsgBase, DatasetGraph dsg) -> {
                     JenaKafkaException ex =
-                            assertThrows(JenaKafkaException.class, () -> sendEventWithDistributionId(dsg, proc, """
+                            assertThrows(JenaKafkaException.class, () -> sendEventWithDistributionId(proc, """
                                     PREFIX : <http://example/>
                                     :s :p "value1" .
                                     """, WebContent.contentTypeTurtle, attrPermit, invalidGraph));
@@ -847,7 +825,7 @@ public abstract class AbstractSmartCacheGraphSinkTests {
                     assertEquals("Rejecting ingest for " + state + " distribution " + invalidGraph,
                                  ex.getCause().getMessage());
 
-                    sendEventWithDistributionId(dsg, proc, """
+                    sendEventWithDistributionId(proc, """
                             PREFIX : <http://example/>
                             :s :p "value2" .
                             """, WebContent.contentTypeTurtle, attrPermit, invalidGraph);
@@ -883,7 +861,7 @@ public abstract class AbstractSmartCacheGraphSinkTests {
                 (Sink<Event<Bytes, RdfPayload>> proc, FusekiServer server, DatasetGraph dsgBase, DatasetGraph dsg) -> {
                     dsg.begin(TxnType.WRITE);
                     // No exception expected - the unregistered distribution is accepted for ingest.
-                    sendEventWithDistributionId(dsg, proc, """
+                    sendEventWithDistributionId(proc, """
                             PREFIX : <http://example/>
                             :s :p "value" .
                             """, WebContent.contentTypeTurtle, attrPermit, unregisteredGraph);
@@ -905,7 +883,7 @@ public abstract class AbstractSmartCacheGraphSinkTests {
         TestAction action =
                 (Sink<Event<Bytes, RdfPayload>> proc, FusekiServer server, DatasetGraph dsgBase, DatasetGraph dsg) -> {
                     JenaKafkaException ex =
-                            assertThrows(JenaKafkaException.class, () -> sendEventWithDistributionId(dsg, proc, """
+                            assertThrows(JenaKafkaException.class, () -> sendEventWithDistributionId(proc, """
                                     PREFIX : <http://example/>
                                     :s :p "value" .
                                     """, WebContent.contentTypeTurtle, attrPermit, graph));
@@ -929,11 +907,11 @@ public abstract class AbstractSmartCacheGraphSinkTests {
         TestAction action =
                 (Sink<Event<Bytes, RdfPayload>> proc, FusekiServer server, DatasetGraph dsgBase, DatasetGraph dsg) -> {
                     dsg.begin(TxnType.WRITE);
-                    sendEventWithDistributionId(dsg, proc, """
+                    sendEventWithDistributionId(proc, """
                             PREFIX : <http://example/>
                             :s :p "value1" .
                             """, WebContent.contentTypeTurtle, attrPermit, namedGraph1);
-                    sendEventWithDistributionId(dsg, proc, """
+                    sendEventWithDistributionId(proc, """
                             PREFIX : <http://example/>
                             :s :p "value2" .
                             """, WebContent.contentTypeTurtle, attrPermit, namedGraph2);
@@ -974,11 +952,11 @@ public abstract class AbstractSmartCacheGraphSinkTests {
         TestAction action =
                 (Sink<Event<Bytes, RdfPayload>> proc, FusekiServer server, DatasetGraph dsgBase, DatasetGraph dsg) -> {
                     dsg.begin(TxnType.WRITE);
-                    sendEventWithDistributionId(dsg, proc, """
+                    sendEventWithDistributionId(proc, """
                             PREFIX : <http://example/>
                             :s :p "value1" .
                             """, WebContent.contentTypeTurtle, attrNotPermitted, namedGraph1);
-                    sendEventWithDistributionId(dsg, proc, """
+                    sendEventWithDistributionId(proc, """
                             PREFIX : <http://example/>
                             :s :p "value2" .
                             """, WebContent.contentTypeTurtle, attrNotPermitted, namedGraph2);
@@ -1012,11 +990,11 @@ public abstract class AbstractSmartCacheGraphSinkTests {
         TestAction action =
                 (Sink<Event<Bytes, RdfPayload>> proc, FusekiServer server, DatasetGraph dsgBase, DatasetGraph dsg) -> {
                     dsg.begin(TxnType.WRITE);
-                    sendEventWithDistributionId(dsg, proc, """
+                    sendEventWithDistributionId(proc, """
                             PREFIX : <http://example/>
                             :s :p "value1" .
                             """, WebContent.contentTypeTurtle, attrPermit, activeGraph);
-                    sendEventWithDistributionId(dsg, proc, """
+                    sendEventWithDistributionId(proc, """
                             PREFIX : <http://example/>
                             :s :p "value2" .
                             """, WebContent.contentTypeTurtle, attrPermit, inactiveGraph);
@@ -1049,11 +1027,11 @@ public abstract class AbstractSmartCacheGraphSinkTests {
         TestAction action =
                 (Sink<Event<Bytes, RdfPayload>> proc, FusekiServer server, DatasetGraph dsgBase, DatasetGraph dsg) -> {
                     dsg.begin(TxnType.WRITE);
-                    sendEventWithDistributionId(dsg, proc, """
+                    sendEventWithDistributionId(proc, """
                             PREFIX : <http://example/>
                             :s :p "value1" .
                             """, WebContent.contentTypeTurtle, attrPermit, activeGraph);
-                    sendEventWithDistributionId(dsg, proc, """
+                    sendEventWithDistributionId(proc, """
                             PREFIX : <http://example/>
                             :s :p "value2" .
                             """, WebContent.contentTypeTurtle, attrPermit, inactiveGraph);
@@ -1088,7 +1066,7 @@ public abstract class AbstractSmartCacheGraphSinkTests {
         TestAction action =
                 (Sink<Event<Bytes, RdfPayload>> proc, FusekiServer server, DatasetGraph dsgBase, DatasetGraph dsg) -> {
                     dsg.begin(TxnType.WRITE);
-                    sendEventWithDistributionId(dsg, proc, """
+                    sendEventWithDistributionId(proc, """
                             PREFIX : <http://example/>
                             :s :p "value" .
                             """, WebContent.contentTypeTurtle, attrPermit, graph);
@@ -1147,7 +1125,7 @@ public abstract class AbstractSmartCacheGraphSinkTests {
 
                     // Active - ingest and check the data is visible
                     dsg.begin(TxnType.WRITE);
-                    sendEventWithDistributionId(dsg, proc, """
+                    sendEventWithDistributionId(proc, """
                             PREFIX : <http://example/>
                             :s :p "live" .
                             """, WebContent.contentTypeTurtle, attrPermit, graph);
@@ -1199,7 +1177,7 @@ public abstract class AbstractSmartCacheGraphSinkTests {
         TestAction action =
                 (Sink<Event<Bytes, RdfPayload>> proc, FusekiServer server, DatasetGraph dsgBase, DatasetGraph dsg) -> {
                     JenaKafkaException ex =
-                            assertThrows(JenaKafkaException.class, () -> sendEventWithDistributionId(dsg, proc, """
+                            assertThrows(JenaKafkaException.class, () -> sendEventWithDistributionId(proc, """
                                     PREFIX : <http://example/>
                                     :s :p "value" .
                                     """, WebContent.contentTypeTurtle, attrPermit, graph));
@@ -1234,7 +1212,7 @@ public abstract class AbstractSmartCacheGraphSinkTests {
         TestAction action =
                 (Sink<Event<Bytes, RdfPayload>> proc, FusekiServer server, DatasetGraph dsgBase, DatasetGraph dsg) -> {
                     dsg.begin(TxnType.WRITE);
-                    sendEventWithDistributionId(dsg, proc, """
+                    sendEventWithDistributionId(proc, """
                             PREFIX : <http://example/>
                             :s :p "denied" .
                             """, WebContent.contentTypeTurtle, attrNotPermitted, activeGraph);
@@ -1267,7 +1245,7 @@ public abstract class AbstractSmartCacheGraphSinkTests {
         TestAction action =
                 (Sink<Event<Bytes, RdfPayload>> proc, FusekiServer server, DatasetGraph dsgBase, DatasetGraph dsg) -> {
                     dsg.begin(TxnType.WRITE);
-                    sendEventWithDistributionId(dsg, proc, """
+                    sendEventWithDistributionId(proc, """
                             PREFIX : <http://example/>
                             :s :p "value1" .
                             """, WebContent.contentTypeTurtle, attrPermit, graph);
@@ -1276,17 +1254,13 @@ public abstract class AbstractSmartCacheGraphSinkTests {
                     String URL = server.datasetURL(dsName);
                     verifyCounts(URL, queryAll, 1L, 0L);
 
-                    try {
-                        writeLifecycleStateFile(lifecycleState, """
+                    assertDoesNotThrow(() -> writeLifecycleStateFile(lifecycleState, """
                                 {
                                   "distributions" : {
                                     "%s" : "Deleted"
                                   }
                                 }
-                                """.formatted(graph));
-                    } catch (IOException e) {
-                        fail("Failed to update lifecycle state file", e);
-                    }
+                                """.formatted(graph)), "Failed to update lifecycle state file");
 
                     verifyCounts(URL, queryAll, 0L, 0L);
                     verifyCounts(URL, queryUnion, 0L, 0L);
@@ -1323,7 +1297,7 @@ public abstract class AbstractSmartCacheGraphSinkTests {
         TestAction action =
                 (Sink<Event<Bytes, RdfPayload>> proc, FusekiServer server, DatasetGraph dsgBase, DatasetGraph dsg) -> {
                     dsg.begin(TxnType.WRITE);
-                    sendEventWithDistributionId(dsg, proc, """
+                    sendEventWithDistributionId(proc, """
                             PREFIX : <http://example/>
                             :s :p "value1" .
                             """, WebContent.contentTypeTurtle, attrPermit, graph);
@@ -1332,14 +1306,12 @@ public abstract class AbstractSmartCacheGraphSinkTests {
                     String URL = server.datasetURL(dsName);
                     verifyCounts(URL, queryAll, 1L, 0L);
 
-                    try {
+                    assertDoesNotThrow(() -> {
                         writeLifecycleStateFile(lifecycleState, hiddenState);
                         assertEquals(originalSize, Files.size(lifecycleState),
                                      "Test fixture must preserve the JSON byte size");
                         Files.setLastModifiedTime(lifecycleState, originalTimestamp);
-                    } catch (IOException e) {
-                        fail("Failed to update lifecycle state file", e);
-                    }
+                    }, "Failed to update lifecycle state file");
 
                     verifyCounts(URL, queryAll, 0L, 0L);
                     verifyCounts(URL, queryUnion, 0L, 0L);
@@ -1354,7 +1326,7 @@ public abstract class AbstractSmartCacheGraphSinkTests {
                 (Sink<Event<Bytes, RdfPayload>> proc, FusekiServer server, DatasetGraph dsgBase, DatasetGraph dsg) -> {
                     checkDatasetSize(dsgBase, 0);
                     dsg.begin(TxnType.WRITE);
-                    sendEventWithDistributionId(dsg, proc, """
+                    sendEventWithDistributionId(proc, """
                             PREFIX : <http://example/>
                             :s :p "turtle" .
                             """, WebContent.contentTypeTurtle, attrPermit, "http://example/graph1");
@@ -1380,12 +1352,12 @@ public abstract class AbstractSmartCacheGraphSinkTests {
         String namedGraph2 = "http://example/graph2";
         TestAction action =
                 (Sink<Event<Bytes, RdfPayload>> proc, FusekiServer server, DatasetGraph dsgBase, DatasetGraph dsg) -> {
-                    sendEventWithDistributionId(dsg, proc, """
+                    sendEventWithDistributionId(proc, """
                             TX .
                             A <http://example/s> <http://example/p> "value1" .
                             TC .
                             """, WebContent.contentTypePatch, attrPermit, namedGraph1);
-                    sendEventWithDistributionId(dsg, proc, """
+                    sendEventWithDistributionId(proc, """
                             TX .
                             A <http://example/s> <http://example/p> "value1" .
                             TC .
@@ -1417,12 +1389,12 @@ public abstract class AbstractSmartCacheGraphSinkTests {
         String namedGraph2 = "http://example/graph2";
         TestAction action =
                 (Sink<Event<Bytes, RdfPayload>> proc, FusekiServer server, DatasetGraph dsgBase, DatasetGraph dsg) -> {
-                    sendEventWithDistributionId(dsg, proc, """
+                    sendEventWithDistributionId(proc, """
                             TX .
                             A <http://example/s> <http://example/p> "value1" .
                             TC .
                             """, WebContent.contentTypePatch, attrPermit, namedGraph1);
-                    sendEventWithDistributionId(dsg, proc, """
+                    sendEventWithDistributionId(proc, """
                             TX .
                             A <http://example/s> <http://example/p> "value1" .
                             TC .
@@ -1443,7 +1415,7 @@ public abstract class AbstractSmartCacheGraphSinkTests {
     final void processorSCG_namedGraph_rdfPatch_noDistributionId_throws() {
         TestAction action =
                 (Sink<Event<Bytes, RdfPayload>> proc, FusekiServer server, DatasetGraph dsgBase, DatasetGraph dsg) -> {
-                    assertThrows(JenaKafkaException.class, () -> sendEventWithDistributionId(dsg, proc, """
+                    assertThrows(JenaKafkaException.class, () -> sendEventWithDistributionId(proc, """
                             TX .
                             A <http://example/s> <http://example/p> "value1" .
                             TC .
@@ -1468,7 +1440,7 @@ public abstract class AbstractSmartCacheGraphSinkTests {
         TestAction action =
                 (Sink<Event<Bytes, RdfPayload>> proc, FusekiServer server, DatasetGraph dsgBase, DatasetGraph dsg) -> {
                     JenaKafkaException ex =
-                            assertThrows(JenaKafkaException.class, () -> sendEventWithDistributionId(dsg, proc, """
+                            assertThrows(JenaKafkaException.class, () -> sendEventWithDistributionId(proc, """
                                     TX .
                                     A <http://example/s> <http://example/p> "value1" .
                                     TC .
@@ -1490,7 +1462,7 @@ public abstract class AbstractSmartCacheGraphSinkTests {
         TestAction action =
                 (Sink<Event<Bytes, RdfPayload>> proc, FusekiServer server, DatasetGraph dsgBase, DatasetGraph dsg) -> {
                     String URL = server.datasetURL(dsName);
-                    sendEventWithDistributionId(dsg, proc, """
+                    sendEventWithDistributionId(proc, """
                             TX .
                             A <http://example/s> <http://example/p> "value1" .
                             TC .
@@ -1500,7 +1472,7 @@ public abstract class AbstractSmartCacheGraphSinkTests {
                     verifyCounts(URL, queryAll, 1L, 0L);
                     verifyDefaultGraphEmpty(URL);
 
-                    sendEventWithDistributionId(dsg, proc, """
+                    sendEventWithDistributionId(proc, """
                             TX .
                             D <http://example/s> <http://example/p> "value1" .
                             TC .

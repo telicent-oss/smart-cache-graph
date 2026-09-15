@@ -24,6 +24,10 @@ import java.util.Objects;
 
 public class JsonFileUtils {
 
+    private JsonFileUtils() {
+        // Static utility class, not intended to be instantiated.
+    }
+
     public static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     /**

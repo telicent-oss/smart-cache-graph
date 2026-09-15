@@ -11,7 +11,7 @@ public class JsonTripleObject {
     @JsonInclude(Include.NON_NULL)
     public String language;
 
-    public JsonTripleObject(){};
+    public JsonTripleObject(){}
 
     public JsonTripleObject(String dataType, String value) {
         this.dataType = dataType;

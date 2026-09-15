@@ -58,6 +58,6 @@ public class RestoreServlet extends HttpServlet {
                                                    () -> this.backupService.execute(operationRequest, false, true)));
             return;
         }
-        AsyncBackupServletSupport.processAsync(backupService, request, response, false);
+        AsyncBackupServletSupport.processAsync(backupService, request, false);
     }
 }

@@ -50,7 +50,7 @@ public class MockKeyServer {
         this.publicKeys = publicJwks.build();
 
         this.keyIds = new ArrayList<>();
-        this.publicKeys.getKeys().stream().forEach(k -> this.keyIds.add(k.getId()));
+        this.publicKeys.getKeys().forEach(k -> this.keyIds.add(k.getId()));
 
         this.server = JettyServer.create()
                                  .port(this.port)
@@ -143,12 +143,10 @@ public class MockKeyServer {
     }
 
     private static final class UserInfoServlet extends HttpServlet {
-        private final JwkSet jwks;
         private final SignedJwtVerifier verifier;
         private final ObjectMapper json = new ObjectMapper();
 
         public UserInfoServlet(JwkSet jwks) {
-            this.jwks = jwks;
             this.verifier = new SignedJwtVerifier(new LocatorAdapter<Key>() {
                 @Override
                 protected Key locate(JwsHeader header) {

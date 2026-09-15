@@ -10,6 +10,10 @@ import java.util.regex.Pattern;
 
 public class UserUtils {
 
+    private UserUtils() {
+        // Static utility class, not intended to be instantiated.
+    }
+
     // "Authorization: Bearer: user:NAME"
     private static final Pattern authHeaderPattern = Pattern.compile("\\s*Bearer\\s+user:(\\S*)\s*");
 
@@ -22,8 +26,7 @@ public class UserUtils {
             String auser = userFromHTTP(action);
             if ( auser != null )
                 return auser;
-            String ruser = null;
-            return ruser;
+            return null;
         };
     }
 
@@ -35,8 +38,9 @@ public class UserUtils {
 
         String authHeader = action.getRequestHeader(HttpNames.hAuthorization);
         if ( authHeader == null || authHeader.isBlank() ) {
+            // Deliberately returns null rather than raising a bad-request error: a missing
+            // Authorization header means "no user", which callers handle, not a malformed request.
             return null;
-            //ServletOps.errorBadRequest("No Authorization header");
         }
         // Format "Bearer user:...."
         // Anchored pattern
@@ -44,8 +48,7 @@ public class UserUtils {
         Matcher m = authHeaderPattern.matcher(authHeader);
         if ( ! m.matches() )
             ServletOps.errorBadRequest("Bad Authorization header");
-        String auser = m.group(1);
-        return auser;
+        return m.group(1);
     }
 
 }
