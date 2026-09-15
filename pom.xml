@@ -71,9 +71,9 @@
     <plugin.clean>3.3.2</plugin.clean>
     <plugin.compiler>3.16.0</plugin.compiler>
     <plugin.cyclonedx>2.9.3</plugin.cyclonedx>
-    <plugin.buildnumber>3.3.0</plugin.buildnumber>
+    <plugin.buildnumber>3.3.1</plugin.buildnumber>
     <plugin.dependency>3.11.0</plugin.dependency>
-    <plugin.deploy>3.1.4</plugin.deploy>
+    <plugin.deploy>3.2.0</plugin.deploy>
     <plugin.enforcer>3.4.1</plugin.enforcer>
     <plugin.gpg>3.2.8</plugin.gpg>
     <plugin.install>3.1.1</plugin.install>
@@ -83,10 +83,10 @@
     <plugin.resources>3.5.0</plugin.resources>
     <plugin.shade>3.4.1</plugin.shade>
     <plugin.site>3.9.1</plugin.site>
-    <plugin.sonar>5.7.0.6970</plugin.sonar>
+    <plugin.sonar>5.8.0.7211</plugin.sonar>
     <plugin.source>3.4.0</plugin.source>
     <plugin.surefire>3.6.0</plugin.surefire>
-    <plugin.versions>2.21.0</plugin.versions>
+    <plugin.versions>2.22.0</plugin.versions>
 
     <!-- SonarQube analysis, invoked from CI via mvn sonar:sonar -->
     <sonar.projectKey>telicent-oss_smart-cache-graph</sonar.projectKey>
@@ -557,7 +557,7 @@
     <dependency.rdf-abac>3.1.6</dependency.rdf-abac>
     <dependency.fuseki-kafka>3.3.0</dependency.fuseki-kafka>
     <dependency.jena>6.2.0</dependency.jena>
-    <dependency.graphql>0.12.2</dependency.graphql>
+    <dependency.graphql>0.12.3</dependency.graphql>
     <dependency.jwt-servlet-auth>4.1.4</dependency.jwt-servlet-auth>
     <dependency.smart-caches-core>1.4.0</dependency.smart-caches-core>
 
@@ -565,11 +565,11 @@
     <!-- External dependencies -->
     <dependency.awaitility>4.3.0</dependency.awaitility>
     <dependency.jackson>2.22.2</dependency.jackson>
-    <dependency.bouncycastle>1.85</dependency.bouncycastle>
+    <dependency.bouncycastle>1.86</dependency.bouncycastle>
     <dependency.kafka>3.9.2</dependency.kafka>
-    <dependency.kotlin>2.4.10</dependency.kotlin>
+    <dependency.kotlin>2.4.20</dependency.kotlin>
     <dependency.lz4>1.11.2</dependency.lz4>
-    <dependency.otel>1.65.0</dependency.otel>
+    <dependency.otel>1.66.0</dependency.otel>
 
     <!-- Logging dependencies -->
     <dependency.log4j2>2.26.1</dependency.log4j2>
