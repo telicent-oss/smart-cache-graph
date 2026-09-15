@@ -1,5 +1,14 @@
 # Smart Cache Graph
 
+## 1.1.10
+
+- Build improvements:
+    - Addressed/suppressed outstanding SonarQube quality issues
+    - Fuseki kafka upgraded to 3.3.1
+    - GraphQL Jena upgraded to 0.12.3
+    - LZ4 Java upgraded to 1.11.3
+    - OpenTelemetry upgraded to 1.66.0
+
 ## 1.1.9
 
 - The `/$/ready` readiness probe is now a general service health check rather than reporting only Distribution
