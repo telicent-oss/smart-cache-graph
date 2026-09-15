@@ -555,9 +555,9 @@
     <!-- Dependency versions -->
     <!-- Internal dependencies -->
     <dependency.rdf-abac>3.1.6</dependency.rdf-abac>
-    <dependency.fuseki-kafka>3.3.0</dependency.fuseki-kafka>
+    <dependency.fuseki-kafka>3.3.1</dependency.fuseki-kafka>
     <dependency.jena>6.2.0</dependency.jena>
-    <dependency.graphql>0.12.2</dependency.graphql>
+    <dependency.graphql>0.12.3</dependency.graphql>
     <dependency.jwt-servlet-auth>4.1.4</dependency.jwt-servlet-auth>
     <dependency.smart-caches-core>1.4.0</dependency.smart-caches-core>
 
@@ -568,8 +568,8 @@
     <dependency.bouncycastle>1.85</dependency.bouncycastle>
     <dependency.kafka>3.9.2</dependency.kafka>
     <dependency.kotlin>2.4.10</dependency.kotlin>
-    <dependency.lz4>1.11.2</dependency.lz4>
-    <dependency.otel>1.65.0</dependency.otel>
+    <dependency.lz4>1.11.3</dependency.lz4>
+    <dependency.otel>1.66.0</dependency.otel>
 
     <!-- Logging dependencies -->
     <dependency.log4j2>2.26.1</dependency.log4j2>
