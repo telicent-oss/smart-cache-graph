@@ -2,3 +2,5 @@ deletion-worker:
   kafka:
     bootstrap-servers: localhost:9092
   topic: RDF-test
+  auth:
+    userinfo-url: http://localhost:9999/userinfo

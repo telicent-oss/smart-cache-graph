@@ -58,7 +58,11 @@ The **SCG Deletion Worker** is a Spring Boot service that enables deletion of RD
 ### Deletion Flow
 
 1. **Trigger**: Admin calls `POST /jobs/delete-distribution?distribution-id=<id>` with valid `Authorization` header
-2. **Auth**: `UserInfoService` validates the token against an external userinfo endpoint, checking for `ADMIN_SYSTEM` role
+2. **Auth**: `UserInfoService` exchanges the presented token for User Info at the Auth Server's `/userinfo`
+   endpoint. A non-200 response means the token is invalid or expired (401). The `ADMIN_SYSTEM` role is checked
+   against the roles in that response, never against the claims in the token itself, so a self-signed JWT
+   claiming the role gets nowhere (403 if the role is absent). If `/userinfo` is unreachable the request is
+   refused rather than allowed through
 3. **Register**: `JobRegistry` creates a new `JobState` with unique `jobId`, status `RUNNING`
 4. **Process** (async):
    - `DeletionJobConsumer` assigns all topic partitions and seeks to offset 0
@@ -168,7 +172,7 @@ management:
 | `KAFKA_BOOTSTRAP_SERVERS` | `localhost:9092` | Kafka broker addresses |
 | `KAFKA_CONFIG_FILE_PATH` | (empty) | Path to additional Kafka client properties file |
 | `KAFKA_TOPIC` | `RDF` | Topic to read from and write delete patches to |
-| `USERINFO_URL` | Telicent sandbox URL | Userinfo endpoint for role validation |
+| `USERINFO_URL` | `http://auth.telicent.localhost/userinfo` | Auth Server userinfo endpoint used to validate the token and obtain the user's roles. Required - the service will not start without it |
 
 ---
 
@@ -280,29 +284,63 @@ scg-deletion-worker/
 
 ### Core
 
-| Dependency | Purpose |
-|------------|---------|
-| Spring Boot 3.5.14 | Web, Actuator, Async |
-| Apache Kafka 3.x | Consumer/Producer clients |
-| Apache Jena 4.x | RDF parsing, RDF Patch generation |
-| Telicent RDF ABAC | Label-to-node generation for RDF parsing |
-| Jackson | JSON serialization |
+| Dependency | Version | Purpose |
+|------------|---------|---------|
+| Spring Boot | 4.1.1 | Web, Actuator, Async |
+| Apache Kafka | 3.9.2 | Consumer/Producer clients |
+| Apache Jena | 6.2.0 | RDF parsing, RDF Patch generation |
+| Telicent RDF ABAC | 3.1.6 | Label-to-node generation for RDF parsing |
+| Telicent `event-sources-core` | 1.4.0 | Kafka event header constants |
+| Jackson | 2.22.2 | JSON serialization |
+
+Versions are those resolved by Maven at the time of writing; the POM is authoritative.
 
 ### Test
 
-| Dependency | Purpose |
-|------------|---------|
-| Testcontainers | Kafka integration tests |
-| JUnit 5 + Mockito | Unit/integration testing |
-| Spring Boot Test | @SpringBootTest support |
+| Dependency | Version | Purpose |
+|------------|---------|---------|
+| Testcontainers | 1.21.4 | Kafka integration tests |
+| JUnit Jupiter | 6.1.3 | Unit/integration testing |
+| Mockito | 5.23.0 | Mocking |
+| Spring Boot Test | 4.1.1 | `@SpringBootTest` and MockMvc support |
 
 ---
 
 ## Security
 
-- All endpoints require `Authorization` header (Bearer token)
-- Role validation is performed by extracting the `roles` claim directly from the JWT access token injected by Traefik after forward auth validation
-- Only users with `ADMIN_SYSTEM` role can trigger or view deletion jobs
+- All endpoints require an `Authorization` header (Bearer token)
+- Role validation is performed against the roles returned by the Auth Server's `/userinfo` endpoint, never
+  against the claims in the presented token, so a self-signed JWT claiming a role it has not been granted
+  gets nowhere
+- Only users with the `ADMIN_SYSTEM` role can trigger or view deletion jobs
+- Failures are closed: if `/userinfo` is unreachable or its response cannot be parsed, the request is
+  refused rather than allowed through
+
+### Implementation note: `UserInfoService` and SC-Core
+
+`UserInfoService` hand-rolls the `/userinfo` call deliberately, to keep this stop-gap worker's dependency
+footprint small. Smart Caches Core provides the same thing properly, in
+`io.telicent.smart-caches:jwt-auth-common`:
+
+| Class | Replaces |
+|-------|----------|
+| `RemoteUserInfoLookup` | the `HttpClient` call and response parsing in `UserInfoService` |
+| `UserInfo` | the private `UserInfoResponse` record (also carries `permissions`, `sub`, `attributes`, `preferred_name`) |
+| `CachingUserInfoLookup` | nothing — adds a Caffeine cache over the lookup, which this worker does not have |
+| `TelicentRoles.ADMIN_SYSTEM` | the `ADMIN_SYSTEM` string literal |
+
+`scg-system`'s `io.telicent.core.auth.UserInfoFilter`, and `jaxrs-base-server`'s `UserInfoLookupInit`,
+show the intended usage. **Any longer-lived replacement for this worker should prefer that library over
+the code here.** Two things to know before adopting it (both verified against jwt-auth-common 1.4.0):
+
+- `UserInfo.getRoles()` returns `null` for an explicit `{"roles": null}` response; only a *missing* `roles`
+  key defaults to an empty list. Guard before streaming it. The `UserInfoResponse` record here handles
+  both cases
+- jwt-auth-common's POM declares `tools.jackson.core:jackson-databind` (Jackson 3) while its bytecode
+  actually uses `com.fasterxml` (Jackson 2, arriving transitively via `jwt-servlet-auth-core`). Both
+  Jackson lines are already on this worker's classpath — 2.22.2 directly, and 3.1.5 via
+  `event-sources-core` — so adopting the library adds no new Jackson, but the declared/actual mismatch is
+  worth knowing about when reasoning about which `ObjectMapper` is in play
 
 ---
 
