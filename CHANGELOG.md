@@ -1,5 +1,18 @@
 # Smart Cache Graph
 
+## 1.1.11
+
+- Kafka Connector improvements:
+    - Upgraded Fuseki Kafka to 3.3.2 which futher improves debug logging in the event of DLQ send failures
+- Deletion Worker improvements:
+    - Presented JWT is more strictly validated
+- Build improvements:
+    - BouncyCastle upgraded to 1.86
+    - Fuseki Kafka upgraded to 3.3.2
+    - Kotlin upgraded to 2.4.20
+    - Various build and test dependencies updated to latest available
+
+
 ## 1.1.10
 
 - Build improvements:
