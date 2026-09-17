@@ -1,10 +1,31 @@
 # Smart Cache Graph
 
-## 1.1.10 (unreleased)
+## 1.1.12 (unreleased)
 
 - Labels backup, restore and compaction now use generic storage capabilities exposed for the dataset by the Data
   Security Plugin. SC-Graph owns JSON status/error reporting and compaction handling.
 - Removed legacy RocksDB label store mocks. Coordinated with the RDF-ABAC 4.0.0 and Smart Caches Core 1.5.0 releases.
+
+## 1.1.11
+
+- Kafka Connector improvements:
+    - Upgraded Fuseki Kafka to 3.3.2 which futher improves debug logging in the event of DLQ send failures
+- Deletion Worker improvements:
+    - Presented JWT is more strictly validated
+- Build improvements:
+    - BouncyCastle upgraded to 1.86
+    - Fuseki Kafka upgraded to 3.3.2
+    - Kotlin upgraded to 2.4.20
+    - Various build and test dependencies updated to latest available
+
+## 1.1.10
+
+- Build improvements:
+    - Addressed/suppressed outstanding SonarQube quality issues
+    - Fuseki kafka upgraded to 3.3.1
+    - GraphQL Jena upgraded to 0.12.3
+    - LZ4 Java upgraded to 1.11.3
+    - OpenTelemetry upgraded to 1.66.0
 
 ## 1.1.9
 

@@ -33,6 +33,10 @@ import java.util.zip.ZipInputStream;
 
 public class CompressionUtils {
 
+    private CompressionUtils() {
+        // Static utility class, not intended to be instantiated.
+    }
+
     public static final Logger LOG = LoggerFactory.getLogger(CompressionUtils.class);
     private static final int BUFFER_SIZE = 1024;
 
@@ -217,10 +221,11 @@ public class CompressionUtils {
         if (Files.exists(directory)) {
             try (Stream<Path> walk = Files.walk(directory)) {
                 walk.sorted(java.util.Comparator.reverseOrder())
-                        .map(Path::toFile)
-                        .forEach(file -> {
-                            if (!file.delete()) {
-                                LOG.error("Failed to delete: {}", file.getAbsolutePath());
+                        .forEach(path -> {
+                            try {
+                                Files.delete(path);
+                            } catch (IOException e) {
+                                LOG.error("Failed to delete: {}", path, e);
                             }
                         });
             }

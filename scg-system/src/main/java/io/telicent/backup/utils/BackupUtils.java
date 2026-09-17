@@ -22,7 +22,6 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.telicent.smart.cache.configuration.Configurator;
-import io.telicent.utils.ServletUtils;
 import jakarta.servlet.http.HttpServletResponse;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
@@ -44,11 +43,12 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 import static io.telicent.backup.utils.JsonFileUtils.OBJECT_MAPPER;
+import static io.telicent.utils.ServletUtils.processResponse;
 
 /**
  * Utility class for carrying out common back-up operations and file I/O.
  */
-public class BackupUtils extends ServletUtils {
+public class BackupUtils {
 
     // JSON response key
     private static final String SUCCESS = "success";
@@ -231,10 +231,11 @@ public class BackupUtils extends ServletUtils {
      * @return whether the operation was successful or not
      */
     public static boolean createPathIfNotExists(String pathString) {
-        if (null == pathString) {
+        Optional<Path> safePath = getSafeNormalizedPath(pathString);
+        if (safePath.isEmpty()) {
             return false;
         }
-        File path = new File(pathString);
+        File path = safePath.get().toFile();
         if (!path.exists()) {
             return path.mkdirs();
         }
@@ -248,14 +249,12 @@ public class BackupUtils extends ServletUtils {
      * @return whether the operation was successful or not
      */
     public static boolean checkPathExistsAndIsDir(String pathString) {
-        if (requestIsEmpty(pathString)) {
+        Optional<Path> safePath = getSafeNormalizedPath(pathString);
+        if (safePath.isEmpty()) {
             return false;
         }
-        File path = new File(pathString);
-        if (path.exists() && path.isDirectory()) {
-            return true;
-        }
-        return false;
+        File path = safePath.get().toFile();
+        return path.exists() && path.isDirectory();
     }
 
     /**
@@ -265,14 +264,57 @@ public class BackupUtils extends ServletUtils {
      * @return whether the operation was successful or not
      */
     public static boolean checkPathExistsAndIsFile(String pathString) {
-        if (requestIsEmpty(pathString)) {
+        Optional<Path> safePath = getSafeNormalizedPath(pathString);
+        if (safePath.isEmpty()) {
             return false;
         }
-        File path = new File(pathString);
-        if (path.exists() && path.isFile()) {
-            return true;
+        File path = safePath.get().toFile();
+        return path.exists() && path.isFile();
+    }
+
+    private static Optional<Path> getSafeNormalizedPath(String pathString) {
+        if (requestIsEmpty(pathString)) {
+            return Optional.empty();
         }
-        return false;
+        try {
+            Path normalized = Paths.get(pathString).normalize();
+            for (Path part : normalized) {
+                if ("..".equals(part.toString())) {
+                    return Optional.empty();
+                }
+            }
+            return Optional.of(normalized);
+        } catch (InvalidPathException e) {
+            return Optional.empty();
+        }
+    }
+
+    /**
+     * Validates that the input is a safe single path component.
+     * Rejects null/blank values, path separators and parent-directory traversal tokens.
+     *
+     * @param value value to validate
+     * @return true if safe
+     */
+    public static boolean isSafePathComponent(String value) {
+        if (requestIsEmpty(value)) {
+            return false;
+        }
+        return !value.contains("..") && !value.contains("/") && !value.contains("\\");
+    }
+
+    /**
+     * Validates and returns a safe single path component.
+     *
+     * @param value     value to validate
+     * @param fieldName logical field name for error messages
+     * @return validated value
+     */
+    public static String requireSafePathComponent(String value, String fieldName) {
+        if (!isSafePathComponent(value)) {
+            throw new IllegalArgumentException("Invalid " + fieldName);
+        }
+        return value;
     }
 
     /**
@@ -458,8 +500,7 @@ public class BackupUtils extends ServletUtils {
                     JsonNode fileContent = OBJECT_MAPPER.readTree(Files.readString(filePath));
                     targetNode.set(numericKey, fileContent);
                 } catch (IOException e) {
-                    LOG.error("Error reading or parsing JSON from file {}", filePath, e);
-                    throw e;
+                    throw new IOException("Error reading or parsing JSON from file " + filePath, e);
                 }
             }
         }
@@ -540,7 +581,13 @@ public class BackupUtils extends ServletUtils {
                 }
             }
         }
-        directory.delete();
+        try {
+            Files.delete(directory.toPath());
+        } catch (IOException e) {
+            // Previously the boolean from File.delete() was discarded, so a failed deletion was
+            // silently invisible even though callers go on to report success.
+            LOG.error("Failed to delete {}", directory.getAbsolutePath(), e);
+        }
     }
 
 
@@ -609,7 +656,7 @@ public class BackupUtils extends ServletUtils {
                         LOG.info("File content: {}", content);
 
                         Object offsetObj = state.get("offsets");
-                        if (offsetObj instanceof Map<?, ?> map) {
+                        if (offsetObj instanceof Map<?, ?>) {
                             return Optional.of((Map<String, Object>) offsetObj);
                         }
                         return Optional.empty();

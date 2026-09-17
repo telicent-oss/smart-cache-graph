@@ -21,10 +21,9 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.SecureRandom;
-import java.sql.Date;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
+import java.time.Instant;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.Objects;
 import java.util.Optional;
@@ -177,8 +176,8 @@ public class EncryptionUtils {
 
         final Object obj = pgpObjectFactory.nextObject();
         //The first object might be a marker packet
-        final PGPEncryptedDataList pgpEncryptedDataList = (obj instanceof PGPEncryptedDataList)
-                ? (PGPEncryptedDataList) obj : (PGPEncryptedDataList) pgpObjectFactory.nextObject();
+        final PGPEncryptedDataList pgpEncryptedDataList = (obj instanceof PGPEncryptedDataList encryptedDataList)
+                ? encryptedDataList : (PGPEncryptedDataList) pgpObjectFactory.nextObject();
 
         PGPPrivateKey pgpPrivateKey = null;
         PGPPublicKeyEncryptedData publicKeyEncryptedData = null;
@@ -231,10 +230,8 @@ public class EncryptionUtils {
             throw new PGPException("Message is not a simple encrypted file - Type Unknown");
         }
         // Performing Integrity check
-        if (publicKeyEncryptedData.isIntegrityProtected()) {
-            if (!publicKeyEncryptedData.verify()) {
-                throw new PGPException("Message failed integrity check");
-            }
+        if (publicKeyEncryptedData.isIntegrityProtected() && !publicKeyEncryptedData.verify()) {
+            throw new PGPException("Message failed integrity check");
         }
     }
 
@@ -250,7 +247,7 @@ public class EncryptionUtils {
     private static void copyAsLiteralData(OutputStream outputStream, InputStream in, long length, int bufferSize) throws IOException {
         final PGPLiteralDataGenerator lData = new PGPLiteralDataGenerator();
         final byte[] buff = new byte[bufferSize];
-        try (OutputStream pOut = lData.open(outputStream, PGPLiteralData.BINARY, PGPLiteralData.CONSOLE, Date.from(LocalDateTime.now().toInstant(ZoneOffset.UTC)), new byte[bufferSize])) {
+        try (OutputStream pOut = lData.open(outputStream, PGPLiteralData.BINARY, PGPLiteralData.CONSOLE, Date.from(Instant.now()), new byte[bufferSize])) {
             int len;
             long totalBytesWritten = 0L;
             // The previous condition `totalBytesWritten <= length` was checked BEFORE the

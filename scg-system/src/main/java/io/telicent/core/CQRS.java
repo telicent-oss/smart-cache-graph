@@ -28,7 +28,6 @@ import java.util.function.Consumer;
 
 import io.telicent.smart.cache.sources.TelicentHeaders;
 import io.telicent.utils.UserUtils;
-import org.apache.jena.atlas.lib.Bytes;
 import org.apache.jena.atlas.logging.Log;
 import org.apache.jena.fuseki.server.Operation;
 import org.apache.jena.fuseki.servlets.ActionService;
@@ -57,6 +56,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class CQRS {
+
+    private CQRS() {
+        // Static utility class, not intended to be instantiated.
+    }
 
     /** Log for CQRS related messages */
     public static Logger LOG = LoggerFactory.getLogger(CQRS.class);
@@ -143,11 +146,6 @@ public class CQRS {
     /** Used to pass the addition information through the HttpActionLifecycle. */
     private static Symbol symbol = Symbol.create("cqrs:update");
 
-    private static DatasetGraph getOperationDataset(HttpAction action) {
-        UpdateCQRS updateCtl = action.getContext().get(symbol);
-        return updateCtl.dataset;
-    }
-
     // Call just after dsg.begin.
     private static Consumer<HttpAction> onBegin = CQRS::onBegin;
 
@@ -187,7 +185,6 @@ public class CQRS {
             }
             sendToKafka(changesCtl.producer, changesCtl.topic, sendHeaders, kBody);
         } else {
-            System.out.print(Bytes.bytes2string(kBody));
             LOG.info("Send to Kafka: topic={} bytes={}", changesCtl.topic, kBody.length);
         }
         action.getContext().remove(symbol);
@@ -220,21 +217,16 @@ public class CQRS {
         try {
             ProducerRecord<K, V> pRec = new ProducerRecord<>(topic, partition, null, null, body, headers);
             Future<RecordMetadata> f = producer.send(pRec);
-            RecordMetadata res = f.get();
-            return res;
-        } catch (InterruptedException | ExecutionException e) {
+            return f.get();
+        } catch (InterruptedException e) {
+            // Restore the interrupt flag before wrapping: f.get() blocks the calling request
+            // thread, so swallowing the interrupt would lose a shutdown or cancellation signal.
+            Thread.currentThread().interrupt();
+            throw new JenaKafkaException("Failed to send Kafka message", e);
+        } catch (ExecutionException e) {
             throw new JenaKafkaException("Failed to send Kafka message", e);
         }
     }
-
-//    private static Header kafkaHeader(String key_value) {
-//        String[] a = key_value.split(":",2);
-//        if ( a.length != 2 )
-//            throw new CmdException("Bad header (format is \"name: value\"): "+key_value);
-//        String key = a[0].trim();
-//        String value = a[1].trim();
-//        return kafkaHeader(key, value);
-//    }
 
     static Header kafkaHeader(String key, String value) {
         return new RecordHeader(key, value.getBytes(StandardCharsets.UTF_8));

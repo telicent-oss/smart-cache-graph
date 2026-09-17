@@ -57,18 +57,16 @@ public class LibTestsSCG {
             return queryNoToken(url, queryString);
         }
         String jwt = tokenForUser(user);
-        RowSet rs1 = QueryExecHTTPBuilder.service(url)
-                                         .query(queryString)
-                                         .httpHeader(tokenHeader(), tokenHeaderValue(jwt))
-                                         .select();
-        return rs1;
+        return QueryExecHTTPBuilder.service(url)
+                                   .query(queryString)
+                                   .httpHeader(tokenHeader(), tokenHeaderValue(jwt))
+                                   .select();
     }
 
     public static RowSet queryNoToken(String url, String queryString) {
-        RowSet rs1 = QueryExecHTTPBuilder.service(url)
-                                         .query(queryString)
-                                         .select();
-        return rs1;
+        return QueryExecHTTPBuilder.service(url)
+                                   .query(queryString)
+                                   .select();
     }
 
     public static void uploadFile(String URL, String filename) {

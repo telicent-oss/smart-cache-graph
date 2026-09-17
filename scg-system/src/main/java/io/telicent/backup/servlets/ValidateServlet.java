@@ -2,6 +2,7 @@ package io.telicent.backup.servlets;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.telicent.backup.services.DatasetBackupService;
+import io.telicent.utils.ServletUtils;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -12,6 +13,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static io.telicent.backup.utils.BackupUtils.*;
 import static io.telicent.backup.utils.JsonFileUtils.OBJECT_MAPPER;
+import static io.telicent.utils.ServletUtils.processResponse;
 
 public class ValidateServlet extends HttpServlet {
 
@@ -31,7 +33,7 @@ public class ValidateServlet extends HttpServlet {
                     processRequest(request, response);
                 } else {
                     final ObjectNode resultNode = OBJECT_MAPPER.createObjectNode();
-                    handleError(response, resultNode, HttpServletResponse.SC_BAD_REQUEST, "Invalid content type: " + request.getContentType());
+                    ServletUtils.handleError(response, resultNode, HttpServletResponse.SC_BAD_REQUEST, "Invalid content type: " + request.getContentType());
                 }
             } catch (Exception exception) {
                 final ObjectNode resultNode = OBJECT_MAPPER.createObjectNode();
@@ -51,7 +53,18 @@ public class ValidateServlet extends HttpServlet {
             final HttpServletRequest request,
             final HttpServletResponse response) throws IOException {
         final String pathInfo = request.getPathInfo();
+        if (pathInfo == null || !pathInfo.startsWith("/")) {
+            throw new IllegalArgumentException("Invalid validation path");
+        }
         final String[] validateParams = pathInfo.substring(1).split("/");
+        if (validateParams.length < 1 || validateParams.length > 2) {
+            throw new IllegalArgumentException("Invalid validation path");
+        }
+        validateParams[0] = requireSafePathComponent(validateParams[0], "backup-id");
+        if (validateParams.length > 1) {
+            // The dataset name is optional: validateBackup validates the whole backup without it.
+            validateParams[1] = requireSafePathComponent(validateParams[1], "dataset-name");
+        }
         try (final InputStream inputStream = request.getInputStream()) {
             final ObjectNode resultNode = backupService.validateBackup(validateParams, inputStream, response);
             processResponse(response, resultNode);

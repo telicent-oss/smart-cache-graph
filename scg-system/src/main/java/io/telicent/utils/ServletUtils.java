@@ -20,6 +20,10 @@ import static io.telicent.backup.utils.JsonFileUtils.OBJECT_MAPPER;
  */
 public class ServletUtils {
 
+    private ServletUtils() {
+        // Static utility class, not intended to be instantiated.
+    }
+
     public static final String HTTP = "http://";
     public static final String HTTPS = "https://";
 

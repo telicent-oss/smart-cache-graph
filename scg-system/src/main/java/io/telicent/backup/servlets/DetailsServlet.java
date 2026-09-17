@@ -25,6 +25,7 @@ import org.apache.jena.atlas.lib.DateTimeUtils;
 
 import static io.telicent.backup.utils.BackupConstants.DATE_FORMAT;
 import static io.telicent.backup.utils.BackupUtils.handleError;
+import static io.telicent.backup.utils.BackupUtils.requireSafePathComponent;
 import static io.telicent.backup.utils.JsonFileUtils.OBJECT_MAPPER;
 import static io.telicent.utils.ServletUtils.processResponse;
 
@@ -45,6 +46,7 @@ public class DetailsServlet extends HttpServlet {
             if (backupId.startsWith("/")) {
                 backupId = backupId.substring(1);
             }
+            backupId = requireSafePathComponent(backupId, "backup-id");
             resultNode.put("backup-id", backupId);
             resultNode.put("date", DateTimeUtils.nowAsString(DATE_FORMAT));
             resultNode.set("details", backupService.getDetails(backupId));
