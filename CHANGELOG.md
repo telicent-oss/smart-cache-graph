@@ -1,5 +1,11 @@
 # Smart Cache Graph
 
+## 1.1.12 (unreleased)
+
+- Labels backup, restore and compaction now use generic storage capabilities exposed for the dataset by the Data
+  Security Plugin. SC-Graph owns JSON status/error reporting and compaction handling.
+- Removed legacy RocksDB label store mocks. Coordinated with the RDF-ABAC 4.0.0 and Smart Caches Core 1.5.0 releases.
+
 ## 1.1.11
 
 - Kafka Connector improvements:
@@ -11,7 +17,6 @@
     - Fuseki Kafka upgraded to 3.3.2
     - Kotlin upgraded to 2.4.20
     - Various build and test dependencies updated to latest available
-
 
 ## 1.1.10
 

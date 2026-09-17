@@ -54,6 +54,7 @@ public abstract class AbstractBearerAuthTests {
                 // Ignore
             }
         });
+        Labels.rocks.clear();
     }
 
     @Test

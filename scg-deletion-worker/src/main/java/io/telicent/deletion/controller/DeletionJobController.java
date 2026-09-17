@@ -51,16 +51,14 @@ public class DeletionJobController {
                      .body(Map.of(ERROR, "Authorization header is required"));
         }
 
-        switch (userInfoService.checkAdminRole(authorization)) {
-            case UNAUTHORIZED -> {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(Map.of(ERROR, "Invalid or expired session"));
-            }
-            case FORBIDDEN -> {
-                return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                        .body(Map.of(ERROR, "ROLE_ADMIN_SYSTEM required"));
-            }
-            case AUTHORIZED -> {}
+        UserInfoService.AuthResult authResult = userInfoService.checkAdminRole(authorization);
+        if (authResult == UserInfoService.AuthResult.FORBIDDEN) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of(ERROR, "ROLE_ADMIN_SYSTEM required"));
+        }
+        if (authResult != UserInfoService.AuthResult.AUTHORIZED) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of(ERROR, "Invalid or expired session"));
         }
 
         if (distributionId.isBlank()) {
@@ -81,16 +79,14 @@ public class DeletionJobController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of(ERROR, "Authorization header is required"));
         }
-        switch (userInfoService.checkAdminRole(authorization)) {
-            case UNAUTHORIZED -> {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(Map.of(ERROR, "Invalid or expired session"));
-            }
-            case FORBIDDEN -> {
-                return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                        .body(Map.of(ERROR, "ROLE_ADMIN_SYSTEM required"));
-            }
-            case AUTHORIZED -> {}
+        UserInfoService.AuthResult authResult = userInfoService.checkAdminRole(authorization);
+        if (authResult == UserInfoService.AuthResult.FORBIDDEN) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of(ERROR, "ROLE_ADMIN_SYSTEM required"));
+        }
+        if (authResult != UserInfoService.AuthResult.AUTHORIZED) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of(ERROR, "Invalid or expired session"));
         }
 
         return registry.find(jobId)

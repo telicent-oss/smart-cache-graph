@@ -22,8 +22,11 @@ import io.telicent.backup.utils.EncryptionUtils;
 import io.telicent.core.DatasetMaintenanceRegistry;
 import io.telicent.model.KeyPair;
 import io.telicent.smart.cache.security.data.DataSecurityException;
-import io.telicent.smart.cache.security.data.labels.SecurityLabelsBackup;
-import io.telicent.smart.cache.security.data.labels.SecurityLabelsRestore;
+import io.telicent.smart.cache.storage.BackupRestoreCapable;
+import io.telicent.smart.cache.storage.BackupConfig;
+import io.telicent.smart.cache.storage.BackupStatus;
+import io.telicent.smart.cache.storage.RestoreConfig;
+import io.telicent.smart.cache.storage.RestoreStatus;
 import io.telicent.smart.cache.security.data.plugins.DataSecurityPlugin;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -421,11 +424,18 @@ public class DatasetBackupService {
      */
     void backupLabelStore(DataAccessPoint dataAccessPoint, String backupPath, ObjectNode node) {
         final DatasetGraph dsg = dataAccessPoint.getDataService().getDataset();
-        final Optional<SecurityLabelsBackup> securityLabelsBackup = dataSecurityPlugin.prepareLabelsBackup();
-        if(securityLabelsBackup.isPresent()){
-            securityLabelsBackup.get().backup(dsg, backupPath, node);
-        } else {
+        final Optional<BackupRestoreCapable> capability = dataSecurityPlugin.prepareLabelsBackup(dsg);
+        if (capability.isEmpty()) {
             node.put(REASON, "No security labels backup store is available");
+            node.put(SUCCESS, false);
+            return;
+        }
+        try {
+            BackupStatus status = capability.get().backup(BackupConfig.builder().backupLocation(backupPath).build());
+            node.put(SUCCESS, status.isSuccess());
+            status.getErrorMessage().ifPresent(message -> node.put(REASON, message));
+        } catch (Exception e) {
+            node.put(REASON, e.getMessage());
             node.put(SUCCESS, false);
         }
     }
@@ -478,28 +488,7 @@ public class DatasetBackupService {
         String restorePath = getBackUpDir() + "/" + restoreId;
         response.put("restorePath", restorePath);
 
-        if (!checkPathExistsAndIsDir(restorePath) && !checkPathExistsAndIsFile(restorePath + ZIP_SUFFIX) && !checkPathExistsAndIsFile(restorePath + ZIP_SUFFIX + ENCRYPTION_SUFFIX)) {
-            response.put(BACKUP_SUCCESS, false);
-        }
-        else {
-            ObjectNode result = OBJECT_MAPPER.createObjectNode();
-            result.put(DESCRIPTION, "Rollback point backup for restore " + restoreId);
-            if (specificDatasetIfAny.isEmpty()) {
-                backupDataset(null, result);
-            } else {
-                backupDataset(specificDatasetIfAny, result);
-            }
-            if (result.get(DATASETS) != null && result.get(DATASETS).isArray() && result.get(DATASETS).isEmpty()) {
-                response.put(BACKUP_SUCCESS, false);
-            }
-            else if (result.has(BACKUP_ID)) {
-                response.put("rollback-point-backup-id", result.get(BACKUP_ID).asText());
-                LOG.info("Rollback point backup {} created", result.get(BACKUP_ID).asText());
-            }
-            if (response.get(BACKUP_SUCCESS) == null) {
-                getBackupSuccessValues(result, response);
-            }
-        }
+        createRollbackPoint(restoreId, specificDatasetIfAny, restorePath, response);
 
         boolean decompressDir = false;
         if (checkPathExistsAndIsFile(restorePath + ZIP_SUFFIX)) {
@@ -513,33 +502,57 @@ public class DatasetBackupService {
             Files.delete(decryptedZipPath);
             decompressDir = true;
         }
+        restoreAvailableDatasets(restorePath, specificDatasetIfAny, response);
+        if(DELETE_GENERATED_FILES && decompressDir) {
+            cleanupDirectory(restorePath);
+        }
+    }
+
+    private void createRollbackPoint(String restoreId, String specificDataset, String restorePath, ObjectNode response) {
+        if (!checkPathExistsAndIsDir(restorePath) && !checkPathExistsAndIsFile(restorePath + ZIP_SUFFIX)
+                && !checkPathExistsAndIsFile(restorePath + ZIP_SUFFIX + ENCRYPTION_SUFFIX)) {
+            response.put(BACKUP_SUCCESS, false);
+            return;
+        }
+        ObjectNode result = OBJECT_MAPPER.createObjectNode();
+        result.put(DESCRIPTION, "Rollback point backup for restore " + restoreId);
+        backupDataset(specificDataset.isEmpty() ? null : specificDataset, result);
+        if (result.get(DATASETS) != null && result.get(DATASETS).isArray() && result.get(DATASETS).isEmpty()) {
+            response.put(BACKUP_SUCCESS, false);
+        } else if (result.has(BACKUP_ID)) {
+            response.put("rollback-point-backup-id", result.get(BACKUP_ID).asText());
+            LOG.info("Rollback point backup {} created", result.get(BACKUP_ID).asText());
+        }
+        if (response.get(BACKUP_SUCCESS) == null) {
+            getBackupSuccessValues(result, response);
+        }
+    }
+
+    private void restoreAvailableDatasets(String restorePath, String specificDataset, ObjectNode response) {
         if (!checkPathExistsAndIsDir(restorePath)) {
             response.put(REASON, "Restore path unsuitable: " + restorePath);
             response.put(SUCCESS, false);
-        } else {
-            List<String> datasets = getSubdirectoryNames(restorePath);
-            if (datasets.isEmpty()) {
-                response.put(REASON, "Restore path unsuitable: " + restorePath);
-                response.put(SUCCESS, false);
-            } else {
-                boolean noMatches = true;
-                boolean successSoFar = true;
-                for (String datasetName : datasets) {
-                    if (specificDatasetIfAny.isEmpty() || specificDatasetIfAny.equalsIgnoreCase(datasetName)) {
-                        noMatches = false;
-                        successSoFar = successSoFar && restoreDataset(restorePath, datasetName, response);
-                    }
-                }
-                if(noMatches) {
-                    response.put(REASON, "No matches for dataset.");
-                    response.put(SUCCESS, false);
-                } else {
-                    response.put(SUCCESS, successSoFar);
-                }
+            return;
+        }
+        List<String> datasets = getSubdirectoryNames(restorePath);
+        if (datasets.isEmpty()) {
+            response.put(REASON, "Restore path unsuitable: " + restorePath);
+            response.put(SUCCESS, false);
+            return;
+        }
+        boolean noMatches = true;
+        boolean successSoFar = true;
+        for (String datasetName : datasets) {
+            if (specificDataset.isEmpty() || specificDataset.equalsIgnoreCase(datasetName)) {
+                noMatches = false;
+                successSoFar = successSoFar && restoreDataset(restorePath, datasetName, response);
             }
         }
-        if(DELETE_GENERATED_FILES && decompressDir) {
-            cleanupDirectory(restorePath);
+        if (noMatches) {
+            response.put(REASON, "No matches for dataset.");
+            response.put(SUCCESS, false);
+        } else {
+            response.put(SUCCESS, successSoFar);
         }
     }
 
@@ -697,11 +710,18 @@ public class DatasetBackupService {
      */
     void restoreLabelStore(DataAccessPoint dataAccessPoint, String restorePath, ObjectNode node) {
         final DatasetGraph datasetGraph = dataAccessPoint.getDataService().getDataset();
-        final Optional<SecurityLabelsRestore> securityLabelsRestore = dataSecurityPlugin.prepareLabelsRestore();
-        if(securityLabelsRestore.isPresent()) {
-            securityLabelsRestore.get().restore(datasetGraph, restorePath, node);
-        } else {
-            node.put(REASON, "No security labels backup store is available");
+        final Optional<BackupRestoreCapable> capability = dataSecurityPlugin.prepareLabelsRestore(datasetGraph);
+        if (capability.isEmpty()) {
+            node.put(REASON, "No security labels restore store is available");
+            node.put(SUCCESS, false);
+            return;
+        }
+        try {
+            RestoreStatus status = capability.get().restore(RestoreConfig.builder().backupLocation(restorePath).build());
+            node.put(SUCCESS, status.isSuccess());
+            status.getErrorMessage().ifPresent(message -> node.put(REASON, message));
+        } catch (Exception e) {
+            node.put(REASON, e.getMessage());
             node.put(SUCCESS, false);
         }
     }
@@ -815,9 +835,9 @@ public class DatasetBackupService {
      * @param backupId    the back-up identifier
      * @param datasetName the dataset name
      * @return the SHACL validation report as a JSON String
-     * @throws Exception If error occurs
+     * @throws IOException If the report cannot be read
      */
-    public ObjectNode getReport(final String backupId, final String datasetName, final HttpServletResponse response) throws Exception {
+    public ObjectNode getReport(final String backupId, final String datasetName, final HttpServletResponse response) throws IOException {
         final ObjectNode resultNode = OBJECT_MAPPER.createObjectNode();
         final String reportPathString = getBackUpDir() + "/" + backupId + "-" + datasetName + REPORT_SUFFIX;
 

@@ -3,7 +3,7 @@ package io.telicent.core;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.telicent.smart.cache.security.data.DataSecurityException;
-import io.telicent.smart.cache.security.data.labels.SecurityLabelsCompact;
+import io.telicent.smart.cache.storage.CompactCapable;
 import io.telicent.smart.cache.security.data.plugins.DataSecurityPlugin;
 import io.telicent.smart.cache.security.data.plugins.DataSecurityPluginLoader;
 import jakarta.servlet.http.HttpServlet;
@@ -47,6 +47,7 @@ import java.util.concurrent.Executors;
 import static io.telicent.backup.utils.JsonFileUtils.OBJECT_MAPPER;
 import static io.telicent.utils.ServletUtils.processResponse;
 
+@SuppressWarnings("java:S3398")
 public class FMod_InitialCompaction implements FusekiAutoModule {
 
     // JSON response keys
@@ -518,9 +519,20 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
 
     public static void compactLabels(DatasetGraph dsg) throws DataSecurityException {
         final DataSecurityPlugin plugin = DataSecurityPluginLoader.load();
-        final Optional<SecurityLabelsCompact> compact = plugin.prepareLabelsCompact();
-        if(compact.isPresent()) {
-            compact.get().compact(dsg);
+        final Optional<CompactCapable> capability = plugin.prepareLabelsCompact(dsg);
+        if (capability.isEmpty()) {
+            return;
+        }
+        final Timer timer = new Timer();
+        timer.startTimer();
+        LOG.info("[Compaction] >>>> Start label store compaction.");
+        try {
+            capability.get().compact();
+        } catch (Exception e) {
+            throw new DataSecurityException(e.getMessage(), e);
+        } finally {
+            LOG.info("[Compaction] <<<< Finish label store compaction. Took {} seconds.",
+                     Timer.timeStr(timer.endTimer()));
         }
     }
 
@@ -565,20 +577,22 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
         }
 
         try {
-            try {
-                Files.move(tempFile.toPath(), indicatorFile.toPath(),
-                           StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
-            } catch (AtomicMoveNotSupportedException e) {
-                Files.move(tempFile.toPath(), indicatorFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-            }
+            moveCompactionIndicator(tempFile.toPath(), indicatorFile.toPath());
         } catch (IOException e) {
             LOG.warn("[Compaction] Unable to move compaction indicator file into place {}", indicatorFile, e);
             try {
-                Files.deleteIfExists(tempFile.toPath());
+                Files.delete(tempFile.toPath());
             } catch (IOException cleanupError) {
-                LOG.warn("[Compaction] Unable to remove temporary compaction indicator file {}", tempFile,
-                         cleanupError);
+                LOG.warn("[Compaction] Unable to delete temporary indicator file {}", tempFile, cleanupError);
             }
+        }
+    }
+
+    private static void moveCompactionIndicator(Path source, Path target) throws IOException {
+        try {
+            Files.move(source, target, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+        } catch (AtomicMoveNotSupportedException e) {
+            Files.move(source, target, StandardCopyOption.REPLACE_EXISTING);
         }
     }
 
@@ -631,13 +645,13 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
                 final CompactionStatus outcome = compactDatasetGraphDatabase(dsg, datasetName);
                 return new CompactionOperationResponse(HttpServletResponse.SC_OK,
                                                        toCompactionSummaryJson(Map.of(datasetName, outcome)));
-            } catch (Throwable t) {
-                FmtLog.error(Fuseki.configLog, "Error while compacting dataset " + datasetName, t);
-                return compactionFailureResponse(compactionFailureDetails(datasetName, t));
+            } catch (Exception e) {
+                FmtLog.error(Fuseki.configLog, "Error while compacting dataset " + datasetName, e);
+                return compactionFailureResponse(compactionFailureDetails(datasetName, e));
             }
         }
 
-        private static String compactionFailureDetails(String datasetName, Throwable t) {
+      private static String compactionFailureDetails(String datasetName, Throwable t) {
             return "Compaction failed for dataset " + datasetName + ": "
                     + (t.getMessage() != null ? t.getMessage() : t.getClass().getName());
         }
@@ -679,9 +693,9 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
                 try {
                     final CompactionStatus outcome = compactDatasetGraphDatabase(dataService.getDataset(), datasetName);
                     outcomes.put(datasetName, outcome);
-                } catch (Throwable t) {
-                    failures.put(datasetName, t.getMessage() != null ? t.getMessage() : t.getClass().getName());
-                    FmtLog.error(Fuseki.configLog, "Error while compacting dataset " + datasetName, t);
+                } catch (Exception e) {
+                    failures.put(datasetName, e.getMessage() != null ? e.getMessage() : e.getClass().getName());
+                    FmtLog.error(Fuseki.configLog, "Error while compacting dataset " + datasetName, e);
                 }
             }
 
