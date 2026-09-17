@@ -21,7 +21,8 @@ import io.telicent.jena.abac.core.AttributesStore;
 import io.telicent.jena.abac.fuseki.SysFusekiABAC;
 import io.telicent.jena.abac.labels.Label;
 import io.telicent.jena.abac.labels.LabelsStore;
-import io.telicent.jena.abac.labels.StoreFmtByString;
+import io.telicent.jena.abac.labels.StoreFmtByHash;
+import io.telicent.jena.abac.labels.hashing.HasherUtil;
 import io.telicent.jena.abac.services.SimpleAttributesStore;
 import io.telicent.smart.cache.configuration.Configurator;
 import org.apache.jena.datatypes.xsd.XSDDatatype;
@@ -157,7 +158,8 @@ class TestYamlConfigParserAuthz {
         LibTestsSCG.uploadFile(server.serverURL() + serviceName + "/upload", DIR + "/yaml/data-and-labels.trig");
 
         LabelsStore labelsStore =
-                createLabelsStoreRocksDB(new File("target/labels-test"), null, new StoreFmtByString());
+                createLabelsStoreRocksDB(new File("target/labels-test"), null,
+                                         new StoreFmtByHash(HasherUtil.createXX128Hasher()));
         Model model = ModelFactory.createDefaultModel();
         model.read(DIR + "/yaml/data-and-labels.trig", "TRIG");
         StmtIterator iterator = model.listStatements();

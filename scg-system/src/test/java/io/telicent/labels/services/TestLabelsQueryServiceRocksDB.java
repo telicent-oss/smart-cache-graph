@@ -1,6 +1,7 @@
 package io.telicent.labels.services;
 
 import io.telicent.jena.abac.labels.*;
+import io.telicent.jena.abac.labels.hashing.HasherUtil;
 import io.telicent.labels.TripleLabels;
 import io.telicent.smart.cache.security.data.labels.SecurityLabelsApplicator;
 import io.telicent.smart.cache.security.data.plugins.DataSecurityPlugin;
@@ -44,7 +45,7 @@ public class TestLabelsQueryServiceRocksDB {
                 NodeFactory.createURI("http://example.org/object")
         );
         final LabelsStore rocksDbLabelsStore = Labels.createLabelsStoreRocksDB(
-                dbDir, null, new StoreFmtByString());
+                dbDir, null, new StoreFmtByHash(HasherUtil.createXX128Hasher()));
         rocksDbLabelsStore.add(triple, Label.fromText("example"));
         final DatasetGraph emptyDsg = DatasetGraphFactory.create();
         final DataSecurityPlugin mockDataSecurityPlugin = mock(DataSecurityPlugin.class);
@@ -65,7 +66,7 @@ public class TestLabelsQueryServiceRocksDB {
                 NodeFactory.createLiteralByValue("test")
         );
         final LabelsStore rocksDbLabelsStore = Labels.createLabelsStoreRocksDB(
-                dbDir, null, new StoreFmtByString());
+                dbDir, null, new StoreFmtByHash(HasherUtil.createXX128Hasher()));
         rocksDbLabelsStore.add(triple, Label.fromText("example"));
         final DatasetGraph emptyDsg = DatasetGraphFactory.create();
         final DataSecurityPlugin mockDataSecurityPlugin = mock(DataSecurityPlugin.class);
