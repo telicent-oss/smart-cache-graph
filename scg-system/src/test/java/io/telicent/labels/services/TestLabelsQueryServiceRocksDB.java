@@ -38,7 +38,7 @@ public class TestLabelsQueryServiceRocksDB {
     }
 
     @Test
-    public void testLabelQuery() throws Exception {
+    public void testLabelQuery() {
         final Triple triple = Triple.create(
                 NodeFactory.createURI("http://example.org/subject"),
                 NodeFactory.createURI("http://example.org/predicate"),
@@ -58,7 +58,7 @@ public class TestLabelsQueryServiceRocksDB {
     }
 
     @Test
-    public void testLabelQueryLiteral() throws Exception
+    public void testLabelQueryLiteral()
     {
         final Triple triple = Triple.create(
                 NodeFactory.createURI("http://example.org/subject"),

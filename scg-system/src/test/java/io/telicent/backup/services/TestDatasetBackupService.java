@@ -2728,7 +2728,7 @@ public class TestDatasetBackupService {
             throw new RuntimeException(ex);
         }
         finally {
-            deRegisterMethods("test", this::doNothing, this::doNothing);
+            deRegisterMethods("test");
         }
     }
 
@@ -2754,7 +2754,7 @@ public class TestDatasetBackupService {
             throw new RuntimeException(ex);
         }
         finally {
-            deRegisterMethods("test", this::doNothing, this::doNothing);
+            deRegisterMethods("test");
         }
     }
 
@@ -2780,7 +2780,7 @@ public class TestDatasetBackupService {
             throw new RuntimeException(ex);
         }
         finally {
-            deRegisterMethods("test", this::doNothing, this::doNothing);
+            deRegisterMethods("test");
         }
     }
 
@@ -2816,7 +2816,7 @@ public class TestDatasetBackupService {
             throw new RuntimeException(ex);
         }
         finally {
-            deRegisterMethods("test", this::doNothing, this::doNothing);
+            deRegisterMethods("test");
         }
     }
 
@@ -2842,7 +2842,7 @@ public class TestDatasetBackupService {
             throw new RuntimeException(ex);
         }
         finally {
-            deRegisterMethods("test", this::doNothing, this::doNothing);
+            deRegisterMethods("test");
         }
     }
 
@@ -2869,7 +2869,7 @@ public class TestDatasetBackupService {
             throw new RuntimeException(ex);
         }
         finally {
-            deRegisterMethods("test", this::doNothing, this::doNothing);
+            deRegisterMethods("test");
         }
     }
 
@@ -2973,7 +2973,7 @@ public class TestDatasetBackupService {
             }
             // Wait for threads to complete
             executorService.shutdown();
-            boolean ignored = executorService.awaitTermination(1, TimeUnit.SECONDS);
+            assertTrue(executorService.awaitTermination(5, TimeUnit.SECONDS));
         }
         verify(response, times(1)).setStatus(409);
     }

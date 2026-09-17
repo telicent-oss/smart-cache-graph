@@ -30,6 +30,7 @@ import org.apache.jena.sparql.core.DatasetGraph;
 import org.apache.jena.sparql.core.DatasetGraphFactory;
 import org.apache.kafka.clients.consumer.*;
 import org.apache.kafka.clients.producer.MockProducer;
+import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.header.Header;
@@ -42,10 +43,14 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.Future;
 
 import static io.telicent.deletion.DeletionWorkerConstants.DELETION_JOB_SUFFIX;
 import static io.telicent.deletion.DeletionWorkerConstants.OPERATION;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 
 class DeletionJobProducerTest {
@@ -68,6 +73,24 @@ class DeletionJobProducerTest {
     void setUp() {
         mockProducer = new MockProducer<>(true, new BytesSerializer(), new BytesSerializer());
         rdfPatchInverter = new RDFPatchInverter();
+    }
+
+    @Test
+    void interruptedSendPreservesInterruptStatus() throws Exception {
+        Producer<Bytes, Bytes> kafkaProducer = mock(Producer.class);
+        Future<RecordMetadata> sendResult = mock(Future.class);
+        when(kafkaProducer.send(any(ProducerRecord.class))).thenReturn(sendResult);
+        when(sendResult.get()).thenThrow(new InterruptedException("interrupted"));
+
+        try (DeletionJobProducer producer = new DeletionJobProducer(
+                kafkaProducer, rdfPatchInverter, TOPIC, DISTRIBUTION_ID, JOB_ID)) {
+            DeletionJobException error = assertThrows(DeletionJobException.class,
+                    () -> producer.sendDeletePatch(buildRecord(DISTRIBUTION_ID, "application/n-quads")));
+            assertInstanceOf(InterruptedException.class, error.getCause());
+            assertTrue(Thread.currentThread().isInterrupted());
+        } finally {
+            Thread.interrupted();
+        }
     }
 
     @Test
@@ -271,10 +294,11 @@ class DeletionJobProducerTest {
 
     @Test
     void blankNodesAreConsistentWithinSingleRecord() {
-        String nquadsWithSharedBlankNode =
-                "_:b0 <http://example.org/p1> <http://example.org/o1> <http://example.org/g> .\n" +
-                        "_:b0 <http://example.org/p2> <http://example.org/o2> <http://example.org/g> .\n" +
-                        "<http://example.org/s> <http://example.org/p3> _:b0 <http://example.org/g> .\n";
+        String nquadsWithSharedBlankNode = """
+                _:b0 <http://example.org/p1> <http://example.org/o1> <http://example.org/g> .
+                _:b0 <http://example.org/p2> <http://example.org/o2> <http://example.org/g> .
+                <http://example.org/s> <http://example.org/p3> _:b0 <http://example.org/g> .
+                """;
 
         DatasetGraph dsg = DatasetGraphFactory.createTxnMem();
         RDFParser.create()

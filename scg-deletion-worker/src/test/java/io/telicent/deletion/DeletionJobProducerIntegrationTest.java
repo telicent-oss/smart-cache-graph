@@ -198,18 +198,6 @@ class DeletionJobProducerIntegrationTest extends KafkaIntegrationTestBase{
         }
     }
 
-//    private byte[] nquadsPayload(String subject, String name) {
-//        DatasetGraph dsg = DatasetGraphFactory.createTxnMem();
-//        Node g = NodeFactory.createURI("http://example.org/graph");
-//        Node s = NodeFactory.createURI("http://example.org/emp/" + subject);
-//        Node p = NodeFactory.createURI("http://xmlns.com/foaf/0.1/name");
-//        Node o = NodeFactory.createLiteralString(name);
-//        dsg.add(g, s, p, o);
-//        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-//        RDFDataMgr.write(baos, dsg, Lang.NQUADS);
-//        return baos.toByteArray();
-//    }
-
     private ConsumerRecord<Bytes, Bytes> buildRecord(long offset, String distributionId, byte[] payload) {
         return buildRecordWithContentType(offset, distributionId, "application/n-quads", payload);
     }

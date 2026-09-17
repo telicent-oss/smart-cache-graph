@@ -191,6 +191,10 @@ public class DeletionJobProducer implements AutoCloseable {
             LOGGER.debug("[{}] Sent delete patch for offset {} -> new offset {}",
                     jobId, record.offset(), metadata.offset());
             return Optional.of(metadata);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            LOGGER.error("[{}] Interrupted while sending delete patch for offset {}", jobId, record.offset(), e);
+            throw new DeletionJobException("Interrupted while sending delete patch", e);
         } catch (Exception e) {
             LOGGER.error("[{}] Failed to send delete patch for offset {}: {}",
                     jobId, record.offset(), e.getMessage());

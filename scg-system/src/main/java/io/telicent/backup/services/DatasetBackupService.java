@@ -53,11 +53,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
-import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -105,7 +105,7 @@ public class DatasetBackupService {
     static final ConcurrentHashMap<String, TriConsumer<DataAccessPoint, String, ObjectNode>> backupConsumerMap = new ConcurrentHashMap<>();
     static final ConcurrentHashMap<String, TriConsumer<DataAccessPoint, String, ObjectNode>> restoreConsumerMap = new ConcurrentHashMap<>();
 
-    public DatasetBackupService(DataAccessPointRegistry dapRegistry, KeyPair keyPair, DataSecurityPlugin dataSecurityPlugin) throws URISyntaxException, IOException, PGPException {
+    public DatasetBackupService(DataAccessPointRegistry dapRegistry, KeyPair keyPair, DataSecurityPlugin dataSecurityPlugin) throws IOException, PGPException {
         LOG.info("Backup encryption is enabled.");
         this.keyPair = keyPair;
         this.encryptionUtils = new EncryptionUtils(keyPair.privateKeyUrl().openStream(), keyPair.passphrase());
@@ -290,7 +290,7 @@ public class DatasetBackupService {
      * @param response the node to add metadata of process to
      */
     public void backupDataset(String datasetName, ObjectNode response) {
-        ZonedDateTime startTime = ZonedDateTime.now();
+        ZonedDateTime startTime = ZonedDateTime.now(ZoneId.systemDefault());
         String backupPath = getBackUpDir();
         int backupID = getNextDirectoryNumberAndCreate(backupPath);
         String backupIDPath = backupPath + "/" + backupID;
@@ -473,28 +473,7 @@ public class DatasetBackupService {
         String restorePath = getBackUpDir() + "/" + restoreId;
         response.put("restorePath", restorePath);
 
-        if (!checkPathExistsAndIsDir(restorePath) && !checkPathExistsAndIsFile(restorePath + ZIP_SUFFIX) && !checkPathExistsAndIsFile(restorePath + ZIP_SUFFIX + ENCRYPTION_SUFFIX)) {
-            response.put(BACKUP_SUCCESS, false);
-        }
-        else {
-            ObjectNode result = OBJECT_MAPPER.createObjectNode();
-            result.put(DESCRIPTION, "Rollback point backup for restore " + restoreId);
-            if (specificDatasetIfAny.isEmpty()) {
-                backupDataset(null, result);
-            } else {
-                backupDataset(specificDatasetIfAny, result);
-            }
-            if (result.get(DATASETS) != null && result.get(DATASETS).isArray() && result.get(DATASETS).isEmpty()) {
-                response.put(BACKUP_SUCCESS, false);
-            }
-            else if (result.has(BACKUP_ID)) {
-                response.put("rollback-point-backup-id", result.get(BACKUP_ID).asText());
-                LOG.info("Rollback point backup {} created", result.get(BACKUP_ID).asText());
-            }
-            if (response.get(BACKUP_SUCCESS) == null) {
-                getBackupSuccessValues(result, response);
-            }
-        }
+        createRollbackPoint(restoreId, specificDatasetIfAny, restorePath, response);
 
         boolean decompressDir = false;
         if (checkPathExistsAndIsFile(restorePath + ZIP_SUFFIX)) {
@@ -508,33 +487,57 @@ public class DatasetBackupService {
             Files.delete(decryptedZipPath);
             decompressDir = true;
         }
+        restoreAvailableDatasets(restorePath, specificDatasetIfAny, response);
+        if(DELETE_GENERATED_FILES && decompressDir) {
+            cleanupDirectory(restorePath);
+        }
+    }
+
+    private void createRollbackPoint(String restoreId, String specificDataset, String restorePath, ObjectNode response) {
+        if (!checkPathExistsAndIsDir(restorePath) && !checkPathExistsAndIsFile(restorePath + ZIP_SUFFIX)
+                && !checkPathExistsAndIsFile(restorePath + ZIP_SUFFIX + ENCRYPTION_SUFFIX)) {
+            response.put(BACKUP_SUCCESS, false);
+            return;
+        }
+        ObjectNode result = OBJECT_MAPPER.createObjectNode();
+        result.put(DESCRIPTION, "Rollback point backup for restore " + restoreId);
+        backupDataset(specificDataset.isEmpty() ? null : specificDataset, result);
+        if (result.get(DATASETS) != null && result.get(DATASETS).isArray() && result.get(DATASETS).isEmpty()) {
+            response.put(BACKUP_SUCCESS, false);
+        } else if (result.has(BACKUP_ID)) {
+            response.put("rollback-point-backup-id", result.get(BACKUP_ID).asText());
+            LOG.info("Rollback point backup {} created", result.get(BACKUP_ID).asText());
+        }
+        if (response.get(BACKUP_SUCCESS) == null) {
+            getBackupSuccessValues(result, response);
+        }
+    }
+
+    private void restoreAvailableDatasets(String restorePath, String specificDataset, ObjectNode response) {
         if (!checkPathExistsAndIsDir(restorePath)) {
             response.put(REASON, "Restore path unsuitable: " + restorePath);
             response.put(SUCCESS, false);
-        } else {
-            List<String> datasets = getSubdirectoryNames(restorePath);
-            if (datasets.isEmpty()) {
-                response.put(REASON, "Restore path unsuitable: " + restorePath);
-                response.put(SUCCESS, false);
-            } else {
-                boolean noMatches = true;
-                boolean successSoFar = true;
-                for (String datasetName : datasets) {
-                    if (specificDatasetIfAny.isEmpty() || specificDatasetIfAny.equalsIgnoreCase(datasetName)) {
-                        noMatches = false;
-                        successSoFar = successSoFar && restoreDataset(restorePath, datasetName, response);
-                    }
-                }
-                if(noMatches) {
-                    response.put(REASON, "No matches for dataset.");
-                    response.put(SUCCESS, false);
-                } else {
-                    response.put(SUCCESS, successSoFar);
-                }
+            return;
+        }
+        List<String> datasets = getSubdirectoryNames(restorePath);
+        if (datasets.isEmpty()) {
+            response.put(REASON, "Restore path unsuitable: " + restorePath);
+            response.put(SUCCESS, false);
+            return;
+        }
+        boolean noMatches = true;
+        boolean successSoFar = true;
+        for (String datasetName : datasets) {
+            if (specificDataset.isEmpty() || specificDataset.equalsIgnoreCase(datasetName)) {
+                noMatches = false;
+                successSoFar = successSoFar && restoreDataset(restorePath, datasetName, response);
             }
         }
-        if(DELETE_GENERATED_FILES && decompressDir) {
-            cleanupDirectory(restorePath);
+        if (noMatches) {
+            response.put(REASON, "No matches for dataset.");
+            response.put(SUCCESS, false);
+        } else {
+            response.put(SUCCESS, successSoFar);
         }
     }
 
@@ -783,9 +786,9 @@ public class DatasetBackupService {
      * @param backupId    the back-up identifier
      * @param datasetName the dataset name
      * @return the SHACL validation report as a JSON String
-     * @throws Exception If error occurs
+     * @throws IOException If the report cannot be read
      */
-    public ObjectNode getReport(final String backupId, final String datasetName, final HttpServletResponse response) throws Exception {
+    public ObjectNode getReport(final String backupId, final String datasetName, final HttpServletResponse response) throws IOException {
         final ObjectNode resultNode = OBJECT_MAPPER.createObjectNode();
         final String reportPathString = getBackUpDir() + "/" + backupId + "-" + datasetName + REPORT_SUFFIX;
 
@@ -867,13 +870,11 @@ public class DatasetBackupService {
     /**
      * Remove a given key from the both backup/restore methods registry.
      *
-     * @param key             the name of the module being backed up or restored.
-     * @param backupConsumer  method that backs up the modules data
-     * @param restoreConsumer method that recovers the module
+     * @param key the name of the module being backed up or restored.
      */
-    public static void deRegisterMethods(String key, TriConsumer<DataAccessPoint, String, ObjectNode> backupConsumer, TriConsumer<DataAccessPoint, String, ObjectNode> restoreConsumer) {
-        deRegisterMethod(backupConsumerMap, key, backupConsumer);
-        deRegisterMethod(restoreConsumerMap, key, restoreConsumer);
+    public static void deRegisterMethods(String key) {
+        deRegisterMethod(backupConsumerMap, key);
+        deRegisterMethod(restoreConsumerMap, key);
     }
 
 
@@ -907,7 +908,7 @@ public class DatasetBackupService {
         map.put(key, consumer);
     }
 
-    private static void deRegisterMethod(Map<String, TriConsumer<DataAccessPoint, String, ObjectNode>> map, String key, TriConsumer<DataAccessPoint, String, ObjectNode> consumer) {
+    private static void deRegisterMethod(Map<String, TriConsumer<DataAccessPoint, String, ObjectNode>> map, String key) {
         map.remove(key);
     }
 
@@ -988,13 +989,13 @@ public class DatasetBackupService {
             try {
                 final Path encZipFilePath = Path.of(dirPath + ZIP_SUFFIX + ENCRYPTION_SUFFIX);
                 final Path encZipPath = encryptionUtils.encryptFile(zipFilePath, encZipFilePath, keyPair.publicKeyUrl());
-                LOG.debug("Successfully encrypted file: {} as {}", zipFilePath, encZipPath.toString());
+                LOG.debug("Successfully encrypted file: {} as {}", zipFilePath, encZipPath);
                 Files.delete(zipFilePath);
             } catch (IOException | PGPException ex) {
                 LOG.error("Failed to encrypt backup files", ex);
             }
         }
-        ZonedDateTime endTime = ZonedDateTime.now();
+        ZonedDateTime endTime = ZonedDateTime.now(ZoneId.systemDefault());
         response.put(END_TIME, endTime.toString());
         writeObjectNodeToFile(response, dirPath + JSON_INFO_SUFFIX);
     }

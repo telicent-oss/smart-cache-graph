@@ -140,10 +140,6 @@ class DeletionJobConsumerTest {
     }
 
     private void addRecord(long offset, String distributionId, String deletionJobId, String payload) {
-        addRecord(offset, distributionId, deletionJobId, null, payload);
-    }
-
-    private void addRecord(long offset, String distributionId, String deletionJobId, String originalOffset, String payload) {
         ConsumerRecord<Bytes, Bytes> record = new ConsumerRecord<>(
                 TOPIC, 0, offset,
                 Bytes.wrap("key".getBytes(StandardCharsets.UTF_8)),

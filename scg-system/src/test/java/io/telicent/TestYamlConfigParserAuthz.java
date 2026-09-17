@@ -40,7 +40,8 @@ import org.apache.jena.sparql.exec.RowSetOps;
 import org.apache.jena.sparql.exec.RowSetRewindable;
 import org.apache.jena.sparql.exec.http.QueryExecHTTPBuilder;
 import org.junit.jupiter.api.*;
-import org.rocksdb.RocksDBException;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 
 import java.io.File;
@@ -111,46 +112,31 @@ class TestYamlConfigParserAuthz {
         LibTestsSCG.teardownAuthentication();
     }
 
-    @Test
-    void yaml_config_abac_tim() {
-        List<String> arguments = List.of("--conf", DIR + "/yaml/config-abac-tim.yaml");
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "config-abac-tim.yaml", "config-abac-tdb2.yaml",
+            "config-abac-labels.yaml", "config-prefixes-1.yaml"
+    })
+    void yaml_config_abac_variants(String configFile) {
+        List<String> arguments = List.of("--conf", DIR + "/yaml/" + configFile);
         server = construct(arguments.toArray(new String[0])).start();
-        RowSetRewindable actualResponseRSR;
         String validToken = tokenForUser("u1");
         LibTestsSCG.uploadFile(server.serverURL() + serviceName + "/upload",
-                               DIR + "/yaml/data-and-labels.trig");//load(server);
-        actualResponseRSR = QueryExecHTTPBuilder.service(server.serverURL() + serviceName)
+                               DIR + "/yaml/data-and-labels.trig");
+        RowSetRewindable actualResponseRSR = QueryExecHTTPBuilder.service(server.serverURL() + serviceName)
                 .query(queryStr)
-                .httpHeader(LibTestsSCG.tokenHeader(),
-                        LibTestsSCG.tokenHeaderValue(validToken))
+                .httpHeader(LibTestsSCG.tokenHeader(), LibTestsSCG.tokenHeaderValue(validToken))
                 .select().rewindable();
-        if (debug)
+        if (debug) {
             RowSetOps.out(System.out, actualResponseRSR);
-        boolean equals = isomorphic(expectedRSR, actualResponseRSR);
-        assertTrue(equals);
+        }
+        assertTrue(isomorphic(expectedRSR, actualResponseRSR));
     }
 
-    @Test
-    void yaml_config_abac_tdb2() {
-        List<String> arguments = List.of("--conf", DIR + "/yaml/config-abac-tdb2.yaml");
-        server = construct(arguments.toArray(new String[0])).start();
-        RowSetRewindable actualResponseRSR;
-        String validToken = tokenForUser("u1");
-        LibTestsSCG.uploadFile(server.serverURL() + serviceName + "/upload",
-                               DIR + "/yaml/data-and-labels.trig");//load(server);
-        actualResponseRSR = QueryExecHTTPBuilder.service(server.serverURL() + serviceName)
-                .query(queryStr)
-                .httpHeader(LibTestsSCG.tokenHeader(),
-                        LibTestsSCG.tokenHeaderValue(validToken))
-                .select().rewindable();
-        if (debug)
-            RowSetOps.out(System.out, actualResponseRSR);
-        boolean equals = isomorphic(expectedRSR, actualResponseRSR);
-        assertTrue(equals);
-    }
+
 
     @Test
-    void yaml_config_abac_labels_store() throws RocksDBException {
+    void yaml_config_abac_labels_store() {
         List<String> arguments = List.of("--conf", DIR + "/yaml/config-abac-labels-store.yaml");
         server = construct(arguments.toArray(new String[0])).start();
         RowSetRewindable actualResponseRSR;
@@ -191,7 +177,7 @@ class TestYamlConfigParserAuthz {
     void yaml_config_abac_attributes_store() {
         Graph g = RDFParser.source(DIR + "/yaml/attribute-store.ttl").toGraph();
         AttributesStore attrStore = Attributes.buildStore(g);
-        String mockServerURL = SimpleAttributesStore.run(3132, attrStore);
+        SimpleAttributesStore.run(3132, attrStore);
 
         List<String> arguments = List.of("--conf", DIR + "/yaml/config-abac-remote-attributes.yaml");
         server = construct(arguments.toArray(new String[0])).start();
@@ -208,24 +194,7 @@ class TestYamlConfigParserAuthz {
         assertTrue(equals);
     }
 
-    @Test
-    void yaml_config_abac_labels() {
-        List<String> arguments = List.of("--conf", DIR + "/yaml/config-abac-labels.yaml");
-        server = construct(arguments.toArray(new String[0])).start();
-        RowSetRewindable actualResponseRSR;
-        String validToken = tokenForUser("u1");
-        LibTestsSCG.uploadFile(server.serverURL() + serviceName + "/upload",
-                               DIR + "/yaml/data-and-labels.trig");//load(server);
-        actualResponseRSR = QueryExecHTTPBuilder.service(server.serverURL() + serviceName)
-                .query(queryStr)
-                .httpHeader(LibTestsSCG.tokenHeader(),
-                        LibTestsSCG.tokenHeaderValue(validToken))
-                .select().rewindable();
-        if (debug)
-            RowSetOps.out(System.out, actualResponseRSR);
-        boolean equals = isomorphic(expectedRSR, actualResponseRSR);
-        assertTrue(equals);
-    }
+
 
     @Test
     void yaml_config_abac_triple_default_labels() {
@@ -246,22 +215,5 @@ class TestYamlConfigParserAuthz {
         assertTrue(equals);
     }
 
-    @Test
-    void yaml_config_custom_prefix() {
-        List<String> arguments = List.of("--conf", DIR + "/yaml/config-prefixes-1.yaml");
-        server = construct(arguments.toArray(new String[0])).start();
-        RowSetRewindable actualResponseRSR;
-        String validToken = tokenForUser("u1");
-        LibTestsSCG.uploadFile(server.serverURL() + serviceName + "/upload",
-                               DIR + "/yaml/data-and-labels.trig");//load(server);
-        actualResponseRSR = QueryExecHTTPBuilder.service(server.serverURL() + serviceName)
-                .query(queryStr)
-                .httpHeader(LibTestsSCG.tokenHeader(),
-                        LibTestsSCG.tokenHeaderValue(validToken))
-                .select().rewindable();
-        if (debug)
-            RowSetOps.out(System.out, actualResponseRSR);
-        boolean equals = isomorphic(expectedRSR, actualResponseRSR);
-        assertTrue(equals);
-    }
+
 }
