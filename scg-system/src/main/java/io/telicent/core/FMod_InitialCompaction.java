@@ -47,6 +47,7 @@ import java.util.concurrent.Executors;
 import static io.telicent.backup.utils.JsonFileUtils.OBJECT_MAPPER;
 import static io.telicent.utils.ServletUtils.processResponse;
 
+@SuppressWarnings("java:S3398")
 public class FMod_InitialCompaction implements FusekiAutoModule {
 
     // JSON response keys
