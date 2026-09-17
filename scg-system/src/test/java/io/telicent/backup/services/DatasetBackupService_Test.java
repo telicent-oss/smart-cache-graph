@@ -1,5 +1,11 @@
 package io.telicent.backup.services;
 
+import io.telicent.smart.cache.storage.BackupRestoreCapable;
+import io.telicent.smart.cache.storage.BackupConfig;
+import io.telicent.smart.cache.storage.RestoreConfig;
+import io.telicent.smart.cache.storage.BackupStatus;
+import io.telicent.smart.cache.storage.RestoreStatus;
+import static org.mockito.ArgumentMatchers.any;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.telicent.smart.cache.security.data.plugins.DataSecurityPlugin;
 import org.apache.jena.fuseki.server.DataAccessPointRegistry;
@@ -28,16 +34,19 @@ public class DatasetBackupService_Test extends DatasetBackupService {
     private static DataSecurityPlugin mockDataSecurityPlugin = mock(DataSecurityPlugin.class);
 
     static {
-        when(mockDataSecurityPlugin.prepareLabelsBackup()).thenReturn(Optional.of((dsg, path, node) -> {
+        BackupRestoreCapable capability = mock(BackupRestoreCapable.class);
+        when(mockDataSecurityPlugin.prepareLabelsBackup(org.mockito.ArgumentMatchers.nullable(DatasetGraph.class))).thenReturn(Optional.of(capability));
+        when(mockDataSecurityPlugin.prepareLabelsRestore(org.mockito.ArgumentMatchers.nullable(DatasetGraph.class))).thenReturn(Optional.of(capability));
+        when(capability.backup(any(BackupConfig.class))).thenAnswer(invocation -> {
             incrementMethodCall(BACKUP_LABELS);
             throwExceptionIfNeeded(BACKUP_LABELS);
-            node.put("success", true);
-        }));
-        when(mockDataSecurityPlugin.prepareLabelsRestore()).thenReturn(Optional.of((dsg, path, node) -> {
+            return BackupStatus.builder().success(true).build();
+        });
+        when(capability.restore(any(RestoreConfig.class))).thenAnswer(invocation -> {
             incrementMethodCall(RESTORE_LABELS);
             throwExceptionIfNeeded(RESTORE_LABELS);
-            node.put("success", true);
-        }));
+            return RestoreStatus.builder().success(true).build();
+        });
     }
 
     public static void setupExceptionForMethod(String method, String message) {

@@ -22,8 +22,11 @@ import io.telicent.backup.utils.EncryptionUtils;
 import io.telicent.core.DatasetMaintenanceRegistry;
 import io.telicent.model.KeyPair;
 import io.telicent.smart.cache.security.data.DataSecurityException;
-import io.telicent.smart.cache.security.data.labels.SecurityLabelsBackup;
-import io.telicent.smart.cache.security.data.labels.SecurityLabelsRestore;
+import io.telicent.smart.cache.storage.BackupRestoreCapable;
+import io.telicent.smart.cache.storage.BackupConfig;
+import io.telicent.smart.cache.storage.BackupStatus;
+import io.telicent.smart.cache.storage.RestoreConfig;
+import io.telicent.smart.cache.storage.RestoreStatus;
 import io.telicent.smart.cache.security.data.plugins.DataSecurityPlugin;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -406,11 +409,18 @@ public class DatasetBackupService {
      */
     void backupLabelStore(DataAccessPoint dataAccessPoint, String backupPath, ObjectNode node) {
         final DatasetGraph dsg = dataAccessPoint.getDataService().getDataset();
-        final Optional<SecurityLabelsBackup> securityLabelsBackup = dataSecurityPlugin.prepareLabelsBackup();
-        if(securityLabelsBackup.isPresent()){
-            securityLabelsBackup.get().backup(dsg, backupPath, node);
-        } else {
+        final Optional<BackupRestoreCapable> capability = dataSecurityPlugin.prepareLabelsBackup(dsg);
+        if (capability.isEmpty()) {
             node.put(REASON, "No security labels backup store is available");
+            node.put(SUCCESS, false);
+            return;
+        }
+        try {
+            BackupStatus status = capability.get().backup(BackupConfig.builder().backupLocation(backupPath).build());
+            node.put(SUCCESS, status.isSuccess());
+            status.getErrorMessage().ifPresent(message -> node.put(REASON, message));
+        } catch (Exception e) {
+            node.put(REASON, e.getMessage());
             node.put(SUCCESS, false);
         }
     }
@@ -682,11 +692,18 @@ public class DatasetBackupService {
      */
     void restoreLabelStore(DataAccessPoint dataAccessPoint, String restorePath, ObjectNode node) {
         final DatasetGraph datasetGraph = dataAccessPoint.getDataService().getDataset();
-        final Optional<SecurityLabelsRestore> securityLabelsRestore = dataSecurityPlugin.prepareLabelsRestore();
-        if(securityLabelsRestore.isPresent()) {
-            securityLabelsRestore.get().restore(datasetGraph, restorePath, node);
-        } else {
-            node.put(REASON, "No security labels backup store is available");
+        final Optional<BackupRestoreCapable> capability = dataSecurityPlugin.prepareLabelsRestore(datasetGraph);
+        if (capability.isEmpty()) {
+            node.put(REASON, "No security labels restore store is available");
+            node.put(SUCCESS, false);
+            return;
+        }
+        try {
+            RestoreStatus status = capability.get().restore(RestoreConfig.builder().backupLocation(restorePath).build());
+            node.put(SUCCESS, status.isSuccess());
+            status.getErrorMessage().ifPresent(message -> node.put(REASON, message));
+        } catch (Exception e) {
+            node.put(REASON, e.getMessage());
             node.put(SUCCESS, false);
         }
     }

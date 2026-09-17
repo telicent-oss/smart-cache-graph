@@ -3,7 +3,7 @@ package io.telicent.core;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.telicent.smart.cache.security.data.DataSecurityException;
-import io.telicent.smart.cache.security.data.labels.SecurityLabelsCompact;
+import io.telicent.smart.cache.storage.CompactCapable;
 import io.telicent.smart.cache.security.data.plugins.DataSecurityPlugin;
 import io.telicent.smart.cache.security.data.plugins.DataSecurityPluginLoader;
 import jakarta.servlet.http.HttpServlet;
@@ -519,9 +519,20 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
 
     public static void compactLabels(DatasetGraph dsg) throws DataSecurityException {
         final DataSecurityPlugin plugin = DataSecurityPluginLoader.load();
-        final Optional<SecurityLabelsCompact> compact = plugin.prepareLabelsCompact();
-        if(compact.isPresent()) {
-            compact.get().compact(dsg);
+        final Optional<CompactCapable> capability = plugin.prepareLabelsCompact(dsg);
+        if (capability.isEmpty()) {
+            return;
+        }
+        final Timer timer = new Timer();
+        timer.startTimer();
+        LOG.info("[Compaction] >>>> Start label store compaction.");
+        try {
+            capability.get().compact();
+        } catch (Exception e) {
+            throw new DataSecurityException(e.getMessage(), e);
+        } finally {
+            LOG.info("[Compaction] <<<< Finish label store compaction. Took {} seconds.",
+                     Timer.timeStr(timer.endTimer()));
         }
     }
 

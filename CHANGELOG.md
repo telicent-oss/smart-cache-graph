@@ -1,5 +1,11 @@
 # Smart Cache Graph
 
+## 1.1.10 (unreleased)
+
+- Labels backup, restore and compaction now use generic storage capabilities exposed for the dataset by the Data
+  Security Plugin. SC-Graph owns JSON status/error reporting and compaction handling.
+- Removed legacy RocksDB label store mocks. Coordinated with the RDF-ABAC 4.0.0 and Smart Caches Core 1.5.0 releases.
+
 ## 1.1.9
 
 - The `/$/ready` readiness probe is now a general service health check rather than reporting only Distribution

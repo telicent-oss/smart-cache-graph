@@ -23,7 +23,12 @@ import io.telicent.core.DatasetMaintenanceRegistry;
 import io.telicent.jena.abac.ABAC;
 import io.telicent.jena.abac.core.DatasetGraphABAC;
 import io.telicent.jena.abac.labels.LabelsStoreMem;
-import io.telicent.jena.abac.labels.store.rocksdb.legacy.LegacyLabelsStoreRocksDB;
+import io.telicent.jena.abac.labels.LabelsStore;
+import io.telicent.smart.cache.storage.BackupRestoreCapable;
+import io.telicent.smart.cache.storage.BackupStatus;
+import io.telicent.smart.cache.storage.RestoreStatus;
+import io.telicent.smart.cache.storage.BackupConfig;
+import io.telicent.smart.cache.storage.RestoreConfig;
 import io.telicent.smart.cache.security.data.DataSecurityException;
 import io.telicent.smart.cache.security.data.plugins.DataSecurityPlugin;
 import jakarta.servlet.ServletOutputStream;
@@ -228,7 +233,7 @@ public class TestDatasetBackupService {
         String datasetName = "dataset-name";
         DatasetGraphABAC dsgABAC = ABAC.authzDataset(DatasetGraphFactory.createTxnMem(),
                 null,
-                mock(LegacyLabelsStoreRocksDB.class),
+                mock(LabelsStore.class),
                 null,
                 null);
 
@@ -283,7 +288,7 @@ public class TestDatasetBackupService {
         String datasetName = "dataset-name";
         DatasetGraphABAC dsgABAC = ABAC.authzDataset(DatasetGraphFactory.createTxnMem(),
                 null,
-                mock(LegacyLabelsStoreRocksDB.class),
+                mock(LabelsStore.class),
                 null,
                 null);
 
@@ -391,7 +396,7 @@ public class TestDatasetBackupService {
         String datasetName = "dataset-name";
         DatasetGraphABAC dsgABAC = ABAC.authzDataset(DatasetGraphFactory.createTxnMem(),
                 null,
-                mock(LegacyLabelsStoreRocksDB.class),
+                mock(LabelsStore.class),
                 null,
                 null);
 
@@ -447,7 +452,7 @@ public class TestDatasetBackupService {
         String datasetName = "dataset-name";
         DatasetGraphABAC dsgABAC = ABAC.authzDataset(DatasetGraphFactory.createTxnMem(),
                 null,
-                mock(LegacyLabelsStoreRocksDB.class),
+                mock(LabelsStore.class),
                 null,
                 null);
 
@@ -493,7 +498,7 @@ public class TestDatasetBackupService {
         String datasetName2 = "dataset-include";
         DatasetGraphABAC dsgABAC = ABAC.authzDataset(DatasetGraphFactory.createTxnMem(),
                 null,
-                mock(LegacyLabelsStoreRocksDB.class),
+                mock(LabelsStore.class),
                 null,
                 null);
 
@@ -678,7 +683,7 @@ public class TestDatasetBackupService {
         String datasetName = "dataset-name";
         DatasetGraphABAC dsgABAC = ABAC.authzDataset(DatasetGraphFactory.createTxnMem(),
                 null,
-                mock(LegacyLabelsStoreRocksDB.class),
+                mock(LabelsStore.class),
                 null,
                 null);
         DataAccessPoint dap = new DataAccessPoint("dataset-name", DataService.newBuilder().dataset(dsgABAC).build());
@@ -741,7 +746,9 @@ public class TestDatasetBackupService {
     public void test_executeBackupLabelStore_happyPath() {
         // given
         DataSecurityPlugin mockPlugin = mock(DataSecurityPlugin.class);
-        when(mockPlugin.prepareLabelsBackup()).thenReturn(Optional.of((dsg, path, node) -> node.put("success", true)));
+        BackupRestoreCapable capability = mock(BackupRestoreCapable.class);
+        when(capability.backup(any(BackupConfig.class))).thenReturn(BackupStatus.builder().success(true).build());
+        when(mockPlugin.prepareLabelsBackup(any(DatasetGraph.class))).thenReturn(Optional.of(capability));
         DatasetBackupService datasetBackupService = new DatasetBackupService(null, mockPlugin);
         DataAccessPoint mockDataAccessPoint = mock(DataAccessPoint.class);
         DataService mockDataService = mock(DataService.class);
@@ -759,7 +766,9 @@ public class TestDatasetBackupService {
     public void test_executeRestoreLabelStore_happyPath() {
         // given
         DataSecurityPlugin mockPlugin = mock(DataSecurityPlugin.class);
-        when(mockPlugin.prepareLabelsRestore()).thenReturn(Optional.of((dsg, path, node) -> node.put("success", true)));
+        BackupRestoreCapable capability = mock(BackupRestoreCapable.class);
+        when(capability.restore(any(RestoreConfig.class))).thenReturn(RestoreStatus.builder().success(true).build());
+        when(mockPlugin.prepareLabelsRestore(any(DatasetGraph.class))).thenReturn(Optional.of(capability));
         DatasetBackupService datasetBackupService = new DatasetBackupService(null, mockPlugin);
         DataAccessPoint mockDataAccessPoint = mock(DataAccessPoint.class);
         DataService mockDataService = mock(DataService.class);
@@ -883,7 +892,7 @@ public class TestDatasetBackupService {
         assertTrue(labelsDir.mkdir());
         labelsDir.deleteOnExit();
 
-        LegacyLabelsStoreRocksDB mockRocksDbLabelStore = mock(LegacyLabelsStoreRocksDB.class);
+        LabelsStore mockRocksDbLabelStore = mock(LabelsStore.class);
         when(mockRocksDbLabelStore.getTransactional()).thenReturn(DatasetGraphFactory.createTxnMem());
 
 
@@ -960,7 +969,7 @@ public class TestDatasetBackupService {
         assertTrue(labelsDir.mkdir());
         labelsDir.deleteOnExit();
 
-        LegacyLabelsStoreRocksDB mockRocksDbLabelStore = mock(LegacyLabelsStoreRocksDB.class);
+        LabelsStore mockRocksDbLabelStore = mock(LabelsStore.class);
         when(mockRocksDbLabelStore.getTransactional()).thenReturn(DatasetGraphFactory.createTxnMem());
 
 
@@ -1061,7 +1070,7 @@ public class TestDatasetBackupService {
         assertTrue(secondLabelsDir.mkdir());
         secondLabelsDir.deleteOnExit();
 
-        LegacyLabelsStoreRocksDB mockRocksDbLabelStore = mock(LegacyLabelsStoreRocksDB.class);
+        LabelsStore mockRocksDbLabelStore = mock(LabelsStore.class);
         when(mockRocksDbLabelStore.getTransactional()).thenReturn(DatasetGraphFactory.createTxnMem());
 
 
@@ -1150,7 +1159,7 @@ public class TestDatasetBackupService {
         assertTrue(labelsDir.mkdir());
         labelsDir.deleteOnExit();
 
-        LegacyLabelsStoreRocksDB mockRocksDbLabelStore = mock(LegacyLabelsStoreRocksDB.class);
+        LabelsStore mockRocksDbLabelStore = mock(LabelsStore.class);
         when(mockRocksDbLabelStore.getTransactional()).thenReturn(DatasetGraphFactory.createTxnMem());
 
 
@@ -1441,7 +1450,7 @@ public class TestDatasetBackupService {
         assertTrue(labelsDir.mkdir());
         labelsDir.deleteOnExit();
 
-        LegacyLabelsStoreRocksDB mockRocksDbLabelStore = mock(LegacyLabelsStoreRocksDB.class);
+        LabelsStore mockRocksDbLabelStore = mock(LabelsStore.class);
         when(mockRocksDbLabelStore.getTransactional()).thenReturn(DatasetGraphFactory.createTxnMem());
 
         DataAccessPoint dap = new DataAccessPoint("dataset-name", DataService.newBuilder().build());
@@ -1898,7 +1907,7 @@ public class TestDatasetBackupService {
         assertTrue(labelsDir.mkdir());
         labelsDir.deleteOnExit();
 
-        LegacyLabelsStoreRocksDB mockRocksDbLabelStore = mock(LegacyLabelsStoreRocksDB.class);
+        LabelsStore mockRocksDbLabelStore = mock(LabelsStore.class);
         when(mockRocksDbLabelStore.getTransactional()).thenReturn(DatasetGraphFactory.createTxnMem());
 
         DatasetGraphABAC dsgABAC = ABAC.authzDataset(DatasetGraphFactory.createTxnMem(),
@@ -1966,7 +1975,7 @@ public class TestDatasetBackupService {
         assertTrue(newDataset.mkdir());
         newDataset.deleteOnExit();
 
-        LegacyLabelsStoreRocksDB mockRocksDbLabelStore = mock(LegacyLabelsStoreRocksDB.class);
+        LabelsStore mockRocksDbLabelStore = mock(LabelsStore.class);
         when(mockRocksDbLabelStore.getTransactional()).thenReturn(DatasetGraphFactory.createTxnMem());
 
         DatasetGraphABAC dsgABAC = ABAC.authzDataset(DatasetGraphFactory.createTxnMem(),
@@ -2035,7 +2044,7 @@ public class TestDatasetBackupService {
         assertTrue(newDataset.mkdir());
         newDataset.deleteOnExit();
 
-        LegacyLabelsStoreRocksDB mockRocksDbLabelStore = mock(LegacyLabelsStoreRocksDB.class);
+        LabelsStore mockRocksDbLabelStore = mock(LabelsStore.class);
         when(mockRocksDbLabelStore.getTransactional()).thenReturn(DatasetGraphFactory.createTxnMem());
 
         DatasetGraphABAC dsgABAC = ABAC.authzDataset(DatasetGraphFactory.createTxnMem(),
@@ -2114,7 +2123,7 @@ public class TestDatasetBackupService {
         assertTrue(labelsDir.mkdir());
         labelsDir.deleteOnExit();
 
-        LegacyLabelsStoreRocksDB mockRocksDbLabelStore = mock(LegacyLabelsStoreRocksDB.class);
+        LabelsStore mockRocksDbLabelStore = mock(LabelsStore.class);
         when(mockRocksDbLabelStore.getTransactional()).thenReturn(DatasetGraphFactory.createTxnMem());
 
 
@@ -2192,7 +2201,7 @@ public class TestDatasetBackupService {
      * distinct dataset by the maintenance registry.
      */
     private DataAccessPoint abacDataAccessPoint(String datasetName) {
-        LegacyLabelsStoreRocksDB mockRocksDbLabelStore = mock(LegacyLabelsStoreRocksDB.class);
+        LabelsStore mockRocksDbLabelStore = mock(LabelsStore.class);
         when(mockRocksDbLabelStore.getTransactional()).thenReturn(DatasetGraphFactory.createTxnMem());
         DatasetGraphABAC dsgABAC = ABAC.authzDataset(DatasetGraphFactory.createTxnMem(),
                 null,
@@ -2282,7 +2291,7 @@ public class TestDatasetBackupService {
         assertTrue(labelsDir.mkdir());
         labelsDir.deleteOnExit();
 
-        LegacyLabelsStoreRocksDB mockRocksDbLabelStore = mock(LegacyLabelsStoreRocksDB.class);
+        LabelsStore mockRocksDbLabelStore = mock(LabelsStore.class);
         when(mockRocksDbLabelStore.getTransactional()).thenReturn(DatasetGraphFactory.createTxnMem());
 
 
@@ -2359,7 +2368,7 @@ public class TestDatasetBackupService {
         assertTrue(labelsDir.mkdir());
         labelsDir.deleteOnExit();
 
-        LegacyLabelsStoreRocksDB mockRocksDbLabelStore = mock(LegacyLabelsStoreRocksDB.class);
+        LabelsStore mockRocksDbLabelStore = mock(LabelsStore.class);
         when(mockRocksDbLabelStore.getTransactional()).thenReturn(DatasetGraphFactory.createTxnMem());
 
         DatasetGraphABAC dsgABAC = ABAC.authzDataset(DatasetGraphFactory.createTxnMem(),
@@ -2415,7 +2424,7 @@ public class TestDatasetBackupService {
         assertTrue(labelsDir.mkdir());
         labelsDir.deleteOnExit();
 
-        LegacyLabelsStoreRocksDB mockRocksDbLabelStore = mock(LegacyLabelsStoreRocksDB.class);
+        LabelsStore mockRocksDbLabelStore = mock(LabelsStore.class);
         when(mockRocksDbLabelStore.getTransactional()).thenReturn(DatasetGraphFactory.createTxnMem());
 
         DatasetGraphABAC dsgABAC = ABAC.authzDataset(DatasetGraphFactory.createTxnMem(),
@@ -2469,7 +2478,7 @@ public class TestDatasetBackupService {
         assertTrue(labelsDir.mkdir());
         labelsDir.deleteOnExit();
 
-        LegacyLabelsStoreRocksDB mockRocksDbLabelStore = mock(LegacyLabelsStoreRocksDB.class);
+        LabelsStore mockRocksDbLabelStore = mock(LabelsStore.class);
         when(mockRocksDbLabelStore.getTransactional()).thenReturn(DatasetGraphFactory.createTxnMem());
 
         DatasetGraphABAC dsgABAC = ABAC.authzDataset(DatasetGraphFactory.createTxnMem(),
@@ -2909,7 +2918,7 @@ public class TestDatasetBackupService {
         // given
         DatasetGraphABAC dsgABAC = ABAC.authzDataset(DatasetGraphFactory.createTxnMem(),
                 null,
-                mock(LegacyLabelsStoreRocksDB.class),
+                mock(LabelsStore.class),
                 null,
                 null);
 
