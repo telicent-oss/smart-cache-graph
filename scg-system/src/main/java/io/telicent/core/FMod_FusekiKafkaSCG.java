@@ -75,7 +75,7 @@ public class FMod_FusekiKafkaSCG extends FMod_FusekiKafka {
 
     @Override
     protected Function<DatasetGraph, Sink<Event<Bytes, RdfPayload>>> getSinkBuilder() {
-        final boolean routeToNamedGraphs = Configurator.get("ROUTE_TO_NAMED_GRAPHS", Boolean::parseBoolean, false);
+        final boolean routeToNamedGraphs = Configurator.get(FMod_DistributionLifecycle.ROUTE_TO_NAMED_GRAPHS, Boolean::parseBoolean, false);
         final String lifecycleStateFileName = Configurator.get(DISTRIBUTION_LIFECYCLE_STATE_FILE);
         final String applicationId = Configurator.get(FMod_DistributionLifecycle.DISTRIBUTION_LIFECYCLE_APP_ID);
         final DistributionLifecycleStateFile lifecycleStateFile =

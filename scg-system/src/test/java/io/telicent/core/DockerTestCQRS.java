@@ -2,12 +2,16 @@ package io.telicent.core;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.telicent.LibTestsSCG;
+import io.telicent.smart.cache.configuration.Configurator;
+import io.telicent.smart.cache.configuration.sources.PropertiesSource;
 import io.telicent.smart.cache.sources.TelicentHeaders;
 import io.telicent.smart.cache.sources.kafka.BasicKafkaTestCluster;
 import io.telicent.smart.cache.sources.kafka.KafkaTestCluster;
 import io.telicent.smart.cache.sources.kafka.config.KafkaConfiguration;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.apache.jena.atlas.lib.FileOps;
+import org.apache.jena.atlas.web.HttpException;
 import org.apache.jena.fuseki.main.FusekiServer;
 import org.apache.jena.fuseki.system.FusekiLogging;
 import org.apache.jena.sparql.exec.RowSet;
@@ -27,7 +31,9 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.telicent.TestSmartCacheGraphIntegration.launchServer;
@@ -35,6 +41,7 @@ import static io.telicent.TestSmartCacheGraphIntegration.launchServer;
 public class DockerTestCQRS {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DockerTestCQRS.class);
+    protected static final String DISTRO_1 = "https://example.org/distributions/1";
 
     private HttpClient httpClient;
 
@@ -142,11 +149,24 @@ public class DockerTestCQRS {
     }
 
     private void executeSparqlUpdate(String token, String update, String securityLabel) {
+        executeSparqlUpdate(token, update, securityLabel, null);
+    }
+
+    private void executeSparqlUpdate(String token, String update, String securityLabel, String distributionId) {
+        Map<String, String> headers = new LinkedHashMap<>();
+        if (token != null) {
+            headers.put(LibTestsSCG.tokenHeader(), LibTestsSCG.tokenHeaderValue(token));
+        }
+        if (StringUtils.isNotBlank(securityLabel)) {
+            headers.put(TelicentHeaders.SECURITY_LABEL, securityLabel);
+        }
+        if (StringUtils.isNotBlank(distributionId)) {
+            headers.put(TelicentHeaders.DISTRIBUTION_ID, distributionId);
+        }
         UpdateExecHTTPBuilder.create()
                              .endpoint(url(UPDATE_ENDPOINT))
                              .update(update)
-                             .httpHeader(LibTestsSCG.tokenHeader(), LibTestsSCG.tokenHeaderValue(token))
-                             .httpHeader(TelicentHeaders.SECURITY_LABEL, securityLabel)
+                             .httpHeaders(headers)
                              .execute();
     }
 
@@ -354,6 +374,38 @@ public class DockerTestCQRS {
         verifyNothingVisible(USER_1);
         verifyNothingVisible(USER_2, Duration.ZERO);
         verifyNothingVisible(ADMIN, Duration.ZERO);
+    }
+
+    @Test
+    public void givenEmptyDataset_whenUsingNamedGraphRoutingMode_thenUpdatesRequireDistributionId() {
+        // Given
+        Properties properties = new Properties();
+        properties.put(FMod_DistributionLifecycle.ROUTE_TO_NAMED_GRAPHS, true);
+        Configurator.addSource(new PropertiesSource(properties));
+        server = launchServer(SCG_CQRS_CONFIG);
+        String u1 = LibTestsSCG.tokenForUser(USER_1, DATASET_NAME);
+
+        // When and Then
+        HttpException exception = Assertions.assertThrows(HttpException.class,
+                                                          () -> executeSparqlUpdate(u1, INSERT_GENERIC_TRIPLE,
+                                                                                    EMPLOYEE));
+        Assertions.assertTrue(Strings.CI.contains(exception.getResponse(), TelicentHeaders.DISTRIBUTION_ID));
+    }
+
+    @Test
+    public void givenEmptyDataset_whenUsingNamedGraphRoutingMode_thenUpdatesRoutedByDistributionId() {
+        // Given
+        Properties properties = new Properties();
+        properties.put(FMod_DistributionLifecycle.ROUTE_TO_NAMED_GRAPHS, true);
+        Configurator.addSource(new PropertiesSource(properties));
+        server = launchServer(SCG_CQRS_CONFIG);
+        String u1 = LibTestsSCG.tokenForUser(USER_1, DATASET_NAME);
+
+        // When
+        executeSparqlUpdate(u1, INSERT_GENERIC_TRIPLE, EMPLOYEE, DISTRO_1);
+
+        // Then
+        verifyDataVisible(url(QUERY_ENDPOINT), "SELECT * WHERE { GRAPH ?g { ?s ?p ?o }}", u1, 1);
     }
 
     @Test

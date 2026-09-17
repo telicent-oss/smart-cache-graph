@@ -16,10 +16,13 @@
 
 package io.telicent.core;
 
+import io.telicent.smart.cache.configuration.Configurator;
 import io.telicent.smart.cache.security.data.DataAccessAuthorizer;
 import io.telicent.smart.cache.security.data.plugins.DataSecurityPlugin;
 import io.telicent.smart.cache.security.data.plugins.DataSecurityPluginLoader;
+import io.telicent.smart.cache.sources.TelicentHeaders;
 import jakarta.servlet.http.HttpServletRequest;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.jena.fuseki.Fuseki;
 import org.apache.jena.fuseki.servlets.*;
 import org.apache.jena.irix.IRIxResolver;
@@ -27,6 +30,7 @@ import org.apache.jena.query.QueryBuildException;
 import org.apache.jena.query.QueryParseException;
 import org.apache.jena.query.Syntax;
 import org.apache.jena.shared.OperationDeniedException;
+import org.apache.jena.shared.UpdateDeniedException;
 import org.apache.jena.sparql.core.DatasetGraph;
 import org.apache.jena.sparql.core.DatasetGraphFactory;
 import org.apache.jena.sparql.engine.http.QueryExceptionHTTP;
@@ -70,6 +74,8 @@ public class SPARQL_Update_CQRS extends SPARQL_Update {
     private final Consumer<HttpAction> onBegin;
     private final Consumer<HttpAction> onCommit;
     private final Consumer<HttpAction> onAbort;
+    private final boolean routeToNamedGraphs =
+            Configurator.get(FMod_DistributionLifecycle.ROUTE_TO_NAMED_GRAPHS, Boolean::parseBoolean, false);
 
     public SPARQL_Update_CQRS(Function<HttpAction, String> getUser,
                               String topic,
@@ -100,6 +106,14 @@ public class SPARQL_Update_CQRS extends SPARQL_Update {
         UsingList usingList = processProtocol(action.getRequest());
         action.beginWrite();
         try {
+            // If Route to Named Graphs enabled then validate a Distribution-Id header has been provided
+            if (this.routeToNamedGraphs) {
+                if (StringUtils.isBlank(action.getRequestHeader(TelicentHeaders.DISTRIBUTION_ID))) {
+                    throw new QueryBuildException(
+                            "Updates MUST provide a " + TelicentHeaders.DISTRIBUTION_ID + " header to indicate the distribution to which they belong");
+                }
+            }
+
             // Get the DatasetGraph to use
             DatasetGraph dsgRequest = getDatasetGraphToUse(action);
             CQRS.UpdateCQRS updateCtl =
@@ -144,10 +158,10 @@ public class SPARQL_Update_CQRS extends SPARQL_Update {
         }
     }
 
-    private DatasetGraph getDatasetGraphToUse(HttpAction action){
-        try(DataAccessAuthorizer authorizer = DATA_SECURITY_PLUGIN.prepareAuthorizer(requestContextFrom(action))){
+    private DatasetGraph getDatasetGraphToUse(HttpAction action) {
+        try (DataAccessAuthorizer authorizer = DATA_SECURITY_PLUGIN.prepareAuthorizer(requestContextFrom(action))) {
             final DatasetGraph activeDSG = action.getActiveDSG();
-            if(authorizer.isSecureDataset(activeDSG)){
+            if (authorizer.isSecureDataset(activeDSG)) {
                 final Optional<DatasetGraph> authDsg = authorizer.decideDataset(action, activeDSG);
                 return authDsg.orElseGet(DatasetGraphFactory::empty);
             } else {
