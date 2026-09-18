@@ -82,7 +82,7 @@ public class LabelsQueryServlet extends HttpServlet {
         List<Triple> tripleList = new ArrayList<>();
         try (final InputStream inputStream = request.getInputStream()) {
             JsonNode rootNode = OBJECT_MAPPER.readTree(inputStream);
-            if (rootNode.has("triples") && rootNode.get("triples").isArray()) {
+            if (rootNode != null && rootNode.has("triples") && rootNode.get("triples").isArray()) {
                 JsonTriples queryRequest = OBJECT_MAPPER.convertValue(rootNode, JsonTriples.class);
                 for (JsonTriple query : queryRequest.triples) {
                     tripleList.add(getTriple(query));
@@ -99,7 +99,11 @@ public class LabelsQueryServlet extends HttpServlet {
         return tripleList;
     }
 
-    private Triple getTriple(JsonTriple tripleQuery) {
+    private Triple getTriple(JsonTriple tripleQuery) throws SmartCacheGraphException {
+        if (tripleQuery == null || tripleQuery.subject == null || tripleQuery.predicate == null
+                || tripleQuery.object == null || tripleQuery.object.value == null) {
+            throw new SmartCacheGraphException("Invalid JSON format: Incomplete triple.");
+        }
         final Node s = getWildcardOrURI(tripleQuery.subject);
         final Node p = getWildcardOrURI(tripleQuery.predicate);
         final Node o = getObjectNode(tripleQuery.object.value);
