@@ -1,0 +1,35 @@
+suite: ConfigMap tests
+
+templates:
+  - templates/configmap-env.yaml
+  - templates/configmap-fuseki.yaml
+
+tests:
+  - it: creates each ConfigMap with its generated name when no existingConfigMap given
+    asserts:
+      - isKind:
+          of: ConfigMap
+      - template: templates/configmap-env.yaml
+        equal:
+          path: metadata.name
+          value: tc-graph-env
+      - template: templates/configmap-fuseki.yaml
+        equal:
+          path: metadata.name
+          value: tc-graph-fuseki
+
+
+  - it: skips each ConfigMap when its existingConfigMap value is given
+    set:
+      configMap:
+        existingEnvConfigMap: existing-cm
+        existingFusekiConfigMap: existing-cm
+
+    asserts:
+      - template: templates/configmap-env.yaml
+        hasDocuments:
+          count: 0
+      - template: templates/configmap-fuseki.yaml
+        hasDocuments:
+          count: 0
+

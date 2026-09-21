@@ -1,0 +1,28 @@
+suite: Authorizationpolicy Pattern Test
+templates:
+  - templates/istio/authorizationpolicy.yaml
+
+tests:
+  - it: should build the principal from release namespace and service account, not a hardcoded value
+    set:
+      global.enterprise: true
+      hosts.enableAutoCorrect: false
+      hosts.traefikProxy: "helm-unit-test-sa:8080"
+    release:
+      namespace: helm-unit-test
+    asserts:
+      - equal:
+          path: spec.rules[0].from[0].source.principals[0]
+          value: cluster.local/ns/helm-unit-test/sa/helm-unit-test-sa
+
+  - it: should apply release-name autocorrect to the service account when enabled 
+    set:
+      global.enterprise: true
+      hosts.traefikProxy: "helm-unit-test-sa:8080"
+    release:
+      namespace: helm-unit-test
+      name: my-release
+    asserts:
+      - equal:
+          path: spec.rules[0].from[0].source.principals[0]
+          value: cluster.local/ns/helm-unit-test/sa/my-release-helm-unit-test-sa
