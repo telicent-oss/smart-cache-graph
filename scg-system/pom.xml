@@ -193,6 +193,11 @@
             <artifactId>bcpkix-jdk18on</artifactId>
             <version>${dependency.bouncycastle}</version>
         </dependency>
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcprov-jdk18on</artifactId>
+            <version>${dependency.bouncycastle}</version>
+        </dependency>
         <!-- Kafka for Event Sourcing -->
         <dependency>
             <groupId>org.apache.kafka</groupId>

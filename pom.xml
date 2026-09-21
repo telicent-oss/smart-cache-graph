@@ -559,7 +559,7 @@
     <dependency.jena>6.2.0</dependency.jena>
     <dependency.graphql>0.12.3</dependency.graphql>
     <dependency.jwt-servlet-auth>4.1.4</dependency.jwt-servlet-auth>
-    <dependency.smart-caches-core>1.5.0</dependency.smart-caches-core>
+    <dependency.smart-caches-core>1.6.1</dependency.smart-caches-core>
 
 
     <!-- External dependencies -->
