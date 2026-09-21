@@ -164,7 +164,7 @@ public class CQRS {
     private static Symbol symbol = Symbol.create("cqrs:update");
 
     // Call just after dsg.begin.
-    private static Consumer<HttpAction> onBegin = CQRS::onBegin;
+    static Consumer<HttpAction> onBegin = CQRS::onBegin;
 
     private static void onBegin(HttpAction action) {
         UpdateCQRS updateCtl = action.getContext().get(symbol);
@@ -172,7 +172,7 @@ public class CQRS {
     }
 
     // Call just before dsg.commit
-    private static Consumer<HttpAction> onCommit = CQRS::onCommit;
+    static Consumer<HttpAction> onCommit = CQRS::onCommit;
 
     private static void onCommit(HttpAction action) {
         UpdateCQRS changesCtl = action.getContext().get(symbol);
@@ -213,7 +213,7 @@ public class CQRS {
     }
 
     // Call just before dsg.commit
-    private static Consumer<HttpAction> onAbort = CQRS::onAbort;
+    static Consumer<HttpAction> onAbort = CQRS::onAbort;
 
     private static void onAbort(HttpAction action) {
         UpdateCQRS changesCtl = action.getContext().get(symbol);

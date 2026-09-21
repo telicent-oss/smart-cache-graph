@@ -175,6 +175,8 @@ public class SPARQL_Update_CQRS extends SPARQL_Update {
             if (!(ex instanceof ActionErrorException)) {
                 abortSilent(action);
                 ServletOps.errorOccurred(ex.getMessage(), ex);
+            } else {
+                throw ex;
             }
         } finally {
             action.end();
