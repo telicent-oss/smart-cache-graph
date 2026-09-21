@@ -22,6 +22,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.file.Paths;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -202,6 +203,51 @@ public class TestLabelsQuery {
                   "error" : "Unable to interpret JSON request"
                 }""";
         callAndAssert(jsonRequestBody, expectedJsonResponse, DATASET1_NAME);
+    }
+
+    @Test
+    public void test_emptyRequestBodyReturnsBadRequest() throws Exception {
+        assertBadRequest("");
+    }
+
+    @Test
+    public void test_tripleWithoutObjectReturnsBadRequest() throws Exception {
+        assertBadRequest("""
+                {"triples":[{"subject":"http://example.org/s","predicate":"http://example.org/p"}]}
+                """);
+    }
+
+    @Test
+    public void test_tripleWithoutObjectValueReturnsBadRequest() throws Exception {
+        assertBadRequest("""
+                {"triples":[{"subject":"http://example.org/s","predicate":"http://example.org/p","object":{}}]}
+                """);
+    }
+
+    @Test
+    public void test_nullAndIncompleteTriplesReturnBadRequest() throws Exception {
+        for (String requestBody : List.of(
+                "{\"triples\":[null]}",
+                "{\"triples\":[{\"predicate\":\"http://example.org/p\",\"object\":{\"value\":\"x\"}}]}",
+                "{\"triples\":[{\"subject\":\"http://example.org/s\",\"object\":{\"value\":\"x\"}}]}",
+                "{\"triples\":[{\"subject\":\"http://example.org/s\",\"predicate\":\"http://example.org/p\",\"object\":null}]}",
+                "{\"triples\":[{\"subject\":\"http://example.org/s\",\"predicate\":\"http://example.org/p\",\"object\":{\"value\":null}}]}")) {
+            assertBadRequest(requestBody);
+        }
+    }
+
+    private static void assertBadRequest(String requestBody) throws Exception {
+        final HttpRequest request = HttpRequest.newBuilder(new URI(BASE_URI + "/$/labels/" + DATASET1_NAME))
+                .headers("accept", JSON_HEADER, "Content-Type", JSON_HEADER)
+                .POST(HttpRequest.BodyPublishers.ofString(requestBody)).build();
+        try (HttpClient client = HttpClient.newHttpClient()) {
+            final HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            assertEquals(400, response.statusCode(), response.body());
+            assertEquals("""
+                    {
+                      "error" : "Unable to interpret JSON request"
+                    }""", response.body());
+        }
     }
 
     @Test
