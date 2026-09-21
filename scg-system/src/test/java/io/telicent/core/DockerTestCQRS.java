@@ -4,6 +4,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.telicent.LibTestsSCG;
 import io.telicent.smart.cache.configuration.Configurator;
 import io.telicent.smart.cache.configuration.sources.PropertiesSource;
+import io.telicent.smart.cache.distribution.lifecycle.DistributionLifecycleState;
+import io.telicent.smart.cache.distribution.lifecycle.config.DistributionLifecycleConfiguration;
+import io.telicent.smart.cache.distribution.lifecycle.store.DistributionLifecycleStateStore;
+import io.telicent.smart.cache.distribution.lifecycle.tracker.DistributionLifecycleTracker;
+import io.telicent.smart.cache.distribution.lifecycle.tracker.DistributionLifecycleTrackerRegistry;
 import io.telicent.smart.cache.sources.TelicentHeaders;
 import io.telicent.smart.cache.sources.kafka.BasicKafkaTestCluster;
 import io.telicent.smart.cache.sources.kafka.KafkaTestCluster;
@@ -37,11 +42,16 @@ import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.telicent.TestSmartCacheGraphIntegration.launchServer;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class DockerTestCQRS {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DockerTestCQRS.class);
     protected static final String DISTRO_1 = "https://example.org/distributions/1";
+    protected static final String DISTRO_2 = "https://example.org/distributions/2";
+    protected static final String NAMED_GRAPHS_QUERY = "SELECT * WHERE { GRAPH ?g { ?s ?p ?o }}";
 
     private HttpClient httpClient;
 
@@ -142,6 +152,14 @@ public class DockerTestCQRS {
         System.clearProperty(KafkaConfiguration.BOOTSTRAP_SERVERS);
         System.clearProperty(KafkaConfiguration.CONSUMER_GROUP);
         this.httpClient.close();
+
+        // Reset distribution lifecycle tracker and remove any configuration sources that are configuring Route to Named
+        // Graphs/Distribution Lifecycle features as otherwise we can get test isolation issues
+        DistributionLifecycleTrackerRegistry.reset();
+        Configurator.activeSources()
+                    .removeIf(s -> !StringUtils.isAllBlank(
+                            s.get(DistributionLifecycleConfiguration.DISTRIBUTION_LIFECYCLE_ENABLED),
+                            s.get(FMod_DistributionLifecycle.ROUTE_TO_NAMED_GRAPHS)));
     }
 
     private String url(String x) {
@@ -390,6 +408,44 @@ public class DockerTestCQRS {
                                                           () -> executeSparqlUpdate(u1, INSERT_GENERIC_TRIPLE,
                                                                                     EMPLOYEE));
         Assertions.assertTrue(Strings.CI.contains(exception.getResponse(), TelicentHeaders.DISTRIBUTION_ID));
+        verifyNothingVisible(USER_1);
+    }
+
+    @Test
+    public void givenEmptyDataset_whenUsingNamedGraphRoutingModeAndDistributionLifecycle_thenUpdatesRequireDistributionIdToBeInKnownGoodState() {
+        // Given
+        Properties properties = new Properties();
+        properties.put(FMod_DistributionLifecycle.ROUTE_TO_NAMED_GRAPHS, true);
+        properties.put(DistributionLifecycleConfiguration.DISTRIBUTION_LIFECYCLE_ENABLED, true);
+        Configurator.addSource(new PropertiesSource(properties));
+        server = launchServer(SCG_CQRS_CONFIG);
+        String u1 = LibTestsSCG.tokenForUser(USER_1, DATASET_NAME);
+
+        // When and Then
+        HttpException exception = Assertions.assertThrows(HttpException.class,
+                                                          () -> executeSparqlUpdate(u1, INSERT_GENERIC_TRIPLE,
+                                                                                    EMPLOYEE, DISTRO_1));
+        Assertions.assertTrue(Strings.CI.contains(exception.getResponse(), "unable to determine state"));
+        verifyNothingVisible(USER_1);
+    }
+
+    @Test
+    public void givenEmptyDataset_whenUsingNamedGraphRoutingModeAndDistributionLifecycle_thenUpdatesRequireDistributionLifecycleTrackerToBeRunning() {
+        // Given
+        Properties properties = new Properties();
+        properties.put(FMod_DistributionLifecycle.ROUTE_TO_NAMED_GRAPHS, true);
+        properties.put(DistributionLifecycleConfiguration.DISTRIBUTION_LIFECYCLE_ENABLED, true);
+        mockDistributionLifecycleTracker(null, false);
+        Configurator.addSource(new PropertiesSource(properties));
+        server = launchServer(SCG_CQRS_CONFIG);
+        String u1 = LibTestsSCG.tokenForUser(USER_1, DATASET_NAME);
+
+        // When and Then
+        HttpException exception = Assertions.assertThrows(HttpException.class,
+                                                          () -> executeSparqlUpdate(u1, INSERT_GENERIC_TRIPLE,
+                                                                                    EMPLOYEE, DISTRO_1));
+        Assertions.assertTrue(Strings.CI.contains(exception.getResponse(), "unable to determine state"));
+        verifyNothingVisible(USER_1);
     }
 
     @Test
@@ -405,7 +461,61 @@ public class DockerTestCQRS {
         executeSparqlUpdate(u1, INSERT_GENERIC_TRIPLE, EMPLOYEE, DISTRO_1);
 
         // Then
-        verifyDataVisible(url(QUERY_ENDPOINT), "SELECT * WHERE { GRAPH ?g { ?s ?p ?o }}", u1, 1);
+        verifyDataVisible(url(QUERY_ENDPOINT), NAMED_GRAPHS_QUERY, u1, 1);
+    }
+
+    private static void mockDistributionLifecycleTracker(DistributionLifecycleStateStore stateStore,
+                                                         boolean isRunning) {
+        DistributionLifecycleTracker tracker = mock(DistributionLifecycleTracker.class);
+        when(tracker.isRunning()).thenReturn(isRunning);
+        when(tracker.getStateStore()).thenReturn(stateStore);
+        DistributionLifecycleTrackerRegistry.setInstance(tracker);
+    }
+
+    private static DistributionLifecycleStateStore mockStateStore(DistributionLifecycleState state) {
+        DistributionLifecycleStateStore stateStore = mock(DistributionLifecycleStateStore.class);
+        when(stateStore.getLifecycleState(any())).thenReturn(state);
+        return stateStore;
+    }
+
+    @Test
+    public void givenEmptyDataset_whenUsingNamedGraphRoutingModeAndDistributionLifecycle_thenUpdatesRoutedByDistributionIdForValidDistribution() {
+        // Given
+        Properties properties = new Properties();
+        properties.put(FMod_DistributionLifecycle.ROUTE_TO_NAMED_GRAPHS, true);
+        properties.put(DistributionLifecycleConfiguration.DISTRIBUTION_LIFECYCLE_ENABLED, true);
+        Configurator.addSource(new PropertiesSource(properties));
+        DistributionLifecycleStateStore stateStore = mockStateStore(DistributionLifecycleState.Active);
+        mockDistributionLifecycleTracker(stateStore, true);
+        server = launchServer(SCG_CQRS_CONFIG);
+        String u1 = LibTestsSCG.tokenForUser(USER_1, DATASET_NAME);
+
+        // When
+        executeSparqlUpdate(u1, INSERT_GENERIC_TRIPLE, EMPLOYEE, DISTRO_1);
+        executeSparqlUpdate(u1, INSERT_GENERIC_TRIPLE, EMPLOYEE, DISTRO_2);
+
+        // Then
+        verifyDataVisible(url(QUERY_ENDPOINT), NAMED_GRAPHS_QUERY, u1, 2);
+    }
+
+    @Test
+    public void givenEmptyDataset_whenUsingNamedGraphRoutingModeAndDistributionLifecycle_thenUpdatesRejectedForDistributionIdInInvalidState() {
+        // Given
+        Properties properties = new Properties();
+        properties.put(FMod_DistributionLifecycle.ROUTE_TO_NAMED_GRAPHS, true);
+        properties.put(DistributionLifecycleConfiguration.DISTRIBUTION_LIFECYCLE_ENABLED, true);
+        Configurator.addSource(new PropertiesSource(properties));
+        DistributionLifecycleStateStore stateStore = mockStateStore(DistributionLifecycleState.Unregistered);
+        mockDistributionLifecycleTracker(stateStore, true);
+        server = launchServer(SCG_CQRS_CONFIG);
+        String u1 = LibTestsSCG.tokenForUser(USER_1, DATASET_NAME);
+
+        // When and Then
+        HttpException exception = Assertions.assertThrows(HttpException.class,
+                                                          () -> executeSparqlUpdate(u1, INSERT_GENERIC_TRIPLE,
+                                                                                    EMPLOYEE, DISTRO_1));
+        Assertions.assertTrue(Strings.CI.contains(exception.getResponse(), "not acceptable for ingest"));
+        verifyNothingVisible(USER_1);
     }
 
     @Test
