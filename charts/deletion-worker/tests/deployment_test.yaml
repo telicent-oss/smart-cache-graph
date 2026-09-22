@@ -8,11 +8,8 @@ set:
   replicas: 2
   revisionHistoryLimit: 5
   image:
-    repository: quay/helm-unit-test
+    repository: telicent/helm-unit-test
     tag: "1.0.0"
-  resources: {}
-  podSecurityContext: {}
-  containerSecurityContext: {}
 
 tests:
   - it: should create a Deployment
@@ -38,24 +35,27 @@ tests:
       global:
         imageRegistry: registry.io
       image:
-        repository: quay/helm-unit-test
+        repository: telicent/helm-unit-test
         tag: "1.0.0"
     asserts:
       - equal:
           path: spec.template.spec.containers[0].image
-          value: registry.io/quay/helm-unit-test:1.0.0
+          value: registry.io/telicent/helm-unit-test:1.0.0
 
   - it: should fall back to Chart.AppVersion when image.tag is not set
     template: templates/deployment.yaml
+    chart:
+      appVersion: "1.2.3"
     set:
       global:
         imageRegistry: registry.io
       image:
-        repository: quay/helm-unit-test
+        repository: telicent/helm-unit-test
+        tag: ""
     asserts:
       - matchRegex:
           path: spec.template.spec.containers[0].image
-          pattern: '^registry\.io/quay/helm-unit-test:.+$'
+          pattern: '^registry\.io/telicent/helm-unit-test:1.2.3'
 
   - it: should set the imagePullPolicy from values
     template: templates/deployment.yaml
@@ -124,33 +124,6 @@ tests:
             runAsNonRoot: true
             seccompProfile:
               type: RuntimeDefault
-
-  # for charts with metrics added
-  # - it: should not set prometheus annotations when metrics disabled
-  #   template: templates/deployment.yaml
-  #   set:
-  #     metrics:
-  #       enabled: false
-  #   asserts:
-  #     - notExists:
-  #         path: spec.template.metadata.annotations["prometheus.io/scrape"]
-
-  # - it: should set prometheus annotations with defaults when metrics enabled
-  #   template: templates/deployment.yaml
-  #   set:
-  #     metrics:
-  #       enabled: true
-  #       port: 9090
-  #   asserts:
-  #     - equal:
-  #         path: spec.template.metadata.annotations["prometheus.io/scrape"]
-  #         value: "true"
-  #     - equal:
-  #         path: spec.template.metadata.annotations["prometheus.io/port"]
-  #         value: "9090"
-  #     - equal:
-  #         path: spec.template.metadata.annotations["prometheus.io/path"]
-  #         value: "/metrics"
 
   - it: should leave out resources when not set
     template: templates/deployment.yaml

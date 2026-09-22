@@ -3,6 +3,10 @@ run-name: Unit Tests for Helm Chart
 
 on:
   push:
+    branches-ignore:
+      - main
+    paths:
+      - charts/**
 
 jobs:
   helm-unittest:
@@ -15,6 +19,6 @@ jobs:
           - charts/graph
     steps:
       - name: Run Helm unit tests
-        uses: telicent-oss/shared-workflows/.github/actions/unit-helm-charts@feat/helm-unit-test
+        uses: telicent-oss/shared-workflows/.github/actions/unit-helm-charts@main
         with:
           chart: ${{ matrix.chart }}
