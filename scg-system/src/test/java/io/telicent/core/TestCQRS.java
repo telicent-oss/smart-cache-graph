@@ -1,5 +1,6 @@
 package io.telicent.core;
 
+import io.telicent.smart.cache.sources.TelicentHeaders;
 import io.telicent.smart.cache.sources.kafka.KafkaTestCluster;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletInputStream;
@@ -19,6 +20,7 @@ import org.apache.jena.update.UpdateException;
 import org.apache.jena.web.HttpSC;
 import org.apache.kafka.clients.producer.MockProducer;
 import org.apache.kafka.clients.producer.Producer;
+import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.KafkaException;
 import org.apache.kafka.common.serialization.ByteArraySerializer;
 import org.apache.kafka.common.serialization.StringSerializer;
@@ -143,6 +145,33 @@ public class TestCQRS {
 
         // Then
         Assertions.assertEquals(1, producer.history().size());
+    }
+
+    @Test
+    public void givenActionWithProducer_whenServicingRequestWithHeaders_thenKafkaMessageProducedWithHeaders() throws IOException {
+        // Given
+        MockProducer<String, byte[]> producer =
+                new MockProducer<>(true, new StringSerializer(), new ByteArraySerializer());
+        ActionService service = CQRS.updateActionWithProducer(KafkaTestCluster.DEFAULT_TOPIC, producer);
+        HttpServletRequest request = mock(HttpServletRequest.class);
+        when(request.getHeader(TelicentHeaders.SECURITY_LABEL)).thenReturn("employee");
+        when(request.getHeader(TelicentHeaders.DISTRIBUTION_ID)).thenReturn("https://example.org/distro/1");
+        ServletInputStream input = mock(ServletInputStream.class);
+        when(request.getInputStream()).thenReturn(input);
+        HttpServletResponse response = mock(HttpServletResponse.class);
+        ServletContext servletContext = mock(ServletContext.class);
+        when(request.getServletContext()).thenReturn(servletContext);
+        Logger logger = mock(Logger.class);
+        HttpAction action = new HttpAction(1, logger, ActionCategory.ACTION, request, response);
+
+        // When
+        service.execute(action);
+
+        // Then
+        Assertions.assertEquals(1, producer.history().size());
+        ProducerRecord<String, byte[]> event = producer.history().getFirst();
+        Assertions.assertNotNull(event.headers().lastHeader(TelicentHeaders.SECURITY_LABEL));
+        Assertions.assertNotNull(event.headers().lastHeader(TelicentHeaders.DISTRIBUTION_ID));
     }
 
     @Test

@@ -1130,6 +1130,10 @@
           <version>${plugin.surefire}</version>
           <configuration>
             <argLine>@{jacocoArgLine} -javaagent:${org.mockito:mockito-core:jar} -XX:+EnableDynamicAgentLoading -Xshare:off</argLine>
+            <includes>
+              <include>**/DockerTest*.java</include>
+              <include>**/Test*.java</include>
+            </includes>
           </configuration>
         </plugin>
 
