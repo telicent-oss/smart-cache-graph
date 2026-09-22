@@ -35,7 +35,7 @@ class TestDistributionLifecycleReadiness {
 
     @Test
     void snapshot_whenExternalStateUnavailable_isUnready() {
-        Path missing = Path.of("target", "missing-lifecycle-state.json");
+        Path missing = Path.of("/no", "/such", "/path", "missing-lifecycle-state.json");
         this.readiness.configure(true, false, new DistributionLifecycleStateFile(missing, null), () -> false);
 
         DistributionLifecycleReadiness.Snapshot snapshot = this.readiness.snapshot();
@@ -94,6 +94,48 @@ class TestDistributionLifecycleReadiness {
 
         assertTrue(snapshot.ready());
         assertEquals(DistributionLifecycleReadiness.State.READY, snapshot.state());
+    }
+
+    @Test
+    void givenEmptyStateFile_whenTrackerReady_thenReady() throws IOException {
+        // Given
+        Path stateFile = Files.createTempFile("scg-readiness-", ".json");
+
+        // When
+        this.readiness.configure(true, true, new DistributionLifecycleStateFile(stateFile, "scg-test"), () -> true);
+        this.readiness.markReady();
+        DistributionLifecycleReadiness.Snapshot snapshot = this.readiness.snapshot();
+
+        // Then
+        assertTrue(snapshot.ready());
+    }
+
+    @Test
+    void givenMissingStateFileInWriteableLocation_whenTrackerReady_thenReady() throws IOException {
+        // Given
+        Path stateFile = Files.createTempFile("scg-readiness-", ".json");
+        Files.delete(stateFile);
+
+        // When
+        this.readiness.configure(true, true, new DistributionLifecycleStateFile(stateFile, "scg-test"), () -> true);
+        this.readiness.markReady();
+        DistributionLifecycleReadiness.Snapshot snapshot = this.readiness.snapshot();
+
+        // Then
+        assertTrue(snapshot.ready());
+    }
+
+    @Test
+    void givenMissingStateFileInNonWriteableLocation_whenTrackerReady_thenUnready() throws IOException {
+        // Given
+        Path stateFile = Path.of("/no", "/such", "state-file.json");
+
+        // When
+        this.readiness.configure(true, true, new DistributionLifecycleStateFile(stateFile, "scg-test"), () -> true);
+        DistributionLifecycleReadiness.Snapshot snapshot = this.readiness.snapshot();
+
+        // Then
+        assertFalse(snapshot.ready());
     }
 
     private static void writeLifecycleStateFile(Path stateFile) throws IOException {
