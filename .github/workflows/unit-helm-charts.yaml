@@ -8,8 +8,8 @@ on:
     paths:
       - charts/**
 
- permissions:
-   contents: read
+permissions:
+  contents: read
 
 jobs:
   helm-unittest:
