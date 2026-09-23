@@ -159,8 +159,8 @@ class TestDistributionLifecycleStateFile {
 
     @Test
     void activeGraphNodes_isEmpty_whenStateFileMissing() {
-        // The temp file was created in setUp; remove it so the primary, .tmp and .bak are all absent.
-        Path missingFile = this.stateFile.resolveSibling("does-not-exist.json");
+        // Non-existent state file in non-writeable location
+        Path missingFile = Path.of("/no", "/such", "state.json");
         DistributionLifecycleStateFile missingReader = new DistributionLifecycleStateFile(missingFile, null);
 
         Set<Node> active = missingReader.activeGraphNodes();

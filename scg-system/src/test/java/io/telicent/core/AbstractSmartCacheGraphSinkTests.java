@@ -877,8 +877,7 @@ public abstract class AbstractSmartCacheGraphSinkTests {
     @Test
     final void processorSCG_namedGraph_missingLifecycleStateRejectsIngest() throws IOException {
         String graph = "http://example/graph1";
-        Path lifecycleState = Files.createTempFile("distribution-lifecycle", ".json");
-        Files.deleteIfExists(lifecycleState);
+        Path lifecycleState = Path.of("/no", "/such", "state.json");
 
         TestAction action =
                 (Sink<Event<Bytes, RdfPayload>> proc, FusekiServer server, DatasetGraph dsgBase, DatasetGraph dsg) -> {

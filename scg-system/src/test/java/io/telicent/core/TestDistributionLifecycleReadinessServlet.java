@@ -57,7 +57,7 @@ class TestDistributionLifecycleReadinessServlet {
         Properties properties = new Properties();
         properties.setProperty(FMod_DistributionLifecycle.ROUTE_TO_NAMED_GRAPHS, "true");
         properties.setProperty(DISTRIBUTION_LIFECYCLE_STATE_FILE,
-                               "target/missing-readiness-state.json");
+                               "/no/such/path/to/missing-readiness-state.json");
         startServer(properties);
 
         HttpResponse<String> response = getReady();
