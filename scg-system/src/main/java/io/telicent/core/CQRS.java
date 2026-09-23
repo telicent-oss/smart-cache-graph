@@ -20,6 +20,7 @@ import static java.lang.String.format;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.ExecutionException;
@@ -61,26 +62,33 @@ public class CQRS {
         // Static utility class, not intended to be instantiated.
     }
 
-    /** Log for CQRS related messages */
+    /**
+     * Log for CQRS related messages
+     */
     public static Logger LOG = LoggerFactory.getLogger(CQRS.class);
-    /** Context symbol for Kafka topic */
+    /**
+     * Context symbol for Kafka topic
+     */
     public static Symbol symKafkaTopic = Symbol.create("kafka:topic");
 
     public static class Vocab {
         public static String NS = "http://telicent.io/cqrs#";
-        public static String getURI() { return NS; }
-        public static final Operation operationUpdateCQRS = Operation.alloc(CQRS.Vocab.getURI()+"update",
-                                                                            "cqrs:update",
-                                                                            "Update CQRS");
+
+        public static String getURI() {
+            return NS;
+        }
+
+        public static final Operation operationUpdateCQRS =
+                Operation.alloc(CQRS.Vocab.getURI() + "update", "cqrs:update", "Update CQRS");
     }
 
     /**
      * Return an {@link ActionService} suitable for registering for {@link Operation#Update}.
      */
     public static ActionService updateAction(String topic, Properties producerProperties) {
-        Producer<String, byte[]> producer = (producerProperties == null)
-                ? null
-                : new KafkaProducer<>(producerProperties, new StringSerializer(), new ByteArraySerializer());
+        Producer<String, byte[]> producer = (producerProperties == null) ? null :
+                                            new KafkaProducer<>(producerProperties, new StringSerializer(),
+                                                                new ByteArraySerializer());
         return new SPARQL_Update_CQRS(UserUtils.userForRequest(), topic, producer, onBegin, onCommit, onAbort);
     }
 
@@ -89,39 +97,45 @@ public class CQRS {
     }
 
     /**
-     * Setup to capture changes within the update lifecycle.
-     * Return the dataset for the update execution.
+     * Setup to capture changes within the update lifecycle. Return the dataset for the update execution.
      */
-    static UpdateCQRS startOperation(String topic,
-                                     Producer<String, byte[]> producer,
-                                     HttpAction action,
-                                     DatasetGraph dsgBase,
-                                     Consumer<HttpAction> onBegin,
-                                     Consumer<HttpAction> onCommit,
+    static UpdateCQRS startOperation(String topic, Producer<String, byte[]> producer, HttpAction action,
+                                     DatasetGraph dsgBase, Consumer<HttpAction> onBegin, Consumer<HttpAction> onCommit,
                                      Consumer<HttpAction> onAbort) {
         // Base dataset is only ever read.
         String hSecurityLabel = action.getRequestHeader(TelicentHeaders.SECURITY_LABEL);
+        String hDistributionId = action.getRequestHeader(TelicentHeaders.DISTRIBUTION_ID);
 
         BufferingDatasetGraph dsgBuffering = new BufferingDatasetGraph(dsgBase);
         // Writing the patch log.
-        ByteArrayOutputStream bout = new ByteArrayOutputStream(8*1024);
+        ByteArrayOutputStream bout = new ByteArrayOutputStream(8 * 1024);
         TokenWriter tok = TokenWriterText.create(bout);
         RDFChangesWriterText changesWriter = new RDFChangesWriterText(tok);
 
         // Manage transaction change record here so we can terminate the patch
         // (i.e. write "TX") before and separately from the dataset commit.
         RDFChanges changes = new RDFChangesExternalTxn(changesWriter) {
-            @Override public void txnBegin()  { if ( onBegin != null )  onBegin.accept(action) ; }
-            @Override public void txnCommit() { if ( onCommit != null ) onCommit.accept(action) ; }
-            @Override public void txnAbort()  { if ( onAbort != null )  onAbort.accept(action) ; }
+            @Override
+            public void txnBegin() {
+                if (onBegin != null) onBegin.accept(action);
+            }
+
+            @Override
+            public void txnCommit() {
+                if (onCommit != null) onCommit.accept(action);
+            }
+
+            @Override
+            public void txnAbort() {
+                if (onAbort != null) onAbort.accept(action);
+            }
         };
         DatasetGraph dsgOperation = RDFPatchOps.changes(dsgBuffering, changes);
 
         // Record the details of the setup.
-        UpdateCQRS updateCtl = new UpdateCQRS(topic, dsgBase,
-                                              bout, tok, changesWriter, changes,
-                                              dsgBuffering, dsgOperation, hSecurityLabel,
-                                              producer);
+        UpdateCQRS updateCtl =
+                new UpdateCQRS(topic, dsgBase, bout, tok, changesWriter, changes, dsgBuffering, dsgOperation,
+                               hSecurityLabel, hDistributionId, producer);
         // XXX RemoveMe and pass UpdateCQRS to on*
         // Add to the action context so it is carried through the update.
         action.getContext().set(symbol, updateCtl);
@@ -136,18 +150,21 @@ public class CQRS {
         updateCtl.changes.finish();
     }
 
-    public record UpdateCQRS(String topic, DatasetGraph dsgBase,
-                             ByteArrayOutputStream bout, TokenWriter tok, RDFChangesWriterText changesWriter, RDFChanges changes,
-                             BufferingDatasetGraph datasetBuffering,
-                             DatasetGraph dataset, // Operate on this DataestGraph
-                             String securityLabelHeader,
-                             Producer<String, byte[]> producer) {}
+    public record UpdateCQRS(String topic, DatasetGraph dsgBase, ByteArrayOutputStream bout, TokenWriter tok,
+                             RDFChangesWriterText changesWriter, RDFChanges changes,
+                             BufferingDatasetGraph datasetBuffering, DatasetGraph dataset,
+                             // Operate on this DatasetGraph
+                             String securityLabelHeader, String distributionIdHeader,
+                             Producer<String, byte[]> producer) {
+    }
 
-    /** Used to pass the addition information through the HttpActionLifecycle. */
+    /**
+     * Used to pass the addition information through the HttpActionLifecycle.
+     */
     private static Symbol symbol = Symbol.create("cqrs:update");
 
     // Call just after dsg.begin.
-    private static Consumer<HttpAction> onBegin = CQRS::onBegin;
+    static Consumer<HttpAction> onBegin = CQRS::onBegin;
 
     private static void onBegin(HttpAction action) {
         UpdateCQRS updateCtl = action.getContext().get(symbol);
@@ -155,11 +172,11 @@ public class CQRS {
     }
 
     // Call just before dsg.commit
-    private static Consumer<HttpAction> onCommit = CQRS::onCommit;
+    static Consumer<HttpAction> onCommit = CQRS::onCommit;
 
     private static void onCommit(HttpAction action) {
         UpdateCQRS changesCtl = action.getContext().get(symbol);
-        if ( changesCtl == null ) {
+        if (changesCtl == null) {
             LOG.error("[{}] onCommit: No UpdateCQRS record", action.id);
             return;
         }
@@ -174,28 +191,33 @@ public class CQRS {
         int delCount = changesCtl.datasetBuffering.getDeletedTriples().size();
         Log.info(action.log, format("[%d] CQRS Patch: Add=%,d : Del=%,d", action.id, addCount, delCount));
 
-        if ( isConnected ) {
-            List<Header> sendHeaders;
+        if (isConnected) {
+            List<Header> sendHeaders = new ArrayList<>();
             Header headerContentType = kafkaHeader(HttpNames.hContentType, WebContent.contentTypePatch);
-            if ( changesCtl.securityLabelHeader != null ) {
-                Header headerSecurityLabel = kafkaHeader(TelicentHeaders.SECURITY_LABEL, changesCtl.securityLabelHeader);
-                sendHeaders = List.of(headerContentType, headerSecurityLabel);
-            } else {
-                sendHeaders = List.of(headerContentType);
+            sendHeaders.add(headerContentType);
+            if (changesCtl.securityLabelHeader != null) {
+                Header headerSecurityLabel =
+                        kafkaHeader(TelicentHeaders.SECURITY_LABEL, changesCtl.securityLabelHeader);
+                sendHeaders.add(headerSecurityLabel);
+            }
+            if (changesCtl.distributionIdHeader != null) {
+                Header headerDistributionId =
+                        kafkaHeader(TelicentHeaders.DISTRIBUTION_ID, changesCtl.distributionIdHeader);
+                sendHeaders.add(headerDistributionId);
             }
             sendToKafka(changesCtl.producer, changesCtl.topic, sendHeaders, kBody);
         } else {
-            LOG.info("Send to Kafka: topic={} bytes={}", changesCtl.topic, kBody.length);
+            LOG.warn("No Kafka producer connected, no CQRS patch can be sent");
         }
         action.getContext().remove(symbol);
     }
 
     // Call just before dsg.commit
-    private static Consumer<HttpAction> onAbort = CQRS::onAbort;
+    static Consumer<HttpAction> onAbort = CQRS::onAbort;
 
     private static void onAbort(HttpAction action) {
         UpdateCQRS changesCtl = action.getContext().get(symbol);
-        if ( changesCtl == null ) {
+        if (changesCtl == null) {
             // May be an abort before or after UpdateCQRS exists (unlikely!)
             LOG.warn("[{}] onAbort: No UpdateCQRS record", action.id);
             return;
@@ -206,14 +228,16 @@ public class CQRS {
     /**
      * Send to the Kafka topic.
      */
-    protected static <K,V> long sendToKafka(Producer<K,V> producer, String topic, List<Header> sendHeaders, V content) {
+    protected static <K, V> long sendToKafka(Producer<K, V> producer, String topic, List<Header> sendHeaders,
+                                             V content) {
         RecordMetadata res = sendToKafka(producer, null, topic, sendHeaders, content);
         LOG.info("[{}] Send: Offset = {}", topic, res.offset());
         return res.offset();
     }
 
     // Worker to actually send to Kafka.
-    private static <K,V> RecordMetadata sendToKafka(Producer<K, V> producer, Integer partition, String topic, List<Header> headers, V body) {
+    private static <K, V> RecordMetadata sendToKafka(Producer<K, V> producer, Integer partition, String topic,
+                                                     List<Header> headers, V body) {
         try {
             ProducerRecord<K, V> pRec = new ProducerRecord<>(topic, partition, null, null, body, headers);
             Future<RecordMetadata> f = producer.send(pRec);

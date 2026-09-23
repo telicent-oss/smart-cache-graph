@@ -16,10 +16,17 @@
 
 package io.telicent.core;
 
+import io.telicent.smart.cache.configuration.Configurator;
+import io.telicent.smart.cache.distribution.lifecycle.DistributionLifecycleState;
+import io.telicent.smart.cache.distribution.lifecycle.config.DistributionLifecycleConfiguration;
+import io.telicent.smart.cache.distribution.lifecycle.tracker.DistributionLifecycleTracker;
+import io.telicent.smart.cache.distribution.lifecycle.tracker.DistributionLifecycleTrackerRegistry;
 import io.telicent.smart.cache.security.data.DataAccessAuthorizer;
 import io.telicent.smart.cache.security.data.plugins.DataSecurityPlugin;
 import io.telicent.smart.cache.security.data.plugins.DataSecurityPluginLoader;
+import io.telicent.smart.cache.sources.TelicentHeaders;
 import jakarta.servlet.http.HttpServletRequest;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.jena.fuseki.Fuseki;
 import org.apache.jena.fuseki.servlets.*;
 import org.apache.jena.irix.IRIxResolver;
@@ -70,6 +77,9 @@ public class SPARQL_Update_CQRS extends SPARQL_Update {
     private final Consumer<HttpAction> onBegin;
     private final Consumer<HttpAction> onCommit;
     private final Consumer<HttpAction> onAbort;
+    private final boolean routeToNamedGraphs =
+            Configurator.get(FMod_DistributionLifecycle.ROUTE_TO_NAMED_GRAPHS, Boolean::parseBoolean, false);
+    private final boolean lifecycleEnabled = DistributionLifecycleConfiguration.isEnabled();
 
     public SPARQL_Update_CQRS(Function<HttpAction, String> getUser,
                               String topic,
@@ -100,6 +110,33 @@ public class SPARQL_Update_CQRS extends SPARQL_Update {
         UsingList usingList = processProtocol(action.getRequest());
         action.beginWrite();
         try {
+            // If Route to Named Graphs/Distribution Lifecycle enabled then validate a Distribution-Id header has been
+            // provided
+            if (this.routeToNamedGraphs || this.lifecycleEnabled) {
+                String distributionId = action.getRequestHeader(TelicentHeaders.DISTRIBUTION_ID);
+                if (StringUtils.isBlank(distributionId)) {
+                    throw new QueryBuildException(
+                            "Updates MUST provide a " + TelicentHeaders.DISTRIBUTION_ID + " header to indicate the distribution to which they belong");
+                }
+
+                // Additionally if Distribution Lifecycle enabled also validate that the given Distribution ID is
+                // currently acceptable for ingest
+                if (this.lifecycleEnabled) {
+                    DistributionLifecycleTracker tracker = DistributionLifecycleTrackerRegistry.getInstance();
+                    if (tracker != null && tracker.isRunning()) {
+                        DistributionLifecycleState state = tracker.getStateStore().getLifecycleState(distributionId);
+                        if (state == DistributionLifecycleState.Unregistered || state == DistributionLifecycleState.Deleted) {
+                            throw new QueryBuildException(
+                                    "Provided Distribution ID " + distributionId + " refers to a Distribution in the state " + state
+                                            + " which is not acceptable for ingest");
+                        }
+                    } else {
+                        throw new QueryBuildException(
+                                "Distribution Lifecycle is enabled but unable to determine state for distribution " + distributionId + " so cannot accept updates against this currently");
+                    }
+                }
+            }
+
             // Get the DatasetGraph to use
             DatasetGraph dsgRequest = getDatasetGraphToUse(action);
             CQRS.UpdateCQRS updateCtl =
@@ -138,16 +175,18 @@ public class SPARQL_Update_CQRS extends SPARQL_Update {
             if (!(ex instanceof ActionErrorException)) {
                 abortSilent(action);
                 ServletOps.errorOccurred(ex.getMessage(), ex);
+            } else {
+                throw ex;
             }
         } finally {
             action.end();
         }
     }
 
-    private DatasetGraph getDatasetGraphToUse(HttpAction action){
-        try(DataAccessAuthorizer authorizer = DATA_SECURITY_PLUGIN.prepareAuthorizer(requestContextFrom(action))){
+    private DatasetGraph getDatasetGraphToUse(HttpAction action) {
+        try (DataAccessAuthorizer authorizer = DATA_SECURITY_PLUGIN.prepareAuthorizer(requestContextFrom(action))) {
             final DatasetGraph activeDSG = action.getActiveDSG();
-            if(authorizer.isSecureDataset(activeDSG)){
+            if (authorizer.isSecureDataset(activeDSG)) {
                 final Optional<DatasetGraph> authDsg = authorizer.decideDataset(action, activeDSG);
                 return authDsg.orElseGet(DatasetGraphFactory::empty);
             } else {
