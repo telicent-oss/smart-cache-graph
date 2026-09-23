@@ -1,0 +1,27 @@
+name: Test Helm chart
+run-name: Unit Tests for Helm Chart
+
+on:
+  push:
+    branches-ignore:
+      - main
+    paths:
+      - charts/**
+
+permissions:
+  contents: read
+
+jobs:
+  helm-unittest:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        chart:
+          - charts/deletion-worker
+          - charts/graph
+    steps:
+      - name: Run Helm unit tests
+        uses: telicent-oss/shared-workflows/.github/actions/unit-helm-charts@main
+        with:
+          chart: ${{ matrix.chart }}

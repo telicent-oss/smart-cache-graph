@@ -1,0 +1,37 @@
+suite: Service tests
+
+templates:
+  - templates/service.yaml
+
+tests:
+  - it: should create a Service
+    asserts:
+      - isKind:
+          of: Service
+
+  - it: should set the service type
+    set:
+      service:
+        type: ClusterIP
+    asserts:
+      - equal:
+          path: spec.type
+          value: ClusterIP
+
+  - it: should set the port name to http
+    asserts:
+      - equal:
+          path: spec.ports[0].name
+          value: http
+
+  - it: should set the app protocol to http
+    asserts:
+      - equal:
+          path: spec.ports[0].appProtocol
+          value: http
+
+  - it: should target the http port
+    asserts:
+      - equal:
+          path: spec.ports[0].targetPort
+          value: http

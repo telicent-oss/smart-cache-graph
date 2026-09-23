@@ -272,6 +272,65 @@ If either of those details changes, you can use this section to correctly refer 
 | `hostsPreview.apiBuilder`        | API Builder API default host value, as defined by 'service/serviceAccount:port'                                                                    | `api-builder:8000`       |
 | `hostsPreview.theManagement`     | The Management API default host value, as defined by 'service/serviceAccount:port'                                                                 | `the-management:8000`    |
 
+## Helm Unit Tests
+The `Unit Tests for Helm Chart` workflow runs `helm unittest` against the chart to run all the `*_test.yaml` files founder under `charts/graph`.
+
+## Deployment 
+### Tests
+| Test | Area | What it checks | 
+|---|---|---| 
+| Should create a Deployment | Basic rendering | Template renders and produces a `Deployment` kind | 
+| Should use global imagePullSecrets when set | Pull secrets | `global.imagePullSecrets` appears in `imagePullSecrets[0].name` | 
+| Should fall back to image.pullSecrets when global is not set | Pull secrets | `image.pullSecrets` used when `global` is unset | 
+| Should build the image from registry, repository and tag | Image | Full `<registry>/<repo>:<tag>` string built correctly | 
+| Should fall back to Chart.AppVersion when image.tag is not set | Image | Tag falls back to `Chart.AppVersion` when `image.tag` omitted | 
+| Should set the imagePullPolicy from values | Image | `image.pullPolicy` passed through to container |
+| Should set a checksum/config annotation| Checksum | `checksum/config` annotation matches a valid sha256 hex pattern | 
+| Should set a checksum/secret annotation | Checksum | `checksum/secret` annotation matches a valid sha256 hex pattern  | 
+| Should default the pod securityContext| Security | Full `spec.template.spec.securityContext` matches chart defaults (`fsGroup`, `runAsUser`, `runAsGroup` = 185, `runAsNonRoot: true`, `seccompProfile.type: RuntimeDefault`) | 
+| Should default the container securityContext | Security | Full container `securityContext` matches defaults (`allowPrivilegeEscalation: false`, `capabilities.drop: [ALL]`, same user/group/nonroot values, `seccompProfile`) | 
+| Should not set prometheus annotations when metrics disabled | Prometheus | Annotations absent when `metrics.enabled: false` | 
+| Should set prometheus annotations with defaults when metrics enabled | Prometheus | Annotations added when `metrics.enabled: true`|
+| Should leave out resources when not set | Resources | `resources` absent when `.Values.resources` is empty | 
+| Should set resources when provided | Resources | Full `requests`/`limits` block passes through values provided| 
+
+## Service 
+### Tests
+ 
+| Test | What it checks |
+|---|---|
+| Should create a Service | Template renders and produces a `Service` kind |
+| Should set the service type | `service.type`  Only `ClusterIP` is set in `spec.type` |
+| Should set the port name to http | The port's `name` is always `http` |
+| Should set the app protocol to http | The port's `appProtocol` is always `http`| 
+| Should target the http port | `targetPort` is always `http`| 
+
+## Service Account 
+### Tests
+ 
+| Test | What it checks |
+|---|---|
+| Should create a ServiceAccount when enabled | Template renders a `ServiceAccount` kind (default `serviceAccount.create` is truthy) | 
+| Should not create a ServiceAccount when disabled | Setting `serviceAccount.create: false` results in no resources being created |
+| Should set automountServiceAccountToken to true | Default `serviceAccount.automount` should show as `true` on `automountServiceAccountToken` |
+| Should set automountServiceAccountToken to false | Setting `serviceAccount.automount: false` should show `false` |  
+
+## Config Map
+### Tests
+ 
+| Test | What it checks |
+|---|---|
+| Should create a ConfigMap with the generated name when no existingConfigMap given | Checks that configmap is created following `tc-<chart>-env` name | 
+| Should use the existingConfigMap name when given | Checks whether existing configmap can be set |
+
+## Authorization Policies
+### Tests
+
+| Test | What it checks |
+|---|---|
+| Should build the principal from release namespace and service account, not a hardcoded value | Checks that the principal substitutes in the release namespace and service account name correctly when `hosts.enableAutoCorrect` is disabled |
+| Should apply release-name autocorrect to the service account when enabled | Checks that when `hosts.enableAutoCorrect` is set to true, the release name is correctly prefixed onto the service account in the principal |
+
 ## License
 
 Copyright &copy; 2026 Telicent Limited

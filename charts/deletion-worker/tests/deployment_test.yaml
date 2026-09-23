@@ -1,0 +1,155 @@
+suite: Deployment tests 
+
+templates:
+  - templates/deployment.yaml
+  - templates/configmap-env.yaml
+
+set:
+  replicas: 2
+  revisionHistoryLimit: 5
+  image:
+    repository: telicent/helm-unit-test
+    tag: "1.0.0"
+
+tests:
+  - it: should create a Deployment
+    template: templates/deployment.yaml
+    asserts:
+      - isKind:
+          of: Deployment
+
+  - it: should use global imagePullSecrets when set
+    template: templates/deployment.yaml
+    set:
+      global:
+        imagePullSecrets:
+          - name: global-secret
+    asserts:
+      - equal:
+          path: spec.template.spec.imagePullSecrets[0].name
+          value: global-secret
+
+  - it: should build the image from registry, repository and tag
+    template: templates/deployment.yaml
+    set:
+      global:
+        imageRegistry: registry.io
+      image:
+        repository: telicent/helm-unit-test
+        tag: "1.0.0"
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: registry.io/telicent/helm-unit-test:1.0.0
+
+  - it: should fall back to Chart.AppVersion when image.tag is not set
+    template: templates/deployment.yaml
+    chart:
+      appVersion: "1.2.3"
+    set:
+      global:
+        imageRegistry: registry.io
+      image:
+        repository: telicent/helm-unit-test
+        tag: ""
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: '^registry\.io/telicent/helm-unit-test:1.2.3'
+
+  - it: should set the imagePullPolicy from values
+    template: templates/deployment.yaml
+    set:
+      image:
+        pullPolicy: Always
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].imagePullPolicy
+          value: Always
+
+  - it: should fall back to image.pullSecrets when global is not set
+    template: templates/deployment.yaml
+    set:
+      image:
+        pullSecrets:
+          - name: image-secret
+    asserts:
+      - equal:
+          path: spec.template.spec.imagePullSecrets[0].name
+          value: image-secret
+
+  # Only include this test if the chart has a config template used by the Deployment.
+  # Delete this block if the chart has no config-map.yaml.
+  - it: should set a checksum/config annotation
+    template: templates/deployment.yaml
+    asserts:
+      - matchRegex:
+          path: spec.template.metadata.annotations["checksum/config"]
+          pattern: '^[a-f0-9]{64}$'
+
+  # # Only include this test if the chart has a Secret template used by the Deployment.
+  # # Delete this block if the chart has no secret.yaml.
+  # - it: should set a checksum/secret annotation
+  #   template: templates/deployment.yaml
+  #   asserts:
+  #     - matchRegex:
+  #         path: spec.template.metadata.annotations["checksum/secret"]
+  #         pattern: '^[a-f0-9]{64}$'
+
+  - it: should default the pod securityContext 
+    template: templates/deployment.yaml
+    asserts:
+      - equal:
+          path: spec.template.spec.securityContext
+          value:
+            fsGroup: 185
+            runAsUser: 185
+            runAsGroup: 185
+            runAsNonRoot: true
+            seccompProfile:
+              type: RuntimeDefault
+
+  - it: should default the container securityContext
+    template: templates/deployment.yaml
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].securityContext
+          value:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            runAsUser: 185
+            runAsGroup: 185
+            runAsNonRoot: true
+            seccompProfile:
+              type: RuntimeDefault
+
+  - it: should leave out resources when not set
+    template: templates/deployment.yaml
+    set:
+      resources: {}
+    asserts:
+      - notExists:
+          path: spec.template.spec.containers[0].resources
+
+  - it: should set resources when provided
+    template: templates/deployment.yaml
+    set:
+      resources:
+        requests:
+          cpu: "500m"
+          memory: "512Mi"
+        limits:
+          cpu: "1000m"
+          memory: "1Gi"
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].resources
+          value:
+            requests:
+              cpu: "500m"
+              memory: "512Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1Gi"
