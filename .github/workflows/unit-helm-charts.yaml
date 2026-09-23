@@ -8,6 +8,9 @@ on:
     paths:
       - charts/**
 
+ permissions:
+   contents: read
+
 jobs:
   helm-unittest:
     runs-on: ubuntu-latest
