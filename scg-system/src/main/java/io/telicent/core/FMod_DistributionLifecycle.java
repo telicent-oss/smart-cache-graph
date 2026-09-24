@@ -302,7 +302,7 @@ public class FMod_DistributionLifecycle implements FusekiModule {
                             "Distribution lifecycle tracker enabled: consuming topic '{}' from {} (consumer group '{}', application '{}')",
                             topic, bootstrapServers, consumerGroup, application);
                     return;
-                } catch (RuntimeException e) {
+                } catch (RuntimeException | LinkageError e) {
                     closeTracker();
                     if (isCatchUpFailure(e)) {
                         this.readiness.markStarting(
@@ -316,15 +316,6 @@ public class FMod_DistributionLifecycle implements FusekiModule {
                                 e);
                         return;
                     }
-                } catch (Error e) {
-                    // Errors, e.g. NoClassDefFoundError from a mismatched classpath, would otherwise vanish into the
-                    // starter's Future, leaving readiness stuck in STARTING with nothing logged
-                    closeTracker();
-                    this.readiness.markFailed("Distribution lifecycle tracker is unavailable: " + rootMessage(e));
-                    LOGGER.error(
-                            "Failed to start distribution lifecycle tracker; lifecycle events will NOT be processed",
-                            e);
-                    throw e;
                 }
             }
         } catch (InterruptedException e) {
