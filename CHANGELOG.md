@@ -9,6 +9,7 @@
   Lifecycle feature is enabled
 - Build improvements:
     - Smart Caches Core upgraded to 1.7.0
+    - Pinned some dependencies that arrive transitively to prevent dependency version mismatches/conflicts
     - Fixed Maven configuration issue that was causing not all tests to run in some build environments
 
 ## 1.1.12
