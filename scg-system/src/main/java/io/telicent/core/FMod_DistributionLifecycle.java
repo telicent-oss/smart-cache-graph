@@ -302,7 +302,7 @@ public class FMod_DistributionLifecycle implements FusekiModule {
                             "Distribution lifecycle tracker enabled: consuming topic '{}' from {} (consumer group '{}', application '{}')",
                             topic, bootstrapServers, consumerGroup, application);
                     return;
-                } catch (RuntimeException e) {
+                } catch (RuntimeException | LinkageError e) {
                     closeTracker();
                     if (isCatchUpFailure(e)) {
                         this.readiness.markStarting(
@@ -337,6 +337,7 @@ public class FMod_DistributionLifecycle implements FusekiModule {
         KafkaConfiguration kafkaConfig = KafkaConfiguration.builder()
                                                            .bootstrapServers(bootstrapServers)
                                                            .clientProperties(kafkaProperties)
+                                                           .consumerGroup(consumerGroup)
                                                            .inputTopic(topic)
                                                            .outputTopic(topic)
                                                            .dlqTopic(dlqTopic)
@@ -348,9 +349,11 @@ public class FMod_DistributionLifecycle implements FusekiModule {
                                                                                SmartCacheGraph.VERSION, this.stateStore,
                                                                                graphDeletion);
 
-        DistributionLifecycleTrackerRegistry.reset();
         this.tracker = DistributionLifecycleConfiguration.createTracker(kafkaConfig, application, this.stateStore,
                                                                         listenerThreads(), List.of(listener));
+        // NB - Only replace the registered tracker once ours has been successfully created, a failed (or retried)
+        //      startup attempt must not close and clear whatever tracker is currently registered
+        DistributionLifecycleTrackerRegistry.reset();
         DistributionLifecycleTrackerRegistry.setInstance(this.tracker);
     }
 

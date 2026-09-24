@@ -129,9 +129,12 @@ class DockerTestDistributionLifecycleMalformedEvent {
             Awaitility.await("Graph lifecycle tracker to process valid records")
                       .atMost(Duration.ofSeconds(15))
                       .untilAsserted(() -> {
-                          assertTrue(this.module.isRunning());
-                          assertEquals(DistributionLifecycleReadiness.State.READY,
-                                       DistributionLifecycleReadiness.getInstance().snapshot().state());
+                          DistributionLifecycleReadiness.Snapshot snapshot =
+                                  DistributionLifecycleReadiness.getInstance().snapshot();
+                          assertTrue(this.module.isRunning(),
+                                     "Lifecycle tracker not running, readiness is " + snapshot);
+                          assertEquals(DistributionLifecycleReadiness.State.READY, snapshot.state(),
+                                       "Lifecycle tracker not ready, readiness is " + snapshot);
                       });
 
             EventSource<UUID, LazyEnvelope> dlq = createSource(DLQ_TOPIC);
