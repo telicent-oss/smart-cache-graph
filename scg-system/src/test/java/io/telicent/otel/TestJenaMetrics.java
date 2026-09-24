@@ -42,6 +42,7 @@ import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.context.propagation.ContextPropagators;
 import io.opentelemetry.exporter.logging.LoggingMetricExporter;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
+import io.opentelemetry.sdk.common.CompletableResultCode;
 import io.opentelemetry.sdk.metrics.Aggregation;
 import io.opentelemetry.sdk.metrics.SdkMeterProvider;
 import io.opentelemetry.sdk.metrics.export.MetricExporter;
@@ -131,6 +132,9 @@ class TestJenaMetrics {
     private static void mockOpenTelemetry_01() {
         MetricExporter exporter = mock(MetricExporter.class);
         when(exporter.getDefaultAggregation(any())).thenReturn(Aggregation.defaultAggregation());
+        when(exporter.export(any())).thenReturn(CompletableResultCode.ofSuccess());
+        when(exporter.flush()).thenReturn(CompletableResultCode.ofSuccess());
+        when(exporter.shutdown()).thenReturn(CompletableResultCode.ofSuccess());
         SdkMeterProvider meterProvider = SdkMeterProvider.builder()
                                                          .registerMetricReader(PeriodicMetricReader.builder(exporter)
                                                                                                    .setInterval(

@@ -234,6 +234,12 @@
             <artifactId>rdf-abac-fuseki</artifactId>
             <version>${dependency.rdf-abac}</version>
             <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.logging.log4j</groupId>
+                    <artifactId>log4j-slf4j2-impl</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>uk.org.webcompere</groupId>

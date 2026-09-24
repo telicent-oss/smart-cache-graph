@@ -4,3 +4,6 @@ deletion-worker:
   topic: RDF-test
   auth:
     userinfo-url: http://localhost:9999/userinfo
+spring:
+  main:
+    banner-mode: "off"

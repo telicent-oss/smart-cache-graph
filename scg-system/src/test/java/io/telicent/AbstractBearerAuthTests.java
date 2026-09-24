@@ -91,7 +91,7 @@ public abstract class AbstractBearerAuthTests {
         assertInstanceOf(QueryExceptionHTTP.class, actual);
         QueryExceptionHTTP q = (QueryExceptionHTTP) actual;
         assertEquals(expectedStatus, q.getStatusCode());
-        return q.getResponse();
+        return q.getResponseBody();
     }
 
     @Test
