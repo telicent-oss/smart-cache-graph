@@ -316,6 +316,15 @@ public class FMod_DistributionLifecycle implements FusekiModule {
                                 e);
                         return;
                     }
+                } catch (Error e) {
+                    // Errors, e.g. NoClassDefFoundError from a mismatched classpath, would otherwise vanish into the
+                    // starter's Future, leaving readiness stuck in STARTING with nothing logged
+                    closeTracker();
+                    this.readiness.markFailed("Distribution lifecycle tracker is unavailable: " + rootMessage(e));
+                    LOGGER.error(
+                            "Failed to start distribution lifecycle tracker; lifecycle events will NOT be processed",
+                            e);
+                    throw e;
                 }
             }
         } catch (InterruptedException e) {
@@ -337,6 +346,7 @@ public class FMod_DistributionLifecycle implements FusekiModule {
         KafkaConfiguration kafkaConfig = KafkaConfiguration.builder()
                                                            .bootstrapServers(bootstrapServers)
                                                            .clientProperties(kafkaProperties)
+                                                           .consumerGroup(consumerGroup)
                                                            .inputTopic(topic)
                                                            .outputTopic(topic)
                                                            .dlqTopic(dlqTopic)
@@ -348,9 +358,11 @@ public class FMod_DistributionLifecycle implements FusekiModule {
                                                                                SmartCacheGraph.VERSION, this.stateStore,
                                                                                graphDeletion);
 
-        DistributionLifecycleTrackerRegistry.reset();
         this.tracker = DistributionLifecycleConfiguration.createTracker(kafkaConfig, application, this.stateStore,
                                                                         listenerThreads(), List.of(listener));
+        // NB - Only replace the registered tracker once ours has been successfully created, a failed (or retried)
+        //      startup attempt must not close and clear whatever tracker is currently registered
+        DistributionLifecycleTrackerRegistry.reset();
         DistributionLifecycleTrackerRegistry.setInstance(this.tracker);
     }
 

@@ -752,6 +752,31 @@
         <artifactId>distribution-lifecycle</artifactId>
         <version>${dependency.smart-caches-core}</version>
       </dependency>
+      <dependency>
+        <groupId>io.telicent.smart-caches</groupId>
+        <artifactId>event-sources-core</artifactId>
+        <version>${dependency.smart-caches-core}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.telicent.smart-caches</groupId>
+        <artifactId>event-source-kafka</artifactId>
+        <version>${dependency.smart-caches-core}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.telicent.smart-caches</groupId>
+        <artifactId>event-source-file</artifactId>
+        <version>${dependency.smart-caches-core}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.telicent.smart-caches</groupId>
+        <artifactId>projectors-core</artifactId>
+        <version>${dependency.smart-caches-core}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.telicent.smart-caches</groupId>
+        <artifactId>projector-driver</artifactId>
+        <version>${dependency.smart-caches-core}</version>
+      </dependency>
 
       <!-- GraphQL -->
       <dependency>
