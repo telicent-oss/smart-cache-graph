@@ -77,9 +77,9 @@ class DeletionJobProducerTest {
 
     @Test
     void interruptedSendPreservesInterruptStatus() throws Exception {
-        Producer<Bytes, Bytes> kafkaProducer = mock(Producer.class);
-        Future<RecordMetadata> sendResult = mock(Future.class);
-        when(kafkaProducer.send(any(ProducerRecord.class))).thenReturn(sendResult);
+        Producer<Bytes, Bytes> kafkaProducer = mock();
+        Future<RecordMetadata> sendResult = mock();
+        when(kafkaProducer.send(any())).thenReturn(sendResult);
         when(sendResult.get()).thenThrow(new InterruptedException("interrupted"));
 
         try (DeletionJobProducer producer = new DeletionJobProducer(

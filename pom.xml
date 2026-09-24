@@ -563,6 +563,11 @@
 
     <!-- External dependencies -->
     <dependency.awaitility>4.3.0</dependency.awaitility>
+    <dependency.caffeine>3.3.0</dependency.caffeine>
+    <dependency.commons-codec>1.22.0</dependency.commons-codec>
+    <dependency.commons-compress>1.28.0</dependency.commons-compress>
+    <dependency.gson>2.14.0</dependency.gson>
+    <dependency.jackson-patch>2.22.3</dependency.jackson-patch>
     <dependency.jackson>2.22.2</dependency.jackson>
     <dependency.bouncycastle>1.86</dependency.bouncycastle>
     <dependency.kafka>3.9.2</dependency.kafka>
@@ -751,6 +756,49 @@
         <groupId>io.telicent.smart-caches</groupId>
         <artifactId>distribution-lifecycle</artifactId>
         <version>${dependency.smart-caches-core}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+
+      <dependency>
+        <groupId>io.telicent.jena</groupId>
+        <artifactId>rdf-abac-fuseki</artifactId>
+        <version>${dependency.rdf-abac}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.github.ben-manes.caffeine</groupId>
+        <artifactId>caffeine</artifactId>
+        <version>${dependency.caffeine}</version>
+      </dependency>
+      <dependency>
+        <groupId>commons-codec</groupId>
+        <artifactId>commons-codec</artifactId>
+        <version>${dependency.commons-codec}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.commons</groupId>
+        <artifactId>commons-compress</artifactId>
+        <version>${dependency.commons-compress}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.google.code.gson</groupId>
+        <artifactId>gson</artifactId>
+        <version>${dependency.gson}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.fasterxml.jackson.datatype</groupId>
+        <artifactId>jackson-datatype-jsr310</artifactId>
+        <version>${dependency.jackson-patch}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.fasterxml.jackson.core</groupId>
+        <artifactId>jackson-core</artifactId>
+        <version>${dependency.jackson-patch}</version>
       </dependency>
       <dependency>
         <groupId>io.telicent.smart-caches</groupId>

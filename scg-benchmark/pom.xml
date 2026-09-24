@@ -130,6 +130,14 @@
                                         <exclude>**/module-info.class</exclude>
                                     </excludes>
                                 </filter>
+                                <filter>
+                                    <artifact>tools.jackson.core:jackson-core</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/FastDoubleParser-LICENSE</exclude>
+                                        <exclude>META-INF/FastDoubleParser-ThirdParty-LICENSE</exclude>
+                                        <exclude>META-INF/Schubfach-LICENSE</exclude>
+                                    </excludes>
+                                </filter>
                             </filters>
                             <artifactSet>
                                 <excludes>
