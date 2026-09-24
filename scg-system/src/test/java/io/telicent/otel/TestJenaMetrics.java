@@ -29,9 +29,12 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
 
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.common.AttributeKey;
@@ -61,6 +64,7 @@ import org.apache.jena.sparql.core.DatasetGraphFactory;
 import org.apache.jena.sys.JenaSystem;
 import org.apache.jena.tdb2.TDB2Factory;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -73,6 +77,31 @@ class TestJenaMetrics {
         System.setProperty("otel.java.global-autoconfigure.enabled", "true");
         LibTestsSCG.setupAuthentication();
         LibTestsSCG.disableInitialCompaction();
+    }
+
+    /**
+     * Meter providers created by tests, shut down after each test.
+     * <p>
+     * A {@link PeriodicMetricReader} runs on a background thread for as long as its provider is alive. If providers are
+     * never shut down those threads keep exporting (and in the {@link LoggingMetricExporter} case writing to stderr) for
+     * the rest of the test JVM. A background thread being the first to write to the console breaks Surefire's output
+     * capture for the whole JVM ({@code NoClassDefFoundError: ... StackWalkerStrategy}), failing unrelated later tests.
+     * </p>
+     */
+    private static final List<SdkMeterProvider> METER_PROVIDERS = new CopyOnWriteArrayList<>();
+
+    private static SdkMeterProvider track(SdkMeterProvider meterProvider) {
+        METER_PROVIDERS.add(meterProvider);
+        return meterProvider;
+    }
+
+    @AfterEach
+    void shutdownMeterProviders() {
+        JenaMetrics.reset();
+        for (SdkMeterProvider meterProvider : METER_PROVIDERS) {
+            meterProvider.shutdown().join(10, TimeUnit.SECONDS);
+        }
+        METER_PROVIDERS.clear();
     }
 
     @AfterAll
@@ -142,7 +171,7 @@ class TestJenaMetrics {
                                                                                                                    5))
                                                                                                    .build())
                                                          .build();
-        OpenTelemetry otel = OpenTelemetrySdk.builder().setMeterProvider(meterProvider).build();
+        OpenTelemetry otel = OpenTelemetrySdk.builder().setMeterProvider(track(meterProvider)).build();
         JenaMetrics.set(otel);
     }
 
@@ -248,7 +277,7 @@ class TestJenaMetrics {
         SdkMeterProvider meterProvider = SdkMeterProvider.builder()
                                                          .registerMetricReader(reader)
                                                          .build();
-        OpenTelemetry otel = OpenTelemetrySdk.builder().setMeterProvider(meterProvider).build();
+        OpenTelemetry otel = OpenTelemetrySdk.builder().setMeterProvider(track(meterProvider)).build();
         JenaMetrics.set(otel);
         return reader;
     }
@@ -286,7 +315,7 @@ class TestJenaMetrics {
     private InMemoryMetricReader server_metrics_reader2(DatasetGraph dsg) throws IOException, InterruptedException {
         InMemoryMetricReader reader = InMemoryMetricReader.create();
         SdkMeterProvider meterProvider = SdkMeterProvider.builder().registerMetricReader(reader).build();
-        OpenTelemetrySdk sdk = OpenTelemetrySdk.builder().setMeterProvider(meterProvider).build();
+        OpenTelemetrySdk sdk = OpenTelemetrySdk.builder().setMeterProvider(track(meterProvider)).build();
         JenaMetrics.set(sdk);
         assertEquals(0, reader.collectAllMetrics().size());
 
@@ -327,7 +356,7 @@ class TestJenaMetrics {
     void server_metrics_exporter() throws IOException, InterruptedException {
         SdkMeterProvider meterProvider = SdkMeterProvider.builder().registerMetricReader(PeriodicMetricReader
                                                                                                  .builder(LoggingMetricExporter.create()).setInterval(Duration.ofSeconds(30)).build()).build();
-        OpenTelemetrySdk sdk = OpenTelemetrySdk.builder().setMeterProvider(meterProvider).build();
+        OpenTelemetrySdk sdk = OpenTelemetrySdk.builder().setMeterProvider(track(meterProvider)).build();
         JenaMetrics.set(sdk);
 
         FusekiServer server = FusekiServer.create()
