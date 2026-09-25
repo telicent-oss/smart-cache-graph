@@ -1,5 +1,17 @@
 # Smart Cache Graph
 
+## 1.2.0
+
+- Fixed bugs in how distribution lifecycle readiness was determined that could cause valid configuration to be treated
+  as unhealthy and result in the state never becoming ready
+- Picked up various distribution lifecycle harderning bug fixes from Smart Caches Core libraries
+- CQRS endpoint now requires (and validates) a `Distribution-Id` header on incoming HTTP requests when the Distribution
+  Lifecycle feature is enabled
+- Build improvements:
+    - Smart Caches Core upgraded to 1.7.0
+    - Pinned some dependencies that arrive transitively to prevent dependency version mismatches/conflicts
+    - Fixed Maven configuration issue that was causing not all tests to run in some build environments
+
 ## 1.1.12
 
 - Labels backup, restore and compaction now use generic storage capabilities exposed for the dataset by the Data
