@@ -2,7 +2,7 @@ package io.telicent.labels.services;
 
 import io.telicent.jena.abac.labels.*;
 import io.telicent.jena.abac.labels.hashing.HasherUtil;
-import io.telicent.labels.TripleLabels;
+import io.telicent.labels.QuadLabels;
 import io.telicent.smart.cache.security.data.labels.SecurityLabelsApplicator;
 import io.telicent.smart.cache.security.data.plugins.DataSecurityPlugin;
 import org.apache.commons.io.FileUtils;
@@ -53,7 +53,7 @@ public class TestLabelsQueryServiceRocksDB {
         when(mockDataSecurityPlugin.prepareLabelsApplicator(any(),any())).thenReturn(mockApplicator);
 
         final LabelsQueryService queryService = new LabelsQueryService(mockDataSecurityPlugin, emptyDsg, DATASET_NAME);
-        final List<TripleLabels> labels = queryService.queryOnlyLabelStore(triple);
+        final List<QuadLabels> labels = queryService.queryOnlyLabelStore(triple);
         Assertions.assertEquals(1, labels.size());
     }
 
@@ -73,7 +73,7 @@ public class TestLabelsQueryServiceRocksDB {
         final SecurityLabelsApplicator mockApplicator = mock(SecurityLabelsApplicator.class);
         when(mockDataSecurityPlugin.prepareLabelsApplicator(any(),any())).thenReturn(mockApplicator);
         final LabelsQueryService queryService = new LabelsQueryService(mockDataSecurityPlugin, emptyDsg, DATASET_NAME);
-        final List<TripleLabels> labels = queryService.queryOnlyLabelStore(triple);
+        final List<QuadLabels> labels = queryService.queryOnlyLabelStore(triple);
         Assertions.assertEquals(1, labels.size());
     }
 

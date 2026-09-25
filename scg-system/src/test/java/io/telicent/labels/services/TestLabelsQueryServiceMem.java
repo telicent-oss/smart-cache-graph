@@ -1,7 +1,7 @@
 package io.telicent.labels.services;
 
 import io.telicent.jena.abac.attributes.AttributeExpr;
-import io.telicent.labels.TripleLabels;
+import io.telicent.labels.QuadLabels;
 import io.telicent.smart.cache.security.data.labels.SecurityLabels;
 import io.telicent.smart.cache.security.data.labels.SecurityLabelsApplicator;
 import io.telicent.smart.cache.security.data.plugins.DataSecurityPlugin;
@@ -49,9 +49,9 @@ public class TestLabelsQueryServiceMem {
         when(mockDataSecurityPlugin.prepareLabelsApplicator(any(),any())).thenReturn(mockSecurityLabelsApplicator);
         final RdfAbacParser rdfAbacParser = new RdfAbacParser();
         final SecurityLabels<List<AttributeExpr>> securityLabels = rdfAbacParser.parseSecurityLabels("example".getBytes(StandardCharsets.UTF_8));
-        doReturn(securityLabels).when(mockSecurityLabelsApplicator).labelForTriple(any());
+        doReturn(securityLabels).when(mockSecurityLabelsApplicator).labelForQuad(any());
         final LabelsQueryService queryService = new LabelsQueryService(mockDataSecurityPlugin, emptyDsg, DATASET_NAME);
-        final List<TripleLabels> labels = queryService.queryOnlyLabelStore(triple);
+        final List<QuadLabels> labels = queryService.queryOnlyLabelStore(triple);
         assertEquals(1, labels.size());
         assertEquals("example", labels.getFirst().label.toDebugString());
     }
@@ -69,9 +69,9 @@ public class TestLabelsQueryServiceMem {
         when(mockDataSecurityPlugin.prepareLabelsApplicator(any(),any())).thenReturn(mockSecurityLabelsApplicator);
         final RdfAbacParser rdfAbacParser = new RdfAbacParser();
         final SecurityLabels<List<AttributeExpr>> securityLabels = rdfAbacParser.parseSecurityLabels("example".getBytes(StandardCharsets.UTF_8));
-        doReturn(securityLabels).when(mockSecurityLabelsApplicator).labelForTriple(any());
+        doReturn(securityLabels).when(mockSecurityLabelsApplicator).labelForQuad(any());
         final LabelsQueryService queryService = new LabelsQueryService(mockDataSecurityPlugin, emptyDsg, DATASET_NAME);
-        final List<TripleLabels> labels = queryService.queryOnlyLabelStore(triple);
+        final List<QuadLabels> labels = queryService.queryOnlyLabelStore(triple);
         assertEquals(1, labels.size());
         assertEquals("example", labels.getFirst().label.toDebugString());
     }

@@ -1,5 +1,7 @@
 package io.telicent.labels.services;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.telicent.core.MainSmartCacheGraph;
 import io.telicent.labels.FMod_LabelsQuery;
 import io.telicent.smart.cache.configuration.Configurator;
@@ -43,6 +45,8 @@ public class TestLabelsQuery {
 
     private static final URL DATA2_URL = TestLabelsQuery.class.getClassLoader().getResource("test-data-labelled-2.trig");
 
+    private static final URL NAMED_GRAPH_DATA_URL = TestLabelsQuery.class.getClassLoader().getResource("test-data-labelled-named-graph.trig");
+
     private static final String JSON_HEADER = "application/json";
 
     private static final String DATASET1_NAME = "securedDataset1";
@@ -59,6 +63,7 @@ public class TestLabelsQuery {
         BASE_URI = "http://localhost:" + SERVER.getHttpPort();
         uploadData(DATA1_URL, DATASET1_NAME);
         uploadData(DATA2_URL, DATASET2_NAME);
+        uploadData(NAMED_GRAPH_DATA_URL, DATASET1_NAME, "europe");
     }
 
     @Test
@@ -338,6 +343,172 @@ public class TestLabelsQuery {
     }
 
     @Test
+    public void givenNamedGraph_whenMakingLabelsQuery_thenNamedGraphLabelReturned() throws Exception {
+        final String jsonRequestBody = """
+                {
+                    "triples": [
+                    {
+                        "graph": "http://example.org/graph/europe",
+                        "subject": "http://dbpedia.org/resource/Rome",
+                        "predicate": "http://dbpedia.org/ontology/country",
+                        "object": {
+                          "value" : "http://dbpedia.org/resource/Italy"
+                        }
+                    }
+                  ]
+                }""";
+        final String expectedJsonResponse = """
+                {
+                  "results" : [ {
+                    "subject" : "http://dbpedia.org/resource/Rome",
+                    "predicate" : "http://dbpedia.org/ontology/country",
+                    "object" : "http://dbpedia.org/resource/Italy",
+                    "graph" : "http://example.org/graph/europe",
+                    "labels" : [ "europe" ]
+                  } ]
+                }""";
+        callAndAssert(jsonRequestBody, expectedJsonResponse, DATASET1_NAME);
+    }
+
+    @Test
+    public void givenQuadsKey_whenMakingLabelsQuery_thenNamedGraphLabelReturned() throws Exception {
+        final String jsonRequestBody = """
+                {
+                    "quads": [
+                    {
+                        "graph": "http://example.org/graph/europe",
+                        "subject": "http://dbpedia.org/resource/Rome",
+                        "predicate": "http://dbpedia.org/ontology/country",
+                        "object": {
+                          "value" : "http://dbpedia.org/resource/Italy"
+                        }
+                    }
+                  ]
+                }""";
+        final String expectedJsonResponse = """
+                {
+                  "results" : [ {
+                    "subject" : "http://dbpedia.org/resource/Rome",
+                    "predicate" : "http://dbpedia.org/ontology/country",
+                    "object" : "http://dbpedia.org/resource/Italy",
+                    "graph" : "http://example.org/graph/europe",
+                    "labels" : [ "europe" ]
+                  } ]
+                }""";
+        callAndAssert(jsonRequestBody, expectedJsonResponse, DATASET1_NAME);
+    }
+
+    @Test
+    public void givenQuadsKeyWithoutGraph_whenMakingLabelsQuery_thenDefaultGraphLabelReturned() throws Exception {
+        final String jsonRequestBody = """
+                {
+                    "quads": [
+                    {
+                        "subject": "http://dbpedia.org/resource/London",
+                        "predicate": "http://dbpedia.org/ontology/country",
+                        "object": {
+                          "value" : "http://dbpedia.org/resource/United_Kingdom"
+                        }
+                    }
+                  ]
+                }""";
+        final String expectedJsonResponse = """
+                {
+                  "results" : [ {
+                    "subject" : "http://dbpedia.org/resource/London",
+                    "predicate" : "http://dbpedia.org/ontology/country",
+                    "object" : "http://dbpedia.org/resource/United_Kingdom",
+                    "labels" : [ "everyone" ]
+                  } ]
+                }""";
+        callAndAssert(jsonRequestBody, expectedJsonResponse, DATASET1_NAME);
+    }
+
+    @Test
+    public void givenBothQuadsAndTriplesKeys_whenMakingLabelsQuery_thenBadRequest() throws Exception {
+        assertBadRequest("""
+                {
+                  "triples": [{"subject":"http://example.org/s","predicate":"http://example.org/p","object":{"value":"x"}}],
+                  "quads": [{"subject":"http://example.org/s","predicate":"http://example.org/p","object":{"value":"y"}}]
+                }
+                """);
+    }
+
+    @Test
+    public void givenNonArrayQuads_whenMakingLabelsQuery_thenBadRequest() throws Exception {
+        assertBadRequest("""
+                {"quads":{"subject":"http://example.org/s","predicate":"http://example.org/p","object":{"value":"x"}}}
+                """);
+    }
+
+    @Test
+    public void givenIncompleteQuads_whenMakingLabelsQuery_thenBadRequest() throws Exception {
+        for (String requestBody : List.of(
+                "{\"quads\":[null]}",
+                "{\"quads\":[{\"graph\":\"http://example.org/g\",\"subject\":\"http://example.org/s\",\"predicate\":\"http://example.org/p\"}]}")) {
+            assertBadRequest(requestBody);
+        }
+    }
+
+    @Test
+    public void givenNoGraph_whenMakingWildcardLabelsQuery_thenNamedGraphsNotSearched() throws Exception {
+        final String jsonRequestBody = """
+                {
+                    "triples": [
+                    {
+                        "subject": "http://dbpedia.org/resource/Rome",
+                        "predicate": "*",
+                        "object": {
+                          "value" : "*"
+                        }
+                    }
+                  ]
+                }""";
+        final String expectedJsonResponse = """
+                {
+                  "results" : [ ]
+                }""";
+        callAndAssert(jsonRequestBody, expectedJsonResponse, DATASET1_NAME);
+    }
+
+    @Test
+    public void givenWildcardGraph_whenMakingLabelsQuery_thenAllGraphsSearched() throws Exception {
+        final String jsonRequestBody = """
+                {
+                    "triples": [
+                    {
+                        "graph": "*",
+                        "subject": "*",
+                        "predicate": "http://dbpedia.org/ontology/country",
+                        "object": {
+                          "value" : "*"
+                        }
+                    }
+                  ]
+                }""";
+        final HttpRequest request = HttpRequest.newBuilder(new URI(BASE_URI + "/$/labels/" + DATASET1_NAME))
+                .headers("accept", JSON_HEADER, "Content-Type", JSON_HEADER)
+                .POST(HttpRequest.BodyPublishers.ofString(jsonRequestBody)).build();
+        try (HttpClient client = HttpClient.newHttpClient()) {
+            final HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            final JsonNode results = new ObjectMapper().readTree(response.body()).get("results");
+            // 3 cities in the default graph plus 2 in the named graph
+            assertEquals(5, results.size(), response.body());
+            int inNamedGraph = 0;
+            for (JsonNode result : results) {
+                if (result.has("graph")) {
+                    assertEquals("http://example.org/graph/europe", result.get("graph").asText());
+                    assertEquals("europe", result.get("labels").get(0).asText());
+                    inNamedGraph++;
+                } else {
+                    assertEquals("everyone", result.get("labels").get(0).asText());
+                }
+            }
+            assertEquals(2, inNamedGraph);
+        }
+    }
+
+    @Test
     public void test_name() {
         // given
         FMod_LabelsQuery fModLabelsQuery = new FMod_LabelsQuery();
@@ -356,8 +527,12 @@ public class TestLabelsQuery {
     }
 
     private static void uploadData(URL dataUrl, String datasetName) throws Exception {
+        uploadData(dataUrl, datasetName, "!");
+    }
+
+    private static void uploadData(URL dataUrl, String datasetName, String securityLabel) throws Exception {
         final HttpRequest request = HttpRequest.newBuilder(new URI(BASE_URI + "/" + datasetName + "/upload"))
-                .headers(TelicentHeaders.SECURITY_LABEL, "!", "Content-Type", "application/trig")
+                .headers(TelicentHeaders.SECURITY_LABEL, securityLabel, "Content-Type", "application/trig")
                 .POST(HttpRequest.BodyPublishers.ofFile(Paths.get(dataUrl.toURI()))).build();
         try (final HttpClient client = HttpClient.newHttpClient()) {
             final HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
