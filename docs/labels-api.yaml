@@ -7,6 +7,33 @@ servers:
   - url: http://localhost:3030/
     description: Base path for query operations.
 components:
+  schemas:
+    QuadQuery:
+      type: object
+      properties:
+        graph:
+          type: string
+          description: |
+            Optional graph IRI to look in, or `*` for all graphs. Defaults to the default graph if omitted.
+        subject:
+          type: string
+        predicate:
+          type: string
+        object:
+          type: object
+          properties:
+            dataType:
+              type: string
+            value:
+              type: string
+            language:
+              type: string
+          required:
+            - value
+      required:
+        - subject
+        - predicate
+        - object
   securitySchemes:
     BearerAuth:
       description: Generic Bearer Authentication is supported using JWTs
@@ -29,7 +56,14 @@ paths:
   /$/labels/{datasetName}:
     post:
       summary: Find security labels for a given triple
-      description: Retrieves a list of the security labels for a given triple.
+      description: |
+        Retrieves a list of the security labels for a given triple.
+
+        The triples to look up may be supplied under either a `quads` or a `triples` key, but not both.
+
+        Each triple may optionally specify the `graph` to look in. If omitted the default graph is used. A graph of `*`
+        searches the default graph and all named graphs. Any of `graph`, `subject`, `predicate` or `object.value` may be
+        `*`, in which case matching triples are found in the dataset and the labels for each are returned.
       parameters:
         - name: datasetName
           in: path
@@ -44,31 +78,23 @@ paths:
           application/json:
             schema:
               type: object
+              description: |
+                Exactly one of `quads` or `triples` must be provided. The two keys are interchangeable and accept the
+                same entries; supplying both is rejected as a bad request.
               properties:
+                quads:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/QuadQuery'
                 triples:
                   type: array
                   items:
-                    type: object
-                    properties:
-                      subject:
-                        type: string
-                      predicate:
-                        type: string
-                      object:
-                        type: object
-                        properties:
-                          dataType:
-                            type: string
-                          value:
-                            type: string
-                          language:
-                            type: string
-                        required:
-                          - value
-                    required:
-                      - subject
-                      - predicate
-                      - object
+                    $ref: '#/components/schemas/QuadQuery'
+              oneOf:
+                - required:
+                    - quads
+                - required:
+                    - triples
             examples:
               London_Population:
                 value:
@@ -93,6 +119,30 @@ paths:
                       object:
                         value: London
                         language: en
+              London_Country_Named_Graph:
+                value:
+                  triples:
+                    - graph: http://example.org/graph/cities
+                      subject: http://dbpedia.org/resource/London
+                      predicate: http://dbpedia.org/ontology/country
+                      object:
+                        value: http://dbpedia.org/resource/United_Kingdom
+              London_Country_Named_Graph_Quads:
+                value:
+                  quads:
+                    - graph: http://example.org/graph/cities
+                      subject: http://dbpedia.org/resource/London
+                      predicate: http://dbpedia.org/ontology/country
+                      object:
+                        value: http://dbpedia.org/resource/United_Kingdom
+              London_All_Graphs:
+                value:
+                  triples:
+                    - graph: "*"
+                      subject: http://dbpedia.org/resource/London
+                      predicate: "*"
+                      object:
+                        value: "*"
       responses:
         '200':
           description: Request processed successfully.
@@ -112,6 +162,9 @@ paths:
                           type: string
                         object:
                           type: string
+                        graph:
+                          type: string
+                          description: Graph the triple is in. Omitted for the default graph.
                         labels:
                           type: array
                           description: List of the labels.

@@ -1,0 +1,8 @@
+PREFIX dbr: <http://dbpedia.org/resource/>
+PREFIX dbo: <http://dbpedia.org/ontology/>
+
+## Data held only in a named graph, labelled via the Security-Label header on upload
+GRAPH <http://example.org/graph/europe> {
+    dbr:Rome dbo:country dbr:Italy .
+    dbr:Madrid dbo:country dbr:Spain .
+}
