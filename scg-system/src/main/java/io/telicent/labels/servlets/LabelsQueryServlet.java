@@ -3,10 +3,10 @@ package io.telicent.labels.servlets;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.telicent.labels.TripleLabels;
+import io.telicent.labels.QuadLabels;
 import io.telicent.labels.services.LabelsQueryService;
-import io.telicent.model.JsonTriple;
-import io.telicent.model.JsonTriples;
+import io.telicent.model.JsonQuad;
+import io.telicent.model.JsonQuads;
 import io.telicent.utils.SmartCacheGraphException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -15,6 +15,7 @@ import org.apache.jena.graph.Node;
 import org.apache.jena.graph.NodeFactory;
 import org.apache.jena.graph.Triple;
 import org.apache.jena.kafka.FusekiKafka;
+import org.apache.jena.sparql.core.Quad;
 import org.slf4j.Logger;
 
 import java.io.IOException;
@@ -33,6 +34,8 @@ public class LabelsQueryServlet extends HttpServlet {
     private static final String HTTP = "http://";
     private static final String HTTPS = "https://";
     private static final String WILDCARD = "*";
+    private static final String QUADS = "quads";
+    private static final String TRIPLES = "triples";
 
     private final LabelsQueryService queryService;
 
@@ -43,31 +46,35 @@ public class LabelsQueryServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) {
         try {
-            List<Triple> tripleQueryList = obtainTripleQueries(request);
+            List<Quad> quadQueryList = obtainQuadQueries(request);
             ObjectNode resultNode = OBJECT_MAPPER.createObjectNode();
-            resultNode.set("results", processQueryList(tripleQueryList));
+            resultNode.set("results", processQueryList(quadQueryList));
             processResponse(response, resultNode);
         } catch (SmartCacheGraphException ex) {
             handleError(response, OBJECT_MAPPER.createObjectNode(), HttpServletResponse.SC_BAD_REQUEST, "Unable to interpret JSON request");
         }
     }
 
-    ArrayNode processQueryList(List<Triple> tripleQueryList) {
+    ArrayNode processQueryList(List<Quad> quadQueryList) {
         ArrayNode resultNodeList = OBJECT_MAPPER.createArrayNode();
-        tripleQueryList.forEach(triple -> {
-            List<TripleLabels> results = processTriple(triple);
+        quadQueryList.forEach(quad -> {
+            List<QuadLabels> results = processQuad(quad);
             results.forEach(r -> resultNodeList.add(r.toJSONNode()));
         });
 
         return resultNodeList;
     }
 
-    List<TripleLabels> processTriple(Triple triple) {
-        if (isWildcardTriple(triple)) {
-            return queryService.queryDSGAndLabelStore(triple);
+    List<QuadLabels> processQuad(Quad quad) {
+        if (isWildcardQuad(quad)) {
+            return queryService.queryDSGAndLabelStore(quad);
         } else {
-            return queryService.queryOnlyLabelStore(triple);
+            return queryService.queryOnlyLabelStore(quad);
         }
+    }
+
+    public static boolean isWildcardQuad(Quad quad) {
+        return Node.ANY.equals(quad.getGraph()) || isWildcardTriple(quad.asTriple());
     }
 
     public static boolean isWildcardTriple(Triple triple) {
@@ -78,17 +85,27 @@ public class LabelsQueryServlet extends HttpServlet {
         } else return Node.ANY.equals(triple.getObject());
     }
 
-    private List<Triple> obtainTripleQueries(HttpServletRequest request) throws SmartCacheGraphException {
-        List<Triple> tripleList = new ArrayList<>();
+    private List<Quad> obtainQuadQueries(HttpServletRequest request) throws SmartCacheGraphException {
+        List<Quad> quadList = new ArrayList<>();
         try (final InputStream inputStream = request.getInputStream()) {
             JsonNode rootNode = OBJECT_MAPPER.readTree(inputStream);
-            if (rootNode != null && rootNode.has("triples") && rootNode.get("triples").isArray()) {
-                JsonTriples queryRequest = OBJECT_MAPPER.convertValue(rootNode, JsonTriples.class);
-                for (JsonTriple query : queryRequest.triples) {
-                    tripleList.add(getTriple(query));
+            final boolean hasQuads = rootNode != null && rootNode.has(QUADS);
+            final boolean hasTriples = rootNode != null && rootNode.has(TRIPLES);
+            if (hasQuads && hasTriples) {
+                final String message = "Invalid JSON format: Provide either a 'quads' or a 'triples' array, not both.";
+                LOG.warn(message);
+                throw new SmartCacheGraphException(message);
+            }
+            // root node can be either 'triples' or 'quads'
+            final JsonNode triples = hasTriples ? rootNode.get(TRIPLES) : null;
+            final JsonNode queries = hasQuads ? rootNode.get(QUADS) : triples ;
+            if (queries != null && queries.isArray()) {
+                JsonQuads queryRequest = OBJECT_MAPPER.convertValue(rootNode, JsonQuads.class);
+                for (JsonQuad query : queryRequest.quads) {
+                    quadList.add(getQuad(query));
                 }
             } else {
-                final String message = "Invalid JSON format: Missing 'triples' array.";
+                final String message = "Invalid JSON format: Missing 'quads' or 'triples' array.";
                 LOG.warn(message);
                 throw new SmartCacheGraphException(message);
             }
@@ -96,10 +113,10 @@ public class LabelsQueryServlet extends HttpServlet {
             LOG.warn("Failed to parse labels query request", exception);
             throw new SmartCacheGraphException(exception.getMessage());
         }
-        return tripleList;
+        return quadList;
     }
 
-    private Triple getTriple(JsonTriple tripleQuery) throws SmartCacheGraphException {
+    private Quad getQuad(JsonQuad tripleQuery) throws SmartCacheGraphException {
         if (tripleQuery == null || tripleQuery.subject == null || tripleQuery.predicate == null
                 || tripleQuery.object == null || tripleQuery.object.value == null) {
             throw new SmartCacheGraphException("Invalid JSON format: Incomplete triple.");
@@ -107,7 +124,14 @@ public class LabelsQueryServlet extends HttpServlet {
         final Node s = getWildcardOrURI(tripleQuery.subject);
         final Node p = getWildcardOrURI(tripleQuery.predicate);
         final Node o = getObjectNode(tripleQuery.object.value);
-        return Triple.create(s, p, o);
+        return Quad.create(getGraphNode(tripleQuery.graph), Triple.create(s, p, o));
+    }
+
+    private Node getGraphNode(String graph) {
+        if (graph == null) {
+            return Quad.defaultGraphIRI;
+        }
+        return getWildcardOrURI(graph);
     }
 
     private Node getWildcardOrURI(String object) {

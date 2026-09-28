@@ -224,7 +224,8 @@ curl --location 'http://localhost:3030/securedDataset1/upload' --header 'Securit
 curl --location 'http://localhost:3030/securedDataset2/upload' --header 'Security-Label: !' --header 'Content-Type: application/trig' --data-binary '@scg-system/src/test/files/sample-data-labelled-2.trig'
 ```
 
-You can then query these endpoints for label data, e.g. for `securedDataset1`:
+You can then query these endpoints for label data. The triples to look up may be supplied under either a `quads` or a
+`triples` key (but not both), each optionally with a `graph`. For example, for `securedDataset1`:
 
 ```commandline
 curl --location 'http://localhost:3030/$/labels/securedDataset1' \

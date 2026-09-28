@@ -3,7 +3,7 @@ package io.telicent.core;
 import io.telicent.jena.abac.labels.Label;
 import io.telicent.jena.abac.labels.Labels;
 import io.telicent.jena.abac.labels.LabelsStore;
-import io.telicent.labels.TripleLabels;
+import io.telicent.labels.QuadLabels;
 import io.telicent.labels.services.LabelsQueryService;
 import io.telicent.smart.cache.security.data.plugins.DataSecurityPlugin;
 import io.telicent.smart.cache.security.data.plugins.DataSecurityPluginLoader;
@@ -57,13 +57,13 @@ public class LabelsQueryServiceBenchmark {
 
     @Benchmark
     public void benchmarkQueryOnlyLabelStore(Blackhole bh) {
-        List<TripleLabels> results = labelsQueryService.queryOnlyLabelStore(sampleTriple);
+        List<QuadLabels> results = labelsQueryService.queryOnlyLabelStore(sampleTriple);
         bh.consume(results.size());
     }
 
     @Benchmark
     public void benchmarkQueryDSGAndLabelStore(Blackhole bh) {
-        List<TripleLabels> results = labelsQueryService.queryDSGAndLabelStore(Triple.ANY);
+        List<QuadLabels> results = labelsQueryService.queryDSGAndLabelStore(Triple.ANY);
         bh.consume(results.size());
     }
 }

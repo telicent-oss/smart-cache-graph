@@ -2,7 +2,7 @@ package io.telicent.labels.services;
 
 import io.telicent.jena.abac.labels.Label;
 import io.telicent.jena.abac.labels.LabelsStore;
-import io.telicent.labels.TripleLabels;
+import io.telicent.labels.QuadLabels;
 import io.telicent.smart.cache.security.data.labels.SecurityLabelsApplicator;
 import io.telicent.smart.cache.security.data.plugins.DataSecurityPlugin;
 import org.apache.jena.graph.Node;
@@ -54,7 +54,7 @@ class TestLabelsQueryService {
     @Test
     public void testLabelQuery_queryOnlyLabelStore() {
         // given, when
-        List<TripleLabels> labels = queryService.queryOnlyLabelStore(TRIPLE);
+        final List<QuadLabels> labels = queryService.queryOnlyLabelStore(TRIPLE);
         // then
         Assertions.assertEquals(1, labels.size());
     }
@@ -66,7 +66,7 @@ class TestLabelsQueryService {
         when(mockDataSecurityPlugin.prepareLabelsApplicator(any(),any())).thenReturn(mockApplicator);
         emptyDsg.getDefaultGraph().add(TRIPLE);
         // when
-        final List<TripleLabels> labels = queryService.queryDSGAndLabelStore(TRIPLE);
+        final List<QuadLabels> labels = queryService.queryDSGAndLabelStore(TRIPLE);
         // then
         Assertions.assertEquals(1, labels.size());
     }
@@ -74,7 +74,7 @@ class TestLabelsQueryService {
     @Test
     public void testLabelQuery_queryDSGAndLabelStore_empty() {
         // given, when
-        List<TripleLabels> labels = queryService.queryDSGAndLabelStore(TRIPLE);
+        final List<QuadLabels> labels = queryService.queryDSGAndLabelStore(TRIPLE);
         // then
         Assertions.assertEquals(0, labels.size());
     }
@@ -90,7 +90,7 @@ class TestLabelsQueryService {
                 Node.ANY
         );
         // when
-        List<TripleLabels> labels = queryService.queryDSGAndLabelStore(queryTriple);
+        final List<QuadLabels> labels = queryService.queryDSGAndLabelStore(queryTriple);
         // then
         Assertions.assertEquals(1, labels.size());
     }
@@ -106,7 +106,7 @@ class TestLabelsQueryService {
                 NodeFactory.createURI("http://example.org/object")
         );
         // when
-        List<TripleLabels> labels = queryService.queryDSGAndLabelStore(queryTriple);
+        final List<QuadLabels> labels = queryService.queryDSGAndLabelStore(queryTriple);
         // then
         Assertions.assertEquals(1, labels.size());
     }
@@ -116,13 +116,13 @@ class TestLabelsQueryService {
         // given
         emptyDsg.getDefaultGraph().add(TRIPLE);
         emptyDsg.getDefaultGraph().add(TRIPLE_2);
-        Triple queryTriple = Triple.create(
+        final Triple queryTriple = Triple.create(
                 Node.ANY,
                 NodeFactory.createURI("http://example.org/predicate"),
                 NodeFactory.createURI("http://example.org/object")
         );
         // when
-        List<TripleLabels> labels = queryService.queryDSGAndLabelStore(queryTriple);
+        final List<QuadLabels> labels = queryService.queryDSGAndLabelStore(queryTriple);
         // then
         Assertions.assertEquals(1, labels.size());
     }
@@ -138,7 +138,7 @@ class TestLabelsQueryService {
                 Node.ANY
                 );
         // when
-        List<TripleLabels> labels = queryService.queryDSGAndLabelStore(queryTriple);
+        final List<QuadLabels> labels = queryService.queryDSGAndLabelStore(queryTriple);
         // then
         Assertions.assertEquals(1, labels.size());
     }
