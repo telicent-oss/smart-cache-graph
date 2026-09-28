@@ -1,5 +1,16 @@
 # Smart Cache Graph
 
+## 1.2.1
+
+- Labels API improvements:
+    - The `/$/labels/{datasetName}` endpoint now supports named graphs. Each lookup can take an optional `graph` (or
+      `*` for all graphs); if it is omitted, the default graph is used
+    - Lookups can be sent under either a `quads` or a `triples` key, but not both
+    - Results for named graphs include a `graph` field
+- Build improvements:
+    - Telicent Java 21 Base Image upgraded to 1.2.69
+    - Reduced warnings and noise in the build and test logs
+
 ## 1.2.0
 
 - Fixed bugs in how distribution lifecycle readiness was determined that could cause valid configuration to be treated
