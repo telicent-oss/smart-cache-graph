@@ -19,6 +19,7 @@ package io.telicent.core;
 import io.telicent.smart.cache.configuration.Configurator;
 import io.telicent.smart.cache.distribution.lifecycle.config.DistributionLifecycleConfiguration;
 import io.telicent.smart.cache.distribution.lifecycle.events.listeners.DistributionLifecycleListener;
+import io.telicent.smart.cache.distribution.lifecycle.events.listeners.LoggingListener;
 import io.telicent.smart.cache.distribution.lifecycle.store.DistributionLifecycleStateStore;
 import io.telicent.smart.cache.distribution.lifecycle.store.apps.AppDistributionLifecycleStoreFile;
 import io.telicent.smart.cache.distribution.lifecycle.tracker.DistributionLifecycleTracker;
@@ -343,6 +344,11 @@ public class FMod_DistributionLifecycle implements FusekiModule {
                                                            .dlqTopic(dlqTopic)
                                                            .build();
 
+        // This is our primary listener that actually does the hard work of deleting data therefore this is the listener
+        // we wrap in the AcknowledgingListener to report our application state in processing events
+        // Note that we also register a plain LoggingListener which logs all valid lifecycle actions
+        // received/retriggered so there's some visibility in the logs of what's happening without an operator needing
+        // to manually inspect the state file
         DistributionLifecycleListener graphDeletion = new DistributionGraphDeletionListener(() -> getDatasets(server));
         DistributionLifecycleListener listener =
                 DistributionLifecycleConfiguration.createAcknowledgingListener(kafkaConfig, application,
@@ -350,7 +356,8 @@ public class FMod_DistributionLifecycle implements FusekiModule {
                                                                                graphDeletion);
 
         this.tracker = DistributionLifecycleConfiguration.createTracker(kafkaConfig, application, this.stateStore,
-                                                                        listenerThreads(), List.of(listener));
+                                                                        listenerThreads(),
+                                                                        List.of(listener, new LoggingListener()));
         // NB - Only replace the registered tracker once ours has been successfully created, a failed (or retried)
         //      startup attempt must not close and clear whatever tracker is currently registered
         DistributionLifecycleTrackerRegistry.reset();
