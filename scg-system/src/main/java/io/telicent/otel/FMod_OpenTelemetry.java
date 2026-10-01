@@ -17,6 +17,7 @@
 package io.telicent.otel;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -25,6 +26,8 @@ import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.semconv.DbAttributes;
 import io.telicent.core.FMod_InitialCompaction;
+import io.telicent.jena.abac.core.DatasetGraphABAC;
+import io.telicent.jena.abac.labels.LabelsStore;
 import org.apache.commons.io.FileUtils;
 import org.apache.jena.Jena;
 import org.apache.jena.atlas.lib.Lib;
@@ -35,6 +38,8 @@ import org.apache.jena.fuseki.main.FusekiServer;
 import org.apache.jena.fuseki.main.sys.FusekiModule;
 import org.apache.jena.fuseki.server.*;
 import org.apache.jena.rdf.model.Model;
+import org.apache.jena.sparql.core.DatasetGraph;
+import org.apache.jena.sparql.core.DatasetGraphWrapper;
 import org.apache.jena.tdb2.store.DatasetGraphSwitchable;
 
 @SuppressWarnings("deprecation")
@@ -50,6 +55,9 @@ public class FMod_OpenTelemetry implements FusekiModule {
      * Metric that records TDB2 disk space usage
      */
     public static final String TDB_DISK_USAGE = METRIC_PREFIX + "tdb2.disk.usage";
+    public static final String LABEL_ADD_ATTEMPTS = METRIC_PREFIX + "labels.add.attempts";
+    public static final String LABEL_CACHE_NO_OPS = METRIC_PREFIX + "labels.cache.noops";
+    public static final String LABEL_WRITES = METRIC_PREFIX + "labels.writes";
 
     public static String ENV_OPENTELEMETRY = "FUSEKI_FMOD_OTEL";
     public static String SYS_OPENTELEMETRY = "fuseki:fmod:OpenTelemetry";
@@ -123,6 +131,11 @@ public class FMod_OpenTelemetry implements FusekiModule {
                                                   diskUsageAttributes));
         }
 
+        DatasetGraphABAC datasetABAC = getDatasetGraphABAC(dataService.getDataset());
+        if (datasetABAC != null) {
+            buildLabelStoreMetrics(meter, dap.getName(), datasetABAC.labelsStore());
+        }
+
         // Add gauges for each Fuseki counter
         for (Operation operation : dataService.getOperations()) {
             List<Endpoint> endpoints = dataService.getEndpoints(operation);
@@ -153,6 +166,54 @@ public class FMod_OpenTelemetry implements FusekiModule {
                 }
             }
         }
+    }
+
+    static void buildLabelStoreMetrics(Meter meter, String datasetName, LabelsStore labelsStore) {
+        Map<String, Long> availableMetrics = labelsStore.getMetrics();
+        if (availableMetrics.isEmpty()) {
+            return;
+        }
+
+        Attributes attributes = Attributes.builder()
+                                          .put(DB_SYSTEM, "RDF ABAC label store")
+                                          .put(DbAttributes.DB_SYSTEM_NAME, "RDF ABAC label store")
+                                          .put(DB_NAME, datasetName)
+                                          .build();
+        buildLabelStoreMetric(meter, LABEL_ADD_ATTEMPTS, "Label assignments attempted",
+                              LabelsStore.METRIC_LABEL_ADD_ATTEMPTS, labelsStore, attributes);
+        buildLabelStoreMetric(meter, LABEL_CACHE_NO_OPS, "Label writes avoided by duplicate detection",
+                              LabelsStore.METRIC_LABEL_CACHE_NO_OPS, labelsStore, attributes);
+        buildLabelStoreMetric(meter, LABEL_WRITES, "Label assignments written to storage",
+                              LabelsStore.METRIC_LABEL_WRITES, labelsStore, attributes);
+    }
+
+    private static void buildLabelStoreMetric(Meter meter, String metricName, String description, String propertyName,
+                                              LabelsStore labelsStore, Attributes attributes) {
+        if (!labelsStore.getMetrics().containsKey(propertyName)) {
+            return;
+        }
+        meter.counterBuilder(metricName)
+             .setDescription(description)
+             .setUnit("{assignment}")
+             .buildWithCallback(measurement -> {
+                 Long value = labelsStore.getMetrics().get(propertyName);
+                 if (value != null) {
+                     measurement.record(value, attributes);
+                 }
+             });
+    }
+
+    static DatasetGraphABAC getDatasetGraphABAC(DatasetGraph dataset) {
+        while (dataset != null) {
+            if (dataset instanceof DatasetGraphABAC datasetABAC) {
+                return datasetABAC;
+            }
+            if (!(dataset instanceof DatasetGraphWrapper wrapper)) {
+                return null;
+            }
+            dataset = wrapper.getWrapped();
+        }
+        return null;
     }
 
     /**
