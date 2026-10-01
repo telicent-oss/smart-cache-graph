@@ -233,7 +233,6 @@
             <groupId>io.telicent.jena</groupId>
             <artifactId>rdf-abac-fuseki</artifactId>
             <version>${dependency.rdf-abac}</version>
-            <scope>test</scope>
             <exclusions>
                 <exclusion>
                     <groupId>org.apache.logging.log4j</groupId>
