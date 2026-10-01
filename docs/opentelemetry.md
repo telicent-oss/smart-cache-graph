@@ -156,6 +156,7 @@ It is intended to make the the following more visible:
 - the native Fuseki `/$/metrics` endpoint
 - endpoint-level differences between `/ds` and `/ds/sparql`
 - good versus bad request traffic
+- RDF ABAC label assignment attempts, duplicate no-ops, and persistent writes
 
 ### Start The Local Stack
 
@@ -201,6 +202,9 @@ A helper script is included for the common queries:
 ./telemetry/query-prometheus.sh targets
 ./telemetry/query-prometheus.sh request_totals
 ./telemetry/query-prometheus.sh request_totals_by_endpoint
+./telemetry/query-prometheus.sh label_store_totals
+./telemetry/query-prometheus.sh label_store_rates
+./telemetry/query-prometheus.sh label_store_duplicate_avoidance
 ./telemetry/query-prometheus.sh native_top
 ```
 
@@ -211,6 +215,9 @@ The available query names are:
 - `native_metric_names`
 - `request_totals`
 - `request_totals_by_endpoint`
+- `label_store_totals`
+- `label_store_rates`
+- `label_store_duplicate_avoidance`
 - `native_top`
 
 Representative PromQL expressions:
@@ -249,6 +256,9 @@ The OTel exporter should show metrics such as:
 - `smartcache_graph_request_total`
 - `smartcache_graph_request_good`
 - `smartcache_graph_request_bad`
+- `smartcache_graph_labels_add_attempts_total`
+- `smartcache_graph_labels_cache_noops_total`
+- `smartcache_graph_labels_writes_total`
 
 The native Fuseki metrics endpoint will expose the built-in Fuseki metric names directly.
 
@@ -258,6 +268,7 @@ After running the demo script:
 
 - both Prometheus targets should be `up`
 - `smartcache_graph_request_total` should increase
+- the Grafana label-store section should show cumulative attempts, duplicate no-ops, writes, rates, and duplicate avoidance
 - `smartcache_graph_request_good` should increase after the successful queries
 - `smartcache_graph_request_bad` should increase because the script sends one intentionally invalid query per round
 - the `request_totals_by_endpoint` query should show separate series for `/ds` and `/ds/sparql`
@@ -271,4 +282,3 @@ underlying Fuseki counters than monotonic Prometheus counters. That is expected 
 
 Grafana is provisioned with a dashboard focused on the SCG telemetry setup. Log in at `http://localhost:3001` using
 `admin` / `admin`, then open the `Smart Cache Graph Telemetry` dashboard.
-

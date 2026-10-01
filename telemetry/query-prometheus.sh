@@ -26,6 +26,9 @@ Available query names:
   native_metric_names
   request_totals
   request_totals_by_endpoint
+  label_store_totals
+  label_store_rates
+  label_store_duplicate_avoidance
   native_top
 EOF
 }
@@ -55,6 +58,21 @@ EOF
     request_totals_by_endpoint)
       cat <<'EOF'
 sum by (__name__, fuseki_endpoint, db_operation) ({job="smart-cache-graph-otel", __name__=~"smartcache_graph_request_(good|bad|total)"})
+EOF
+      ;;
+    label_store_totals)
+      cat <<'EOF'
+sum by (__name__, db_name) ({job="smart-cache-graph-otel", __name__=~"smartcache_graph_labels_(add_attempts|cache_noops|writes)_total"})
+EOF
+      ;;
+    label_store_rates)
+      cat <<'EOF'
+sum by (__name__, db_name) (rate({job="smart-cache-graph-otel", __name__=~"smartcache_graph_labels_(add_attempts|cache_noops|writes)_total"}[5m]))
+EOF
+      ;;
+    label_store_duplicate_avoidance)
+      cat <<'EOF'
+100 * sum by (db_name) (smartcache_graph_labels_cache_noops_total{job="smart-cache-graph-otel"}) / clamp_min(sum by (db_name) (smartcache_graph_labels_add_attempts_total{job="smart-cache-graph-otel"}), 1)
 EOF
       ;;
     native_top)
