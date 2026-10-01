@@ -766,6 +766,11 @@
 
       <dependency>
         <groupId>io.telicent.jena</groupId>
+        <artifactId>rdf-abac-core</artifactId>
+        <version>${dependency.rdf-abac}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.telicent.jena</groupId>
         <artifactId>rdf-abac-fuseki</artifactId>
         <version>${dependency.rdf-abac}</version>
       </dependency>
