@@ -559,7 +559,7 @@
     <dependency.jena>6.2.0</dependency.jena>
     <dependency.graphql>0.12.3</dependency.graphql>
     <dependency.jwt-servlet-auth>4.1.4</dependency.jwt-servlet-auth>
-    <dependency.smart-caches-core>1.7.0</dependency.smart-caches-core>
+    <dependency.smart-caches-core>1.7.1</dependency.smart-caches-core>
 
     <!-- External dependencies -->
     <dependency.awaitility>4.3.0</dependency.awaitility>
@@ -567,8 +567,8 @@
     <dependency.commons-codec>1.22.0</dependency.commons-codec>
     <dependency.commons-compress>1.28.0</dependency.commons-compress>
     <dependency.gson>2.14.0</dependency.gson>
-    <dependency.jackson-patch>2.22.3</dependency.jackson-patch>
-    <dependency.jackson>2.22.2</dependency.jackson>
+    <dependency.jackson>2.22.3</dependency.jackson>
+    <dependency.jackson3>3.2.3</dependency.jackson3>
     <dependency.bouncycastle>1.86</dependency.bouncycastle>
     <dependency.kafka>3.9.2</dependency.kafka>
     <dependency.kotlin>2.4.20</dependency.kotlin>
@@ -793,12 +793,12 @@
       <dependency>
         <groupId>com.fasterxml.jackson.datatype</groupId>
         <artifactId>jackson-datatype-jsr310</artifactId>
-        <version>${dependency.jackson-patch}</version>
+        <version>${dependency.jackson}</version>
       </dependency>
       <dependency>
         <groupId>com.fasterxml.jackson.core</groupId>
         <artifactId>jackson-core</artifactId>
-        <version>${dependency.jackson-patch}</version>
+        <version>${dependency.jackson}</version>
       </dependency>
       <dependency>
         <groupId>io.telicent.smart-caches</groupId>
@@ -858,6 +858,16 @@
         <groupId>com.fasterxml.jackson.core</groupId>
         <artifactId>jackson-databind</artifactId>
         <version>${dependency.jackson}</version>
+      </dependency>
+      <dependency>
+        <groupId>tools.jackson.core</groupId>
+        <artifactId>jackson-core</artifactId>
+        <version>${dependency.jackson3}</version>
+      </dependency>
+      <dependency>
+        <groupId>tools.jackson.core</groupId>
+        <artifactId>jackson-databind</artifactId>
+        <version>${dependency.jackson3}</version>
       </dependency>
       <!-- Kafka for Event Sourcing -->
       <dependency>
