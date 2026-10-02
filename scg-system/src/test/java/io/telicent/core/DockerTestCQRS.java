@@ -57,10 +57,19 @@ public class DockerTestCQRS {
 
     protected static final String DIR = "target/databases";
     private static final String QUERY = "SELECT * {?s ?p ?o}";
+    private static final String QUERY_ALL = """
+            SELECT * WHERE {
+              { ?s ?p ?o }
+              UNION
+              { GRAPH ?g { ?s ?p ?o } }
+            }
+            """;
     private static final String FIND_NAME_QUERY = """
             SELECT ?name
             WHERE {
-              ?s <https://example.org/name> ?name .
+              { ?s <https://example.org/name> ?name }
+              UNION
+              { GRAPH ?g { ?s <https://example.org/name> ?name } }
             }
             """;
     public static final String DATASET_NAME = "ds";
@@ -516,6 +525,28 @@ public class DockerTestCQRS {
                                                                                     EMPLOYEE, DISTRO_1));
         Assertions.assertTrue(Strings.CI.contains(exception.getResponse(), "not acceptable for ingest"));
         verifyNothingVisible(USER_1);
+    }
+
+    @Test
+    public void givenPopulatedData_whenPerformingDeleteInsertWhereViaCqrsUsingNamedGraphRoutingAndDistributionLifecycle_thenDataModified() {
+        // Given
+        Properties properties = new Properties();
+        properties.put(FMod_DistributionLifecycle.ROUTE_TO_NAMED_GRAPHS, true);
+        properties.put(DistributionLifecycleConfiguration.DISTRIBUTION_LIFECYCLE_ENABLED, true);
+        Configurator.addSource(new PropertiesSource(properties));
+        DistributionLifecycleStateStore stateStore = mockStateStore(DistributionLifecycleState.Active);
+        mockDistributionLifecycleTracker(stateStore, true);
+        server = launchServer(SCG_CQRS_CONFIG);
+        String token = LibTestsSCG.tokenForUser(USER_1, DATASET_NAME);
+        executeSparqlUpdate(token, INSERT_JOHN_SMITH, EMPLOYEE, DISTRO_1);
+        verifyDataVisible(url(QUERY_ENDPOINT), FIND_NAME_QUERY, token, 1);
+
+        // When
+        executeSparqlUpdate(token, DELETE_INSERT_WHERE, EMPLOYEE, DISTRO_1);
+
+        // Then
+        RowSetRewindable results = verifyDataVisible(url(QUERY_ENDPOINT), QUERY_ALL, token, 1);
+        Assertions.assertEquals("Johnathon Frederick Smith", results.next().get("o").getLiteralLexicalForm());
     }
 
     @Test
