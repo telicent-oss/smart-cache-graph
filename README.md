@@ -299,6 +299,18 @@ Which should return the following:
 }
 ```
 
+### `JETTY_OUTPUT_BUFFER_SIZE`
+
+Optional. The size, in bytes, of the Jetty buffer each HTTP response is written into before it is sent. When unset,
+Fuseki's default of 5 MiB is used. Jetty only pools buffers of up to 64 KiB, so with the default every response
+allocates a new 5 MiB direct buffer that is only freed by garbage collection. Once `-XX:MaxDirectMemorySize` is reached
+the JVM forces a stop-the-world `System.gc()`, which under query load can leave Graph paused for a large share of the
+time. See [Direct memory and the Jetty output buffer](docs/memory-improvements-june-2026.md#direct-memory-and-the-jetty-output-buffer).
+
+`65536` (64 KiB) is recommended and is the Helm chart default (`java.jettyOutputBufferSize`). Any larger value is not
+pooled. Responses larger than the buffer start streaming once it fills, so an error after that point can no longer
+change the HTTP status code.
+
 ## Build
 
 Building Smart Cache Graph is a two-step process.
