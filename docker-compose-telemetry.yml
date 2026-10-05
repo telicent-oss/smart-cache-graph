@@ -23,6 +23,8 @@ services:
       OTEL_LOGS_EXPORTER: none
       OTEL_EXPORTER_PROMETHEUS_HOST: 0.0.0.0
       OTEL_EXPORTER_PROMETHEUS_PORT: 9464
+      # Adds JVM direct buffer and post-GC heap metrics used by the dashboard
+      OTEL_INSTRUMENTATION_RUNTIME_TELEMETRY_EMIT_EXPERIMENTAL_TELEMETRY: "true"
     command:
       - --config
       - /fuseki/config/config-abac-local-with-data.ttl

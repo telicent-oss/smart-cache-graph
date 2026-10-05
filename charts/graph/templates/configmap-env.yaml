@@ -41,6 +41,8 @@ data:
   OTEL_METRICS_EXPORTER: "prometheus"
   OTEL_TRACES_EXPORTER: "none"
   OTEL_LOGS_EXPORTER: "none"
+  # Adds JVM direct buffer and post-GC heap metrics used by the Graph telemetry dashboard
+  OTEL_INSTRUMENTATION_RUNTIME_TELEMETRY_EMIT_EXPERIMENTAL_TELEMETRY: "true"
   {{- end }}
 
   {{- if .Values.graph.enableBackupEncryption }}

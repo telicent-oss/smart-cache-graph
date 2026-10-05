@@ -30,6 +30,10 @@ Available query names:
   label_store_rates
   label_store_duplicate_avoidance
   native_top
+  jvm_gc_rates
+  jvm_gc_paused_percent
+  jvm_direct_buffers
+  tdb2_disk_usage
 EOF
 }
 
@@ -73,6 +77,26 @@ EOF
     label_store_duplicate_avoidance)
       cat <<'EOF'
 100 * sum by (db_name) (smartcache_graph_labels_cache_noops_total{job="smart-cache-graph-otel"}) / clamp_min(sum by (db_name) (smartcache_graph_labels_add_attempts_total{job="smart-cache-graph-otel"}), 1)
+EOF
+      ;;
+    jvm_gc_rates)
+      cat <<'EOF'
+60 * sum by (jvm_gc_name, jvm_gc_action) (rate(jvm_gc_duration_seconds_count{job="smart-cache-graph-otel"}[5m]))
+EOF
+      ;;
+    jvm_gc_paused_percent)
+      cat <<'EOF'
+100 * sum by (jvm_gc_name) (rate(jvm_gc_duration_seconds_sum{job="smart-cache-graph-otel"}[5m]))
+EOF
+      ;;
+    jvm_direct_buffers)
+      cat <<'EOF'
+sum by (__name__) ({job="smart-cache-graph-otel", __name__=~"jvm_buffer_(memory_used_bytes|count)", jvm_buffer_pool_name="direct"})
+EOF
+      ;;
+    tdb2_disk_usage)
+      cat <<'EOF'
+sum by (db_name) (smartcache_graph_tdb2_disk_usage_bytes{job="smart-cache-graph-otel"})
 EOF
       ;;
     native_top)

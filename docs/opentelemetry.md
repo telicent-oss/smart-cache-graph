@@ -206,6 +206,10 @@ A helper script is included for the common queries:
 ./telemetry/query-prometheus.sh label_store_rates
 ./telemetry/query-prometheus.sh label_store_duplicate_avoidance
 ./telemetry/query-prometheus.sh native_top
+./telemetry/query-prometheus.sh jvm_gc_rates
+./telemetry/query-prometheus.sh jvm_gc_paused_percent
+./telemetry/query-prometheus.sh jvm_direct_buffers
+./telemetry/query-prometheus.sh tdb2_disk_usage
 ```
 
 The available query names are:
@@ -219,6 +223,10 @@ The available query names are:
 - `label_store_rates`
 - `label_store_duplicate_avoidance`
 - `native_top`
+- `jvm_gc_rates`
+- `jvm_gc_paused_percent`
+- `jvm_direct_buffers`
+- `tdb2_disk_usage`
 
 Representative PromQL expressions:
 
@@ -282,3 +290,21 @@ underlying Fuseki counters than monotonic Prometheus counters. That is expected 
 
 Grafana is provisioned with a dashboard focused on the SCG telemetry setup. Log in at `http://localhost:3001` using
 `admin` / `admin`, then open the `Smart Cache Graph Telemetry` dashboard.
+
+The **JVM Memory, GC & Storage** row shows:
+
+- **Full GCs (last hour)** and **GC Events per Minute**: stop-the-world full collections appear as
+  `G1 Old Generation` / `end of major GC`. A steady stream of them usually means direct memory is reaching
+  `-XX:MaxDirectMemorySize` and the JDK is calling `System.gc()`. Check that `JETTY_OUTPUT_BUFFER_SIZE` is set (see
+  [memory-improvements-june-2026.md](memory-improvements-june-2026.md#direct-memory-and-the-jetty-output-buffer)).
+- **Time Paused in GC**: the share of time spent in GC pauses. Queries and Kafka ingest are stopped for the duration
+  of every stop-the-world pause.
+- **Direct Buffer Memory**: direct `ByteBuffer` memory and buffer count. A saw-tooth that climbs to
+  `MaxDirectMemorySize` and drops at each full GC is the signature of unpooled response buffers.
+- **Heap Used vs Live Set**: heap in use, heap remaining after the last GC and the maximum heap.
+- **TDB2 Disk Usage and Growth**: the on-disk size of each TDB2 dataset and its hourly growth. TDB2 is copy-on-write,
+  so it grows until compacted.
+
+The direct buffer and after-last-GC metrics are experimental in the OpenTelemetry Java agent, so they need
+`OTEL_INSTRUMENTATION_RUNTIME_TELEMETRY_EMIT_EXPERIMENTAL_TELEMETRY=true`. The telemetry compose file and the Helm
+chart (when `metrics.enabled` is true) both set it.

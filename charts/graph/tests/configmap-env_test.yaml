@@ -59,3 +59,19 @@ tests:
     asserts:
       - notExists:
           path: data.JETTY_OUTPUT_BUFFER_SIZE
+
+  - it: enables the experimental JVM runtime metrics used by the dashboard when metrics are enabled
+    template: templates/configmap-env.yaml
+    asserts:
+      - equal:
+          path: data.OTEL_INSTRUMENTATION_RUNTIME_TELEMETRY_EMIT_EXPERIMENTAL_TELEMETRY
+          value: "true"
+
+  - it: omits the experimental JVM runtime metrics when metrics are disabled
+    template: templates/configmap-env.yaml
+    set:
+      metrics:
+        enabled: false
+    asserts:
+      - notExists:
+          path: data.OTEL_INSTRUMENTATION_RUNTIME_TELEMETRY_EMIT_EXPERIMENTAL_TELEMETRY
