@@ -54,9 +54,10 @@
             </dependency>
 
             <dependency>
-                <groupId>com.fasterxml.jackson</groupId>
-                <artifactId>jackson-bom</artifactId>
-                <version>${dependency.jackson}</version>
+                <!-- Keep SC Core's Jackson versions ahead of Spring Boot's defaults. -->
+                <groupId>io.telicent.smart-caches</groupId>
+                <artifactId>parent</artifactId>
+                <version>${dependency.smart-caches-core}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -78,6 +79,11 @@
             </dependency>
 
             <!-- Overrides of versions managed by spring-boot-dependencies -->
+            <!-- SC Core manages Jackson 3 -->
+            <dependency>
+                <groupId>tools.jackson.core</groupId>
+                <artifactId>jackson-core</artifactId>
+            </dependency>
             <dependency>
                 <groupId>org.apache.tomcat.embed</groupId>
                 <artifactId>tomcat-embed-core</artifactId>

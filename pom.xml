@@ -568,7 +568,6 @@
     <dependency.commons-compress>1.28.0</dependency.commons-compress>
     <dependency.gson>2.14.0</dependency.gson>
     <dependency.jackson-patch>2.22.3</dependency.jackson-patch>
-    <dependency.jackson>2.22.2</dependency.jackson>
     <dependency.bouncycastle>1.86</dependency.bouncycastle>
     <dependency.kafka>3.9.2</dependency.kafka>
     <dependency.kotlin>2.4.20</dependency.kotlin>
@@ -801,11 +800,6 @@
         <version>${dependency.jackson-patch}</version>
       </dependency>
       <dependency>
-        <groupId>com.fasterxml.jackson.core</groupId>
-        <artifactId>jackson-core</artifactId>
-        <version>${dependency.jackson-patch}</version>
-      </dependency>
-      <dependency>
         <groupId>io.telicent.smart-caches</groupId>
         <artifactId>event-sources-core</artifactId>
         <version>${dependency.smart-caches-core}</version>
@@ -859,11 +853,6 @@
       </dependency>
 
       <!-- External Dependencies -->
-      <dependency>
-        <groupId>com.fasterxml.jackson.core</groupId>
-        <artifactId>jackson-databind</artifactId>
-        <version>${dependency.jackson}</version>
-      </dependency>
       <!-- Kafka for Event Sourcing -->
       <dependency>
         <groupId>org.apache.kafka</groupId>
