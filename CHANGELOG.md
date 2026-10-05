@@ -8,6 +8,9 @@
       Data-NNNN-tmp`), and no longer logs that the running compaction "appears to have been interrupted"
     - Fixed the dataset being left in exclusive mode (blocking all further writes) when a compaction was skipped
       because another maintenance operation had started
+- Added `JETTY_OUTPUT_BUFFER_SIZE` to override Fuseki's 5 MiB Jetty response output buffer. Buffers that large are never
+  pooled, so every response allocates a new 5 MiB direct buffer, which drives native memory growth and
+  `System.gc()` full collections once `-XX:MaxDirectMemorySize` is reached. Unset by default (no change)
 
 ## 1.2.1
 

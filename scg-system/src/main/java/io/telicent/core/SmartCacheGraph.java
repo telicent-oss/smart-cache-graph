@@ -135,6 +135,7 @@ public class SmartCacheGraph {
                 , new FMod_VersionInfo()
                 , new FMod_TelicentGraphQL()
                 , new FMod_RequestIDFilter()
+                , new FMod_JettyOutputBuffer()
                 , new FMod_DatasetAvailabilityFilter()
                 , new FMod_Readiness()
                 , new FMod_DistributionLifecycle()
