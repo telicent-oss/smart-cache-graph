@@ -1,5 +1,14 @@
 # Smart Cache Graph
 
+## 1.2.2
+
+- Compaction fixes:
+    - A compaction request made while another compaction, backup or restore of the same dataset is running now returns
+      `SKIPPED_MAINTENANCE_IN_PROGRESS` rather than failing with HTTP 500 (`Invalid filename for matching:
+      Data-NNNN-tmp`), and no longer logs that the running compaction "appears to have been interrupted"
+    - Fixed the dataset being left in exclusive mode (blocking all further writes) when a compaction was skipped
+      because another maintenance operation had started
+
 ## 1.2.1
 
 - Labels API improvements:

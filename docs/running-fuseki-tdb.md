@@ -99,6 +99,7 @@ Possible per-dataset outcomes are:
 - `SKIPPED_ALREADY_COMPACTED`
 - `SKIPPED_PREVIOUSLY_COMPACTED`
 - `SKIPPED_LOCK_CONTENTION`
+- `SKIPPED_MAINTENANCE_IN_PROGRESS` (a compaction, backup or restore of the dataset is already running)
 - `SKIPPED_NOT_TDB2`
 
 When compaction throws an exception, the endpoint returns HTTP `500` with an
