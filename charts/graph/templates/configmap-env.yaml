@@ -19,6 +19,9 @@ data:
   KAFKA_CONFIG_FILE_PATH: /app/config/kafka-auth/kafka-config.properties
   JAVA_OPTIONS: {{ .Values.java.jvmOptions | quote }}
   MALLOC_ARENA_MAX: {{ .Values.java.mallocArenaMax | quote }}
+  {{- with .Values.java.jettyOutputBufferSize }}
+  JETTY_OUTPUT_BUFFER_SIZE: {{ . | quote }}
+  {{- end }}
   JWKS_URL: {{ printf "https://%s%s" .Values.global.authHostDomain "/oauth2/jwks" | quote }}
   USERINFO_URL: {{ printf "http://%s%s" (include "graph.hostAuth" . ) "/userinfo" | quote }}
 

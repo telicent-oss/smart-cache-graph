@@ -75,6 +75,15 @@ java:
     -XX:MaxDirectMemorySize=100m
   # @key java.mallocArenaMax glibc malloc arena cap used to limit native memory fragmentation/retention
   mallocArenaMax: "2"
+  # Fuseki's default Jetty response buffer is 5 MiB, larger than Jetty will pool (64 KiB), so every response allocates
+  # a new 5 MiB direct buffer. With -XX:MaxDirectMemorySize=100m that forces a System.gc() full GC roughly every 20
+  # responses. Suggested values:
+  #   "65536" (default) - largest size Jetty pools; responses up to 64 KiB can still report errors via the status code
+  #   "32768"           - Jetty's own default; slightly less memory per in-flight response
+  #   ""                - keep Fuseki's 5 MiB buffer (not recommended unless MaxDirectMemorySize is raised a lot)
+  # Responses larger than the buffer are streamed once it fills, so a later error cannot change the HTTP status.
+  # @key java.jettyOutputBufferSize Jetty response output buffer size in bytes (JETTY_OUTPUT_BUFFER_SIZE); empty keeps Fuseki's 5 MiB default
+  jettyOutputBufferSize: "65536"
 
 #
 # @section Application Parameters - Graph
