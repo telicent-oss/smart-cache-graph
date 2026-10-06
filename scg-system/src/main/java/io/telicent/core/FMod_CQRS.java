@@ -81,9 +81,13 @@ public class FMod_CQRS implements FusekiModule {
     @Override
     public void prepare(FusekiServer.Builder builder, Set<String> names, Model configModel) {
         FmtLog.info(Fuseki.configLog, "CQRS Fuseki Module (%s)", VERSION);
-//        // Register "http://telicent.io/cqrs#update".
+        // Register "http://telicent.io/cqrs#update".
         // The configured ActionService is set during configDataAccessPoint.
         builder.registerOperation(CQRS.Vocab.operationUpdateCQRS, WebContent.contentTypeSPARQLUpdate, placeholder);
+
+        // Also ensure that we register a custom query engine for CQRS updates that ensures union graph mode is used for
+        // the query portion of any SPARQL updates
+        CQRSQueryEngine.register();
     }
 
     @Override
