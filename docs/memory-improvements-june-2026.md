@@ -146,9 +146,50 @@ A subtle bug fix went with this: these settings *must* be applied via `ColumnFam
 
 These bound the heap relative to container memory, control how aggressively the heap gives memory back, and cap previously-unbounded regions (metaspace, code cache, direct memory).
 
+> **Update (October 2026):** for Graph, the 100 MB direct memory cap must be paired with `JETTY_OUTPUT_BUFFER_SIZE`
+> (the chart now sets it to 64 KiB). Without it, Graph spends a large share of its time in `System.gc()` full
+> collections under query load. See [Direct memory and the Jetty output buffer](#direct-memory-and-the-jetty-output-buffer).
+
 **Observability (CORE-1147).** RocksDB now exposes OpenTelemetry metrics (memory gauges, transaction counters including active transactions, internal stats), and `smart-caches-core` reports **Max/Total/Free** memory separately and **periodically logs memory every 5 minutes** (configurable via `MEMORY_INFO_INTERVAL` / `--memory-info-interval`). Disk-usage metrics were added for RocksDB and TDB2.
 
 > Note: a "Kafka memory" change was explored in `smart-caches-core` (stashed `KafkaEventSource` work) but was not merged in this window as the results were somewhat inconclusive in the limited testing afforded to a dev laptop.
+
+---
+
+## Direct memory and the Jetty output buffer
+
+*Added October 2026 (CORE-1576).*
+
+Capping direct memory at 100 MB exposed a second source of churn in Graph. Fuseki configures Jetty with a **5 MiB
+response output buffer**, but Jetty's default buffer pool only reuses buffers of up to **64 KiB**. So every HTTP
+response allocates a brand-new 5 MiB direct buffer, which is only freed when the garbage collector runs. Profiling
+attributed 97% of Graph's native allocation bytes to this path; Kafka, RocksDB and TDB2 were negligible.
+
+What happens depends on the cap:
+
+- **No cap:** direct memory grows by gigabytes between collections until the container is OOM-killed.
+- **With `-XX:MaxDirectMemorySize`:** each time the cap is reached the JDK calls `System.gc()`, a stop-the-world full
+  collection. With the chart's 100 MB cap that is roughly every 20 responses, so the rate rises with query traffic.
+
+Measured on a Raspberry Pi 5 with the chart's JVM settings, under a read burst:
+
+| | Default (5 MiB buffer) | `JETTY_OUTPUT_BUFFER_SIZE=32768` |
+|---|---|---|
+| Full GCs in an hour | 8,434 | 0 |
+| Time paused in GC | 28% | 0.4% |
+| Burst throughput | 104 queries/s | 1,573 queries/s |
+| Burst p50 / p99 latency | 105 / 219 ms | 4 / 15 ms |
+
+Nothing errors and memory looks healthy, so the problem shows up only as latency and lost throughput.
+
+**Fix:** set `JETTY_OUTPUT_BUFFER_SIZE` (bytes) so the buffer is pooled. The Helm chart defaults
+`java.jettyOutputBufferSize` to `65536`, the largest size Jetty pools. Responses larger than the buffer start streaming
+once it fills, so an error after that point can only truncate the response rather than change its status code.
+
+**Spotting it:** the Graph telemetry dashboard's *JVM Memory, GC & Storage* row shows full GCs per hour, time paused
+in GC and direct buffer memory. A steady stream of `G1 Old Generation` collections, or direct memory repeatedly climbing
+to the cap, means the buffer size isn't set. `-XX:+ExplicitGCInvokesConcurrent` removes the stop-the-world pauses but
+costs around a quarter of peak throughput, so treat it as a stop-gap only.
 
 ---
 

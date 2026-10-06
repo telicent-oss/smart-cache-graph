@@ -33,3 +33,45 @@ tests:
         hasDocuments:
           count: 0
 
+
+  - it: sets JETTY_OUTPUT_BUFFER_SIZE to the pooled 64 KiB default
+    template: templates/configmap-env.yaml
+    asserts:
+      - equal:
+          path: data.JETTY_OUTPUT_BUFFER_SIZE
+          value: "65536"
+
+  - it: sets JETTY_OUTPUT_BUFFER_SIZE from java.jettyOutputBufferSize
+    template: templates/configmap-env.yaml
+    set:
+      java:
+        jettyOutputBufferSize: "32768"
+    asserts:
+      - equal:
+          path: data.JETTY_OUTPUT_BUFFER_SIZE
+          value: "32768"
+
+  - it: omits JETTY_OUTPUT_BUFFER_SIZE when java.jettyOutputBufferSize is empty
+    template: templates/configmap-env.yaml
+    set:
+      java:
+        jettyOutputBufferSize: ""
+    asserts:
+      - notExists:
+          path: data.JETTY_OUTPUT_BUFFER_SIZE
+
+  - it: enables the experimental JVM runtime metrics used by the dashboard when metrics are enabled
+    template: templates/configmap-env.yaml
+    asserts:
+      - equal:
+          path: data.OTEL_INSTRUMENTATION_RUNTIME_TELEMETRY_EMIT_EXPERIMENTAL_TELEMETRY
+          value: "true"
+
+  - it: omits the experimental JVM runtime metrics when metrics are disabled
+    template: templates/configmap-env.yaml
+    set:
+      metrics:
+        enabled: false
+    asserts:
+      - notExists:
+          path: data.OTEL_INSTRUMENTATION_RUNTIME_TELEMETRY_EMIT_EXPERIMENTAL_TELEMETRY

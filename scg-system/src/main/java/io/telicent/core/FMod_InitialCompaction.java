@@ -73,6 +73,7 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
         SKIPPED_ALREADY_COMPACTED,
         SKIPPED_PREVIOUSLY_COMPACTED,
         SKIPPED_LOCK_CONTENTION,
+        SKIPPED_MAINTENANCE_IN_PROGRESS,
         SKIPPED_NOT_TDB2
     }
 
@@ -296,6 +297,15 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
     private static CompactionStatus compactDatasetGraphDatabase(DatasetGraph datasetGraph, String name) {
         DatasetGraphSwitchable dsg = getTDB2(datasetGraph);
         if (dsg != null) {
+            // Check this before anything touches the database directory: while a compaction is running, the
+            // directory holds an in-progress Data-NNNN-tmp directory, which the size calculation can't parse.
+            Optional<DatasetMaintenanceRegistry.MaintenanceIndicator> current =
+                    DatasetMaintenanceRegistry.findCurrentMaintenance(dsg);
+            if (current.isPresent()) {
+                LOG.info("[Compaction] Ignoring for {} as a {} is already in progress (started {})", name,
+                         current.get().operation().displayName(), current.get().startedAt());
+                return CompactionStatus.SKIPPED_MAINTENANCE_IN_PROGRESS;
+            }
             logPreviousCompactionIndicator(dsg, name);
 
             // See how big the database is, and whether it's size has changed
@@ -335,8 +345,9 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
                     DatasetMaintenanceRegistry.begin(datasetGraph, name,
                                                     DatasetMaintenanceRegistry.MaintenanceOperation.COMPACTION);
             if (maintenance.isEmpty()) {
+                dsg.finishExclusiveMode();
                 LOG.info("[Compaction] Ignoring for {} due to another maintenance operation already being in progress", name);
-                return CompactionStatus.SKIPPED_LOCK_CONTENTION;
+                return CompactionStatus.SKIPPED_MAINTENANCE_IN_PROGRESS;
             }
             updateCompactionIndicator(dsg, new CompactionIndicator(CompactionIndicatorState.IN_PROGRESS, name,
                                                                    startedAt.toString(), startedAt.toString(),
@@ -403,7 +414,15 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
     public static long findDatabaseSize(DatasetGraph dsg) {
         if (dsg instanceof DatasetGraphSwitchable switchable) {
             // Find the current Data-NNNN directory as this represents the current database size
-            Path currentDataDir = DatabaseOps.findStorageLocation(switchable.getContainerPath());
+            Path currentDataDir;
+            try {
+                currentDataDir = DatabaseOps.findStorageLocation(switchable.getContainerPath());
+            } catch (RuntimeException e) {
+                // e.g. a Data-NNNN-tmp directory left by a compaction that is running or was interrupted
+                LOG.warn("[Compaction] Unable to determine current storage location for {}: {}",
+                         switchable.getContainerPath(), e.getMessage());
+                return -1;
+            }
             if (currentDataDir == null) {
                 return -1;
             }

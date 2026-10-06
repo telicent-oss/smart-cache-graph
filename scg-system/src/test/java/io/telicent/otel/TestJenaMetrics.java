@@ -54,6 +54,7 @@ import io.opentelemetry.sdk.metrics.export.PeriodicMetricReader;
 import io.opentelemetry.sdk.testing.exporter.InMemoryMetricReader;
 import io.telicent.LibTestsSCG;
 import io.telicent.core.SmartCacheGraph;
+import io.telicent.jena.abac.labels.LabelsStore;
 import io.telicent.servlet.auth.jwt.verifier.aws.AwsConstants;
 import org.apache.jena.Jena;
 import org.apache.jena.fuseki.main.FusekiServer;
@@ -412,5 +413,40 @@ class TestJenaMetrics {
                 dsg.close();
             }
         }
+    }
+
+    @Test
+    void label_store_metrics() {
+        InMemoryMetricReader reader = InMemoryMetricReader.create();
+        SdkMeterProvider meterProvider = SdkMeterProvider.builder().registerMetricReader(reader).build();
+        OpenTelemetrySdk sdk = OpenTelemetrySdk.builder().setMeterProvider(track(meterProvider)).build();
+        JenaMetrics.set(sdk);
+
+        LabelsStore labelsStore = mock(LabelsStore.class);
+        when(labelsStore.getMetrics()).thenReturn(Map.of(
+                LabelsStore.METRIC_LABEL_ADD_ATTEMPTS, 10L,
+                LabelsStore.METRIC_LABEL_CACHE_NO_OPS, 4L,
+                LabelsStore.METRIC_LABEL_WRITES, 6L));
+        FMod_OpenTelemetry.buildLabelStoreMetrics(JenaMetrics.getMeter("Jena", Jena.VERSION), "/ds", labelsStore);
+
+        Attributes expectedAttributes = Attributes.builder()
+                                                  .put(FMod_OpenTelemetry.DB_SYSTEM, "RDF ABAC label store")
+                                                  .put(io.opentelemetry.semconv.DbAttributes.DB_SYSTEM_NAME,
+                                                       "RDF ABAC label store")
+                                                  .put(FMod_OpenTelemetry.DB_NAME, "/ds")
+                                                  .build();
+        assertObservableCounter(reader, FMod_OpenTelemetry.LABEL_ADD_ATTEMPTS, expectedAttributes, 10L);
+        assertObservableCounter(reader, FMod_OpenTelemetry.LABEL_CACHE_NO_OPS, expectedAttributes, 4L);
+        assertObservableCounter(reader, FMod_OpenTelemetry.LABEL_WRITES, expectedAttributes, 6L);
+    }
+
+    private static void assertObservableCounter(InMemoryMetricReader reader, String name, Attributes attributes,
+                                                long expectedValue) {
+        assertTrue(reader.collectAllMetrics()
+                         .stream()
+                         .filter(metric -> metric.getName().equals(name))
+                         .flatMap(metric -> metric.getLongSumData().getPoints().stream())
+                         .anyMatch(point -> point.getAttributes().equals(attributes)
+                                 && point.getValue() == expectedValue));
     }
 }

@@ -916,6 +916,84 @@ public class TestInitialCompaction {
         return (List<?>) value;
     }
 
+    @Test
+    public void test_compactOne_whileCompactionInProgressIsSkipped() throws IOException {
+        // given
+        DatasetGraphSwitchable dsgPersists = createPersistentSwitchableDataset();
+        DatasetGraphSwitchable mockedDsg = spy(dsgPersists);
+        // A running compaction leaves a Data-NNNN-tmp directory alongside the current one
+        Files.createDirectories(dsgPersists.getContainerPath().resolve("Data-0002-tmp"));
+        Optional<DatasetMaintenanceRegistry.MaintenanceHandle> running =
+                DatasetMaintenanceRegistry.begin(mockedDsg, "/test",
+                                                 DatasetMaintenanceRegistry.MaintenanceOperation.COMPACTION);
+        assertTrue(running.isPresent());
+        server = SmartCacheGraph.smartCacheGraphBuilder().port(0).add("test", mockedDsg).build().start();
+
+        try {
+            // when
+            HttpResponse<InputStream> compactResponse =
+                    makeAuthCallWithCustomToken(server, "$/compact/test",
+                                                tokenForUserWithCompactPermissions("test", "test"), "POST");
+
+            // then
+            assertEquals(200, compactResponse.statusCode());
+            String body = IOUtils.toString(compactResponse.body(), StandardCharsets.UTF_8);
+            assertTrue(Strings.CI.contains(body, "SKIPPED_MAINTENANCE_IN_PROGRESS"));
+            mockDatabaseMgr.verify(() -> DatabaseMgr.compact(any(), anyBoolean()), times(0));
+            verify(mockedDsg, never()).tryExclusiveMode(anyBoolean());
+            assertFalse(FMod_InitialCompaction.getCompactionIndicatorFile(mockedDsg).exists());
+        } finally {
+            DatasetMaintenanceRegistry.end(running.get());
+        }
+    }
+
+    @Test
+    public void test_compactOne_maintenanceStartedAfterLockReleasesExclusiveMode() throws IOException {
+        // given
+        DatasetGraphSwitchable dsgPersists = createPersistentSwitchableDataset();
+        DatasetGraphSwitchable mockedDsg = spy(dsgPersists);
+        // Another maintenance operation registers between the in-progress check and the compaction starting
+        List<DatasetMaintenanceRegistry.MaintenanceHandle> other = new java.util.ArrayList<>();
+        doAnswer(invocation -> {
+            DatasetMaintenanceRegistry.begin(mockedDsg, "/test", DatasetMaintenanceRegistry.MaintenanceOperation.BACKUP)
+                                      .ifPresent(other::add);
+            return invocation.callRealMethod();
+        }).when(mockedDsg).tryExclusiveMode(false);
+        server = SmartCacheGraph.smartCacheGraphBuilder().port(0).add("test", mockedDsg).build().start();
+
+        try {
+            // when
+            HttpResponse<InputStream> compactResponse =
+                    makeAuthCallWithCustomToken(server, "$/compact/test",
+                                                tokenForUserWithCompactPermissions("test", "test"), "POST");
+
+            // then
+            assertEquals(200, compactResponse.statusCode());
+            String body = IOUtils.toString(compactResponse.body(), StandardCharsets.UTF_8);
+            assertTrue(Strings.CI.contains(body, "SKIPPED_MAINTENANCE_IN_PROGRESS"));
+            mockDatabaseMgr.verify(() -> DatabaseMgr.compact(any(), anyBoolean()), times(0));
+            verify(mockedDsg, times(1)).finishExclusiveMode();
+            // Exclusive mode was released, so it can be taken again
+            assertTrue(mockedDsg.tryExclusiveMode(false));
+            mockedDsg.finishExclusiveMode();
+        } finally {
+            other.forEach(DatasetMaintenanceRegistry::end);
+        }
+    }
+
+    @Test
+    public void test_findDatabaseSize_withTmpDataDirectoryReturnsUnknown() throws IOException {
+        // given
+        DatasetGraphSwitchable dsg = createPersistentSwitchableDataset();
+        Files.createDirectories(dsg.getContainerPath().resolve("Data-0002-tmp"));
+
+        // when
+        long size = FMod_InitialCompaction.findDatabaseSize(dsg);
+
+        // then
+        assertEquals(-1, size);
+    }
+
     private static DatasetGraphSwitchable createPersistentSwitchableDataset() throws IOException {
         Path container = Files.createTempDirectory("compaction-test-dsg");
         Path dataDir = container.resolve("Data-0001");

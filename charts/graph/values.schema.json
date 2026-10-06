@@ -105,6 +105,11 @@
                     "type": "string",
                     "description": "glibc malloc arena cap used to limit native memory fragmentation/retention",
                     "default": "2"
+                },
+                "jettyOutputBufferSize": {
+                    "type": "string",
+                    "description": "Jetty response output buffer size in bytes (JETTY_OUTPUT_BUFFER_SIZE); empty keeps Fuseki's 5 MiB default",
+                    "default": "65536"
                 }
             }
         },
