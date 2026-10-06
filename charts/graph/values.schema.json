@@ -109,7 +109,6 @@
                 "jettyOutputBufferSize": {
                     "type": "string",
                     "description": "Jetty response output buffer size in bytes (JETTY_OUTPUT_BUFFER_SIZE); empty keeps Fuseki's 5 MiB default",
-                    "pattern": "^([1-9][0-9]*)?$",
                     "default": "65536"
                 }
             }
