@@ -29,7 +29,8 @@ import io.telicent.jena.abac.core.DatasetGraphABAC;
 import io.telicent.jena.abac.labels.Labels;
 import io.telicent.smart.cache.configuration.Configurator;
 import io.telicent.smart.cache.payloads.RdfPayload;
-import io.telicent.smart.cache.security.data.plugins.rdf.abac.RdfAbacSink;
+import io.telicent.smart.cache.security.data.plugins.DataSecurityPluginLoader;
+import io.telicent.core.SmartCacheGraphSink;
 import io.telicent.smart.cache.sources.Event;
 import io.telicent.smart.cache.sources.TelicentHeaders;
 import io.telicent.smart.cache.sources.memory.SimpleEvent;
@@ -125,7 +126,7 @@ public class TestPersistentSetup {
         final DatasetGraphABAC dsgz = (DatasetGraphABAC) dsg;
 
         // Add connectors in such a way we can manually inject requests.
-        FusekiSink<?> sink = new RdfAbacSink(dsgz, false);
+        FusekiSink<?> sink = new SmartCacheGraphSink(DataSecurityPluginLoader.load().prepareLabelledDataset(dsgz).orElseThrow(), false);
 
         try {
             assertDoesNotThrow(() -> {

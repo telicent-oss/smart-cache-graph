@@ -23,6 +23,7 @@ import io.telicent.smart.cache.configuration.Configurator;
 import io.telicent.smart.cache.payloads.RdfPayload;
 import io.telicent.smart.cache.projectors.Sink;
 import io.telicent.smart.cache.security.data.distribution.DistributionLifecycleStateFile;
+import io.telicent.smart.cache.security.data.labels.DatasetGraphLabelled;
 import io.telicent.smart.cache.security.data.plugins.DataSecurityPlugin;
 import io.telicent.smart.cache.security.data.plugins.DataSecurityPluginLoader;
 import io.telicent.smart.cache.sources.Event;
@@ -83,11 +84,11 @@ public class FMod_FusekiKafkaSCG extends FMod_FusekiKafka {
                 new DistributionLifecycleStateFile(Path.of(lifecycleStateFileName), applicationId) : null;
         return dsg -> {
             final DataSecurityPlugin dataSecurityPlugin = DataSecurityPluginLoader.load();
-            final Optional<FusekiSink<?>> fusekiSink = dataSecurityPlugin.prepareFusekiSink(dsg, routeToNamedGraphs, lifecycleStateFile);
-            if (fusekiSink.isPresent()) {
-                return fusekiSink.get();
+            final Optional<DatasetGraphLabelled> labelled = dataSecurityPlugin.prepareLabelledDataset(dsg);
+            if (labelled.isPresent()) {
+                return new SmartCacheGraphSink(labelled.get(), routeToNamedGraphs, lifecycleStateFile);
             } else {
-                // For non-ABAC datasets use the default Fuseki Kafka sink
+                // For datasets the security plugin cannot label use the default Fuseki Kafka sink
                 return FusekiSink.builder().dataset(dsg).build();
             }
         };
