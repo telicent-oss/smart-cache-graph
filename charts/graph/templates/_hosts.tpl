@@ -50,10 +50,10 @@ application relies on. For a full explanation please view '_hosts.tlp' file in t
 
 {{/* catalogue-api | preview - returns host ('service:port') and serviceAccount */}}
 {{- define "graph.hostCatalogue" -}}
-{{- printf "%s" (include "common.discoverHostPreview" (list . .Values.hostsPreview.catalogue )) -}}
+{{- printf "%s" (include "common.discoverHostPreview" (list . .Values.hosts.catalogue )) -}}
 {{- end -}}
 {{- define "graph.serviceAccountCatalogue" -}}
-{{- printf "%s" (include "common.discoverServiceAccountPreview" (list . .Values.hostsPreview.catalogue )) -}}
+{{- printf "%s" (include "common.discoverServiceAccountPreview" (list . .Values.hosts.catalogue )) -}}
 {{- end -}}
 
 {{/* api-builder | preview - returns host ('service:port') and serviceAccount */}}
