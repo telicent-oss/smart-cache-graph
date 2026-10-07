@@ -20,8 +20,7 @@ import io.telicent.smart.cache.distribution.lifecycle.DistributionLifecycleState
 import io.telicent.smart.cache.distribution.lifecycle.events.LifecycleAction;
 import io.telicent.smart.cache.distribution.lifecycle.events.listeners.DistributionLifecycleListener;
 import io.telicent.smart.cache.security.data.DataSecurityException;
-import io.telicent.smart.cache.security.data.labels.SecurityLabelsRemover;
-import io.telicent.smart.cache.security.data.plugins.DataSecurityPlugin;
+import io.telicent.smart.cache.security.data.labels.DatasetGraphLabelled;
 import io.telicent.smart.cache.security.data.plugins.DataSecurityPluginLoader;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.jena.atlas.iterator.Iter;
@@ -110,14 +109,13 @@ public class DistributionGraphDeletionListener implements DistributionLifecycleL
     static void deleteDistributionGraph(DatasetGraph dataset, Node graphName) {
 
         Txn.executeWrite(dataset, () -> {
-            final DataSecurityPlugin dataSecurityPlugin = DataSecurityPluginLoader.load();
-            final Optional<SecurityLabelsRemover> labelsRemover = dataSecurityPlugin.prepareLabelsRemover();
-            if (labelsRemover.isPresent()) {
+            final Optional<DatasetGraphLabelled> labelled =
+                    DataSecurityPluginLoader.load().prepareLabelledDataset(dataset);
+            if (labelled.isPresent()) {
                 final List<Quad> quads = Iter.toList(dataset.find(graphName, Node.ANY, Node.ANY, Node.ANY));
-                final SecurityLabelsRemover remover = labelsRemover.get();
                 for (Quad quad : quads) {
                     try {
-                        remover.remove(dataset, quad);
+                        labelled.get().removeLabels(quad);
                     } catch (DataSecurityException e) {
                         LOGGER.warn("Failed to remove security labels for quad {} while deleting named graph {}", quad,
                                     graphName, e);
