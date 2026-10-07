@@ -258,6 +258,7 @@ If either of those details changes, you can use this section to correctly refer 
 | `hosts.auth`              | Auth application default host value, as defined by 'service/serviceAccount:port'                                                                                                                                                   | `auth:8080`          |
 | `hosts.traefikProxy`      | Traefik Proxy application default host value, as defined by 'service/serviceAccount:port'                                                                                                                                          | `traefik-proxy:8080` |
 | `hosts.search`            | Search application default host value, as defined by 'service/serviceAccount:port'                                                                                                                                                 | `search:8080`        |
+| `hosts.catalogue`         | Catalogue API host value, as defined by 'service/serviceAccount:port'                                                                                                                                                              | `catalogue-api:8080` |
 
 ### Host(s) Preview Parameters - Contains host information for applications deployed via *telicent-preview* chart
 
@@ -269,7 +270,6 @@ If either of those details changes, you can use this section to correctly refer 
 | `hostsPreview.enableAutoCorrect` | Prefix 'global.releaseNameTelicentPreview' value to each host value. Alternatively, the host value will be used as it is, without any modification | `true`                   |
 | `hostsPreview.paperbackWriter`   | Paperback Writer application host value, as defined by 'service/serviceAccount:port'                                                               | `paperback-writer:8080`  |
 | `hostsPreview.aiSparqlBuilder`   | AI SPARQL Builder application host value, as defined by 'service/serviceAccount:port'                                                              | `ai-sparql-builder:8080` |
-| `hostsPreview.catalogue`         | Catalogue API host value, as defined by 'service/serviceAccount:port'                                                                              | `catalogue-api:8080`     |
 | `hostsPreview.apiBuilder`        | API Builder API default host value, as defined by 'service/serviceAccount:port'                                                                    | `api-builder:8000`       |
 | `hostsPreview.theManagement`     | The Management API default host value, as defined by 'service/serviceAccount:port'                                                                 | `the-management:8000`    |
 

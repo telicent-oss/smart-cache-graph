@@ -577,6 +577,11 @@
                     "type": "string",
                     "description": "Search application default host value, as defined by 'service/serviceAccount:port'",
                     "default": "search:8080"
+                },
+                "catalogue": {
+                    "type": "string",
+                    "description": "Catalogue API host value, as defined by 'service/serviceAccount:port'",
+                    "default": "catalogue-api:8080"
                 }
             }
         },
@@ -597,11 +602,6 @@
                     "type": "string",
                     "description": "AI SPARQL Builder application host value, as defined by 'service/serviceAccount:port'",
                     "default": "ai-sparql-builder:8080"
-                },
-                "catalogue": {
-                    "type": "string",
-                    "description": "Catalogue API host value, as defined by 'service/serviceAccount:port'",
-                    "default": "catalogue-api:8080"
                 },
                 "apiBuilder": {
                     "type": "string",

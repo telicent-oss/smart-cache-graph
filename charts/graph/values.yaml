@@ -338,6 +338,8 @@ hosts:
   traefikProxy: "traefik-proxy:8080"
   # @key hosts.search Search application default host value, as defined by 'service/serviceAccount:port'
   search: "search:8080"
+  # @key hosts.catalogue Catalogue API host value, as defined by 'service/serviceAccount:port'
+  catalogue: "catalogue-api:8080"
 
 #
 # @section Host(s) Preview Parameters - Contains host information for applications deployed via *telicent-preview* chart
@@ -353,8 +355,6 @@ hostsPreview:
   paperbackWriter: "paperback-writer:8080"
   # @key hostsPreview.aiSparqlBuilder AI SPARQL Builder application host value, as defined by 'service/serviceAccount:port'
   aiSparqlBuilder: "ai-sparql-builder:8080"
-  # @key hostsPreview.catalogue Catalogue API host value, as defined by 'service/serviceAccount:port'
-  catalogue: "catalogue-api:8080"
   # @key hostsPreview.apiBuilder API Builder API default host value, as defined by 'service/serviceAccount:port'
   apiBuilder: "api-builder:8000"
   # @key hostsPreview.theManagement The Management API default host value, as defined by 'service/serviceAccount:port'
