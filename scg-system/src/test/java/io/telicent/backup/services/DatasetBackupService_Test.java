@@ -1,20 +1,19 @@
 package io.telicent.backup.services;
 
-import io.telicent.smart.cache.storage.BackupRestoreCapable;
-import io.telicent.smart.cache.storage.BackupConfig;
-import io.telicent.smart.cache.storage.RestoreConfig;
-import io.telicent.smart.cache.storage.BackupStatus;
-import io.telicent.smart.cache.storage.RestoreStatus;
-import static org.mockito.ArgumentMatchers.any;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.telicent.core.LabelsMaintenanceTestSupport;
 import io.telicent.smart.cache.security.data.plugins.DataSecurityPlugin;
+import io.telicent.smart.cache.storage.BackupConfig;
+import io.telicent.smart.cache.storage.BackupStatus;
+import io.telicent.smart.cache.storage.RestoreConfig;
+import io.telicent.smart.cache.storage.RestoreStatus;
 import org.apache.jena.fuseki.server.DataAccessPointRegistry;
 import org.apache.jena.sparql.core.DatasetGraph;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -31,12 +30,11 @@ public class DatasetBackupService_Test extends DatasetBackupService {
     public static Map<String, Integer> callCounts = new HashMap<>();
     public static Map<String, String> throwExceptions = new HashMap<>();
 
-    private static DataSecurityPlugin mockDataSecurityPlugin = mock(DataSecurityPlugin.class);
+    private static final DataSecurityPlugin MOCK_DATA_SECURITY_PLUGIN = mock(DataSecurityPlugin.class);
 
     static {
-        BackupRestoreCapable capability = mock(BackupRestoreCapable.class);
-        when(mockDataSecurityPlugin.prepareLabelsBackup(org.mockito.ArgumentMatchers.nullable(DatasetGraph.class))).thenReturn(Optional.of(capability));
-        when(mockDataSecurityPlugin.prepareLabelsRestore(org.mockito.ArgumentMatchers.nullable(DatasetGraph.class))).thenReturn(Optional.of(capability));
+        final var capability = mock(LabelsMaintenanceTestSupport.MaintainableLabelsStore.class);
+        LabelsMaintenanceTestSupport.withLabelsStore(MOCK_DATA_SECURITY_PLUGIN, null, capability);
         when(capability.backup(any(BackupConfig.class))).thenAnswer(invocation -> {
             incrementMethodCall(BACKUP_LABELS);
             throwExceptionIfNeeded(BACKUP_LABELS);
@@ -69,7 +67,7 @@ public class DatasetBackupService_Test extends DatasetBackupService {
 
     // Review and replace with a mock
     public DatasetBackupService_Test(DataAccessPointRegistry dapRegistry) {
-        super(dapRegistry, mockDataSecurityPlugin);
+        super(dapRegistry, MOCK_DATA_SECURITY_PLUGIN);
     }
 
     public static void clear() {
@@ -98,4 +96,5 @@ public class DatasetBackupService_Test extends DatasetBackupService {
         incrementMethodCall(DELETE_BACKUP_DIR);
         throwExceptionIfNeeded(DELETE_BACKUP_DIR);
     }
+
 }

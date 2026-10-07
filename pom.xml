@@ -559,7 +559,7 @@
     <dependency.jena>6.2.0</dependency.jena>
     <dependency.graphql>0.12.3</dependency.graphql>
     <dependency.jwt-servlet-auth>4.1.4</dependency.jwt-servlet-auth>
-    <dependency.smart-caches-core>1.7.3</dependency.smart-caches-core>
+    <dependency.smart-caches-core>1.8.0</dependency.smart-caches-core>
 
     <!-- External dependencies -->
     <dependency.awaitility>4.3.0</dependency.awaitility>
@@ -573,7 +573,7 @@
     <dependency.kafka>3.9.2</dependency.kafka>
     <dependency.kotlin>2.4.20</dependency.kotlin>
     <dependency.lz4>1.12.0</dependency.lz4>
-    <dependency.otel>1.66.0</dependency.otel>
+    <dependency.otel>1.67.0</dependency.otel>
 
     <!-- Logging dependencies -->
     <dependency.log4j2>2.26.1</dependency.log4j2>
