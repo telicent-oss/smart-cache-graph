@@ -2,6 +2,7 @@ package io.telicent.backup.services;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.telicent.core.LabelsMaintenanceTestSupport;
 import io.telicent.smart.cache.security.data.plugins.DataSecurityPlugin;
 import io.telicent.smart.cache.storage.*;
 import org.apache.jena.fuseki.server.DataAccessPoint;
@@ -16,13 +17,14 @@ class TestLabelsMaintenance {
     private final DatasetGraph dataset = DatasetGraphFactory.createTxnMem();
     private final DataAccessPoint dap = new DataAccessPoint("/test", DataService.newBuilder().dataset(dataset).build());
     private final DataSecurityPlugin plugin = mock(DataSecurityPlugin.class);
-    private final BackupRestoreCapable capability = mock(BackupRestoreCapable.class);
+    private final LabelsMaintenanceTestSupport.MaintainableLabelsStore capability =
+            mock(LabelsMaintenanceTestSupport.MaintainableLabelsStore.class);
     private final DatasetBackupService service = new DatasetBackupService(null, plugin);
     private final ObjectNode result = new ObjectMapper().createObjectNode();
 
     @Test
     void genericBackupUsesDatasetCapabilityAndReportsStatus() {
-        when(plugin.prepareLabelsBackup(dataset)).thenReturn(java.util.Optional.of(capability));
+        LabelsMaintenanceTestSupport.withLabelsStore(plugin, dataset, capability);
         when(capability.backup(any())).thenReturn(BackupStatus.builder().success(true).build());
         service.backupLabelStore(dap, "backup", result);
         assertTrue(result.path("success").asBoolean());
@@ -31,7 +33,7 @@ class TestLabelsMaintenance {
 
     @Test
     void backupStatusFailureIsReported() {
-        when(plugin.prepareLabelsBackup(dataset)).thenReturn(java.util.Optional.of(capability));
+        LabelsMaintenanceTestSupport.withLabelsStore(plugin, dataset, capability);
         when(capability.backup(any())).thenReturn(BackupStatus.builder().success(false).errorMessage("disk full").build());
         service.backupLabelStore(dap, "backup", result);
         assertFalse(result.path("success").asBoolean());
@@ -40,7 +42,7 @@ class TestLabelsMaintenance {
 
     @Test
     void genericRestoreReportsFailureAndException() {
-        when(plugin.prepareLabelsRestore(dataset)).thenReturn(java.util.Optional.of(capability));
+        LabelsMaintenanceTestSupport.withLabelsStore(plugin, dataset, capability);
         when(capability.restore(any())).thenReturn(RestoreStatus.builder().success(false).errorMessage("bad backup").build());
         service.restoreLabelStore(dap, "backup", result);
         assertFalse(result.path("success").asBoolean());

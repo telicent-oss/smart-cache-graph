@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.telicent.backup.utils.EncryptionUtils;
 import io.telicent.core.DatasetMaintenanceRegistry;
+import io.telicent.core.LabelsMaintenance;
 import io.telicent.model.KeyPair;
 import io.telicent.smart.cache.security.data.DataSecurityException;
 import io.telicent.smart.cache.storage.BackupRestoreCapable;
@@ -424,7 +425,7 @@ public class DatasetBackupService {
      */
     void backupLabelStore(DataAccessPoint dataAccessPoint, String backupPath, ObjectNode node) {
         final DatasetGraph dsg = dataAccessPoint.getDataService().getDataset();
-        final Optional<BackupRestoreCapable> capability = dataSecurityPlugin.prepareLabelsBackup(dsg);
+        final Optional<BackupRestoreCapable> capability = LabelsMaintenance.backupRestore(dataSecurityPlugin, dsg);
         if (capability.isEmpty()) {
             node.put(REASON, "No security labels backup store is available");
             node.put(SUCCESS, false);
@@ -710,7 +711,7 @@ public class DatasetBackupService {
      */
     void restoreLabelStore(DataAccessPoint dataAccessPoint, String restorePath, ObjectNode node) {
         final DatasetGraph datasetGraph = dataAccessPoint.getDataService().getDataset();
-        final Optional<BackupRestoreCapable> capability = dataSecurityPlugin.prepareLabelsRestore(datasetGraph);
+        final Optional<BackupRestoreCapable> capability = LabelsMaintenance.backupRestore(dataSecurityPlugin, datasetGraph);
         if (capability.isEmpty()) {
             node.put(REASON, "No security labels restore store is available");
             node.put(SUCCESS, false);

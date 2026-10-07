@@ -17,8 +17,9 @@ class TestLabelsCompaction {
     void genericCompactionUsesStatusAndPropagatesFailure() throws Exception {
         DatasetGraph dataset = DatasetGraphFactory.createTxnMem();
         DataSecurityPlugin plugin = mock(DataSecurityPlugin.class);
-        CompactCapable capability = mock(CompactCapable.class);
-        when(plugin.prepareLabelsCompact(dataset)).thenReturn(java.util.Optional.of(capability));
+        LabelsMaintenanceTestSupport.MaintainableLabelsStore capability =
+                mock(LabelsMaintenanceTestSupport.MaintainableLabelsStore.class);
+        LabelsMaintenanceTestSupport.withLabelsStore(plugin, dataset, capability);
         try (var loader = mockStatic(DataSecurityPluginLoader.class)) {
             loader.when(DataSecurityPluginLoader::load).thenReturn(plugin);
             when(capability.compact()).thenReturn(new CompactStatus(10, 5, java.time.Instant.now(), java.time.Instant.now()));
