@@ -40,7 +40,6 @@ application relies on. For a full explanation please view '_hosts.tlp' file in t
 {{- printf "%s" (include "common.discoverServiceAccount" (list . .Values.hosts.catalogue )) -}}
 {{- end -}}
 
-
 {{/* paperback-writer | preview - returns host ('service:port') and serviceAccount */}}
 {{- define "graph.hostPaperbackWriter" -}}
 {{- printf "%s" (include "common.discoverHostPreview" (list . .Values.hostsPreview.paperbackWriter )) -}}
