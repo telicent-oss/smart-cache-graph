@@ -54,7 +54,7 @@ import io.opentelemetry.sdk.metrics.export.PeriodicMetricReader;
 import io.opentelemetry.sdk.testing.exporter.InMemoryMetricReader;
 import io.telicent.LibTestsSCG;
 import io.telicent.core.SmartCacheGraph;
-import io.telicent.jena.abac.labels.LabelsStore;
+import io.telicent.smart.cache.security.data.labels.DatasetGraphLabelled;
 import io.telicent.servlet.auth.jwt.verifier.aws.AwsConstants;
 import org.apache.jena.Jena;
 import org.apache.jena.fuseki.main.FusekiServer;
@@ -422,11 +422,11 @@ class TestJenaMetrics {
         OpenTelemetrySdk sdk = OpenTelemetrySdk.builder().setMeterProvider(track(meterProvider)).build();
         JenaMetrics.set(sdk);
 
-        LabelsStore labelsStore = mock(LabelsStore.class);
-        when(labelsStore.getMetrics()).thenReturn(Map.of(
-                LabelsStore.METRIC_LABEL_ADD_ATTEMPTS, 10L,
-                LabelsStore.METRIC_LABEL_CACHE_NO_OPS, 4L,
-                LabelsStore.METRIC_LABEL_WRITES, 6L));
+        DatasetGraphLabelled labelsStore = mock(DatasetGraphLabelled.class);
+        when(labelsStore.labelsMetrics()).thenReturn(Map.of(
+                DatasetGraphLabelled.METRIC_LABEL_ADD_ATTEMPTS, 10L,
+                DatasetGraphLabelled.METRIC_LABEL_CACHE_NO_OPS, 4L,
+                DatasetGraphLabelled.METRIC_LABEL_WRITES, 6L));
         FMod_OpenTelemetry.buildLabelStoreMetrics(JenaMetrics.getMeter("Jena", Jena.VERSION), "/ds", labelsStore);
 
         Attributes expectedAttributes = Attributes.builder()

@@ -18,6 +18,7 @@ package io.telicent.otel;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -26,8 +27,8 @@ import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.semconv.DbAttributes;
 import io.telicent.core.FMod_InitialCompaction;
-import io.telicent.jena.abac.core.DatasetGraphABAC;
-import io.telicent.jena.abac.labels.LabelsStore;
+import io.telicent.smart.cache.security.data.labels.DatasetGraphLabelled;
+import io.telicent.smart.cache.security.data.plugins.DataSecurityPluginLoader;
 import org.apache.commons.io.FileUtils;
 import org.apache.jena.Jena;
 import org.apache.jena.atlas.lib.Lib;
@@ -131,10 +132,8 @@ public class FMod_OpenTelemetry implements FusekiModule {
                                                   diskUsageAttributes));
         }
 
-        DatasetGraphABAC datasetABAC = getDatasetGraphABAC(dataService.getDataset());
-        if (datasetABAC != null) {
-            buildLabelStoreMetrics(meter, dap.getName(), datasetABAC.labelsStore());
-        }
+        getDatasetGraphLabelled(dataService.getDataset()).ifPresent(
+                labelled -> buildLabelStoreMetrics(meter, dap.getName(), labelled));
 
         // Add gauges for each Fuseki counter
         for (Operation operation : dataService.getOperations()) {
@@ -168,8 +167,8 @@ public class FMod_OpenTelemetry implements FusekiModule {
         }
     }
 
-    static void buildLabelStoreMetrics(Meter meter, String datasetName, LabelsStore labelsStore) {
-        Map<String, Long> availableMetrics = labelsStore.getMetrics();
+    static void buildLabelStoreMetrics(Meter meter, String datasetName, DatasetGraphLabelled labelsStore) {
+        Map<String, Long> availableMetrics = labelsStore.labelsMetrics();
         if (availableMetrics.isEmpty()) {
             return;
         }
@@ -180,40 +179,48 @@ public class FMod_OpenTelemetry implements FusekiModule {
                                           .put(DB_NAME, datasetName)
                                           .build();
         buildLabelStoreMetric(meter, LABEL_ADD_ATTEMPTS, "Label assignments attempted",
-                              LabelsStore.METRIC_LABEL_ADD_ATTEMPTS, labelsStore, attributes);
+                              DatasetGraphLabelled.METRIC_LABEL_ADD_ATTEMPTS, labelsStore, attributes);
         buildLabelStoreMetric(meter, LABEL_CACHE_NO_OPS, "Label writes avoided by duplicate detection",
-                              LabelsStore.METRIC_LABEL_CACHE_NO_OPS, labelsStore, attributes);
+                              DatasetGraphLabelled.METRIC_LABEL_CACHE_NO_OPS, labelsStore, attributes);
         buildLabelStoreMetric(meter, LABEL_WRITES, "Label assignments written to storage",
-                              LabelsStore.METRIC_LABEL_WRITES, labelsStore, attributes);
+                              DatasetGraphLabelled.METRIC_LABEL_WRITES, labelsStore, attributes);
     }
 
     private static void buildLabelStoreMetric(Meter meter, String metricName, String description, String propertyName,
-                                              LabelsStore labelsStore, Attributes attributes) {
-        if (!labelsStore.getMetrics().containsKey(propertyName)) {
+                                              DatasetGraphLabelled labelsStore, Attributes attributes) {
+        if (!labelsStore.labelsMetrics().containsKey(propertyName)) {
             return;
         }
         meter.counterBuilder(metricName)
              .setDescription(description)
              .setUnit("{assignment}")
              .buildWithCallback(measurement -> {
-                 Long value = labelsStore.getMetrics().get(propertyName);
+                 Long value = labelsStore.labelsMetrics().get(propertyName);
                  if (value != null) {
                      measurement.record(value, attributes);
                  }
              });
     }
 
-    static DatasetGraphABAC getDatasetGraphABAC(DatasetGraph dataset) {
+    /**
+     * Finds the labelled view of a dataset, looking through any {@link DatasetGraphWrapper} layers around it
+     *
+     * @param dataset Dataset
+     * @return Labelled dataset, or empty if the dataset is not labelled
+     */
+    static Optional<DatasetGraphLabelled> getDatasetGraphLabelled(DatasetGraph dataset) {
         while (dataset != null) {
-            if (dataset instanceof DatasetGraphABAC datasetABAC) {
-                return datasetABAC;
+            final Optional<DatasetGraphLabelled> labelled =
+                    DataSecurityPluginLoader.load().prepareLabelledDataset(dataset);
+            if (labelled.isPresent()) {
+                return labelled;
             }
             if (!(dataset instanceof DatasetGraphWrapper wrapper)) {
-                return null;
+                return Optional.empty();
             }
             dataset = wrapper.getWrapped();
         }
-        return null;
+        return Optional.empty();
     }
 
     /**

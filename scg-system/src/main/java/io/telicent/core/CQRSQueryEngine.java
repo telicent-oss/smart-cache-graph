@@ -1,6 +1,5 @@
 package io.telicent.core;
 
-import io.telicent.jena.abac.core.DatasetGraphABAC;
 import io.telicent.smart.cache.configuration.Configurator;
 import org.apache.jena.query.Query;
 import org.apache.jena.rdfpatch.system.DatasetGraphChanges;
@@ -19,7 +18,7 @@ import org.apache.jena.sparql.util.Context;
 import java.util.function.BooleanSupplier;
 
 /**
- * A query engine for {@link DatasetGraphABAC} datasets that routes default graph queries to the union of all named
+ * A query engine for security labelled datasets that routes default graph queries to the union of all named
  * graphs.
  * <p>
  * Activated by the {@value FMod_DistributionLifecycle#ROUTE_TO_NAMED_GRAPHS} environment variable. When the variable is
