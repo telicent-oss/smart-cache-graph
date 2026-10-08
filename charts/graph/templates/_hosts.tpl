@@ -32,6 +32,15 @@ application relies on. For a full explanation please view '_hosts.tlp' file in t
 {{- printf "%s" (include "common.discoverServiceAccount" (list . .Values.hosts.search )) -}}
 {{- end -}}
 
+{{/* catalogue-api | returns host ('service:port') and serviceAccount */}}
+{{- define "graph.hostCatalogue" -}}
+{{- printf "%s" (include "common.discoverHost" (list . .Values.hosts.catalogue )) -}}
+{{- end -}}
+{{- define "graph.serviceAccountCatalogue" -}}
+{{- printf "%s" (include "common.discoverServiceAccount" (list . .Values.hosts.catalogue )) -}}
+{{- end -}}
+
+
 {{/* paperback-writer | preview - returns host ('service:port') and serviceAccount */}}
 {{- define "graph.hostPaperbackWriter" -}}
 {{- printf "%s" (include "common.discoverHostPreview" (list . .Values.hostsPreview.paperbackWriter )) -}}
@@ -46,14 +55,6 @@ application relies on. For a full explanation please view '_hosts.tlp' file in t
 {{- end -}}
 {{- define "graph.serviceAccountAISparqlBuilder" -}}
 {{- printf "%s" (include "common.discoverServiceAccountPreview" (list . .Values.hostsPreview.aiSparqlBuilder )) -}}
-{{- end -}}
-
-{{/* catalogue-api | preview - returns host ('service:port') and serviceAccount */}}
-{{- define "graph.hostCatalogue" -}}
-{{- printf "%s" (include "common.discoverHostPreview" (list . .Values.hosts.catalogue )) -}}
-{{- end -}}
-{{- define "graph.serviceAccountCatalogue" -}}
-{{- printf "%s" (include "common.discoverServiceAccountPreview" (list . .Values.hosts.catalogue )) -}}
 {{- end -}}
 
 {{/* api-builder | preview - returns host ('service:port') and serviceAccount */}}
