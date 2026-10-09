@@ -1,10 +1,10 @@
 package io.telicent.labels.services;
 
-import io.telicent.jena.abac.core.VocabAuthz;
 import io.telicent.labels.QuadLabels;
 import io.telicent.smart.cache.security.data.labels.SecurityLabelsApplicator;
 import io.telicent.smart.cache.security.data.plugins.DataSecurityPlugin;
 import org.apache.jena.atlas.iterator.Iter;
+import org.apache.jena.graph.Node;
 import org.apache.jena.graph.Triple;
 import org.apache.jena.sparql.core.DatasetGraph;
 import org.apache.jena.sparql.core.Quad;
@@ -53,12 +53,13 @@ public class LabelsQueryService {
             try (final SecurityLabelsApplicator applicator = dataSecurityPlugin.prepareLabelsApplicator(
                     DENY.getBytes(StandardCharsets.UTF_8), datasetGraph)) {
                 final List<QuadLabels> tripleLabels = new ArrayList<>();
+                final Node labelsGraph = dataSecurityPlugin.labelsGraphName().orElse(null);
                 final Iterator<Quad> iter = datasetGraph.find(quad);
                 try {
                     while (iter.hasNext()) {
                         final Quad q = normaliseDefaultGraph(iter.next());
                         // The labels graph holds label metadata rather than data
-                        if (VocabAuthz.graphForLabels.equals(q.getGraph())) {
+                        if (labelsGraph != null && labelsGraph.equals(q.getGraph())) {
                             continue;
                         }
                         tripleLabels.add(new QuadLabels(q, applicator.labelForQuad(q)));

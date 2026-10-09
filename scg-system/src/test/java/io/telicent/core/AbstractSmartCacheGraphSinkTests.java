@@ -19,7 +19,8 @@ import io.telicent.smart.cache.configuration.sources.SystemPropertiesSource;
 import io.telicent.smart.cache.payloads.RdfPayload;
 import io.telicent.smart.cache.projectors.Sink;
 import io.telicent.smart.cache.security.data.distribution.DistributionLifecycleStateFile;
-import io.telicent.smart.cache.security.data.plugins.rdf.abac.RdfAbacSink;
+import io.telicent.smart.cache.security.data.labels.DatasetGraphLabelled;
+import io.telicent.smart.cache.security.data.plugins.DataSecurityPluginLoader;
 import io.telicent.smart.cache.sources.Event;
 import io.telicent.smart.cache.sources.EventHeader;
 import io.telicent.smart.cache.sources.Header;
@@ -602,7 +603,7 @@ public abstract class AbstractSmartCacheGraphSinkTests {
         server.start();
         try {
             if (dsg instanceof DatasetGraphABAC abac) {
-                try (FusekiSink<?> sink = new RdfAbacSink(abac, false)) {
+                try (FusekiSink<?> sink = new SmartCacheGraphSink(labelled(abac), false)) {
                     execTestAction.execTest(sink, server, dsgBase, dsg);
                 }
             } else {
@@ -669,13 +670,17 @@ public abstract class AbstractSmartCacheGraphSinkTests {
         }
     }
 
-    private RdfAbacSink createNamedGraphSink(DatasetGraphABAC dataset) {
+    private static DatasetGraphLabelled labelled(DatasetGraphABAC abac) {
+        return DataSecurityPluginLoader.load().prepareLabelledDataset(abac).orElseThrow();
+    }
+
+    private SmartCacheGraphSink createNamedGraphSink(DatasetGraphABAC dataset) {
         String lifecycleStateFile = Configurator.get(DISTRIBUTION_LIFECYCLE_STATE_FILE);
         String applicationId = Configurator.get(FMod_DistributionLifecycle.DISTRIBUTION_LIFECYCLE_APP_ID);
         DistributionLifecycleStateFile lifecycleState =
                 StringUtils.isNotBlank(lifecycleStateFile) ?
                 new DistributionLifecycleStateFile(Path.of(lifecycleStateFile), applicationId) : null;
-        return new RdfAbacSink(dataset, true, lifecycleState);
+        return new SmartCacheGraphSink(labelled(dataset), true, lifecycleState);
     }
 
     /**

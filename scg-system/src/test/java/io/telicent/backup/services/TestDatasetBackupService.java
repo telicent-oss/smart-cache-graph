@@ -30,6 +30,7 @@ import io.telicent.smart.cache.storage.RestoreStatus;
 import io.telicent.smart.cache.storage.BackupConfig;
 import io.telicent.smart.cache.storage.RestoreConfig;
 import io.telicent.smart.cache.security.data.DataSecurityException;
+import io.telicent.core.LabelsMaintenanceTestSupport;
 import io.telicent.smart.cache.security.data.plugins.DataSecurityPlugin;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletRequest;
@@ -746,9 +747,10 @@ public class TestDatasetBackupService {
     public void test_executeBackupLabelStore_happyPath() {
         // given
         DataSecurityPlugin mockPlugin = mock(DataSecurityPlugin.class);
-        BackupRestoreCapable capability = mock(BackupRestoreCapable.class);
+        LabelsMaintenanceTestSupport.MaintainableLabelsStore capability =
+                mock(LabelsMaintenanceTestSupport.MaintainableLabelsStore.class);
         when(capability.backup(any(BackupConfig.class))).thenReturn(BackupStatus.builder().success(true).build());
-        when(mockPlugin.prepareLabelsBackup(any(DatasetGraph.class))).thenReturn(Optional.of(capability));
+        LabelsMaintenanceTestSupport.withLabelsStore(mockPlugin, null, capability);
         DatasetBackupService datasetBackupService = new DatasetBackupService(null, mockPlugin);
         DataAccessPoint mockDataAccessPoint = mock(DataAccessPoint.class);
         DataService mockDataService = mock(DataService.class);
@@ -766,9 +768,10 @@ public class TestDatasetBackupService {
     public void test_executeRestoreLabelStore_happyPath() {
         // given
         DataSecurityPlugin mockPlugin = mock(DataSecurityPlugin.class);
-        BackupRestoreCapable capability = mock(BackupRestoreCapable.class);
+        LabelsMaintenanceTestSupport.MaintainableLabelsStore capability =
+                mock(LabelsMaintenanceTestSupport.MaintainableLabelsStore.class);
         when(capability.restore(any(RestoreConfig.class))).thenReturn(RestoreStatus.builder().success(true).build());
-        when(mockPlugin.prepareLabelsRestore(any(DatasetGraph.class))).thenReturn(Optional.of(capability));
+        LabelsMaintenanceTestSupport.withLabelsStore(mockPlugin, null, capability);
         DatasetBackupService datasetBackupService = new DatasetBackupService(null, mockPlugin);
         DataAccessPoint mockDataAccessPoint = mock(DataAccessPoint.class);
         DataService mockDataService = mock(DataService.class);

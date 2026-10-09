@@ -7,6 +7,7 @@ import io.telicent.smart.cache.storage.BackupStatus;
 import io.telicent.smart.cache.storage.RestoreStatus;
 import static org.mockito.ArgumentMatchers.any;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.telicent.core.LabelsMaintenanceTestSupport;
 import io.telicent.smart.cache.security.data.plugins.DataSecurityPlugin;
 import org.apache.jena.fuseki.server.DataAccessPointRegistry;
 import org.apache.jena.sparql.core.DatasetGraph;
@@ -34,9 +35,9 @@ public class DatasetBackupService_Test extends DatasetBackupService {
     private static DataSecurityPlugin mockDataSecurityPlugin = mock(DataSecurityPlugin.class);
 
     static {
-        BackupRestoreCapable capability = mock(BackupRestoreCapable.class);
-        when(mockDataSecurityPlugin.prepareLabelsBackup(org.mockito.ArgumentMatchers.nullable(DatasetGraph.class))).thenReturn(Optional.of(capability));
-        when(mockDataSecurityPlugin.prepareLabelsRestore(org.mockito.ArgumentMatchers.nullable(DatasetGraph.class))).thenReturn(Optional.of(capability));
+        LabelsMaintenanceTestSupport.MaintainableLabelsStore capability =
+                mock(LabelsMaintenanceTestSupport.MaintainableLabelsStore.class);
+        LabelsMaintenanceTestSupport.withLabelsStore(mockDataSecurityPlugin, null, capability);
         when(capability.backup(any(BackupConfig.class))).thenAnswer(invocation -> {
             incrementMethodCall(BACKUP_LABELS);
             throwExceptionIfNeeded(BACKUP_LABELS);
