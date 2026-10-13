@@ -75,3 +75,21 @@ tests:
     asserts:
       - notExists:
           path: data.OTEL_INSTRUMENTATION_RUNTIME_TELEMETRY_EMIT_EXPERIMENTAL_TELEMETRY
+
+
+  - it: disables the labels query endpoint by default
+    template: templates/configmap-env.yaml
+    asserts:
+      - equal:
+          path: data.ENABLE_LABELS_QUERY
+          value: "false"
+
+  - it: enables the labels query endpoint when graph.enableLabelsQuery is true
+    template: templates/configmap-env.yaml
+    set:
+      graph:
+        enableLabelsQuery: true
+    asserts:
+      - equal:
+          path: data.ENABLE_LABELS_QUERY
+          value: "true"
