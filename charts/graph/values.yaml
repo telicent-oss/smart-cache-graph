@@ -92,6 +92,8 @@ java:
 # Contains configuration parameters that configure aspects of the *Graph* application behaviour.
 # @descEnd
 graph:
+  # @key graph.enableLabelsQuery Enable the labels query endpoint at `/$/labels/<dataset>`. Disabled by default because the endpoint exposes security labels; enable only when access is appropriately restricted.
+  enableLabelsQuery: false
   # @key graph.routeToNamedGraphs Enable or disable routing to named graphs. When set to true, data will be routed into named graphs based on the Distribution-ID header set on the incoming Kafka events. This also enables the Distribution Lifecycle feature, setting the DISTRIBUTION_LIFECYCLE_ENABLED, DISTRIBUTION_LIFECYCLE_STATE_FILE and DISTRIBUTION_LIFECYCLE_LISTENER_THREADS environment variables.
   routeToNamedGraphs: false
   distributionLifecycle:

@@ -1,5 +1,11 @@
 # Smart Cache Graph
 
+## 1.2.3 (unreleased)
+- Helm chart (0.2.3)
+    - The labels query endpoint (`/$/labels/<dataset>`) is now disabled by default, matching the application default.
+    - Deployments that rely on this endpoint must set `graph.enableLabelsQuery: true`. 
+    - The endpoint exposes security labels, so enable it only when access is appropriately restricted.
+
 ## 1.2.2
 
 - Compaction fixes:
