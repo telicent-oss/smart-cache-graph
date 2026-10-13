@@ -54,6 +54,7 @@
   </developers>
 
   <properties>
+	  <foo>bar</foo>
     <!-- Build properties -->
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.build.outputTimestamp>2026-10-07T13:54:27Z</project.build.outputTimestamp>
