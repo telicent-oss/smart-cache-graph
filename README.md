@@ -311,6 +311,15 @@ time. See [Direct memory and the Jetty output buffer](docs/memory-improvements-j
 pooled. Responses larger than the buffer start streaming once it fills, so an error after that point can no longer
 change the HTTP status code.
 
+### `COMPACTION_RO`
+
+Optional, default `true`. Enables RO Compaction (read-only compaction). Compactions requested via `/$/compact/<dataset>` or `/$/compactall` pause Kafka ingest into
+the dataset and keep serving queries while the compacted copy is built; writes are rejected. During switching,
+all new dataset requests receive HTTP `503` so they cannot block health checks. Set to `false` to require
+exclusive access instead, which means a requested compaction is skipped whenever queries are running. The related
+timeouts (`COMPACTION_INGEST_PAUSE_TIMEOUT`, `COMPACTION_WRITER_DRAIN_TIMEOUT`, `COMPACTION_SWITCH_TIMEOUT`), progress
+logging and the free disk space check are described in [RO Compaction](docs/running-fuseki-tdb.md#ro-compaction).
+
 ## Build
 
 Building Smart Cache Graph is a two-step process.

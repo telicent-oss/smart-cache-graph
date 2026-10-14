@@ -19,6 +19,7 @@ package io.telicent.backup.services;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.telicent.backup.utils.EncryptionUtils;
+import io.telicent.core.DatasetIngestPause;
 import io.telicent.core.DatasetMaintenanceRegistry;
 import io.telicent.core.LabelsMaintenance;
 import io.telicent.model.KeyPair;
@@ -33,7 +34,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.apache.commons.io.FileUtils;
 import org.apache.jena.atlas.lib.DateTimeUtils;
-import org.apache.jena.fuseki.kafka.FKS;
 import org.apache.jena.fuseki.mgt.Backup;
 import org.apache.jena.fuseki.server.DataAccessPoint;
 import org.apache.jena.fuseki.server.DataAccessPointRegistry;
@@ -558,6 +558,10 @@ public class DatasetBackupService {
     }
 
     static Duration KAFKA_PAUSE_TIMEOUT = Duration.ofSeconds(30);
+    /**
+     * Used to pause Kafka ingest while restoring, replaceable for testing
+     */
+    static DatasetIngestPause ingestPause = new DatasetIngestPause();
 
     /**
      * Restore the data set with the given files location.
@@ -591,15 +595,15 @@ public class DatasetBackupService {
         }
 
         LOG.info("[RESTORE] >>>> Starting restore of dataset {} from {}", datasetName, restorePath + "/" + datasetName);
-        // Pause Kafka ingest for this dataset before touching the on-disk stores.
-        String fksKey = dataAccessPoint.getName();
+        // Pause Kafka ingest for this dataset before touching the on-disk stores. The connectors writing into the
+        // dataset are matched by name, as they may be registered under the dataset or one of its endpoints.
+        DatasetIngestPause.Handle ingest = null;
         try {
-            LOG.info("[RESTORE] Pausing Kafka ingest for {} before restore", fksKey);
-            FKS.pauseProjectors(fksKey);
-            boolean paused = FKS.waitForPause(fksKey, KAFKA_PAUSE_TIMEOUT);
-            if (!paused) {
+            LOG.info("[RESTORE] Pausing Kafka ingest for {} before restore", dataAccessPoint.getName());
+            ingest = ingestPause.pause(dataAccessPoint.getName(), KAFKA_PAUSE_TIMEOUT);
+            if (!ingest.isIngestStopped()) {
                 response.put(REASON, "Timed out after " + KAFKA_PAUSE_TIMEOUT
-                                        + " waiting for Kafka projectors on " + fksKey
+                                        + " waiting for Kafka projectors " + ingest.connectorNames()
                                         + " to reach a safe pause point; aborting restore");
                 response.put(SUCCESS, false);
                 return false;
@@ -612,8 +616,10 @@ public class DatasetBackupService {
         } finally {
             // ALWAYS resume Kafka ingest -- even if the restore threw
             try {
-                LOG.info("[RESTORE] Resuming Kafka ingest for {} after restore", fksKey);
-                FKS.resumeProjectors(fksKey);
+                if (ingest != null) {
+                    LOG.info("[RESTORE] Resuming Kafka ingest for {} after restore", dataAccessPoint.getName());
+                    ingest.close();
+                }
             } finally {
                 DatasetMaintenanceRegistry.end(maintenance.get());
             }

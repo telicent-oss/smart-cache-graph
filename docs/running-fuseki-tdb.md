@@ -84,6 +84,81 @@ restore are in progress, dataset-backed requests are rejected with HTTP `503 Ser
 before they attempt to open a transaction. Health check and other control endpoints such as
 `/$/ping` remain available during maintenance.
 
+### RO Compaction
+
+RO means read-only: queries remain available while the compacted copy is built, and writes and
+Kafka ingest are paused. During the switch to the new copy, dataset requests receive HTTP `503`
+instead of waiting for a transaction.
+
+Compactions requested through these endpoints use *RO Compaction (read-only compaction)* by default: the dataset keeps answering
+queries while the copy is built, and writes are rejected (HTTP `503`). An RO Compaction:
+
+1. Pauses Kafka ingest into the dataset, waiting for each connector to commit its open batch.
+   Connectors configured against the dataset (`/knowledge`) or one of its endpoints
+   (`/knowledge/upload`) are both found. If ingest doesn't pause in time the compaction is skipped
+   (`SKIPPED_LOCK_CONTENTION`).
+2. Waits for any other in-progress write transactions to finish, and skips if they don't.
+3. Copies the live data to a new `Data-NNNN` directory. Queries continue against the current copy.
+4. Enters the switching phase and rejects new dataset requests with HTTP `503` and a
+   `Retry-After: 1` header, as switching normally takes moments. (Other maintenance rejections,
+   e.g. writes during the copy or a restore, have no `Retry-After`, as they can last much longer.)
+   It waits for
+   requests already accepted by the filter to finish, including those that have not started
+   their transaction yet, before taking the exclusive lock and switching copies. This prevents
+   waiting queries from filling Jetty's request threads and blocking health checks. If requests
+   or transactions do not finish within the switch timeout, the new copy is discarded, the
+   database is left unchanged and the result is `SKIPPED_LOCK_CONTENTION`. Read access is
+   restored after switching, a timeout or an exception.
+5. Deletes the old copy and resumes Kafka ingest.
+
+Distribution graph deletions wait for an RO Compaction to finish rather than running during it.
+
+Free disk space is checked first. The compacted copy is written alongside the current one, so the
+compaction is skipped (`SKIPPED_INSUFFICIENT_DISK_SPACE`) unless there is room for it, plus 10%
+headroom. The compacted size is estimated as follows:
+
+- Most of a bloated store is old copies of index blocks, but TDB2's node data file
+  (`nodes-data.obj`) is append-only, so it grows with the live data, not with the garbage.
+- So the estimate is the last compacted size, scaled up by how much the node data has grown since.
+  The node data size after each compaction is recorded in `.last-compaction-nodes`, next to
+  `.last-compaction`.
+- If there's no usable last compaction, the estimate is the size of an empty store (about 200 MB)
+  plus `COMPACTION_NODE_DATA_RATIO` (default 20) bytes per byte of node data. That's the case when
+  there was no previous compaction, or it was of a store with very little data (under 64 MB of node
+  data), e.g. the compaction at startup of a new, empty store.
+  - A compacted store of default graph data is around 10 times its node data. Quads in named graphs
+    take more index space, so the default allows twice that.
+  - For example, a store that has grown to 60 GB from about 4 GB of live data, with 431 MB of node
+    data, is estimated at about 8.8 GB. Falling back to the current size instead would ask for
+    66 GB, refusing to compact the stores that most need it.
+- If the node data size can't be found, the estimate is the current size, which is the most the copy
+  can need.
+- The estimate is never more than the current size.
+
+Each check logs its estimate, what it was based on, and the free space available.
+
+Long-running compactions log their progress every minute, and log a warning if the new copy has
+stopped growing.
+
+Compaction at startup always runs with exclusive access, as nothing else is running yet.
+
+| Environment variable | Default | Purpose |
+|---|---|---|
+| `COMPACTION_RO` | `true` | Set to `false` for the previous behaviour: requested compactions need exclusive access (no active transactions at all), so they are skipped while queries are running, and every request gets `503` while they run |
+| `COMPACTION_INGEST_PAUSE_TIMEOUT` | `PT2M` | How long to wait for Kafka ingest to pause |
+| `COMPACTION_WRITER_DRAIN_TIMEOUT` | `PT1M` | How long to wait for other write transactions to finish |
+| `COMPACTION_SWITCH_TIMEOUT` | `PT1M` | How long to wait for accepted requests and in-flight transactions to finish before switching. New dataset requests receive `503` during this phase |
+| `COMPACTION_PROGRESS_LOG_INTERVAL` | `PT1M` | How often a running compaction logs its progress |
+| `COMPACTION_DISK_SPACE_CHECK` | `true` | Set to `false` to skip the free disk space check |
+| `COMPACTION_NODE_DATA_RATIO` | `20` | Bytes of compacted store per byte of node data, used by the free disk space check when there's no usable previous compaction to scale from |
+
+Durations are ISO-8601.
+
+> [!NOTE]
+> RO Compaction doesn't use Jena's `DatabaseMgr.compact`. Jena's compaction switches over
+> while queries are running, and a query that spans the switch leaves the compaction waiting
+> forever (apache/jena#3488).
+
 Successful responses from both endpoints return JSON:
 ```json
 {
@@ -98,8 +173,10 @@ Possible per-dataset outcomes are:
 - `COMPACTED`
 - `SKIPPED_ALREADY_COMPACTED`
 - `SKIPPED_PREVIOUSLY_COMPACTED`
-- `SKIPPED_LOCK_CONTENTION`
+- `SKIPPED_LOCK_CONTENTION` (the dataset couldn't be compacted safely right now, e.g. ingest didn't pause, or queries
+  didn't finish in time for the switch-over; try again later)
 - `SKIPPED_MAINTENANCE_IN_PROGRESS` (a compaction, backup or restore of the dataset is already running)
+- `SKIPPED_INSUFFICIENT_DISK_SPACE` (not enough free space for the compacted copy)
 - `SKIPPED_NOT_TDB2`
 
 When compaction throws an exception, the endpoint returns HTTP `500` with an

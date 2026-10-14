@@ -1,6 +1,31 @@
 # Smart Cache Graph
 
 ## 1.2.3 (unreleased)
+- RO Compaction: compactions requested via `/$/compact/<dataset>` and `/$/compactall` now keep the dataset
+  available for queries while it is compacted, rather than only succeeding when the server is idle:
+    - Kafka ingest into the dataset is paused, other writes are drained and then rejected with HTTP 503, and queries
+      continue to be served while the compacted copy is built
+    - During switching, new dataset requests receive HTTP 503, with `Retry-After: 1`, before starting a transaction.
+      Already accepted requests drain before the exclusive lock is taken, preventing queued queries from starving health
+      checks
+    - Uses its own compaction rather than Jena's `DatabaseMgr.compact`, whose switch-over waits forever if a query spans
+      it (apache/jena#3488). Accepted requests and in-flight transactions are given `COMPACTION_SWITCH_TIMEOUT` (default 1 minute) to finish,
+      otherwise the compaction is abandoned, leaving the database unchanged
+    - Compaction is skipped with the new `SKIPPED_INSUFFICIENT_DISK_SPACE` outcome if there isn't room for the
+      compacted copy. Its size is estimated from the growth in TDB2's append-only node data since the last compaction or,
+      if there's no usable previous compaction (e.g. only the one at startup of an empty store), as 20 bytes per byte of
+      node data (`COMPACTION_NODE_DATA_RATIO`). It never falls back to the full current size while the node data size
+      is known, which would refuse to compact heavily bloated stores
+    - Running compactions log their progress and warn if they stall
+    - Distribution graph deletions wait for an RO Compaction to finish
+    - Set `COMPACTION_RO=false` for the previous behaviour; see `docs/running-fuseki-tdb.md` for the other settings
+- Kafka ingest is now paused correctly for compaction and restore when the connector is configured against one of the
+  dataset's endpoints (e.g. `fk:fusekiServiceName "/knowledge/upload"`), not only the dataset itself. Previously the
+  pause silently did nothing in that case
+- Build improvements:
+    - Smart Caches Core upgraded to 1.8.0 and Fuseki Kafka to 3.4.2: pausing Kafka ingest (for RO Compaction or a
+      restore) no longer drops the Kafka consumer from its consumer group when the pause lasts longer than
+      `max.poll.interval.ms` (5 minutes by default)
 - Helm chart (0.2.3)
     - The labels query endpoint (`/$/labels/<dataset>`) is now disabled by default, matching the application default.
     - Deployments that rely on this endpoint must set `graph.enableLabelsQuery: true`. 

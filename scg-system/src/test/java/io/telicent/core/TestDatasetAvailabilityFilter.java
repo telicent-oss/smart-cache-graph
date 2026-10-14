@@ -35,10 +35,14 @@ public class TestDatasetAvailabilityFilter {
     private DatasetGraphSwitchable dataset;
 
     private void startServer() throws IOException {
+        startServer(createPersistentSwitchableDataset());
+    }
+
+    private void startServer(DatasetGraphSwitchable dsg) {
         AUTH_DISABLED_PROPERTIES.put(AuthConstants.ENV_JWKS_URL, AuthConstants.AUTH_DISABLED);
         Configurator.setSingleSource(AUTH_DISABLED_SOURCE);
         LibTestsSCG.disableInitialCompaction();
-        dataset = createPersistentSwitchableDataset();
+        dataset = dsg;
         server = SmartCacheGraph.serverBuilder()
                                 .port(0)
                                 .add(DATASET_NAME, dataset)
@@ -74,6 +78,8 @@ public class TestDatasetAvailabilityFilter {
         assertEquals(503, response.statusCode());
         assertTrue(response.body().contains("temporarily unavailable"));
         assertTrue(response.body().contains(DATASET_NAME));
+        // Exclusive compaction can take a long time, so no Retry-After encouraging clients to retry straight away
+        assertTrue(response.headers().firstValue("Retry-After").isEmpty());
         assertTrue(response.body().contains("compaction"));
         assertTrue(response.headers().firstValue("Request-ID").isPresent());
     }
@@ -176,6 +182,95 @@ public class TestDatasetAvailabilityFilter {
         assertTrue(resolvedTwo.isPresent());
         assertTrue(DatasetMaintenanceRegistry.isMaintenanceInProgress(resolvedOne.get()));
         assertFalse(DatasetMaintenanceRegistry.isMaintenanceInProgress(resolvedTwo.get()));
+    }
+
+    // ---------------------------------------------------------------------------------------------------------------
+    // RO Compaction: reads are served, writes are rejected
+    // ---------------------------------------------------------------------------------------------------------------
+
+    private int send(String method, String path, String contentType, String body) throws IOException, InterruptedException {
+        HttpRequest.Builder builder = HttpRequest.newBuilder().uri(URI.create(server.serverURL() + path));
+        if (contentType != null) {
+            builder.header("Content-Type", contentType);
+        }
+        HttpRequest.BodyPublisher publisher = body == null ? HttpRequest.BodyPublishers.noBody()
+                                                           : HttpRequest.BodyPublishers.ofString(body);
+        HttpRequest request = builder.method(method, publisher).build();
+        return HttpEnv.getDftHttpClient().send(request, HttpResponse.BodyHandlers.ofString()).statusCode();
+    }
+
+    private static String q(String query) {
+        return URLEncoder.encode(query, StandardCharsets.UTF_8);
+    }
+
+    @Test
+    void givenROCompaction_whenReading_thenRequestsAreServed() throws IOException, InterruptedException {
+        // A real TDB2 dataset, so requests that get through the filter are actually answered
+        startServer((DatasetGraphSwitchable) org.apache.jena.tdb2.DatabaseMgr.connectDatasetGraph(
+                java.nio.file.Files.createTempDirectory("availability-filter-tdb2").toString()));
+        markMaintenanceInProgress(dataset, DatasetMaintenanceRegistry.MaintenanceOperation.RO_COMPACTION);
+
+        assertEquals(200, send("GET", "ds/query?query=" + q("SELECT * { ?s ?p ?o }"), null, null));
+        assertEquals(200, send("POST", "ds/query", "application/sparql-query", "SELECT * { ?s ?p ?o }"));
+        assertEquals(200, send("POST", "ds/sparql", "application/x-www-form-urlencoded",
+                               "query=" + q("ASK { ?s ?p ?o }")));
+        assertEquals(200, send("POST", "ds", "application/sparql-query", "SELECT * { ?s ?p ?o }"));
+        assertEquals(200, send("GET", "ds/get?default", null, null));
+        assertEquals(200, send("GET", "ds/data?default", null, null));
+    }
+
+    @Test
+    void givenROCompaction_whenWriting_thenRequestsAre503() throws IOException, InterruptedException {
+        startServer();
+        markMaintenanceInProgress(dataset, DatasetMaintenanceRegistry.MaintenanceOperation.RO_COMPACTION);
+
+        assertEquals(503, send("POST", "ds/update", "application/sparql-update", "INSERT DATA { <urn:a> <urn:b> <urn:c> }"));
+        assertEquals(503, send("POST", "ds", "application/sparql-update", "INSERT DATA { <urn:a> <urn:b> <urn:c> }"));
+        assertEquals(503, send("PUT", "ds/data?default", "text/turtle", "<urn:a> <urn:b> <urn:c> ."));
+        assertEquals(503, send("POST", "ds/data?default", "text/turtle", "<urn:a> <urn:b> <urn:c> ."));
+        assertEquals(503, send("DELETE", "ds/data?default", null, null));
+        assertEquals(503, send("POST", "ds/upload", "text/turtle", "<urn:a> <urn:b> <urn:c> ."));
+    }
+
+    @Test
+    void givenExclusiveCompaction_whenReading_thenStill503() throws IOException, InterruptedException {
+        startServer();
+        markMaintenanceInProgress(dataset, DatasetMaintenanceRegistry.MaintenanceOperation.COMPACTION);
+
+        assertEquals(503, send("POST", "ds/query", "application/sparql-query", "SELECT * { ?s ?p ?o }"));
+    }
+
+    @Test
+    void givenRequests_whenClassifyingReads_thenOnlyReadOnlyRequestsQualify() {
+        org.apache.jena.fuseki.server.DataService service =
+                org.apache.jena.fuseki.server.DataService.newBuilder()
+                        .dataset(org.apache.jena.sparql.core.DatasetGraphFactory.createTxnMem())
+                        .addEndpoint(org.apache.jena.fuseki.server.Operation.Query, "query")
+                        .addEndpoint(org.apache.jena.fuseki.server.Operation.Update, "update")
+                        .addEndpoint(org.apache.jena.fuseki.server.Operation.GSP_RW, "data")
+                        .build();
+
+        assertTrue(FMod_DatasetAvailabilityFilter.isReadRequest(request("GET", "/ds/update", null), "/ds", service));
+        assertTrue(FMod_DatasetAvailabilityFilter.isReadRequest(request("HEAD", "/ds/data", null), "/ds", service));
+        assertTrue(FMod_DatasetAvailabilityFilter.isReadRequest(request("POST", "/ds/query", null), "/ds", service));
+        assertTrue(FMod_DatasetAvailabilityFilter.isReadRequest(request("POST", "/$/labels/ds", null), "/ds", service));
+        assertTrue(FMod_DatasetAvailabilityFilter.isReadRequest(
+                request("POST", "/ds", "application/sparql-query; charset=utf-8"), "/ds", service));
+        assertFalse(FMod_DatasetAvailabilityFilter.isReadRequest(request("POST", "/ds", "text/turtle"), "/ds", service));
+        assertFalse(FMod_DatasetAvailabilityFilter.isReadRequest(request("POST", "/ds/update", null), "/ds", service));
+        assertFalse(FMod_DatasetAvailabilityFilter.isReadRequest(request("POST", "/ds/data", null), "/ds", service));
+        assertFalse(FMod_DatasetAvailabilityFilter.isReadRequest(request("POST", "/ds/unknown", null), "/ds", service));
+        assertFalse(FMod_DatasetAvailabilityFilter.isReadRequest(request("POST", "/ds/query", null), "/ds", null));
+        assertFalse(FMod_DatasetAvailabilityFilter.isReadRequest(request("PUT", "/ds/data", null), "/ds", service));
+        assertFalse(FMod_DatasetAvailabilityFilter.isReadRequest(request("PATCH", "/ds", null), "/ds", service));
+    }
+
+    private static jakarta.servlet.http.HttpServletRequest request(String method, String uri, String contentType) {
+        jakarta.servlet.http.HttpServletRequest request = org.mockito.Mockito.mock(jakarta.servlet.http.HttpServletRequest.class);
+        org.mockito.Mockito.when(request.getMethod()).thenReturn(method);
+        org.mockito.Mockito.when(request.getRequestURI()).thenReturn(uri);
+        org.mockito.Mockito.when(request.getContentType()).thenReturn(contentType);
+        return request;
     }
 
     private static void markMaintenanceInProgress(DatasetGraphSwitchable dsg,

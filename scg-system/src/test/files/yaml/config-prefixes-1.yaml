@@ -25,7 +25,7 @@ databases:
     dbtype: ABAC
     dataset: "dataset-under"
     attributes: "attribute-store.ttl"
-    labels-store: "target/labels"
+    labels-store: "target/labels-prefixes-1"
 
   - name: "dataset-under"
     dbtype: TIM

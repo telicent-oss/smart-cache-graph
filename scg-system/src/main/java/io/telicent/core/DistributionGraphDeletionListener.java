@@ -29,6 +29,7 @@ import org.apache.jena.graph.NodeFactory;
 import org.apache.jena.sparql.core.DatasetGraph;
 import org.apache.jena.sparql.core.Quad;
 import org.apache.jena.system.Txn;
+import org.apache.jena.tdb2.store.DatasetGraphSwitchable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,6 +44,8 @@ import java.util.function.Supplier;
 public class DistributionGraphDeletionListener implements DistributionLifecycleListener {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DistributionGraphDeletionListener.class);
+
+    static long RO_COMPACTION_POLL_MILLIS = 1000;
 
     private final Supplier<Collection<DatasetGraph>> datasetSupplier;
 
@@ -107,7 +110,7 @@ public class DistributionGraphDeletionListener implements DistributionLifecycleL
      * @param graphName Named graph to delete
      */
     static void deleteDistributionGraph(DatasetGraph dataset, Node graphName) {
-
+        waitForROCompaction(dataset, graphName);
         Txn.executeWrite(dataset, () -> {
             final Optional<DatasetGraphLabelled> labelled =
                     DataSecurityPluginLoader.load().prepareLabelledDataset(dataset);
@@ -125,5 +128,37 @@ public class DistributionGraphDeletionListener implements DistributionLifecycleL
             dataset.removeGraph(graphName);
             LOGGER.info("Deleted named graph {} for deleted distribution", graphName.getURI());
         });
+    }
+
+    /**
+     * Waits for any RO Compaction of the dataset to finish. A write would otherwise wait for the compaction anyway,
+     * and while waiting would stop the compaction switching over to the compacted copy, so it would be abandoned.
+     */
+    static void waitForROCompaction(DatasetGraph dataset, Node graphName) {
+        Optional<DatasetGraphSwitchable> managed = DatasetMaintenanceRegistry.getManagedDataset(dataset);
+        if (managed.isEmpty()) {
+            return;
+        }
+        boolean logged = false;
+        while (isROCompactionInProgress(managed.get())) {
+            if (!logged) {
+                LOGGER.info("Waiting for RO Compaction to finish before deleting named graph {}",
+                            graphName.getURI());
+                logged = true;
+            }
+            try {
+                Thread.sleep(RO_COMPACTION_POLL_MILLIS);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return;
+            }
+        }
+    }
+
+    private static boolean isROCompactionInProgress(DatasetGraphSwitchable dsg) {
+        return DatasetMaintenanceRegistry.findCurrentMaintenance(dsg)
+                                         .map(m -> m.operation()
+                                                   == DatasetMaintenanceRegistry.MaintenanceOperation.RO_COMPACTION)
+                                         .orElse(false);
     }
 }
