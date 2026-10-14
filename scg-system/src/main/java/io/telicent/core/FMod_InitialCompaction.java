@@ -538,7 +538,7 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
 
     public static void compactLabels(DatasetGraph dsg) throws DataSecurityException {
         final DataSecurityPlugin plugin = DataSecurityPluginLoader.load();
-        final Optional<CompactCapable> capability = plugin.prepareLabelsCompact(dsg);
+        final Optional<CompactCapable> capability = LabelsMaintenance.compact(plugin, dsg);
         if (capability.isEmpty()) {
             return;
         }

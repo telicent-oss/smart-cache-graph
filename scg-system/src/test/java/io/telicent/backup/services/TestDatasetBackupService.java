@@ -20,17 +20,17 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.telicent.backup.utils.BackupUtils;
 import io.telicent.core.DatasetMaintenanceRegistry;
+import io.telicent.core.LabelsMaintenanceTestSupport;
 import io.telicent.jena.abac.ABAC;
 import io.telicent.jena.abac.core.DatasetGraphABAC;
-import io.telicent.jena.abac.labels.LabelsStoreMem;
 import io.telicent.jena.abac.labels.LabelsStore;
-import io.telicent.smart.cache.storage.BackupRestoreCapable;
-import io.telicent.smart.cache.storage.BackupStatus;
-import io.telicent.smart.cache.storage.RestoreStatus;
-import io.telicent.smart.cache.storage.BackupConfig;
-import io.telicent.smart.cache.storage.RestoreConfig;
+import io.telicent.jena.abac.labels.LabelsStoreMem;
 import io.telicent.smart.cache.security.data.DataSecurityException;
 import io.telicent.smart.cache.security.data.plugins.DataSecurityPlugin;
+import io.telicent.smart.cache.storage.BackupConfig;
+import io.telicent.smart.cache.storage.BackupStatus;
+import io.telicent.smart.cache.storage.RestoreConfig;
+import io.telicent.smart.cache.storage.RestoreStatus;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -68,7 +68,6 @@ import static java.util.Collections.emptyList;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-@SuppressWarnings("deprecation")
 public class TestDatasetBackupService {
 
     public final DataAccessPointRegistry mockRegistry = mock(DataAccessPointRegistry.class);
@@ -745,13 +744,13 @@ public class TestDatasetBackupService {
     @DisplayName("Happy path for executing backup of Label Store")
     public void test_executeBackupLabelStore_happyPath() {
         // given
-        DataSecurityPlugin mockPlugin = mock(DataSecurityPlugin.class);
-        BackupRestoreCapable capability = mock(BackupRestoreCapable.class);
+        final var mockPlugin = mock(DataSecurityPlugin.class);
+        final var capability = mock(LabelsMaintenanceTestSupport.MaintainableLabelsStore.class);
         when(capability.backup(any(BackupConfig.class))).thenReturn(BackupStatus.builder().success(true).build());
-        when(mockPlugin.prepareLabelsBackup(any(DatasetGraph.class))).thenReturn(Optional.of(capability));
-        DatasetBackupService datasetBackupService = new DatasetBackupService(null, mockPlugin);
-        DataAccessPoint mockDataAccessPoint = mock(DataAccessPoint.class);
-        DataService mockDataService = mock(DataService.class);
+        LabelsMaintenanceTestSupport.withLabelsStore(mockPlugin, null, capability);
+        final var datasetBackupService = new DatasetBackupService(null, mockPlugin);
+        final var mockDataAccessPoint = mock(DataAccessPoint.class);
+        final var mockDataService = mock(DataService.class);
         when(mockDataAccessPoint.getDataService()).thenReturn(mockDataService);
         when(mockDataService.getDataset()).thenReturn(DatasetGraphFactory.createTxnMem());
         // when
@@ -765,13 +764,13 @@ public class TestDatasetBackupService {
     @DisplayName("Happy path for executing restore of Label Store")
     public void test_executeRestoreLabelStore_happyPath() {
         // given
-        DataSecurityPlugin mockPlugin = mock(DataSecurityPlugin.class);
-        BackupRestoreCapable capability = mock(BackupRestoreCapable.class);
+        final var mockPlugin = mock(DataSecurityPlugin.class);
+        final var capability = mock(LabelsMaintenanceTestSupport.MaintainableLabelsStore.class);
         when(capability.restore(any(RestoreConfig.class))).thenReturn(RestoreStatus.builder().success(true).build());
-        when(mockPlugin.prepareLabelsRestore(any(DatasetGraph.class))).thenReturn(Optional.of(capability));
-        DatasetBackupService datasetBackupService = new DatasetBackupService(null, mockPlugin);
-        DataAccessPoint mockDataAccessPoint = mock(DataAccessPoint.class);
-        DataService mockDataService = mock(DataService.class);
+        LabelsMaintenanceTestSupport.withLabelsStore(mockPlugin, null, capability);
+        final var datasetBackupService = new DatasetBackupService(null, mockPlugin);
+        final var mockDataAccessPoint = mock(DataAccessPoint.class);
+        final var mockDataService = mock(DataService.class);
         when(mockDataAccessPoint.getDataService()).thenReturn(mockDataService);
         when(mockDataService.getDataset()).thenReturn(DatasetGraphFactory.createTxnMem());
         // when

@@ -54,7 +54,7 @@ import io.opentelemetry.sdk.metrics.export.PeriodicMetricReader;
 import io.opentelemetry.sdk.testing.exporter.InMemoryMetricReader;
 import io.telicent.LibTestsSCG;
 import io.telicent.core.SmartCacheGraph;
-import io.telicent.jena.abac.labels.LabelsStore;
+import io.telicent.smart.cache.security.data.labels.DatasetGraphLabelled;
 import io.telicent.servlet.auth.jwt.verifier.aws.AwsConstants;
 import org.apache.jena.Jena;
 import org.apache.jena.fuseki.main.FusekiServer;
@@ -111,7 +111,7 @@ class TestJenaMetrics {
     }
 
     @Test
-    void no_configuration() throws Exception {
+    void no_configuration() {
         OpenTelemetry otel = JenaMetrics.get();
         assertNotNull(otel);
     }
@@ -417,19 +417,19 @@ class TestJenaMetrics {
 
     @Test
     void label_store_metrics() {
-        InMemoryMetricReader reader = InMemoryMetricReader.create();
-        SdkMeterProvider meterProvider = SdkMeterProvider.builder().registerMetricReader(reader).build();
-        OpenTelemetrySdk sdk = OpenTelemetrySdk.builder().setMeterProvider(track(meterProvider)).build();
+        final var reader = InMemoryMetricReader.create();
+        final SdkMeterProvider meterProvider = SdkMeterProvider.builder().registerMetricReader(reader).build();
+        final OpenTelemetrySdk sdk = OpenTelemetrySdk.builder().setMeterProvider(track(meterProvider)).build();
         JenaMetrics.set(sdk);
 
-        LabelsStore labelsStore = mock(LabelsStore.class);
-        when(labelsStore.getMetrics()).thenReturn(Map.of(
-                LabelsStore.METRIC_LABEL_ADD_ATTEMPTS, 10L,
-                LabelsStore.METRIC_LABEL_CACHE_NO_OPS, 4L,
-                LabelsStore.METRIC_LABEL_WRITES, 6L));
+        final var labelsStore = mock(DatasetGraphLabelled.class);
+        when(labelsStore.labelsMetrics()).thenReturn(Map.of(
+                DatasetGraphLabelled.METRIC_LABEL_ADD_ATTEMPTS, 10L,
+                DatasetGraphLabelled.METRIC_LABEL_CACHE_NO_OPS, 4L,
+                DatasetGraphLabelled.METRIC_LABEL_WRITES, 6L));
         FMod_OpenTelemetry.buildLabelStoreMetrics(JenaMetrics.getMeter("Jena", Jena.VERSION), "/ds", labelsStore);
 
-        Attributes expectedAttributes = Attributes.builder()
+        final Attributes expectedAttributes = Attributes.builder()
                                                   .put(FMod_OpenTelemetry.DB_SYSTEM, "RDF ABAC label store")
                                                   .put(io.opentelemetry.semconv.DbAttributes.DB_SYSTEM_NAME,
                                                        "RDF ABAC label store")
