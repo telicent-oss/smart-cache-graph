@@ -564,14 +564,14 @@
     <!-- External dependencies -->
     <dependency.awaitility>4.3.0</dependency.awaitility>
     <dependency.caffeine>3.3.0</dependency.caffeine>
-    <dependency.commons-codec>1.22.1</dependency.commons-codec>
+    <dependency.commons-codec>1.23.0</dependency.commons-codec>
     <dependency.commons-compress>1.28.0</dependency.commons-compress>
     <dependency.gson>2.14.0</dependency.gson>
     <dependency.jackson>2.22.3</dependency.jackson>
     <dependency.jackson3>3.2.3</dependency.jackson3>
     <dependency.bouncycastle>1.86</dependency.bouncycastle>
     <dependency.kafka>3.9.2</dependency.kafka>
-    <dependency.kotlin>2.4.20</dependency.kotlin>
+    <dependency.kotlin>2.4.21</dependency.kotlin>
     <dependency.lz4>1.12.0</dependency.lz4>
     <dependency.otel>1.67.0</dependency.otel>
 
@@ -594,7 +594,7 @@
     <!-- CVE-2025-28976 -->
     <dependency.commons-fileupload2>2.0.0-M5</dependency.commons-fileupload2>
     <!-- CVE-2026-1605 -->
-    <dependency.jetty>12.1.13</dependency.jetty>
+    <dependency.jetty>12.1.14</dependency.jetty>
 
   </properties>
 
