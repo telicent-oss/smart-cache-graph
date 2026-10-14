@@ -266,6 +266,10 @@ final class ROCompaction {
         }
     }
 
+    // java:S3011 - deliberate: Jena only exposes an unbounded or a single-attempt wait for exclusive mode, so the
+    // switchable's private exclusivity lock is used directly to bound the wait (see runExclusively()). If the field
+    // isn't there (a different Jena version) this returns null and exclusive mode is polled for instead.
+    @SuppressWarnings("java:S3011")
     private static Field findExclusivityLock() {
         try {
             Field field = DatasetGraphTxnCtl.class.getDeclaredField("exclusivitylock");

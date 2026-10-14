@@ -141,11 +141,11 @@ public final class DatasetMaintenanceRegistry {
 
         private SwitchWindow(RequestGate gate) {
             this.gate = gate;
-            synchronized (gate) {
-                if (gate.switching) {
+            synchronized (this.gate) {
+                if (this.gate.switching) {
                     throw new IllegalStateException("Dataset is already switching");
                 }
-                gate.switching = true;
+                this.gate.switching = true;
             }
         }
 

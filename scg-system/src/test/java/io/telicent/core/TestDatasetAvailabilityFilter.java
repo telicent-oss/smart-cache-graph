@@ -24,6 +24,8 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class TestDatasetAvailabilityFilter {
 
@@ -266,10 +268,10 @@ public class TestDatasetAvailabilityFilter {
     }
 
     private static jakarta.servlet.http.HttpServletRequest request(String method, String uri, String contentType) {
-        jakarta.servlet.http.HttpServletRequest request = org.mockito.Mockito.mock(jakarta.servlet.http.HttpServletRequest.class);
-        org.mockito.Mockito.when(request.getMethod()).thenReturn(method);
-        org.mockito.Mockito.when(request.getRequestURI()).thenReturn(uri);
-        org.mockito.Mockito.when(request.getContentType()).thenReturn(contentType);
+        jakarta.servlet.http.HttpServletRequest request = mock(jakarta.servlet.http.HttpServletRequest.class);
+        when(request.getMethod()).thenReturn(method);
+        when(request.getRequestURI()).thenReturn(uri);
+        when(request.getContentType()).thenReturn(contentType);
         return request;
     }
 

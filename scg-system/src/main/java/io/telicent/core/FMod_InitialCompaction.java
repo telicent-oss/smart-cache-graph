@@ -601,7 +601,7 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
      */
     static boolean hasEnoughDiskSpace(DatasetGraphSwitchable dsg, String name, long sizeBefore,
                                       long previousCompactionSize, long previousNodeDataSize, long nodeDataSize) {
-        if (sizeBefore <= 0 || !Configurator.get(COMPACTION_DISK_SPACE_CHECK, Boolean::parseBoolean, true)) {
+        if (sizeBefore <= 0 || !Boolean.TRUE.equals(Configurator.get(COMPACTION_DISK_SPACE_CHECK, Boolean::parseBoolean, true))) {
             return true;
         }
         CompactedSizeEstimate estimate =
@@ -712,6 +712,8 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
      * Periodically logs a running compaction's progress so a stalled one is visible: INFO while the new copy is
      * growing, WARN if it has not grown since the last check
      */
+    // java:S1452 - the wildcard comes from ScheduledExecutorService.scheduleAtFixedRate(), the caller only cancels it
+    @SuppressWarnings("java:S1452")
     static java.util.concurrent.ScheduledFuture<?> startProgressLogging(DatasetGraphSwitchable dsg, String name,
                                                                                Instant startedAt) {
         Duration interval = configuredDuration(COMPACTION_PROGRESS_LOG_INTERVAL, Duration.ofMinutes(1));
