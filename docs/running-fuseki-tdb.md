@@ -91,7 +91,7 @@ Kafka ingest are paused. During the switch to the new copy, dataset requests rec
 instead of waiting for a transaction.
 
 Compactions requested through these endpoints use *RO Compaction (read-only compaction)* by default: the dataset keeps answering
-queries while the copy is built, and writes are rejected (HTTP `503`). An RO Compaction:
+queries while the copy is built, and writes are rejected (HTTP `503`). A RO Compaction:
 
 1. Pauses Kafka ingest into the dataset, waiting for each connector to commit its open batch.
    Connectors configured against the dataset (`/knowledge`) or one of its endpoints
