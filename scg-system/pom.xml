@@ -97,6 +97,11 @@
             <artifactId>jena-tdb2</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>io.telicent.jena</groupId>
+            <artifactId>rdf-abac-core</artifactId>
+        </dependency>
+
         <!-- Jena Fuseki Kafka -->
         <dependency>
             <groupId>io.telicent.jena</groupId>
