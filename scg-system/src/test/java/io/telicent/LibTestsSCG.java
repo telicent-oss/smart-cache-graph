@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import io.jsonwebtoken.JwtBuilder;
 import io.jsonwebtoken.Jwts;
 import io.telicent.core.FMod_InitialCompaction;
+import io.telicent.jena.abac.labels.Labels;
 import io.telicent.servlet.auth.jwt.JwtHttpConstants;
 import io.telicent.servlet.auth.jwt.verifier.aws.AwsConstants;
 import io.telicent.servlet.auth.jwt.verifier.aws.AwsElbKeyUrlRegistry;
@@ -223,5 +224,25 @@ public class LibTestsSCG {
         Properties properties = new Properties();
         properties.put(ENABLE_BACKUPS, "false");
         Configurator.addSource(new PropertiesSource(properties));
+    }
+
+    /**
+     * Close any open RocksDB labels stores and clear the {@link Labels#rocks} cache.
+     * <p>
+     * {@code server.stop()} does not close the labels stores. Leaving them open holds the RocksDB lock, clearing the
+     * cache without closing them orphans the native handles, and closing without clearing leaves closed stores in the
+     * cache for later tests that use the same path. Call this in teardown, and before deleting any labels store
+     * directory.
+     * </p>
+     */
+    public static void closeAndClearLabelsStores() {
+        Labels.rocks.forEach((f, labels) -> {
+            try {
+                labels.close();
+            } catch (Exception e) {
+                // Ignore
+            }
+        });
+        Labels.rocks.clear();
     }
 }

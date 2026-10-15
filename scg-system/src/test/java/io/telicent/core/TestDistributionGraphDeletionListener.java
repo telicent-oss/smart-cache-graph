@@ -33,11 +33,17 @@ import org.apache.jena.sparql.core.DatasetGraphFactory;
 import org.apache.jena.sparql.core.Quad;
 import org.apache.jena.sparql.core.mem.DatasetGraphInMemory;
 import org.apache.jena.system.Txn;
+import org.apache.jena.tdb2.store.DatasetGraphSwitchable;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -300,6 +306,60 @@ public class TestDistributionGraphDeletionListener {
             assertThrows(RuntimeException.class, () -> listener.accept(deleted));
             assertTrue(graphEmpty(working, DISTRIBUTION_ID),
                        "A failure on one dataset must not prevent deletion on the others");
+        }
+    }
+
+    @Test
+    void givenROCompactionInProgress_whenDeleting_thenWaitsForCompactionToFinish() throws Exception {
+        // given
+        long originalPoll = DistributionGraphDeletionListener.RO_COMPACTION_POLL_MILLIS;
+        DistributionGraphDeletionListener.RO_COMPACTION_POLL_MILLIS = 20;
+        DatasetGraphSwitchable switchable = (DatasetGraphSwitchable) org.apache.jena.tdb2.DatabaseMgr.connectDatasetGraph(
+                java.nio.file.Files.createTempDirectory("deletion-listener").toString());
+        DatasetGraphABAC dsg = ABAC.authzDataset(switchable, AEX.strALLOW, Labels.createLabelsStoreMem(),
+                                                 SysABAC.allowLabel, null);
+        addQuad(dsg, DISTRIBUTION_ID, "value1", Label.fromText("PERMIT"));
+        DatasetMaintenanceRegistry.MaintenanceHandle maintenance =
+                DatasetMaintenanceRegistry.begin(dsg, "/ds", DatasetMaintenanceRegistry.MaintenanceOperation.RO_COMPACTION)
+                                          .orElseThrow();
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        try (DistributionGraphDeletionListener listener = listenerFor(dsg)) {
+            // when
+            Future<?> deletion = executor.submit(() -> listener.accept(
+                    action(DISTRIBUTION_ID, DistributionLifecycleState.Active, DistributionLifecycleState.Deleted)));
+
+            // then
+            assertThrows(TimeoutException.class, () -> deletion.get(300, TimeUnit.MILLISECONDS));
+            assertFalse(graphEmpty(dsg, DISTRIBUTION_ID), "Deletion should wait for the RO Compaction");
+            DatasetMaintenanceRegistry.end(maintenance);
+            deletion.get(10, TimeUnit.SECONDS);
+            assertTrue(graphEmpty(dsg, DISTRIBUTION_ID));
+        } finally {
+            DatasetMaintenanceRegistry.end(maintenance);
+            DistributionGraphDeletionListener.RO_COMPACTION_POLL_MILLIS = originalPoll;
+            executor.shutdownNow();
+        }
+    }
+
+    @Test
+    void givenOtherMaintenanceInProgress_whenDeleting_thenDoesNotWait() throws Exception {
+        // given
+        DatasetGraphSwitchable switchable = (DatasetGraphSwitchable) org.apache.jena.tdb2.DatabaseMgr.connectDatasetGraph(
+                java.nio.file.Files.createTempDirectory("deletion-listener").toString());
+        DatasetGraphABAC dsg = ABAC.authzDataset(switchable, AEX.strALLOW, Labels.createLabelsStoreMem(),
+                                                 SysABAC.allowLabel, null);
+        addQuad(dsg, DISTRIBUTION_ID, "value1", Label.fromText("PERMIT"));
+        DatasetMaintenanceRegistry.MaintenanceHandle maintenance =
+                DatasetMaintenanceRegistry.begin(dsg, "/ds", DatasetMaintenanceRegistry.MaintenanceOperation.BACKUP)
+                                          .orElseThrow();
+        try (DistributionGraphDeletionListener listener = listenerFor(dsg)) {
+            // when
+            listener.accept(action(DISTRIBUTION_ID, DistributionLifecycleState.Active, DistributionLifecycleState.Deleted));
+
+            // then
+            assertTrue(graphEmpty(dsg, DISTRIBUTION_ID));
+        } finally {
+            DatasetMaintenanceRegistry.end(maintenance);
         }
     }
 }

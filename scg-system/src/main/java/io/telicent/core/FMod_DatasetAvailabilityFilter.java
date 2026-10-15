@@ -15,6 +15,9 @@ import org.apache.jena.fuseki.main.FusekiServer;
 import org.apache.jena.fuseki.main.sys.FusekiModule;
 import org.apache.jena.fuseki.server.DataAccessPoint;
 import org.apache.jena.fuseki.server.DataAccessPointRegistry;
+import org.apache.jena.fuseki.server.DataService;
+import org.apache.jena.fuseki.server.EndpointSet;
+import org.apache.jena.fuseki.server.Operation;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.tdb2.store.DatasetGraphSwitchable;
 
@@ -28,11 +31,24 @@ import java.util.Set;
 
 public class FMod_DatasetAvailabilityFilter implements FusekiModule {
 
+    /**
+     * {@code Retry-After} (seconds) sent with the 503 for requests rejected while an RO Compaction switches over
+     */
+    static final String RETRY_AFTER_SWITCHING_SECONDS = "1";
+
+
     private static final String VERSION =
             Version.versionForClass(FMod_DatasetAvailabilityFilter.class).orElse("<development>");
     private static final String LABELS_PREFIX = "/$/labels/";
     private volatile Set<String> datasetNames = Set.of();
     private volatile Map<String, DatasetGraphSwitchable> datasetsByPath = Map.of();
+    private volatile Map<String, DataService> servicesByPath = Map.of();
+
+    /**
+     * Fuseki operations that only read the dataset
+     */
+    static final Set<Operation> READ_OPERATIONS =
+            Set.of(Operation.Query, Operation.GSP_R, Operation.GSP_Direct_R, Operation.PREFIXES_R);
 
     @Override
     public String name() {
@@ -49,8 +65,10 @@ public class FMod_DatasetAvailabilityFilter implements FusekiModule {
     @Override
     public void configured(FusekiServer.Builder serverBuilder, DataAccessPointRegistry dapRegistry, Model configModel) {
         Map<String, DatasetGraphSwitchable> datasets = new LinkedHashMap<>();
+        Map<String, DataService> services = new LinkedHashMap<>();
         if (dapRegistry != null) {
             for (DataAccessPoint dap : dapRegistry.accessPoints()) {
+                services.put(dap.getName(), dap.getDataService());
                 DatasetGraphSwitchable dsg = FMod_InitialCompaction.getTDB2(dap.getDataService().getDataset());
                 if (dsg != null) {
                     datasets.put(dap.getName(), dsg);
@@ -58,6 +76,7 @@ public class FMod_DatasetAvailabilityFilter implements FusekiModule {
             }
         }
         this.datasetsByPath = Map.copyOf(datasets);
+        this.servicesByPath = Map.copyOf(services);
     }
 
     static Optional<String> datasetNameForPath(String requestUri, Set<String> datasetNames) {
@@ -105,6 +124,47 @@ public class FMod_DatasetAvailabilityFilter implements FusekiModule {
         return segment.isBlank() ? null : segment;
     }
 
+    /**
+     * Decides whether a request to a dataset only reads it, so may proceed during an RO Compaction.
+     * <p>
+     * Reads are: GET, HEAD and OPTIONS requests; POSTs to an endpoint whose operations are all read-only (e.g. a SPARQL
+     * query endpoint); label lookups; and SPARQL queries POSTed to the dataset itself. Anything else, including
+     * operations this filter can't classify, is treated as a write.
+     * </p>
+     *
+     * @param request     Request
+     * @param datasetName Dataset name, e.g. {@code /knowledge}
+     * @param service     The dataset's data service, if known
+     * @return True if the request only reads the dataset
+     */
+    static boolean isReadRequest(HttpServletRequest request, String datasetName, DataService service) {
+        String method = request.getMethod();
+        if ("GET".equals(method) || "HEAD".equals(method) || "OPTIONS".equals(method)) {
+            return true;
+        }
+        if (!"POST".equals(method)) {
+            return false;
+        }
+        String uri = request.getRequestURI();
+        if (uri.startsWith(LABELS_PREFIX)) {
+            // Label lookups read the labels store
+            return true;
+        }
+        String rest = uri.length() > datasetName.length() ? uri.substring(datasetName.length() + 1) : "";
+        String endpointName = firstPathSegment(rest);
+        if (endpointName == null) {
+            // POST to the dataset itself: only a SPARQL query reads
+            String contentType = request.getContentType();
+            return (contentType != null && contentType.toLowerCase().startsWith("application/sparql-query"))
+                    || request.getParameter("query") != null;
+        }
+        if (service == null) {
+            return false;
+        }
+        EndpointSet endpoints = service.getEndpointSet(endpointName);
+        return endpoints != null && !endpoints.isEmpty() && READ_OPERATIONS.containsAll(endpoints.operations());
+    }
+
     private final class DatasetAvailabilityFilter implements Filter {
 
         @Override
@@ -121,19 +181,29 @@ public class FMod_DatasetAvailabilityFilter implements FusekiModule {
             Optional<String> datasetName = datasetNameForPath(request.getRequestURI(), datasetNames);
             DatasetGraphSwitchable dataset = datasetForPath(request.getRequestURI(), datasetNames, datasetsByPath)
                     .orElse(null);
-            Optional<DatasetMaintenanceRegistry.MaintenanceIndicator> maintenance =
-                    dataset == null ? Optional.empty() : DatasetMaintenanceRegistry.findCurrentMaintenance(dataset);
-            if (datasetName.isPresent() && maintenance.isPresent()) {
+            if (dataset == null || datasetName.isEmpty()) {
+                chain.doFilter(servletRequest, servletResponse);
+                return;
+            }
+            boolean read = isReadRequest(request, datasetName.get(), servicesByPath.get(datasetName.get()));
+            try (DatasetMaintenanceRegistry.RequestAdmission admission =
+                         DatasetMaintenanceRegistry.admitRequest(dataset, read)) {
+                if (admission.allowed()) {
+                    chain.doFilter(servletRequest, servletResponse);
+                    return;
+                }
                 response.setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+                if (admission.switching()) {
+                    // An RO Compaction switching to its compacted copy normally takes moments, so tell clients they can
+                    // retry almost immediately. Other maintenance (e.g. a restore) can take far longer, so isn't given
+                    // a Retry-After, which would only encourage clients to retry repeatedly.
+                    response.setHeader("Retry-After", RETRY_AFTER_SWITCHING_SECONDS);
+                }
                 response.setContentType("application/json");
                 response.setCharacterEncoding(StandardCharsets.UTF_8.name());
                 response.getWriter().write("{\"error\":\"Dataset " + datasetName.get()
-                        + " is temporarily unavailable while "
-                        + maintenance.get().operation().displayName() + " is in progress.\"}");
-                return;
+                        + " is temporarily unavailable while " + admission.rejection() + " is in progress.\"}");
             }
-
-            chain.doFilter(servletRequest, servletResponse);
         }
 
         @Override
