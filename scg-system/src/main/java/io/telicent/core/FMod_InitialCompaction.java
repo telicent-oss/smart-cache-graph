@@ -864,13 +864,6 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
         return Optional.ofNullable(CURRENT_COMPACTIONS.get(dsg));
     }
 
-    static boolean isCompactionInProgress(DatasetGraphSwitchable dsg) {
-        return DatasetMaintenanceRegistry.findCurrentMaintenance(dsg)
-                .map(indicator -> indicator.operation() == DatasetMaintenanceRegistry.MaintenanceOperation.COMPACTION
-                        || indicator.operation() == DatasetMaintenanceRegistry.MaintenanceOperation.RO_COMPACTION)
-                .orElse(false);
-    }
-
     static File getCompactionIndicatorFile(DatasetGraphSwitchable switchable) {
         return new File(switchable.getContainerPath().toFile(), ".compaction-status");
     }
