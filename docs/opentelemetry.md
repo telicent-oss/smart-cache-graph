@@ -227,6 +227,8 @@ The available query names are:
 - `jvm_gc_paused_percent`
 - `jvm_direct_buffers`
 - `tdb2_disk_usage`
+- `container_memory`
+- `container_io_rates`
 
 Representative PromQL expressions:
 
@@ -304,6 +306,39 @@ The **JVM Memory, GC & Storage** row shows:
 - **Heap Used vs Live Set**: heap in use, heap remaining after the last GC and the maximum heap.
 - **TDB2 Disk Usage and Growth**: the on-disk size of each TDB2 dataset and its hourly growth. TDB2 is copy-on-write,
   so it grows until compacted.
+
+The **Container Memory & Disk I/O** row shows what TDB2's memory-mapped files are getting from the container. These
+figures come from Graph's own cgroup (v2, or v1 as a fallback), so they work in Kubernetes and Docker without cAdvisor.
+If there's no cgroup memory accounting (e.g. running outside a container on macOS), they aren't reported.
+
+- **Page Cache Headroom**: the memory limit minus the JVM's own (anonymous) memory. TDB2's indexes live in page cache,
+  which counts towards the limit, so this is the most page cache TDB2 can have.
+- **Page Cache in Use** and **Memory vs Limit**: memory charged to the container against its limit, split into the JVM
+  and page cache. When usage sits at the limit the kernel has to reclaim page cache, flushing dirty pages first.
+- **Dirty Pages** and **Dirty and Writeback Pages**: page cache waiting to be written to disk, and being written.
+- **Disk Write Rate** and **Disk I/O vs TDB2 Growth**: the container's disk writes and reads, against how fast the TDB2
+  directory is growing. Use this during a compaction:
+  - The TDB2 directory grows by the size of the new copy.
+  - If disk writes are many times that growth, the same dirty pages are being flushed over and over (write
+    amplification), and the compaction is limited by writeback and the volume's write throughput.
+  - A test compacting a 4.2 GB store on a Raspberry Pi wrote 31 times the copy's size with a 5 GB memory limit, and
+    12 times with 12 GB, which compacted 1.75 times faster.
+  - So more memory headroom, or a volume with more write throughput, makes compaction faster.
+- **Major Faults and Page Cache Refaults**: page faults that needed a disk read, and evicted pages that were needed again
+  soon after. Sustained refaults mean the page cache is too small for the working set, e.g. for queries.
+
+The container metrics are:
+
+| Metric | Prometheus name | Type |
+|---|---|---|
+| `smartcache.graph.container.io.read` / `.io.write` | `smartcache_graph_container_io_read_bytes_total` / `..._io_write_bytes_total` | counter |
+| `smartcache.graph.container.memory.page_cache` | `smartcache_graph_container_memory_page_cache_bytes` | gauge |
+| `smartcache.graph.container.memory.dirty` / `.writeback` | `smartcache_graph_container_memory_dirty_bytes` / `..._writeback_bytes` | gauge |
+| `smartcache.graph.container.memory.anon` | `smartcache_graph_container_memory_anon_bytes` | gauge |
+| `smartcache.graph.container.memory.limit` | `smartcache_graph_container_memory_limit_bytes` (not reported if there's no limit) | gauge |
+| `smartcache.graph.container.memory.usage` | `smartcache_graph_container_memory_usage_bytes` | gauge |
+| `smartcache.graph.container.memory.major_faults` | `smartcache_graph_container_memory_major_faults_total` | counter |
+| `smartcache.graph.container.memory.page_cache_refaults` | `smartcache_graph_container_memory_page_cache_refaults_total` | counter |
 
 The direct buffer and after-last-GC metrics are experimental in the OpenTelemetry Java agent, so they need
 `OTEL_INSTRUMENTATION_RUNTIME_TELEMETRY_EMIT_EXPERIMENTAL_TELEMETRY=true`. The telemetry compose file and the Helm

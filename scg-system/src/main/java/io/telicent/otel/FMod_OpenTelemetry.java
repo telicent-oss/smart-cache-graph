@@ -20,6 +20,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.LongSupplier;
+import java.util.function.Supplier;
 
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
@@ -58,6 +60,20 @@ public class FMod_OpenTelemetry implements FusekiModule {
     public static final String LABEL_ADD_ATTEMPTS = METRIC_PREFIX + "labels.add.attempts";
     public static final String LABEL_CACHE_NO_OPS = METRIC_PREFIX + "labels.cache.noops";
     public static final String LABEL_WRITES = METRIC_PREFIX + "labels.writes";
+    /**
+     * Container (cgroup) metrics: disk I/O, page cache and memory, see {@link ContainerResources}
+     */
+    public static final String CONTAINER_IO_READ = METRIC_PREFIX + "container.io.read";
+    public static final String CONTAINER_IO_WRITE = METRIC_PREFIX + "container.io.write";
+    public static final String CONTAINER_PAGE_CACHE = METRIC_PREFIX + "container.memory.page_cache";
+    public static final String CONTAINER_DIRTY = METRIC_PREFIX + "container.memory.dirty";
+    public static final String CONTAINER_WRITEBACK = METRIC_PREFIX + "container.memory.writeback";
+    public static final String CONTAINER_ANON = METRIC_PREFIX + "container.memory.anon";
+    public static final String CONTAINER_LIMIT = METRIC_PREFIX + "container.memory.limit";
+    public static final String CONTAINER_USAGE = METRIC_PREFIX + "container.memory.usage";
+    public static final String CONTAINER_MAJOR_FAULTS = METRIC_PREFIX + "container.memory.major_faults";
+    public static final String CONTAINER_REFAULTS = METRIC_PREFIX + "container.memory.page_cache_refaults";
+    private static final AtomicBoolean CONTAINER_METRICS_REGISTERED = new AtomicBoolean(false);
 
     public static String ENV_OPENTELEMETRY = "FUSEKI_FMOD_OTEL";
     public static String SYS_OPENTELEMETRY = "fuseki:fmod:OpenTelemetry";
@@ -106,6 +122,87 @@ public class FMod_OpenTelemetry implements FusekiModule {
             return;
         }
         dapRegistry.accessPoints().forEach(FMod_OpenTelemetry::buildMetrics);
+        // Container metrics are per process, not per dataset, so only register them once
+        if (CONTAINER_METRICS_REGISTERED.compareAndSet(false, true)) {
+            ContainerResources.detect().ifPresentOrElse(resources -> {
+                buildContainerMetrics(JenaMetrics.getMeter("Jena", Jena.VERSION), resources);
+                FmtLog.info(Fuseki.configLog, "Container memory and disk I/O metrics enabled (cgroup %s)",
+                            resources.version());
+            }, () -> FmtLog.info(Fuseki.configLog,
+                                 "No cgroup memory accounting found, container memory and disk I/O metrics disabled"));
+        }
+    }
+
+    /**
+     * Registers container disk I/O, page cache and memory metrics, read from the cgroup
+     * <p>
+     * All the instruments share one reading, refreshed at most once a second, so a metrics collection reads the cgroup
+     * files once. Figures that aren't available (e.g. no memory limit set) aren't recorded.
+     * </p>
+     *
+     * @param meter     Meter
+     * @param resources Container resources to read
+     */
+    static void buildContainerMetrics(Meter meter, ContainerResources resources) {
+        Supplier<ContainerResources.Snapshot> snapshot = cachedSnapshot(resources, 1_000);
+        Attributes attributes = Attributes.empty();
+        containerCounter(meter, CONTAINER_IO_READ, "Bytes read from block devices by the container", "By",
+                         () -> snapshot.get().readBytes(), attributes);
+        containerCounter(meter, CONTAINER_IO_WRITE, "Bytes written to block devices by the container", "By",
+                         () -> snapshot.get().writeBytes(), attributes);
+        containerGauge(meter, CONTAINER_PAGE_CACHE,
+                       "Page cache charged to the container, including TDB2's memory-mapped files",
+                       () -> snapshot.get().pageCache(), attributes);
+        containerGauge(meter, CONTAINER_DIRTY, "Page cache waiting to be written to disk",
+                       () -> snapshot.get().dirty(), attributes);
+        containerGauge(meter, CONTAINER_WRITEBACK, "Page cache currently being written to disk",
+                       () -> snapshot.get().writeback(), attributes);
+        containerGauge(meter, CONTAINER_ANON, "Anonymous memory, essentially the JVM",
+                       () -> snapshot.get().anon(), attributes);
+        containerGauge(meter, CONTAINER_LIMIT, "Container memory limit", () -> snapshot.get().limit(), attributes);
+        containerGauge(meter, CONTAINER_USAGE, "Memory charged to the container, including page cache",
+                       () -> snapshot.get().usage(), attributes);
+        containerCounter(meter, CONTAINER_MAJOR_FAULTS, "Page faults that needed a disk read", "{fault}",
+                         () -> snapshot.get().majorFaults(), attributes);
+        containerCounter(meter, CONTAINER_REFAULTS, "Evicted page cache pages that were needed again", "{page}",
+                         () -> snapshot.get().refaults(), attributes);
+    }
+
+    private static Supplier<ContainerResources.Snapshot> cachedSnapshot(ContainerResources resources, long maxAgeMs) {
+        return new Supplier<>() {
+            private ContainerResources.Snapshot last;
+            private long readAt;
+
+            @Override
+            public synchronized ContainerResources.Snapshot get() {
+                long now = System.nanoTime();
+                if (last == null || now - readAt >= maxAgeMs * 1_000_000L) {
+                    last = resources.read();
+                    readAt = now;
+                }
+                return last;
+            }
+        };
+    }
+
+    private static void containerGauge(Meter meter, String name, String description, LongSupplier value,
+                                       Attributes attributes) {
+        meter.gaugeBuilder(name).setDescription(description).setUnit("By").ofLongs().buildWithCallback(m -> {
+            long v = value.getAsLong();
+            if (v >= 0) {
+                m.record(v, attributes);
+            }
+        });
+    }
+
+    private static void containerCounter(Meter meter, String name, String description, String unit,
+                                         LongSupplier value, Attributes attributes) {
+        meter.counterBuilder(name).setDescription(description).setUnit(unit).buildWithCallback(m -> {
+            long v = value.getAsLong();
+            if (v >= 0) {
+                m.record(v, attributes);
+            }
+        });
     }
 
     public static void buildMetrics(DataAccessPoint dap) {
