@@ -35,6 +35,7 @@ import java.util.Optional;
  * Reading never throws: any figure that can't be read is reported as {@link #UNKNOWN}.
  * </p>
  */
+@SuppressWarnings("java:S1192")
 public final class ContainerResources {
 
     /**
