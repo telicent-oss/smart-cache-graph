@@ -148,7 +148,7 @@ public class FMod_OpenTelemetry implements FusekiModule {
         Attributes attributes = Attributes.empty();
         containerCounter(meter, CONTAINER_IO_READ, "Bytes read from block devices by the container", "By",
                          () -> snapshot.get().readBytes(), attributes);
-        containerCounter(meter, CONTAINER_IO_WRITE, "Bytes written to block devices by the container", "By",
+        containerCounter(meter, CONTAINER_IO_WRITE, "Bytes written to block devices by the container", "bytes",
                          () -> snapshot.get().writeBytes(), attributes);
         containerGauge(meter, CONTAINER_PAGE_CACHE,
                        "Page cache charged to the container, including TDB2's memory-mapped files",
