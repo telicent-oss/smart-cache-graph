@@ -53,6 +53,7 @@ public class FMod_OpenTelemetry implements FusekiModule {
     public static final AttributeKey<String> DB_OPERATION = AttributeKey.stringKey("db.operation");
     public static final AttributeKey<String> FUSEKI_ENDPOINT = AttributeKey.stringKey("fuseki.endpoint");
     public static final AttributeKey<String> FUSEKI_OPERATION = AttributeKey.stringKey("fuseki.operation");
+    private static final String UNIT_BYTES = "bytes";
     protected static final String METRIC_PREFIX = "smartcache.graph.";
     /**
      * Metric that records TDB2 disk space usage
@@ -147,9 +148,9 @@ public class FMod_OpenTelemetry implements FusekiModule {
     static void buildContainerMetrics(Meter meter, ContainerResources resources) {
         Supplier<ContainerResources.Snapshot> snapshot = cachedSnapshot(resources, 1_000);
         Attributes attributes = Attributes.empty();
-        containerCounter(meter, CONTAINER_IO_READ, "Bytes read from block devices by the container", "bytes",
+        containerCounter(meter, CONTAINER_IO_READ, "Bytes read from block devices by the container", UNIT_BYTES,
                          () -> snapshot.get().readBytes(), attributes);
-        containerCounter(meter, CONTAINER_IO_WRITE, "Bytes written to block devices by the container", "bytes",
+        containerCounter(meter, CONTAINER_IO_WRITE, "Bytes written to block devices by the container", UNIT_BYTES,
                          () -> snapshot.get().writeBytes(), attributes);
         containerGauge(meter, CONTAINER_PAGE_CACHE,
                        "Page cache charged to the container, including TDB2's memory-mapped files",
@@ -188,7 +189,7 @@ public class FMod_OpenTelemetry implements FusekiModule {
 
     private static void containerGauge(Meter meter, String name, String description, LongSupplier value,
                                        Attributes attributes) {
-        meter.gaugeBuilder(name).setDescription(description).setUnit("bytes").ofLongs().buildWithCallback(m -> {
+        meter.gaugeBuilder(name).setDescription(description).setUnit(UNIT_BYTES).ofLongs().buildWithCallback(m -> {
             long v = value.getAsLong();
             if (v >= 0) {
                 m.record(v, attributes);
@@ -223,7 +224,7 @@ public class FMod_OpenTelemetry implements FusekiModule {
                                                                            .getAbsolutePath())
                                                        .build();
             meter.gaugeBuilder(TDB_DISK_USAGE)
-                 .setUnit("bytes")
+                 .setUnit(UNIT_BYTES)
                  .ofLongs()
                  .buildWithCallback(m -> m.record(FileUtils.sizeOfDirectory(tdb.getContainerPath().toFile()),
                                                   diskUsageAttributes));
