@@ -1,6 +1,7 @@
 package io.telicent.backup.services;
 
 import io.telicent.backup.utils.RSAKeyPairGenerator;
+import io.telicent.LibTestsSCG;
 import io.telicent.core.MainSmartCacheGraph;
 import io.telicent.labels.services.TestLabelsQuery;
 import io.telicent.smart.cache.configuration.Configurator;
@@ -85,6 +86,7 @@ public class TestBackupAndRestoreWithEncryption {
     @AfterAll
     public static void afterAll() throws IOException {
         SERVER.stop();
+        LibTestsSCG.closeAndClearLabelsStores();
         FileUtils.deleteDirectory(new File("target/labels1"));
         FileUtils.deleteDirectory(new File("target/labels2"));
         FileUtils.delete(new File("public.asc"));

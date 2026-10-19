@@ -2,6 +2,7 @@ package io.telicent.labels.services;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.telicent.LibTestsSCG;
 import io.telicent.core.MainSmartCacheGraph;
 import io.telicent.labels.FMod_LabelsQuery;
 import io.telicent.smart.cache.configuration.Configurator;
@@ -543,6 +544,7 @@ public class TestLabelsQuery {
     @AfterAll
     public static void afterAll() throws IOException {
         SERVER.stop();
+        LibTestsSCG.closeAndClearLabelsStores();
         FileUtils.deleteDirectory(new File("target/labels"));
         FileUtils.deleteDirectory(new File("target/labels1"));
         FileUtils.deleteDirectory(new File("target/labels2"));

@@ -108,6 +108,7 @@ class TestYamlConfigParserAuthz {
         if (null != server) {
             server.stop();
         }
+        LibTestsSCG.closeAndClearLabelsStores();
         Configurator.reset();
         LibTestsSCG.teardownAuthentication();
     }
