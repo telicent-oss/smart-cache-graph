@@ -183,8 +183,8 @@ class TestContainerResources {
             assertEquals(264712, value(metrics, FMod_OpenTelemetry.CONTAINER_MAJOR_FAULTS));
             assertEquals(6744609, value(metrics, FMod_OpenTelemetry.CONTAINER_REFAULTS));
             // Units drive the exported Prometheus names (e.g. _bytes_total for the I/O counters)
-            assertEquals("By", metrics.get(FMod_OpenTelemetry.CONTAINER_IO_WRITE).getUnit());
-            assertEquals("By", metrics.get(FMod_OpenTelemetry.CONTAINER_PAGE_CACHE).getUnit());
+            assertEquals("bytes", metrics.get(FMod_OpenTelemetry.CONTAINER_IO_WRITE).getUnit());
+            assertEquals("bytes", metrics.get(FMod_OpenTelemetry.CONTAINER_PAGE_CACHE).getUnit());
             // Counters are monotonic sums, so Prometheus treats them as counters
             assertTrue(metrics.get(FMod_OpenTelemetry.CONTAINER_IO_WRITE).getLongSumData().isMonotonic());
             // No limit set, so nothing recorded rather than a bogus value
