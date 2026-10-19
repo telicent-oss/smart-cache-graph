@@ -187,7 +187,7 @@ public class FMod_OpenTelemetry implements FusekiModule {
 
     private static void containerGauge(Meter meter, String name, String description, LongSupplier value,
                                        Attributes attributes) {
-        meter.gaugeBuilder(name).setDescription(description).setUnit("By").ofLongs().buildWithCallback(m -> {
+        meter.gaugeBuilder(name).setDescription(description).setUnit("bytes").ofLongs().buildWithCallback(m -> {
             long v = value.getAsLong();
             if (v >= 0) {
                 m.record(v, attributes);
