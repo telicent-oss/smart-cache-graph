@@ -147,7 +147,7 @@ public class FMod_OpenTelemetry implements FusekiModule {
     static void buildContainerMetrics(Meter meter, ContainerResources resources) {
         Supplier<ContainerResources.Snapshot> snapshot = cachedSnapshot(resources, 1_000);
         Attributes attributes = Attributes.empty();
-        containerCounter(meter, CONTAINER_IO_READ, "Bytes read from block devices by the container", "By",
+        containerCounter(meter, CONTAINER_IO_READ, "Bytes read from block devices by the container", "bytes",
                          () -> snapshot.get().readBytes(), attributes);
         containerCounter(meter, CONTAINER_IO_WRITE, "Bytes written to block devices by the container", "bytes",
                          () -> snapshot.get().writeBytes(), attributes);
