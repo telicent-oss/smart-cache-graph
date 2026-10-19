@@ -1,6 +1,15 @@
 # Smart Cache Graph
 
-## 1.2.3 (unreleased)
+## 1.2.4 (unreleased)
+
+- New container memory and disk I/O metrics, read from Graph's own cgroup (v2, or v1 as a fallback) and exported through
+  OpenTelemetry: disk bytes read and written, page cache, dirty and writeback pages, the JVM's anonymous memory, the
+  memory limit and usage, major faults and page cache refaults. The telemetry dashboard has a new **Container Memory &
+  Disk I/O** row. TDB2 relies on the page cache, which counts towards the container's memory limit, and during a
+  compaction a squeezed page cache shows up as disk writes many times the size of the compacted copy. See
+  `docs/opentelemetry.md`.
+
+## 1.2.3 
 - RO Compaction: compactions requested via `/$/compact/<dataset>` and `/$/compactall` now keep the dataset
   available for queries while it is compacted, rather than only succeeding when the server is idle:
     - Kafka ingest into the dataset is paused, other writes are drained and then rejected with HTTP 503, and queries

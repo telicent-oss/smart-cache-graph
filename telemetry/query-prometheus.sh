@@ -34,6 +34,8 @@ Available query names:
   jvm_gc_paused_percent
   jvm_direct_buffers
   tdb2_disk_usage
+  container_memory
+  container_io_rates
 EOF
 }
 
@@ -97,6 +99,19 @@ EOF
     tdb2_disk_usage)
       cat <<'EOF'
 sum by (db_name) (smartcache_graph_tdb2_disk_usage_bytes{job="smart-cache-graph-otel"})
+EOF
+      ;;
+    container_memory)
+      cat <<'EOF'
+{job="smart-cache-graph-otel", __name__=~"smartcache_graph_container_memory_(limit|usage|anon|page_cache|dirty|writeback)_bytes"}
+EOF
+      ;;
+    container_io_rates)
+      cat <<'EOF'
+label_replace(rate(smartcache_graph_container_io_write_bytes_total{job="smart-cache-graph-otel"}[5m]), "metric", "disk_write_bytes_per_second", "", "")
+  or label_replace(rate(smartcache_graph_container_io_read_bytes_total{job="smart-cache-graph-otel"}[5m]), "metric", "disk_read_bytes_per_second", "", "")
+  or label_replace(rate(smartcache_graph_container_memory_major_faults_total{job="smart-cache-graph-otel"}[5m]), "metric", "major_faults_per_second", "", "")
+  or label_replace(rate(smartcache_graph_container_memory_page_cache_refaults_total{job="smart-cache-graph-otel"}[5m]), "metric", "refaults_per_second", "", "")
 EOF
       ;;
     native_top)
