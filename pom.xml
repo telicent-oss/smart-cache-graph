@@ -67,7 +67,7 @@
     <skip.testJars>true</skip.testJars>
 
     <!-- Maven Plugin versions -->
-    <plugin.central>0.11.0</plugin.central>
+    <plugin.central>0.12.0</plugin.central>
     <plugin.clean>3.3.2</plugin.clean>
     <plugin.compiler>3.16.0</plugin.compiler>
     <plugin.cyclonedx>2.9.3</plugin.cyclonedx>
@@ -86,7 +86,7 @@
     <plugin.sonar>5.8.0.7211</plugin.sonar>
     <plugin.source>3.4.0</plugin.source>
     <plugin.surefire>3.6.0</plugin.surefire>
-    <plugin.versions>2.22.0</plugin.versions>
+    <plugin.versions>2.23.0</plugin.versions>
 
     <!-- SonarQube analysis, invoked from CI via mvn sonar:sonar -->
     <sonar.projectKey>telicent-oss_smart-cache-graph</sonar.projectKey>
@@ -563,7 +563,7 @@
 
     <!-- External dependencies -->
     <dependency.awaitility>4.3.0</dependency.awaitility>
-    <dependency.caffeine>3.3.0</dependency.caffeine>
+    <dependency.caffeine>3.3.1</dependency.caffeine>
     <dependency.commons-codec>1.23.0</dependency.commons-codec>
     <dependency.commons-compress>1.28.0</dependency.commons-compress>
     <dependency.gson>2.14.0</dependency.gson>
