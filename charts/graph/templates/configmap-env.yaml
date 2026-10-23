@@ -14,7 +14,7 @@ metadata:
 data:
   FEATURE_FLAG_AUTHZ: "true"
   ENABLE_BACKUPS: "true"
-  ENABLE_LABELS_QUERY: {{ .Values.graph.enableLabelsQuery | quote }}
+  ENABLE_LABELS_QUERY: "true"
   
   KAFKA_CONFIG_FILE_PATH: /app/config/kafka-auth/kafka-config.properties
   JAVA_OPTIONS: {{ .Values.java.jvmOptions | quote }}
