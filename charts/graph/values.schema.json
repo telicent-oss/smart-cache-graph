@@ -118,8 +118,8 @@
             "properties": {
                 "enableLabelsQuery": {
                     "type": "boolean",
-                    "description": "Enable the labels query endpoint at `/$/labels/<dataset>`. Disabled by default because the endpoint exposes security labels; enable only when access is appropriately restricted.",
-                    "default": false
+                    "description": "Enable the labels query endpoint at `/$/labels/<dataset>`. Enabled by default; set to false to disable.",
+                    "default": true
                 },
                 "routeToNamedGraphs": {
                     "type": "boolean",

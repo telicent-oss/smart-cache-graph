@@ -209,7 +209,7 @@ have them queued behind a deletion.
 
 ### `ENABLE_LABELS_QUERY`
 
-Setting this to `true` will enable the security label query endpoint at `http://{hostname}/$/labels/{datasetName}`. More
+Defaults to `true`, enabling the security label query endpoint at `http://{hostname}/$/labels/{datasetName}`. Set to `false` to disable it. More
 information about this endpoint can be found in the [API docs](docs/labels-api.yaml). You can also run a Docker
 container with the endpoint enabled which can be accessed from the API docs by running:
 
