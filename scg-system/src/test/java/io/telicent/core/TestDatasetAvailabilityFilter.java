@@ -250,12 +250,15 @@ public class TestDatasetAvailabilityFilter {
                         .addEndpoint(org.apache.jena.fuseki.server.Operation.Query, "query")
                         .addEndpoint(org.apache.jena.fuseki.server.Operation.Update, "update")
                         .addEndpoint(org.apache.jena.fuseki.server.Operation.GSP_RW, "data")
+                        .addEndpoint(io.telicent.jena.graphql.fuseki.SysGraphQL.OP_GRAPHQL, "graphql")
                         .build();
 
         assertTrue(FMod_DatasetAvailabilityFilter.isReadRequest(request("GET", "/ds/update", null), "/ds", service));
         assertTrue(FMod_DatasetAvailabilityFilter.isReadRequest(request("HEAD", "/ds/data", null), "/ds", service));
         assertTrue(FMod_DatasetAvailabilityFilter.isReadRequest(request("POST", "/ds/query", null), "/ds", service));
         assertTrue(FMod_DatasetAvailabilityFilter.isReadRequest(request("POST", "/$/labels/ds", null), "/ds", service));
+        assertTrue(FMod_DatasetAvailabilityFilter.isReadRequest(
+                request("POST", "/ds/graphql", "application/json"), "/ds", service));
         assertTrue(FMod_DatasetAvailabilityFilter.isReadRequest(
                 request("POST", "/ds", "application/sparql-query; charset=utf-8"), "/ds", service));
         assertFalse(FMod_DatasetAvailabilityFilter.isReadRequest(request("POST", "/ds", "text/turtle"), "/ds", service));

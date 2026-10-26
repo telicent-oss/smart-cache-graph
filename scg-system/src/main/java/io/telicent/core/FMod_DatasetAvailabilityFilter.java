@@ -1,5 +1,6 @@
 package io.telicent.core;
 
+import io.telicent.jena.graphql.fuseki.SysGraphQL;
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.FilterConfig;
@@ -45,10 +46,12 @@ public class FMod_DatasetAvailabilityFilter implements FusekiModule {
     private volatile Map<String, DataService> servicesByPath = Map.of();
 
     /**
-     * Fuseki operations that only read the dataset
+     * Fuseki operations that only read the dataset. GraphQL queries run in a read transaction and the GraphQL endpoint
+     * has no mutations, so it is a read too.
      */
     static final Set<Operation> READ_OPERATIONS =
-            Set.of(Operation.Query, Operation.GSP_R, Operation.GSP_Direct_R, Operation.PREFIXES_R);
+            Set.of(Operation.Query, Operation.GSP_R, Operation.GSP_Direct_R, Operation.PREFIXES_R,
+                   SysGraphQL.OP_GRAPHQL);
 
     @Override
     public String name() {
@@ -128,7 +131,7 @@ public class FMod_DatasetAvailabilityFilter implements FusekiModule {
      * Decides whether a request to a dataset only reads it, so may proceed during an RO Compaction.
      * <p>
      * Reads are: GET, HEAD and OPTIONS requests; POSTs to an endpoint whose operations are all read-only (e.g. a SPARQL
-     * query endpoint); label lookups; and SPARQL queries POSTed to the dataset itself. Anything else, including
+     * query or GraphQL endpoint); label lookups; and SPARQL queries POSTed to the dataset itself. Anything else, including
      * operations this filter can't classify, is treated as a write.
      * </p>
      *
