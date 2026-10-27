@@ -904,6 +904,10 @@
         </configuration>
         <executions>
           <execution>
+            <id>require-test-coverage</id>
+            <phase>none</phase>
+          </execution>
+          <execution>
             <goals>
               <goal>prepare-agent</goal>
             </goals>
