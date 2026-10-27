@@ -473,6 +473,11 @@ public class DatasetBackupService {
      * @param restoreId the subdirectory to use
      * @param response a node of the results
      */
+    // S3776: Keep restore validation, decryption and dataset recovery in order; the path traversal guard is
+    // security-sensitive.
+    // S6541: Keep restore validation, decryption and dataset recovery in order; the path traversal guard is
+    // security-sensitive.
+    @SuppressWarnings({"java:S3776", "java:S6541"})
     public void restoreDatasets(String restoreId, ObjectNode response) throws PGPException, IOException {
         String specificDatasetIfAny = "";
         if(restoreId.contains("/")) {

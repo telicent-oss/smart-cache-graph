@@ -28,6 +28,8 @@ import static io.telicent.backup.utils.JsonFileUtils.OBJECT_MAPPER;
 import static io.telicent.utils.ServletUtils.handleError;
 import static io.telicent.utils.ServletUtils.processResponse;
 
+// S1948: Embedded Jetty does not serialise these servlets or replicate their injected service state.
+@SuppressWarnings("java:S1948")
 public class AccessQueryServlet extends HttpServlet {
 
     private static final Logger LOG = FusekiKafka.LOG;

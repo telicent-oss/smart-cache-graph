@@ -285,9 +285,8 @@ public class SCG_AuthPolicy {
      */
     private static Policy readPermissions(String datasetName) {
         //@formatter:off
-        return Policy.requireAll(PERMISSIONS, new String[] {
-                TelicentPermissions.readPermission(Strings.CI.removeStart(datasetName, "/"))
-        });
+        return Policy.requireAll(PERMISSIONS,
+                TelicentPermissions.readPermission(Strings.CI.removeStart(datasetName, "/")));
         //@formatter:on
     }
 

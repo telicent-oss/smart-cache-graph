@@ -29,6 +29,8 @@ import static io.telicent.utils.ServletUtils.processResponse;
 /**
  * Servlet class responsible for the loading of a given backup.
  */
+// S1948: Embedded Jetty does not serialise these servlets or replicate their injected service state.
+@SuppressWarnings("java:S1948")
 public class RestoreServlet extends HttpServlet {
     private final DatasetBackupService backupService;
     private final BackupJobManager jobManager;

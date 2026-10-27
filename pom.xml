@@ -19,6 +19,13 @@
 
   <modelVersion>4.0.0</modelVersion>
 
+  <parent>
+    <groupId>io.telicent.smart-caches</groupId>
+    <artifactId>parent</artifactId>
+    <version>1.10.1</version>
+    <relativePath />
+  </parent>
+
   <groupId>io.telicent.smart-caches.graph</groupId>
   <artifactId>scg-base</artifactId>
   <packaging>pom</packaging>
@@ -102,464 +109,17 @@
     <scg.sonar.skip.graph>false</scg.sonar.skip.graph>
     <scg.sonar.skip.deletionWorker>true</scg.sonar.skip.deletionWorker>
 
-    <!-- ===================================================================== -->
-    <!-- SonarQube issue exclusions [CORE-1445]                                -->
-    <!--                                                                       -->
-    <!-- These are scanner side exclusions and must stay in this root pom:      -->
-    <!-- since SonarQube 7.6 sonar.issue.ignore.* is read at project level      -->
-    <!-- only, and resourceKey patterns resolve against the project base        -->
-    <!-- directory, hence the leading **/ on every pattern.                     -->
-    <!--                                                                       -->
-    <!-- Maven inherits these properties into each child module, so the scanner -->
-    <!-- logs "Specifying issue exclusions at module level is not supported     -->
-    <!-- anymore" once per module. That warning is benign; the root level       -->
-    <!-- values are the ones actually applied (SONAR-11850).                    -->
-    <!--                                                                       -->
-    <!-- Mirror any change here in SonarQube > Project Settings > General       -->
-    <!-- Settings > Analysis Scope, or SonarQube for IDE will not honour them.  -->
-    <!-- ===================================================================== -->
-    <sonar.issue.ignore.multicriteria>s1948servlets,s1948compaction,s2654,s1186,s2699,s2187,s3577,s115,s117,s101,s116,s6213,s3077filter,s5786,s1075,s5778,s5961,s3457tests,s2925,s107,s1845,s3516,s3776,s2093,s5443,s1452,s2629,s3878,s125tests,s5976tests,s1130tests,s1181compaction,s1181cqrsmod,s1181asyncbackup,s1181userinfo,s1141compaction,s1141distlifecycle,s1141main,s3077lifecycle,s2177cqrs,s8786user,s8786backup,s5850backup,s135backup,s5738jwtauth,s1181cqrsupdate,s1068cqrsupdate,s1134userinfo,s6541backup,s112backupreport,s3077jobresult,s3077compactionjob,s1134pom</sonar.issue.ignore.multicriteria>
-
-    <!-- S1948: non transient field in a Serializable class.                    -->
-    <!-- HttpServlet implements Serializable only as a legacy artefact. SCG     -->
-    <!-- runs on embedded Jetty via Fuseki: there is no web.xml, no             -->
-    <!-- distributable webapp and no session replication, so a servlet is never -->
-    <!-- serialized and the injected service fields cannot leak. sonar-java's   -->
-    <!-- own exception for this is hard coded to javax.servlet.http.HttpServlet -->
-    <!-- and therefore never applies to our jakarta.servlet classes.            -->
-    <sonar.issue.ignore.multicriteria.s1948servlets.ruleKey>java:S1948</sonar.issue.ignore.multicriteria.s1948servlets.ruleKey>
-    <sonar.issue.ignore.multicriteria.s1948servlets.resourceKey>**/servlets/**/*.java</sonar.issue.ignore.multicriteria.s1948servlets.resourceKey>
-
-    <!-- Same rule, same reasoning: the CompactOne/CompactAll/CompactionJobs    -->
-    <!-- servlets are nested classes of FMod_InitialCompaction rather than      -->
-    <!-- living under a servlets package.                                      -->
-    <sonar.issue.ignore.multicriteria.s1948compaction.ruleKey>java:S1948</sonar.issue.ignore.multicriteria.s1948compaction.ruleKey>
-    <sonar.issue.ignore.multicriteria.s1948compaction.resourceKey>**/FMod_InitialCompaction.java</sonar.issue.ignore.multicriteria.s1948compaction.resourceKey>
-
-    <!-- S2654: "JEE applications should not use threads or synchronization".   -->
-    <!-- The rule fires on every Runnable in a module it classifies as Jakarta  -->
-    <!-- EE, with no carve out for a plain ExecutorService, and its prescribed  -->
-    <!-- remedy (inject a container ManagedExecutorService) has no meaning for  -->
-    <!-- a standalone Fuseki process on embedded Jetty. Premise does not hold.  -->
-    <sonar.issue.ignore.multicriteria.s2654.ruleKey>java:S2654</sonar.issue.ignore.multicriteria.s2654.ruleKey>
-    <sonar.issue.ignore.multicriteria.s2654.resourceKey>**/*.java</sonar.issue.ignore.multicriteria.s2654.resourceKey>
-
-    <!-- S1186: empty method. Deliberately inert methods are normal in test     -->
-    <!-- doubles and stubs (for example the RDFChanges implementation in        -->
-    <!-- RDFPatchInverterTest). Widened from test only to project wide, which    -->
-    <!-- also covers the placeholder ActionService in FMod_CQRS and the four     -->
-    <!-- no op methods in ValidationUtils. NOTE: ValidationUtils has no callers  -->
-    <!-- anywhere in the tree; deleting the class would remove these outright.   -->
-    <sonar.issue.ignore.multicriteria.s1186.ruleKey>java:S1186</sonar.issue.ignore.multicriteria.s1186.ruleKey>
-    <sonar.issue.ignore.multicriteria.s1186.resourceKey>**/*.java</sonar.issue.ignore.multicriteria.s1186.resourceKey>
-
-    <!-- S2699: test with no assertion. Several tests deliberately assert only  -->
-    <!-- that a call completes without throwing.                               -->
-    <sonar.issue.ignore.multicriteria.s2699.ruleKey>java:S2699</sonar.issue.ignore.multicriteria.s2699.ruleKey>
-    <sonar.issue.ignore.multicriteria.s2699.resourceKey>**/src/test/java/**/*.java</sonar.issue.ignore.multicriteria.s2699.resourceKey>
-
-    <!-- S2187 / S3577: class looks like a test but has no test methods, and    -->
-    <!-- test class naming convention. We use the *_Test suffix for hand        -->
-    <!-- written test doubles and fixtures, which are not test classes.         -->
-    <sonar.issue.ignore.multicriteria.s2187.ruleKey>java:S2187</sonar.issue.ignore.multicriteria.s2187.ruleKey>
-    <sonar.issue.ignore.multicriteria.s2187.resourceKey>**/src/test/java/**/*.java</sonar.issue.ignore.multicriteria.s2187.resourceKey>
-    <sonar.issue.ignore.multicriteria.s3577.ruleKey>java:S3577</sonar.issue.ignore.multicriteria.s3577.ruleKey>
-    <sonar.issue.ignore.multicriteria.s3577.resourceKey>**/src/test/java/**/*.java</sonar.issue.ignore.multicriteria.s3577.resourceKey>
-
-    <!-- Naming convention rules. Telicent uses deliberate identifier          -->
-    <!-- conventions (for example the TF_ / JF_ prefixed Kafka header constants -->
-    <!-- in TelicentKafka) that do not match Sonar's default regexes. Suppressed -->
-    <!-- as a policy decision rather than reviewed case by case.                -->
-    <!--   S115 constant naming, S116 field naming,                            -->
-    <!--   S117 local variable and parameter naming, S101 class naming.         -->
-    <sonar.issue.ignore.multicriteria.s115.ruleKey>java:S115</sonar.issue.ignore.multicriteria.s115.ruleKey>
-    <sonar.issue.ignore.multicriteria.s115.resourceKey>**/*.java</sonar.issue.ignore.multicriteria.s115.resourceKey>
-    <sonar.issue.ignore.multicriteria.s117.ruleKey>java:S117</sonar.issue.ignore.multicriteria.s117.ruleKey>
-    <sonar.issue.ignore.multicriteria.s117.resourceKey>**/*.java</sonar.issue.ignore.multicriteria.s117.resourceKey>
-    <sonar.issue.ignore.multicriteria.s101.ruleKey>java:S101</sonar.issue.ignore.multicriteria.s101.ruleKey>
-    <sonar.issue.ignore.multicriteria.s101.resourceKey>**/*.java</sonar.issue.ignore.multicriteria.s101.resourceKey>
-    <sonar.issue.ignore.multicriteria.s116.ruleKey>java:S116</sonar.issue.ignore.multicriteria.s116.ruleKey>
-    <sonar.issue.ignore.multicriteria.s116.resourceKey>**/*.java</sonar.issue.ignore.multicriteria.s116.resourceKey>
-
-    <!-- S6213: variable matches a restricted identifier. Every occurrence is a  -->
-    <!-- variable named "record" in the Kafka producer/consumer code and its     -->
-    <!-- tests, as in "for (ConsumerRecord<Bytes, Bytes> record : records)".     -->
-    <!-- "record" is a restricted, not a reserved, identifier: this is legal     -->
-    <!-- Java 21 and it is the naming used throughout the Kafka client docs.     -->
-    <sonar.issue.ignore.multicriteria.s6213.ruleKey>java:S6213</sonar.issue.ignore.multicriteria.s6213.ruleKey>
-    <sonar.issue.ignore.multicriteria.s6213.resourceKey>**/*.java</sonar.issue.ignore.multicriteria.s6213.resourceKey>
-
-    <!-- S3077: volatile is not enough for a non thread safe type. Scoped to     -->
-    <!-- FMod_DatasetAvailabilityFilter, where both fields hold immutable        -->
-    <!-- Set.copyOf / Map.copyOf values that are only ever replaced wholesale,   -->
-    <!-- so a volatile reference is precisely the right idiom. The rule looks at -->
-    <!-- the declared type, not the usage. All other occurrences of this rule   -->
-    <!-- are now also excluded: see s3077lifecycle and s3077jobresult below.     -->
-    <!-- (This comment previously recorded the volatile ObjectNode fields as     -->
-    <!-- genuine; that assessment was revisited - see s3077jobresult.)           -->
-    <sonar.issue.ignore.multicriteria.s3077filter.ruleKey>java:S3077</sonar.issue.ignore.multicriteria.s3077filter.ruleKey>
-    <sonar.issue.ignore.multicriteria.s3077filter.resourceKey>**/FMod_DatasetAvailabilityFilter.java</sonar.issue.ignore.multicriteria.s3077filter.resourceKey>
-
-    <!-- S5786: redundant public modifiers on JUnit 5 tests. Jupiter does not    -->
-    <!-- require them; carried over from JUnit 4. Style only.                    -->
-    <sonar.issue.ignore.multicriteria.s5786.ruleKey>java:S5786</sonar.issue.ignore.multicriteria.s5786.ruleKey>
-    <sonar.issue.ignore.multicriteria.s5786.resourceKey>**/src/test/java/**/*.java</sonar.issue.ignore.multicriteria.s5786.resourceKey>
-
-    <!-- S1075: hard coded path delimiter. A portability rule aimed at Android;  -->
-    <!-- SCG only ever ships as a Linux container. Note that                     -->
-    <!-- DatasetBackupService line 440 is a path traversal guard                 -->
-    <!-- (restoreId.contains("/")) and must not be "fixed" to File.separator.    -->
-    <sonar.issue.ignore.multicriteria.s1075.ruleKey>java:S1075</sonar.issue.ignore.multicriteria.s1075.ruleKey>
-    <sonar.issue.ignore.multicriteria.s1075.resourceKey>**/*.java</sonar.issue.ignore.multicriteria.s1075.resourceKey>
-
-    <!-- S5778: more than one throwing invocation inside an assertThrows lambda. -->
-    <sonar.issue.ignore.multicriteria.s5778.ruleKey>java:S5778</sonar.issue.ignore.multicriteria.s5778.ruleKey>
-    <sonar.issue.ignore.multicriteria.s5778.resourceKey>**/src/test/java/**/*.java</sonar.issue.ignore.multicriteria.s5778.resourceKey>
-
-    <!-- S5961: more than 25 assertions in a test method. Arbitrary threshold.   -->
-    <sonar.issue.ignore.multicriteria.s5961.ruleKey>java:S5961</sonar.issue.ignore.multicriteria.s5961.ruleKey>
-    <sonar.issue.ignore.multicriteria.s5961.resourceKey>**/src/test/java/**/*.java</sonar.issue.ignore.multicriteria.s5961.resourceKey>
-
-    <!-- S3457: printf style formatting, mainly \n instead of %n. Linux only     -->
-    <!-- deployment. Test sources only: the single main code occurrence          -->
-    <!-- (DatasetBackupService, a redundant toString) stays open.                -->
-    <sonar.issue.ignore.multicriteria.s3457tests.ruleKey>java:S3457</sonar.issue.ignore.multicriteria.s3457tests.ruleKey>
-    <sonar.issue.ignore.multicriteria.s3457tests.resourceKey>**/src/test/java/**/*.java</sonar.issue.ignore.multicriteria.s3457tests.resourceKey>
-
-    <!-- S2925: Thread.sleep in tests. Unavoidable in the Kafka and             -->
-    <!-- Testcontainers integration tests.                                      -->
-    <sonar.issue.ignore.multicriteria.s2925.ruleKey>java:S2925</sonar.issue.ignore.multicriteria.s2925.ruleKey>
-    <sonar.issue.ignore.multicriteria.s2925.resourceKey>**/src/test/java/**/*.java</sonar.issue.ignore.multicriteria.s2925.resourceKey>
-
-    <!-- S107: too many method parameters. Scoped to FMod_DistributionLifecycle, -->
-    <!-- where the two long signatures are accepted, so that a new violation     -->
-    <!-- elsewhere still surfaces for a decision.                               -->
-    <sonar.issue.ignore.multicriteria.s107.ruleKey>java:S107</sonar.issue.ignore.multicriteria.s107.ruleKey>
-    <sonar.issue.ignore.multicriteria.s107.resourceKey>**/FMod_DistributionLifecycle.java</sonar.issue.ignore.multicriteria.s107.resourceKey>
-
-    <!-- ===================================================================== -->
-    <!-- Accepted known issues [CORE-1445]                                     -->
-    <!--                                                                       -->
-    <!-- Unlike the exclusions above, these are NOT false positives. They are   -->
-    <!-- real findings we have chosen to accept for now. Each is scoped to the  -->
-    <!-- file it was reported in (S3776 excepted) so that a new occurrence      -->
-    <!-- elsewhere still surfaces for a decision.                              -->
-    <!-- ===================================================================== -->
-
-    <!-- S1845: field "connectors" in FMod_FusekiKafkaSCG shadows the           -->
-    <!-- connectors() method on FMod_FusekiKafka. Three references in one file, -->
-    <!-- so a rename remains cheap whenever we choose to do it.                -->
-    <sonar.issue.ignore.multicriteria.s1845.ruleKey>java:S1845</sonar.issue.ignore.multicriteria.s1845.ruleKey>
-    <sonar.issue.ignore.multicriteria.s1845.resourceKey>**/FMod_FusekiKafkaSCG.java</sonar.issue.ignore.multicriteria.s1845.resourceKey>
-
-    <!-- S3516: processProtocol always returns null; the non null branch calls  -->
-    <!-- ServletOps.errorBadRequest, which throws. Behaviour is correct         -->
-    <!-- (UpdateAction.parseExecute treats null as "no using list"), so this is -->
-    <!-- clarity only. Sonar has declined to treat the throwing path as an      -->
-    <!-- exception (SONARJAVA-3473), so the issue will not self resolve. NOTE:  -->
-    <!-- java:S2177 fires on the same method because processProtocol hides a    -->
-    <!-- private method of the same name in SPARQL_Update; that is now covered  -->
-    <!-- by s2177cqrs below.                                                    -->
-    <sonar.issue.ignore.multicriteria.s3516.ruleKey>java:S3516</sonar.issue.ignore.multicriteria.s3516.ruleKey>
-    <sonar.issue.ignore.multicriteria.s3516.resourceKey>**/SPARQL_Update_CQRS.java</sonar.issue.ignore.multicriteria.s3516.resourceKey>
-
-    <!-- S3776: cognitive complexity above 15. Project wide, so this switches   -->
-    <!-- off complexity monitoring entirely, including                          -->
-    <!-- BackupUtils.getBackupSuccessValues at 46 and                            -->
-    <!-- DatasetBackupService line 438 at 36, and it will not flag future        -->
-    <!-- growth. If we want new violations to keep firing, drop this entry and   -->
-    <!-- mark the seven current issues Accepted in the SonarQube UI instead.     -->
-    <sonar.issue.ignore.multicriteria.s3776.ruleKey>java:S3776</sonar.issue.ignore.multicriteria.s3776.ruleKey>
-    <sonar.issue.ignore.multicriteria.s3776.resourceKey>**/*.java</sonar.issue.ignore.multicriteria.s3776.resourceKey>
-
-    <!-- S2093: try block that could be try with resources. All three           -->
-    <!-- occurrences are in test sources.                                       -->
-    <sonar.issue.ignore.multicriteria.s2093.ruleKey>java:S2093</sonar.issue.ignore.multicriteria.s2093.ruleKey>
-    <sonar.issue.ignore.multicriteria.s2093.resourceKey>**/src/test/java/**/*.java</sonar.issue.ignore.multicriteria.s2093.resourceKey>
-
-    <!-- S5443: File.createTempFile(prefix, suffix) in SmartCacheGraph writes    -->
-    <!-- the generated RDF config to java.io.tmpdir with umask permissions.      -->
-    <!-- Low practical risk in a single process container, but this is the only  -->
-    <!-- security rated finding in the project, so suppressing it stops the      -->
-    <!-- Security rating reflecting it. One line to fix with                     -->
-    <!-- Files.createTempFile and owner only Posix file permissions.             -->
-    <sonar.issue.ignore.multicriteria.s5443.ruleKey>java:S5443</sonar.issue.ignore.multicriteria.s5443.ruleKey>
-    <sonar.issue.ignore.multicriteria.s5443.resourceKey>**/SmartCacheGraph.java</sonar.issue.ignore.multicriteria.s5443.resourceKey>
-
-    <!-- S1452: ResponseEntity<?> on DeletionJobController.getJobStatus. Common  -->
-    <!-- Spring idiom, though inconsistent with the typed sibling method.        -->
-    <sonar.issue.ignore.multicriteria.s1452.ruleKey>java:S1452</sonar.issue.ignore.multicriteria.s1452.ruleKey>
-    <sonar.issue.ignore.multicriteria.s1452.resourceKey>**/DeletionJobController.java</sonar.issue.ignore.multicriteria.s1452.resourceKey>
-
-    <!-- S2629: logging arguments are evaluated even when the level is off.      -->
-    <!-- All 11 flagged arguments are cheap string concatenations passed to      -->
-    <!-- LOG.info, so the cost the rule warns about does not arise here.         -->
-    <sonar.issue.ignore.multicriteria.s2629.ruleKey>java:S2629</sonar.issue.ignore.multicriteria.s2629.ruleKey>
-    <sonar.issue.ignore.multicriteria.s2629.resourceKey>**/*.java</sonar.issue.ignore.multicriteria.s2629.resourceKey>
-
-    <!-- S3878: redundant array creation when calling a varargs method, in       -->
-    <!-- SCG_AuthPolicy.                                                        -->
-    <sonar.issue.ignore.multicriteria.s3878.ruleKey>java:S3878</sonar.issue.ignore.multicriteria.s3878.ruleKey>
-    <sonar.issue.ignore.multicriteria.s3878.resourceKey>**/SCG_AuthPolicy.java</sonar.issue.ignore.multicriteria.s3878.resourceKey>
-
-    <!-- S125: commented out code. 23 of the 28 occurrences are in test        -->
-    <!-- sources and almost all are the uncomment to diagnose idiom:           -->
-    <!-- //debug(createBackupResponse) in TestBackupData (15 sites, each under -->
-    <!-- a "// for debugging" marker), //CxtABAC.systemTrace(Track.DEBUG) and  -->
-    <!-- //RowSetOps.out(rs2) in TestPersistentSetup and                       -->
-    <!-- TestSmartCacheGraphIntegration. The debug(HttpResponse) helper they    -->
-    <!-- switch on is already annotated @SuppressWarnings("unused"), so the     -->
-    <!-- team has recorded this as deliberately dormant tooling. No assertion   -->
-    <!-- is disabled by any of the 28. The five main code occurrences           -->
-    <!-- (CQRS, FMod_CQRS, MainSmartCacheGraph, ActionTelicentGraphQL,          -->
-    <!-- UserUtils) are NOT covered here and remain open.                       -->
-    <sonar.issue.ignore.multicriteria.s125tests.ruleKey>java:S125</sonar.issue.ignore.multicriteria.s125tests.ruleKey>
-    <sonar.issue.ignore.multicriteria.s125tests.resourceKey>**/src/test/java/**/*.java</sonar.issue.ignore.multicriteria.s125tests.resourceKey>
-
-    <!-- S5976: "replace these N tests with a single Parameterized one". All    -->
-    <!-- nine occurrences are test sources where the grouped methods are named  -->
-    <!-- scenarios carrying large inline JSON or Turtle text blocks             -->
-    <!-- (TestLabelsQuery groups seven such, each with its own request and      -->
-    <!-- expected response literal). Parameterising would hoist those literals  -->
-    <!-- into a MethodSource, trading a self contained readable test for an     -->
-    <!-- indirection, and would reduce failure output from the scenario name to -->
-    <!-- [1]/[2]/[3]. Style rule with no defect risk.                           -->
-    <sonar.issue.ignore.multicriteria.s5976tests.ruleKey>java:S5976</sonar.issue.ignore.multicriteria.s5976tests.ruleKey>
-    <sonar.issue.ignore.multicriteria.s5976tests.resourceKey>**/src/test/java/**/*.java</sonar.issue.ignore.multicriteria.s5976tests.resourceKey>
-
-    <!-- S1130: declared exception that cannot be thrown. The four test         -->
-    <!-- occurrences are "throws Exception" on shared fixtures                  -->
-    <!-- (LibTestsSCG.setupAuthentication / teardownAuthentication) invoked     -->
-    <!-- from @BeforeAll and @AfterAll, and on callers of those. That is the     -->
-    <!-- normal JUnit fixture idiom and narrowing it would ripple through every -->
-    <!-- caller for no benefit. The single main code occurrence                 -->
-    <!-- (DatasetBackupService constructor declaring URISyntaxException, which   -->
-    <!-- nothing in the body can raise) is NOT covered here and remains open.   -->
-    <sonar.issue.ignore.multicriteria.s1130tests.ruleKey>java:S1130</sonar.issue.ignore.multicriteria.s1130tests.ruleKey>
-    <sonar.issue.ignore.multicriteria.s1130tests.resourceKey>**/src/test/java/**/*.java</sonar.issue.ignore.multicriteria.s1130tests.resourceKey>
-
-    <!-- S1181: "catch Exception instead of Throwable". The four entries below  -->
-    <!-- cover the seven occurrences that are deliberate last resort isolation, -->
-    <!-- where letting anything escape would take down a background thread or   -->
-    <!-- leave a request hanging:                                               -->
-    <!--   FMod_InitialCompaction 278 (startup compaction failure leaves the    -->
-    <!--     dataset available), 363 (records FAILED then rethrows), 692 and     -->
-    <!--     711 (compaction job threads converting to an HTTP response);        -->
-    <!--   AsyncBackupServletSupport 61 (async executor task, with              -->
-    <!--     asyncContext.complete() in finally, so without this catch the      -->
-    <!--     client would hang until timeout);                                  -->
-    <!--   FMod_CQRS 156 (closing Kafka producers on serverStopped, so one bad  -->
-    <!--     producer does not prevent the rest closing);                       -->
-    <!--   UserInfoFilter 123 (filter destroy()).                               -->
-    <!-- SPARQL_Update_CQRS 136 is also covered now (s1181cqrsupdate below),    -->
-    <!-- by decision rather than because it is equivalent: that one is on the   -->
-    <!-- SPARQL update request path and does not rethrow when the Throwable is  -->
-    <!-- an ActionErrorException, unlike the OperationDeniedException arm above -->
-    <!-- it. The whole file is a deliberate copy of Jena's SPARQL_Update, so    -->
-    <!-- the handler matches upstream; revisit it when that copy is next        -->
-    <!-- reconciled.                                                            -->
-    <!-- Known limitation of all seven: an Error such as OutOfMemoryError is    -->
-    <!-- logged and discarded. Adding "if (t instanceof Error e) throw e;" as    -->
-    <!-- the first line of each handler would address that without changing the -->
-    <!-- isolation these provide.                                               -->
-    <sonar.issue.ignore.multicriteria.s1181compaction.ruleKey>java:S1181</sonar.issue.ignore.multicriteria.s1181compaction.ruleKey>
-    <sonar.issue.ignore.multicriteria.s1181compaction.resourceKey>**/FMod_InitialCompaction.java</sonar.issue.ignore.multicriteria.s1181compaction.resourceKey>
-
-    <sonar.issue.ignore.multicriteria.s1181cqrsmod.ruleKey>java:S1181</sonar.issue.ignore.multicriteria.s1181cqrsmod.ruleKey>
-    <sonar.issue.ignore.multicriteria.s1181cqrsmod.resourceKey>**/FMod_CQRS.java</sonar.issue.ignore.multicriteria.s1181cqrsmod.resourceKey>
-
-    <sonar.issue.ignore.multicriteria.s1181asyncbackup.ruleKey>java:S1181</sonar.issue.ignore.multicriteria.s1181asyncbackup.ruleKey>
-    <sonar.issue.ignore.multicriteria.s1181asyncbackup.resourceKey>**/AsyncBackupServletSupport.java</sonar.issue.ignore.multicriteria.s1181asyncbackup.resourceKey>
-
-    <sonar.issue.ignore.multicriteria.s1181userinfo.ruleKey>java:S1181</sonar.issue.ignore.multicriteria.s1181userinfo.ruleKey>
-    <sonar.issue.ignore.multicriteria.s1181userinfo.resourceKey>**/UserInfoFilter.java</sonar.issue.ignore.multicriteria.s1181userinfo.resourceKey>
-
-    <!-- S1141: nested try block. All four occurrences are short idiomatic      -->
-    <!-- fallbacks that would be harder to follow extracted, because each one   -->
-    <!-- guards state owned by the enclosing try:                               -->
-    <!--   FMod_InitialCompaction 354, a label compaction failure that must     -->
-    <!--     warn but must not mark the whole compaction FAILED;                -->
-    <!--   FMod_InitialCompaction 574, the three line                           -->
-    <!--     AtomicMoveNotSupportedException fallback to a plain Files.move;     -->
-    <!--   FMod_DistributionLifecycle 313, the body of a retry loop;            -->
-    <!--   SmartCacheGraph 184, a try with resources nested in the YAML parse,  -->
-    <!--     where extracting would fight the resource scope.                   -->
-    <!-- The last pattern is qualified with its package because there are two   -->
-    <!-- SmartCacheGraph.java in the tree (io.telicent.core in scg-system and   -->
-    <!-- io.telicent.smart.cache.graph in scg-server) and only the first is     -->
-    <!-- affected. NOTE: the s5443 entry above uses the unqualified             -->
-    <!-- **/SmartCacheGraph.java and so covers both; worth narrowing too.       -->
-    <sonar.issue.ignore.multicriteria.s1141compaction.ruleKey>java:S1141</sonar.issue.ignore.multicriteria.s1141compaction.ruleKey>
-    <sonar.issue.ignore.multicriteria.s1141compaction.resourceKey>**/FMod_InitialCompaction.java</sonar.issue.ignore.multicriteria.s1141compaction.resourceKey>
-
-    <sonar.issue.ignore.multicriteria.s1141distlifecycle.ruleKey>java:S1141</sonar.issue.ignore.multicriteria.s1141distlifecycle.ruleKey>
-    <sonar.issue.ignore.multicriteria.s1141distlifecycle.resourceKey>**/FMod_DistributionLifecycle.java</sonar.issue.ignore.multicriteria.s1141distlifecycle.resourceKey>
-
-    <sonar.issue.ignore.multicriteria.s1141main.ruleKey>java:S1141</sonar.issue.ignore.multicriteria.s1141main.ruleKey>
-    <sonar.issue.ignore.multicriteria.s1141main.resourceKey>**/io/telicent/core/SmartCacheGraph.java</sonar.issue.ignore.multicriteria.s1141main.resourceKey>
-
-    <!-- S3077: "use a thread safe type; volatile is not enough". Same case as   -->
-    <!-- s3077filter above. DistributionLifecycleReadiness.stateFile and         -->
-    <!-- .trackerRunningProbe are only ever replaced wholesale in reset() and    -->
-    <!-- configure() and read in snapshot(); nothing mutates through either      -->
-    <!-- reference, and the default probe is a stateless lambda. A volatile      -->
-    <!-- reference is precisely the right idiom for safe publication here. The   -->
-    <!-- rule looks at the declared type, not the usage.                         -->
-    <!-- The volatile ObjectNode fields are covered separately by               -->
-    <!-- s3077jobresult below.                                                   -->
-    <sonar.issue.ignore.multicriteria.s3077lifecycle.ruleKey>java:S3077</sonar.issue.ignore.multicriteria.s3077lifecycle.ruleKey>
-    <sonar.issue.ignore.multicriteria.s3077lifecycle.resourceKey>**/DistributionLifecycleReadiness.java</sonar.issue.ignore.multicriteria.s3077lifecycle.resourceKey>
-
-    <!-- S2177: "rename this method; there is a private method in the parent     -->
-    <!-- class with the same name". SPARQL_Update_CQRS extends Jena's           -->
-    <!-- SPARQL_Update, which declares processProtocol private. Private methods -->
-    <!-- are not virtual, so there is no shadowing or dispatch surprise; the    -->
-    <!-- subclass simply cannot reuse the parent's, which is why line 159 reads -->
-    <!-- "//Necessary copies due to private." Renaming would only obscure the    -->
-    <!-- deliberate parallel with upstream and make future diffs against Jena   -->
-    <!-- harder. Premise of the rule does not hold for an inaccessible parent   -->
-    <!-- member.                                                                -->
-    <sonar.issue.ignore.multicriteria.s2177cqrs.ruleKey>java:S2177</sonar.issue.ignore.multicriteria.s2177cqrs.ruleKey>
-    <sonar.issue.ignore.multicriteria.s2177cqrs.resourceKey>**/SPARQL_Update_CQRS.java</sonar.issue.ignore.multicriteria.s2177cqrs.resourceKey>
-
-    <!-- S8786: "simplify this regular expression, it has super linear          -->
-    <!-- performance". Neither occurrence takes attacker controlled input of    -->
-    <!-- meaningful length:                                                     -->
-    <!--   BackupUtils.sanitizeKey is applied to SCG's own JSON section names   -->
-    <!--     built at lines 684 and 700 from the backup module registry, so the -->
-    <!--     inputs are short and server generated;                             -->
-    <!--   UserUtils.authHeaderPattern separates its \s+ and \S* with the        -->
-    <!--     literal "user:", so the worst case is quadratic rather than         -->
-    <!--     exponential, and the whole path is legacy pending JWT (see the      -->
-    <!--     comment at UserUtils line 43).                                      -->
-    <!-- NOTE while looking at this: the authHeaderPattern literal ends         -->
-    <!-- "(\S*)\s*" with a single backslash, which Java 15+ reads as a string    -->
-    <!-- escape for a literal space, so the compiled regex ends "(\S*) *".       -->
-    <!-- Harmless under matches() but almost certainly not what was intended.    -->
-    <sonar.issue.ignore.multicriteria.s8786user.ruleKey>java:S8786</sonar.issue.ignore.multicriteria.s8786user.ruleKey>
-    <sonar.issue.ignore.multicriteria.s8786user.resourceKey>**/UserUtils.java</sonar.issue.ignore.multicriteria.s8786user.resourceKey>
-
-    <sonar.issue.ignore.multicriteria.s8786backup.ruleKey>java:S8786</sonar.issue.ignore.multicriteria.s8786backup.ruleKey>
-    <sonar.issue.ignore.multicriteria.s8786backup.resourceKey>**/BackupUtils.java</sonar.issue.ignore.multicriteria.s8786backup.resourceKey>
-
-    <!-- S5850: "group parts of the regex together to make the intended          -->
-    <!-- operator precedence explicit". BackupUtils.sanitizeKey uses "^-+|-+$"   -->
-    <!-- to strip leading or trailing dashes. Alternation is the lowest          -->
-    <!-- precedence regex operator, so this already parses as (^-+)|(-+$), which -->
-    <!-- is the intended reading. There is no matching bug; adding parentheses   -->
-    <!-- would be cosmetic only.                                                 -->
-    <sonar.issue.ignore.multicriteria.s5850backup.ruleKey>java:S5850</sonar.issue.ignore.multicriteria.s5850backup.ruleKey>
-    <sonar.issue.ignore.multicriteria.s5850backup.resourceKey>**/BackupUtils.java</sonar.issue.ignore.multicriteria.s5850backup.resourceKey>
-
-    <!-- S135: "use at most one break or continue in this loop".                 -->
-    <!-- BackupUtils.getBackupSuccessValues walks a JSON tree and uses four      -->
-    <!-- guard continues (if (!(node instanceof ObjectNode dataset)) continue;   -->
-    <!-- and similar). The guards are what keeps the method readable; the        -->
-    <!-- alternative is four levels of nesting. The s3776 entry above already    -->
-    <!-- records this same method as accepted at cognitive complexity 46.        -->
-    <sonar.issue.ignore.multicriteria.s135backup.ruleKey>java:S135</sonar.issue.ignore.multicriteria.s135backup.ruleKey>
-    <sonar.issue.ignore.multicriteria.s135backup.resourceKey>**/BackupUtils.java</sonar.issue.ignore.multicriteria.s135backup.resourceKey>
-
-    <!-- S5738: call to a deprecated field marked for removal.                  -->
-    <!-- FMod_JwtServletAuth uses AuthConstants.FEATURE_FLAG_AUTHORIZATION      -->
-    <!-- (jwt-auth-common), which is @Deprecated(forRemoval = true) and for      -->
-    <!-- which that library ships NO replacement constant. Suppressed as a       -->
-    <!-- decision to keep the flag until the upstream direction is settled.      -->
-    <!--                                                                        -->
-    <!-- WARNING - this exclusion does not make the problem go away. The field   -->
-    <!-- guards whether UserInfoFilter and TelicentAuthorizationFilter are        -->
-    <!-- registered at all, so retiring it is a decision about whether            -->
-    <!-- authorization stays optional. When smart-caches-core drops the field    -->
-    <!-- SCG will fail to COMPILE, and this exclusion will not prevent that.      -->
-    <sonar.issue.ignore.multicriteria.s5738jwtauth.ruleKey>java:S5738</sonar.issue.ignore.multicriteria.s5738jwtauth.ruleKey>
-    <sonar.issue.ignore.multicriteria.s5738jwtauth.resourceKey>**/FMod_JwtServletAuth.java</sonar.issue.ignore.multicriteria.s5738jwtauth.resourceKey>
-
-    <!-- S1181, continued: SPARQL_Update_CQRS. See the s1181* block above for    -->
-    <!-- the reasoning. Kept as its own entry rather than folded into the        -->
-    <!-- others because this catch is on the request path, not a background      -->
-    <!-- thread, and swallows ActionErrorException without rethrowing.           -->
-    <sonar.issue.ignore.multicriteria.s1181cqrsupdate.ruleKey>java:S1181</sonar.issue.ignore.multicriteria.s1181cqrsupdate.ruleKey>
-    <sonar.issue.ignore.multicriteria.s1181cqrsupdate.resourceKey>**/SPARQL_Update_CQRS.java</sonar.issue.ignore.multicriteria.s1181cqrsupdate.resourceKey>
-
-    <!-- S1068: unused private field. SPARQL_Update_CQRS declares "resolver",    -->
-    <!-- never referenced, and "getUser", which the constructor validates with   -->
-    <!-- Objects.requireNonNull and then never reads. Both are residue of this   -->
-    <!-- class being a copy of Jena's SPARQL_Update.                            -->
-    <!-- Suppressed rather than fixed because deleting the getUser field naively -->
-    <!-- would also drop the deliberate constructor argument validation; keeping -->
-    <!-- the check while removing the field is a small API change to make when   -->
-    <!-- this copy is next reconciled with upstream.                            -->
-    <sonar.issue.ignore.multicriteria.s1068cqrsupdate.ruleKey>java:S1068</sonar.issue.ignore.multicriteria.s1068cqrsupdate.ruleKey>
-    <sonar.issue.ignore.multicriteria.s1068cqrsupdate.resourceKey>**/SPARQL_Update_CQRS.java</sonar.issue.ignore.multicriteria.s1068cqrsupdate.resourceKey>
-
-    <!-- S1134: FIXME comment. UserInfoFilter records that ATTR_ABAC_USERNAME     -->
-    <!-- ("abac.user") is copied by hand from RDF ABAC's UserInfoEnrichmentFilter -->
-    <!-- to avoid a direct dependency, and that a better solution is needed.      -->
-    <!-- Suppressed to keep the queue clean, but the comment is deliberately      -->
-    <!-- LEFT IN THE SOURCE: if RDF ABAC ever changes that attribute key this     -->
-    <!-- filter silently stops propagating the username to the authorization      -->
-    <!-- layer, with no compile error and no test failure. Belongs in a ticket,   -->
-    <!-- not in a lint queue.                                                     -->
-    <sonar.issue.ignore.multicriteria.s1134userinfo.ruleKey>java:S1134</sonar.issue.ignore.multicriteria.s1134userinfo.ruleKey>
-    <sonar.issue.ignore.multicriteria.s1134userinfo.resourceKey>**/UserInfoFilter.java</sonar.issue.ignore.multicriteria.s1134userinfo.resourceKey>
-
-    <!-- S6541: "Brain Method". DatasetBackupService.restoreDatasets is ~80      -->
-    <!-- lines combining path resolution, decryption, unzip and per-dataset      -->
-    <!-- restore. Suppressed rather than split because it contains the           -->
-    <!-- restoreId.contains("/") path traversal guard that the s1075 comment     -->
-    <!-- above warns against disturbing, so a refactor here is security          -->
-    <!-- relevant work to schedule deliberately, not a tidy-up.                  -->
-    <sonar.issue.ignore.multicriteria.s6541backup.ruleKey>java:S6541</sonar.issue.ignore.multicriteria.s6541backup.ruleKey>
-    <sonar.issue.ignore.multicriteria.s6541backup.resourceKey>**/DatasetBackupService.java</sonar.issue.ignore.multicriteria.s6541backup.resourceKey>
-
-    <!-- S112: generic exception. DatasetBackupService.getReport declares        -->
-    <!-- "throws Exception" although its body can only raise IOException and     -->
-    <!-- Jena's RiotException. Narrowing it is easy on its own, but its caller    -->
-    <!-- ReportServlet.doGet catches Exception and returns                        -->
-    <!-- exception.getMessage() to the client, and those messages already        -->
-    <!-- include filesystem paths ("Invalid path or file: ..."). Deciding what   -->
-    <!-- that endpoint should echo is the same piece of work, so both are        -->
-    <!-- deferred together rather than tightening the signature and leaving the  -->
-    <!-- disclosure in place.                                                    -->
-    <sonar.issue.ignore.multicriteria.s112backupreport.ruleKey>java:S112</sonar.issue.ignore.multicriteria.s112backupreport.ruleKey>
-    <sonar.issue.ignore.multicriteria.s112backupreport.resourceKey>**/DatasetBackupService.java</sonar.issue.ignore.multicriteria.s112backupreport.resourceKey>
-
-    <!-- S3077, the volatile ObjectNode job-result fields:                       -->
-    <!--   FMod_InitialCompaction.CompactionJob.result                           -->
-    <!--   BackupJobManager.BackupJob.result                                     -->
-    <!-- An earlier revision of this POM recorded these as genuine findings,     -->
-    <!-- on the grounds that the node is shared between the job thread and the   -->
-    <!-- servlet thread. On re-reading the code they are safe: each write is     -->
-    <!-- "this.result = response.body().deepCopy()", a freshly allocated and     -->
-    <!-- unaliased node, and the only read, status(), takes another deepCopy      -->
-    <!-- before handing it out. The node is therefore never mutated after         -->
-    <!-- publication and a volatile reference is sufficient.                      -->
-    <!-- Note this is an invariant held by convention, not by the type. If a      -->
-    <!-- future change mutates result in place, volatile will not save it; the    -->
-    <!-- durable fix would be to hold the serialized JSON as an immutable String. -->
-    <sonar.issue.ignore.multicriteria.s3077jobresult.ruleKey>java:S3077</sonar.issue.ignore.multicriteria.s3077jobresult.ruleKey>
-    <sonar.issue.ignore.multicriteria.s3077jobresult.resourceKey>**/BackupJobManager.java</sonar.issue.ignore.multicriteria.s3077jobresult.resourceKey>
-
-    <sonar.issue.ignore.multicriteria.s3077compactionjob.ruleKey>java:S3077</sonar.issue.ignore.multicriteria.s3077compactionjob.ruleKey>
-    <sonar.issue.ignore.multicriteria.s3077compactionjob.resourceKey>**/FMod_InitialCompaction.java</sonar.issue.ignore.multicriteria.s3077compactionjob.resourceKey>
-
-    <!-- xml:S1134 on this POM itself. The justification comment for the         -->
-    <!-- s1134userinfo exclusion above has to name the tag it is talking about,  -->
-    <!-- so the XML analyzer reads that word as an unresolved marker in this     -->
-    <!-- file. Self inflicted and purely textual - there is no outstanding work  -->
-    <!-- recorded in this POM. Scoped to the POM so the rule keeps firing on     -->
-    <!-- any other XML in the project.                                           -->
-    <sonar.issue.ignore.multicriteria.s1134pom.ruleKey>xml:S1134</sonar.issue.ignore.multicriteria.s1134pom.ruleKey>
-    <sonar.issue.ignore.multicriteria.s1134pom.resourceKey>**/pom.xml</sonar.issue.ignore.multicriteria.s1134pom.resourceKey>
+    <!-- General issue suppressions are inherited from Core. Keep Graph-specific exceptions
+         on the affected Java declarations; do not override the shared criterion list. -->
 
     <!-- Dependency versions -->
     <!-- Internal dependencies -->
-    <dependency.rdf-abac>4.1.2</dependency.rdf-abac>
+    <dependency.rdf-abac>4.2.0</dependency.rdf-abac>
     <dependency.fuseki-kafka>3.4.2</dependency.fuseki-kafka>
     <dependency.jena>6.2.0</dependency.jena>
     <dependency.graphql>0.12.3</dependency.graphql>
     <dependency.jwt-servlet-auth>4.1.4</dependency.jwt-servlet-auth>
-    <dependency.smart-caches-core>1.8.0</dependency.smart-caches-core>
+    <dependency.smart-caches-core>1.10.1</dependency.smart-caches-core>
 
     <!-- External dependencies -->
     <dependency.awaitility>4.3.0</dependency.awaitility>
@@ -608,14 +168,6 @@
 
   <dependencyManagement>
     <dependencies>
-
-      <dependency>
-        <groupId>io.telicent.smart-caches</groupId>
-        <artifactId>parent</artifactId>
-        <version>${dependency.smart-caches-core}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
 
       <!-- Internal dependencies-->
       <dependency>
@@ -1264,6 +816,45 @@
     </pluginManagement>
 
     <plugins>
+      <!-- Preserve Graph's existing compiler and Javadoc configuration. -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration combine.self="override">
+          <release>${java.version}</release>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <configuration combine.self="override">
+          <doclint>none</doclint>
+        </configuration>
+      </plugin>
+      <!-- Graph has its own source headers and test-JAR executions. Do not add Core's
+           header.txt check or duplicate Graph's existing test artifact attachments. -->
+      <plugin>
+        <groupId>com.mycila</groupId>
+        <artifactId>license-maven-plugin</artifactId>
+        <executions>
+          <execution><id>check-licenses</id><phase>none</phase></execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <executions>
+          <execution><id>create-test-jar</id><phase>none</phase></execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-source-plugin</artifactId>
+        <executions>
+          <execution><id>attach-test-sources</id><phase>none</phase></execution>
+        </executions>
+      </plugin>
+
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>buildnumber-maven-plugin</artifactId>

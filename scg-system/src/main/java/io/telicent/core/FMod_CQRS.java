@@ -141,6 +141,9 @@ public class FMod_CQRS implements FusekiModule {
         });
     }
 
+    // S1181: Last-resort isolation records failure and completes cleanup at this background or lifecycle
+    // boundary.
+    @SuppressWarnings("java:S1181")
     @Override
     public void serverStopped(FusekiServer server) {
         // Ensure that any active producers are explicitly flushed and closed upon server stop

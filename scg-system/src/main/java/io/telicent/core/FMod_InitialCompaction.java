@@ -235,6 +235,8 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
             private volatile Instant startedAt;
             private volatile Instant completedAt;
             private volatile Integer httpStatus;
+            // S3077: Store a fresh deepCopy and return a deepCopy to readers; never mutate the published result.
+            @SuppressWarnings("java:S3077")
             private volatile ObjectNode result;
 
             private CompactionJob(final String scope,
@@ -345,6 +347,9 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
      *
      * @param server Server
      */
+    // S1181: Last-resort isolation records failure and completes cleanup at this background or lifecycle
+    // boundary.
+    @SuppressWarnings("java:S1181")
     private void compactDatabases(FusekiServer server) {
         for (String name : datasets) {
             Optional<DatasetGraph> optionalDatasetGraph = FKS.findDataset(server, name);
@@ -507,6 +512,9 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
     /**
      * Runs the compaction itself, recording its progress and outcome
      */
+    // S1181: Last-resort isolation records failure and completes cleanup at this background or lifecycle
+    // boundary.
+    @SuppressWarnings("java:S1181")
     private static CompactionStatus runCompaction(DatasetGraph datasetGraph, DatasetGraphSwitchable dsg, String name,
                                                   long sizeBefore, Runnable compactor) {
         Instant startedAt = Instant.now();
@@ -998,6 +1006,8 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
         return t.getClass().getName() + ": " + message;
     }
 
+    // S1948: Embedded Jetty does not serialise these servlets or replicate their injected service state.
+    @SuppressWarnings("java:S1948")
     private static class CompactOneServlet extends HttpServlet {
         private final DatasetGraph dsg;
         private final String datasetName;
@@ -1040,6 +1050,8 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
         }
     }
 
+    // S1948: Embedded Jetty does not serialise these servlets or replicate their injected service state.
+    @SuppressWarnings("java:S1948")
     private static class CompactAllServlet extends HttpServlet {
         private final DataAccessPointRegistry dapRegistry;
         private final CompactionJobManager jobManager;
@@ -1099,6 +1111,8 @@ public class FMod_InitialCompaction implements FusekiAutoModule {
         }
     }
 
+    // S1948: Embedded Jetty does not serialise these servlets or replicate their injected service state.
+    @SuppressWarnings("java:S1948")
     private static final class CompactionJobsServlet extends HttpServlet {
         private final CompactionJobManager jobManager;
         private final String scope;

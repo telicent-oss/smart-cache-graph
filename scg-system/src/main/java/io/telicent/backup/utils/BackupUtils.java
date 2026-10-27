@@ -703,6 +703,8 @@ public class BackupUtils {
      * @param result The ObjectNode to get the success information from
      * @param response The ObjectNode to add the information to
      */
+    // S3776: Keep the nested dataset and backup-section outcomes together in the report traversal.
+    @SuppressWarnings("java:S3776")
     public static void getBackupSuccessValues(ObjectNode result, ObjectNode response) {
         ArrayNode datasets = (ArrayNode) result.get("datasets");
         if (datasets == null) return;
@@ -761,6 +763,9 @@ public class BackupUtils {
         }
     }
 
+    // S5850: Sanitise short, server-generated backup section names; the anchors deliberately trim both ends.
+    // S8786: Sanitise short, server-generated backup section names; the anchors deliberately trim both ends.
+    @SuppressWarnings({"java:S5850", "java:S8786"})
     private static String sanitizeKey(String key) {
         return key.replaceAll("[^a-zA-Z0-9_-]", "-").replaceAll("^-+|-+$", "").replaceAll("-{2,}", "-");
     }

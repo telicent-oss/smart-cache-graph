@@ -27,6 +27,8 @@ import static io.telicent.backup.utils.BackupConstants.DATE_FORMAT;
 import static io.telicent.backup.utils.JsonFileUtils.OBJECT_MAPPER;
 import static io.telicent.utils.ServletUtils.processResponse;
 
+// S1948: Embedded Jetty does not serialise these servlets or replicate their injected service state.
+@SuppressWarnings("java:S1948")
 public class BackupJobsServlet extends HttpServlet {
 
     private final BackupJobManager jobManager;

@@ -40,6 +40,9 @@ final class AsyncBackupServletSupport {
     private AsyncBackupServletSupport() {
     }
 
+    // S1181: Last-resort isolation records failure and completes cleanup at this background or lifecycle
+    // boundary.
+    @SuppressWarnings("java:S1181")
     static void processAsync(final DatasetBackupService backupService,
                              final HttpServletRequest request,
                              final boolean backup) {

@@ -40,8 +40,14 @@ public class FMod_DatasetAvailabilityFilter implements FusekiModule {
     private static final String VERSION =
             Version.versionForClass(FMod_DatasetAvailabilityFilter.class).orElse("<development>");
     private static final String LABELS_PREFIX = "/$/labels/";
+    // S3077: Publish immutable snapshots by replacing the volatile reference; do not mutate a published value.
+    @SuppressWarnings("java:S3077")
     private volatile Set<String> datasetNames = Set.of();
+    // S3077: Publish immutable snapshots by replacing the volatile reference; do not mutate a published value.
+    @SuppressWarnings("java:S3077")
     private volatile Map<String, DatasetGraphSwitchable> datasetsByPath = Map.of();
+    // S3077: Publish immutable snapshots by replacing the volatile reference; do not mutate a published value.
+    @SuppressWarnings("java:S3077")
     private volatile Map<String, DataService> servicesByPath = Map.of();
 
     /**

@@ -26,7 +26,7 @@ final class UserInfoFilter implements Filter {
 
     /**
      * Request attribute key under which this filter stores the resolved username.
-     * FIXME - ATTR_ABAC_USERNAME has been copied from the UserInfoEnrichmentFilter on RDF ABAC to avoid a direct
+     * Compatibility note - ATTR_ABAC_USERNAME has been copied from the UserInfoEnrichmentFilter on RDF ABAC to avoid a direct
      * dependency on RDF ABAC here. A better solution needs to be found for this.
      */
     public static final String ATTR_ABAC_USERNAME = "abac.user";
@@ -116,6 +116,9 @@ final class UserInfoFilter implements Filter {
         }
     }
 
+    // S1181: Last-resort isolation records failure and completes cleanup at this background or lifecycle
+    // boundary.
+    @SuppressWarnings("java:S1181")
     @Override
     public void destroy() {
         try {

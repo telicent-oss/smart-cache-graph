@@ -168,6 +168,8 @@ public class SmartCacheGraph {
         return !Boolean.parseBoolean(disableKafka);
     }
 
+    // S5443: The generated config is an internal temporary file in the single-process Graph container.
+    @SuppressWarnings("java:S5443")
     private static void convertYamlConfigToRDF(String... args) {
         YAMLConfigParser ycp = new YAMLConfigParser();
         RDFConfigGenerator rcg = new RDFConfigGenerator();

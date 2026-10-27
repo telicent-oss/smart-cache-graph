@@ -65,12 +65,16 @@ public class SPARQL_Update_CQRS extends SPARQL_Update {
 
 
     private static final String UpdateParseBase = Fuseki.BaseParserSPARQL;
+    // S1068: Keep the upstream-compatible update handler shape and constructor argument validation.
+    @SuppressWarnings("java:S1068")
     private static final IRIxResolver resolver = IRIxResolver.create()
                                                              .base(UpdateParseBase)
                                                              .resolve(true)
                                                              .allowRelative(false)
                                                              .build();
 
+    // S1068: Keep the upstream-compatible update handler shape and constructor argument validation.
+    @SuppressWarnings("java:S1068")
     private final Function<HttpAction, String> getUser;
     private final String topic;
     private final Producer<String, byte[]> producer;
@@ -105,6 +109,9 @@ public class SPARQL_Update_CQRS extends SPARQL_Update {
         return this.producer;
     }
 
+    // S1181: Retain the copied Jena update handler's last-resort error handling until it is reconciled with
+    // upstream.
+    @SuppressWarnings("java:S1181")
     @Override
     protected void execute(HttpAction action, InputStream input) {
         UsingList usingList = processProtocol(action.getRequest());
@@ -206,6 +213,9 @@ public class SPARQL_Update_CQRS extends SPARQL_Update {
      * and will also be responsible for adding the using parameters to update queries that can
      * accept them.
      */
+    // S2177: Keep the upstream name: the parent's private method is inaccessible and this copy is deliberate.
+    // S3516: The non-null protocol branch throws an HTTP error; null deliberately means no USING list.
+    @SuppressWarnings({"java:S2177", "java:S3516"})
     private UsingList processProtocol(HttpServletRequest request) {
         String[] usingArgs = request.getParameterValues(paramUsingGraphURI);
         String[] usingNamedArgs = request.getParameterValues(paramUsingNamedGraphURI);
