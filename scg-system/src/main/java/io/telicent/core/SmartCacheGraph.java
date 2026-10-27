@@ -169,7 +169,8 @@ public class SmartCacheGraph {
     }
 
     // S5443: The generated config is an internal temporary file in the single-process Graph container.
-    @SuppressWarnings("java:S5443")
+    // S3776: Keep config argument detection, YAML conversion and replacement-path handling together.
+    @SuppressWarnings({"java:S3776", "java:S5443"})
     private static void convertYamlConfigToRDF(String... args) {
         YAMLConfigParser ycp = new YAMLConfigParser();
         RDFConfigGenerator rcg = new RDFConfigGenerator();

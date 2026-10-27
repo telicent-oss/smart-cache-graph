@@ -111,7 +111,8 @@ public class SPARQL_Update_CQRS extends SPARQL_Update {
 
     // S1181: Retain the copied Jena update handler's last-resort error handling until it is reconciled with
     // upstream.
-    @SuppressWarnings("java:S1181")
+    // S3776: Keep distribution validation, transaction handling and upstream error responses together.
+    @SuppressWarnings({"java:S1181", "java:S3776"})
     @Override
     protected void execute(HttpAction action, InputStream input) {
         UsingList usingList = processProtocol(action.getRequest());

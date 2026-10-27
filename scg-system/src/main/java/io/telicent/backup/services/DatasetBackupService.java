@@ -305,6 +305,8 @@ public class DatasetBackupService {
      * @param datasetName the name of the dataset to back up
      * @param response the node to add metadata of process to
      */
+    // S3776: Keep dataset selection, maintenance locking and per-dataset backup outcomes in one pass.
+    @SuppressWarnings("java:S3776")
     public void backupDataset(String datasetName, ObjectNode response) {
         ZonedDateTime startTime = ZonedDateTime.now(ZoneId.systemDefault());
         String backupPath = getBackUpDir();

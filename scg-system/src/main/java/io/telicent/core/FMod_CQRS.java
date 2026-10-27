@@ -95,6 +95,8 @@ public class FMod_CQRS implements FusekiModule {
         FusekiModule.super.configured(serverBuilder, dapRegistry, configModel);
     }
 
+    // S3776: Keep endpoint selection, Kafka topic resolution and producer registration together.
+    @SuppressWarnings("java:S3776")
     @Override
     public void configDataAccessPoint(DataAccessPoint dap, Model configModel) {
         dap.getDataService().forEachEndpoint(endpoint -> {

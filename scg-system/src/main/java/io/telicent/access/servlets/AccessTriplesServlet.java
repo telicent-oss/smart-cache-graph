@@ -81,6 +81,8 @@ public class AccessTriplesServlet extends HttpServlet {
         return Boolean.parseBoolean(allParam);
     }
 
+    // S3776: Keep URI, typed-literal and language-literal validation together when constructing triples.
+    @SuppressWarnings("java:S3776")
     private List<Triple> getTripleList(JsonTriples triplesRequest) throws SmartCacheGraphException {
         try {
             final List<Triple> triples = new ArrayList<>();
