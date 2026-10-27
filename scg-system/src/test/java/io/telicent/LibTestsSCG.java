@@ -18,7 +18,6 @@ package io.telicent;
 
 import java.util.List;
 import java.util.Properties;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import io.jsonwebtoken.JwtBuilder;
 import io.jsonwebtoken.Jwts;
@@ -42,7 +41,6 @@ public class LibTestsSCG {
 
     private static final Properties AUTH_DISABLED_PROPERTIES = new Properties();
     private static final PropertiesSource AUTH_DISABLED_SOURCE = new PropertiesSource(AUTH_DISABLED_PROPERTIES);
-    private static final AtomicInteger KEY_SERVER_PORT = new AtomicInteger(12345);
     private static final String TEST_AWS_REGION = "test";
     private static MockKeyServer MOCK_KEY_SERVER;
     private static boolean AWS_MODE = false;
@@ -177,7 +175,7 @@ public class LibTestsSCG {
         if (MOCK_KEY_SERVER != null) {
             MOCK_KEY_SERVER.stop();
         }
-        MOCK_KEY_SERVER = new MockKeyServer(KEY_SERVER_PORT.getAndIncrement());
+        MOCK_KEY_SERVER = new MockKeyServer(0);
         MOCK_KEY_SERVER.start();
 
         AWS_MODE = awsMode;

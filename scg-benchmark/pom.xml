@@ -49,7 +49,7 @@
         <dependency>
             <groupId>io.telicent.smart-caches</groupId>
             <artifactId>data-security-plugin-rdf-abac</artifactId>
-            <version>${dependency.smart-caches-core}</version>
+            <version>${dependency.rdf-abac}</version>
         </dependency>
 
         <dependency>

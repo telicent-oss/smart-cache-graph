@@ -29,6 +29,8 @@ import static io.telicent.backup.utils.JsonFileUtils.OBJECT_MAPPER;
 import static io.telicent.utils.ServletUtils.handleError;
 import static io.telicent.utils.ServletUtils.processResponse;
 
+// S1948: Embedded Jetty does not serialise these servlets or replicate their injected service state.
+@SuppressWarnings("java:S1948")
 public class AccessTriplesServlet extends HttpServlet {
 
     private static final Logger LOG = FusekiKafka.LOG;
@@ -79,6 +81,8 @@ public class AccessTriplesServlet extends HttpServlet {
         return Boolean.parseBoolean(allParam);
     }
 
+    // S3776: Keep URI, typed-literal and language-literal validation together when constructing triples.
+    @SuppressWarnings("java:S3776")
     private List<Triple> getTripleList(JsonTriples triplesRequest) throws SmartCacheGraphException {
         try {
             final List<Triple> triples = new ArrayList<>();

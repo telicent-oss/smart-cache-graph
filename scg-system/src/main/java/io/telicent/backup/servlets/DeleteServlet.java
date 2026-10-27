@@ -31,6 +31,8 @@ import static io.telicent.utils.ServletUtils.processResponse;
 /**
  * Servlet class responsible for the deletion of backups.
  */
+// S1948: Embedded Jetty does not serialise these servlets or replicate their injected service state.
+@SuppressWarnings("java:S1948")
 public class DeleteServlet extends HttpServlet {
     private final DatasetBackupService backupService;
 

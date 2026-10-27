@@ -31,12 +31,9 @@ public class MockKeyServer {
     private final JwkSet publicKeys;
     private final List<String> keyIds;
     private final JettyServer server;
-    private final int port;
     private final Random random = new Random();
 
     public MockKeyServer(int port) {
-        this.port = port;
-
         // Generate some Key Pairs using a variety of different algorithms
         List<KeyPair> keyPairs = List.of(Jwts.SIG.ES256.keyPair().build(), Jwts.SIG.ES384.keyPair().build(),
                                          Jwts.SIG.ES512.keyPair().build());
@@ -53,7 +50,7 @@ public class MockKeyServer {
         this.publicKeys.getKeys().forEach(k -> this.keyIds.add(k.getId()));
 
         this.server = JettyServer.create()
-                                 .port(this.port)
+                                 .port(port)
                                  .loopback(true)
                                  .contextPath("/")
                                  .addServlet("/jwks.json", new JwksServlet(this.publicKeys))
@@ -75,15 +72,15 @@ public class MockKeyServer {
     }
 
     public String getJwksUrl() {
-        return String.format("http://localhost:%d/jwks.json", this.port);
+        return String.format("http://localhost:%d/jwks.json", this.server.getPort());
     }
 
     public String getAwsElbUrlFormat() {
-        return String.format("http://localhost:%d/aws/", this.port) + "%s";
+        return String.format("http://localhost:%d/aws/", this.server.getPort()) + "%s";
     }
 
     public String getUserInfoUrl() {
-        return String.format("http://localhost:%d/userinfo", this.port);
+        return String.format("http://localhost:%d/userinfo", this.server.getPort());
     }
 
     public String selectKeyId() {

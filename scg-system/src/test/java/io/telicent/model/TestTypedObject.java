@@ -3,14 +3,22 @@ package io.telicent.model;
 import io.telicent.utils.SmartCacheGraphException;
 import org.apache.jena.datatypes.xsd.XSDDatatype;
 import org.apache.jena.datatypes.xsd.impl.XMLLiteralType;
+import org.apache.jena.sys.JenaSystem;
 import org.apache.jena.vocabulary.RDF;
 import org.apache.jena.vocabulary.XSD;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import static io.telicent.backup.utils.JsonFileUtils.OBJECT_MAPPER;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class TestTypedObject {
+
+    @BeforeAll
+    public static void initializeJena() {
+        // Initialise datatype mappings even when this test is run without a Fuseki fixture.
+        JenaSystem.init();
+    }
 
     @Test
     public void testXsdInteger() throws Exception {

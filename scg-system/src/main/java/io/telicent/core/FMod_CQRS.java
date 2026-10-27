@@ -95,6 +95,8 @@ public class FMod_CQRS implements FusekiModule {
         FusekiModule.super.configured(serverBuilder, dapRegistry, configModel);
     }
 
+    // S3776: Keep endpoint selection, Kafka topic resolution and producer registration together.
+    @SuppressWarnings("java:S3776")
     @Override
     public void configDataAccessPoint(DataAccessPoint dap, Model configModel) {
         dap.getDataService().forEachEndpoint(endpoint -> {
@@ -141,6 +143,9 @@ public class FMod_CQRS implements FusekiModule {
         });
     }
 
+    // S1181: Last-resort isolation records failure and completes cleanup at this background or lifecycle
+    // boundary.
+    @SuppressWarnings("java:S1181")
     @Override
     public void serverStopped(FusekiServer server) {
         // Ensure that any active producers are explicitly flushed and closed upon server stop

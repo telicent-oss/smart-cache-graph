@@ -15,6 +15,9 @@ public class UserUtils {
     }
 
     // "Authorization: Bearer: user:NAME"
+    // S8786: Retain the legacy user-header format; the literal user: separates the whitespace and username
+    // groups.
+    @SuppressWarnings("java:S8786")
     private static final Pattern authHeaderPattern = Pattern.compile("\\s*Bearer\\s+user:(\\S*)\s*");
 
     /**

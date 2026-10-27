@@ -27,7 +27,11 @@ final class DistributionLifecycleReadiness {
     private volatile boolean trackerEnabled;
     private volatile State state = State.DISABLED;
     private volatile String reason = FILTERING_DISABLED_REASON;
+    // S3077: The file and probe references are replaced wholesale; their lifecycle is managed separately.
+    @SuppressWarnings("java:S3077")
     private volatile DistributionLifecycleStateFile stateFile;
+    // S3077: The file and probe references are replaced wholesale; their lifecycle is managed separately.
+    @SuppressWarnings("java:S3077")
     private volatile BooleanSupplier trackerRunningProbe = () -> false;
 
     static DistributionLifecycleReadiness getInstance() {

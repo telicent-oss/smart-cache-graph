@@ -106,6 +106,8 @@ public class BackupJobManager {
         private volatile Instant startedAt;
         private volatile Instant completedAt;
         private volatile Integer httpStatus;
+        // S3077: Store a fresh deepCopy and return a deepCopy to readers; never mutate the published result.
+        @SuppressWarnings("java:S3077")
         private volatile ObjectNode result;
 
         private BackupJob(final String jobId, final String operation, final String statusPathPrefix) {

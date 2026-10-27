@@ -152,7 +152,7 @@
         <dependency>
             <groupId>io.telicent.smart-caches</groupId>
             <artifactId>data-security-plugin-rdf-abac-registration</artifactId>
-            <version>${dependency.smart-caches-core}</version>
+            <version>${dependency.rdf-abac}</version>
             <!--
             Until we roll out dynamic security plugin loading need explicit dependency on the RDF-ABAC plugin,
             eventually this can be moved to test scope and rely on dynamic loading at runtime

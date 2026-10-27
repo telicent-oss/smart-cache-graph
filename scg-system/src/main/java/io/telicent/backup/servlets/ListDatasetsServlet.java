@@ -31,6 +31,8 @@ import static io.telicent.backup.utils.JsonFileUtils.OBJECT_MAPPER;
 /**
  * Servlet class responsible for listing available datasets for backup operations.
  */
+// S1948: Embedded Jetty does not serialise these servlets or replicate their injected service state.
+@SuppressWarnings("java:S1948")
 public class ListDatasetsServlet extends HttpServlet {
     private final DatasetBackupService backupService;
 

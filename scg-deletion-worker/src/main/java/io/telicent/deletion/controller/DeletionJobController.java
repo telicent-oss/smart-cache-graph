@@ -71,6 +71,8 @@ public class DeletionJobController {
                 .body(Map.of("jobId", jobState.jobId()));
     }
 
+    // S1452: The Spring response intentionally carries either a job status or an error payload.
+    @SuppressWarnings("java:S1452")
     @GetMapping("/{jobId}")
     public ResponseEntity<?> getJobStatus(
             @RequestHeader(value = "Authorization", required = false) String authorization,
