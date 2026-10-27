@@ -85,7 +85,7 @@
     <plugin.site>3.9.1</plugin.site>
     <plugin.sonar>5.8.0.7211</plugin.sonar>
     <plugin.source>3.4.0</plugin.source>
-    <plugin.surefire>3.6.0</plugin.surefire>
+    <plugin.surefire>3.6.1</plugin.surefire>
     <plugin.versions>2.23.0</plugin.versions>
 
     <!-- SonarQube analysis, invoked from CI via mvn sonar:sonar -->
@@ -554,25 +554,25 @@
 
     <!-- Dependency versions -->
     <!-- Internal dependencies -->
-    <dependency.rdf-abac>4.1.2</dependency.rdf-abac>
+    <dependency.rdf-abac>4.2.0</dependency.rdf-abac>
     <dependency.fuseki-kafka>3.4.2</dependency.fuseki-kafka>
     <dependency.jena>6.2.0</dependency.jena>
     <dependency.graphql>0.12.3</dependency.graphql>
     <dependency.jwt-servlet-auth>4.1.4</dependency.jwt-servlet-auth>
-    <dependency.smart-caches-core>1.8.0</dependency.smart-caches-core>
+    <dependency.smart-caches-core>1.9.0</dependency.smart-caches-core>
 
     <!-- External dependencies -->
     <dependency.awaitility>4.3.0</dependency.awaitility>
     <dependency.caffeine>3.3.1</dependency.caffeine>
     <dependency.commons-codec>1.23.0</dependency.commons-codec>
     <dependency.commons-compress>1.28.0</dependency.commons-compress>
-    <dependency.gson>2.14.0</dependency.gson>
-    <dependency.jackson>2.22.3</dependency.jackson>
-    <dependency.jackson3>3.2.3</dependency.jackson3>
+    <dependency.gson>2.15.0</dependency.gson>
+    <dependency.jackson>2.22.4</dependency.jackson>
+    <dependency.jackson3>3.2.4</dependency.jackson3>
     <dependency.bouncycastle>1.86</dependency.bouncycastle>
     <dependency.kafka>3.9.2</dependency.kafka>
     <dependency.kotlin>2.4.21</dependency.kotlin>
-    <dependency.lz4>1.12.0</dependency.lz4>
+    <dependency.lz4>1.12.1</dependency.lz4>
     <dependency.otel>1.67.0</dependency.otel>
 
     <!-- Logging dependencies -->
