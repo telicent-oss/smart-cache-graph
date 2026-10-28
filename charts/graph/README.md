@@ -274,6 +274,20 @@ If either of those details changes, you can use this section to correctly refer 
 | `hostsPreview.apiBuilder`        | API Builder API default host value, as defined by 'service/serviceAccount:port'                                                                    | `api-builder:8000`       |
 | `hostsPreview.theManagement`     | The Management API default host value, as defined by 'service/serviceAccount:port'                                                                 | `the-management:8000`    |
 
+## Labels query access
+
+With `global.enterprise: true`, the Istio policy allows only Catalogue API to
+POST to `/$/labels/catalog` (and its subpaths). Other datasets' labels endpoints
+are not allowed by this chart. The endpoint remains disabled unless
+`graph.enableLabelsQuery: true` is set.
+
+The allowed workload identity is derived from the release namespace and
+`hosts.catalogue`. For the SI service account `catalogue-api` in namespace
+`tc-core`, use `hosts.catalogue: "catalogue-api:8080"` and
+`hosts.enableAutoCorrect: false` to produce
+`cluster.local/ns/tc-core/sa/catalogue-api`. Calls must use Istio mutual TLS so
+that the caller's service account can be authenticated.
+
 ## Helm Unit Tests
 The `Unit Tests for Helm Chart` workflow runs `helm unittest` against the chart to run all the `*_test.yaml` files founder under `charts/graph`.
 
