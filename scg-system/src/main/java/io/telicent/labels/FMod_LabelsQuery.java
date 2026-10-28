@@ -50,7 +50,7 @@ public class FMod_LabelsQuery implements FusekiAutoModule {
     }
 
     private static boolean isLabelsQueryEnabled() {
-        return Configurator.get(ENABLE_LABELS_QUERY, Boolean::parseBoolean, true);
+        return Configurator.get(ENABLE_LABELS_QUERY, Boolean::parseBoolean, false);
     }
 
 }
