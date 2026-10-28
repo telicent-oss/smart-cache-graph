@@ -155,6 +155,8 @@
     <dependency.commons-fileupload2>2.0.0-M5</dependency.commons-fileupload2>
     <!-- CVE-2026-1605 -->
     <dependency.jetty>12.1.14</dependency.jetty>
+    <dependency.snappy>1.1.10.12</dependency.snappy>
+
 
   </properties>
 
@@ -625,6 +627,12 @@
         <version>${dependency.jetty}</version>
       </dependency>
         <!-- CVE-2026-1605 patch block end-->
+        <!-- CVE-2026-108106, CVE-2026-93451 -->
+        <dependency>
+            <groupId>org.xerial.snappy</groupId>
+            <artifactId>snappy-java</artifactId>
+            <version>${dependency.snappy}</version>
+        </dependency>
     </dependencies>
   </dependencyManagement>
 

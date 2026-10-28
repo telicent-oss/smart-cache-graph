@@ -35,8 +35,6 @@ spec:
         - /catalog/query/*
         - /catalog/update
         - /catalog/update/*
-        - /$/labels/catalog
-        - /$/labels/catalog/*
         methods: ["GET", "POST"]
   - from:
     - source:
@@ -50,9 +48,18 @@ spec:
         - /catalog/query/*
         - /catalog/update
         - /catalog/update/*
+        methods: ["GET", "POST"]
+  # Security label queries are restricted to Catalogue API's workload identity.
+  - from:
+    - source:
+        principals:
+          {{- include "graph.cataloguePrincipal" . | nindent 8 }}
+    to:
+    - operation:
+        paths:
         - /$/labels/catalog
         - /$/labels/catalog/*
-        methods: ["GET", "POST"]
+        methods: ["POST"]
   - from:
     - source:
         principals:

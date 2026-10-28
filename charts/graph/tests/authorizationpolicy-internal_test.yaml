@@ -1,0 +1,78 @@
+suite: Internal authorization policy access tests
+templates:
+  - templates/istio/authorizationpolicy-internal.yaml
+
+tests:
+  - it: restricts catalogue labels queries to the SI Catalogue API service account
+    set:
+      global.enterprise: true
+      hosts.enableAutoCorrect: false
+    release:
+      namespace: tc-core
+    asserts:
+      - equal:
+          path: spec.rules[2]
+          value:
+            from:
+              - source:
+                  principals:
+                    - cluster.local/ns/tc-core/sa/catalogue-api
+            to:
+              - operation:
+                  paths:
+                    - /$/labels/catalog
+                    - /$/labels/catalog/*
+                  methods: [POST]
+      - equal:
+          path: spec.rules[0].to[0].operation.paths
+          value:
+            - /knowledge/update
+            - /knowledge/update/*
+            - /knowledge/query
+            - /knowledge/query/*
+            - /ontology/update
+            - /ontology/update/*
+            - /catalog/query
+            - /catalog/query/*
+            - /catalog/update
+            - /catalog/update/*
+      - equal:
+          path: spec.rules[1].to[0].operation.paths
+          value:
+            - /catalog/query
+            - /catalog/query/*
+            - /catalog/update
+            - /catalog/update/*
+      - equal:
+          path: spec.rules[3].to[0].operation.paths
+          value:
+            - /knowledge/query
+            - /knowledge/query/*
+      - equal:
+          path: spec.rules[4].to[0].operation.paths
+          value:
+            - /knowledge/query
+            - /knowledge/query/*
+            - /ontology/query
+            - /ontology/query/*
+      - lengthEqual:
+          path: spec.rules
+          count: 5
+
+  - it: resolves a configured Catalogue API service account with release autocorrection
+    set:
+      global.enterprise: true
+      hosts.catalogue: catalogue-reader:8000
+    release:
+      namespace: another-namespace
+      name: my-release
+    asserts:
+      - equal:
+          path: spec.rules[2].from[0].source.principals
+          value:
+            - cluster.local/ns/another-namespace/sa/my-release-catalogue-reader
+
+  - it: omits internal access outside enterprise mode
+    asserts:
+      - hasDocuments:
+          count: 0
