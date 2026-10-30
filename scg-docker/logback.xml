@@ -33,7 +33,7 @@
     <logger name="org.apache.jena.arq.exec" level="INFO"/>
     <logger name="org.apache.jena.riot" level="INFO"/>
     <logger name="org.apache.jena.fuseki" level="INFO"/>
-    <logger name="org.apache.jena.fuseki.Fuseki" level="INFO"/>
+    <logger name="org.apache.jena.fuseki.Fuseki" level="WARN"/>
     <logger name="org.apache.jena.fuseki.Server" level="INFO"/>
     <logger name="org.apache.jena.fuseki.Admin" level="INFO"/>
     <logger name="org.eclipse.jetty" level="WARN"/>
@@ -48,7 +48,7 @@
     </appender>
 
     <!-- Fuseki requests logged in plain format -->
-    <logger name="org.apache.jena.fuseki.Request" level="OFF">
+    <logger name="org.apache.jena.fuseki.Request" additivity="false" level="INFO">
         <appender-ref ref="PLAIN"/>
     </logger>
 
