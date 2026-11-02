@@ -4,8 +4,11 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.telicent.LibTestsSCG;
 import io.telicent.jena.abac.fuseki.SysFusekiABAC;
+import io.telicent.labels.FMod_LabelsQuery;
 import io.telicent.smart.cache.configuration.Configurator;
+import io.telicent.smart.cache.configuration.sources.PropertiesSource;
 import io.telicent.smart.cache.sources.TelicentHeaders;
+import io.telicent.smart.caches.configuration.auth.policy.TelicentPermissions;
 import org.apache.jena.fuseki.main.FusekiServer;
 import org.apache.jena.fuseki.system.FusekiLogging;
 import org.junit.jupiter.api.AfterAll;
@@ -23,6 +26,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Properties;
 import java.util.Set;
 
 import static io.telicent.LibTestsSCG.tokenHeader;
@@ -36,7 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * <p>
  * User1 has the {@code everyone} attribute so only sees the country triples, User2 has the {@code admin}, {@code census}
  * and {@code europe} attributes so sees the population triples and the named graph triples, but not the country
- * triples.
+ * triples. User3 has the {@code catalogue} attribute so only sees the Catalog dataset triple.
  * </p>
  */
 public class TestAccessLabels {
@@ -52,6 +56,7 @@ public class TestAccessLabels {
     private static final String ENDPOINT = "/access/labels";
     private static final String USER1 = "User1";
     private static final String USER2 = "User2";
+    private static final String USER3 = "User3";
     private static final String EUROPE_GRAPH = "http://example.org/graph/europe";
     private static final String EMPTY_RESPONSE = """
             {
@@ -69,10 +74,15 @@ public class TestAccessLabels {
         SysFusekiABAC.init();
         LibTestsSCG.setupAuthentication();
         LibTestsSCG.disableInitialCompaction();
+        // Enables the admin labels endpoint, for comparison with the access controlled one
+        final Properties properties = new Properties();
+        properties.put(FMod_LabelsQuery.ENABLE_LABELS_QUERY, "true");
+        Configurator.addSource(new PropertiesSource(properties));
         HTTP_CLIENT = HttpClient.newHttpClient();
         SERVER = construct("--config", CONFIG_URL.getPath()).start();
         uploadData(DATA_URL, "!");
         uploadData(NAMED_GRAPH_DATA_URL, "europe");
+        uploadData(HttpRequest.BodyPublishers.ofString(CATALOG_DATA), "catalogue");
     }
 
     @AfterAll
@@ -89,23 +99,36 @@ public class TestAccessLabels {
     }
 
     private static void uploadData(URL dataUrl, String securityLabel) throws Exception {
+        uploadData(HttpRequest.BodyPublishers.ofFile(Paths.get(dataUrl.toURI())), securityLabel);
+    }
+
+    private static void uploadData(HttpRequest.BodyPublisher data, String securityLabel) throws Exception {
         final HttpRequest request = HttpRequest.newBuilder(URI.create(SERVER.serverURL() + DATASET_NAME + "/upload"))
                 .header(tokenHeader(), tokenHeaderValue(LibTestsSCG.tokenForUser("admin", DATASET_NAME)))
                 .header(TelicentHeaders.SECURITY_LABEL, securityLabel)
                 .header("Content-Type", "application/trig")
-                .POST(HttpRequest.BodyPublishers.ofFile(Paths.get(dataUrl.toURI())))
+                .POST(data)
                 .build();
         final HttpResponse<String> response = HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
         assertEquals(200, response.statusCode(), response.body());
     }
 
     private static HttpResponse<String> call(String user, String requestBody) throws Exception {
-        final HttpRequest request = HttpRequest.newBuilder(URI.create(SERVER.serverURL() + DATASET_NAME + ENDPOINT))
+        return callWithToken(DATASET_NAME + ENDPOINT, LibTestsSCG.tokenForUser(user, DATASET_NAME), requestBody);
+    }
+
+    /**
+     * Calls an endpoint, without an auth header if the token is {@code null}
+     */
+    private static HttpResponse<String> callWithToken(String path, String token, String requestBody)
+            throws Exception {
+        final HttpRequest.Builder request = HttpRequest.newBuilder(URI.create(SERVER.serverURL() + path))
                 .header("Content-Type", "application/json")
-                .header(tokenHeader(), tokenHeaderValue(LibTestsSCG.tokenForUser(user, DATASET_NAME)))
-                .POST(HttpRequest.BodyPublishers.ofString(requestBody, StandardCharsets.UTF_8))
-                .build();
-        return HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+                .POST(HttpRequest.BodyPublishers.ofString(requestBody, StandardCharsets.UTF_8));
+        if (token != null) {
+            request.header(tokenHeader(), tokenHeaderValue(token));
+        }
+        return HTTP_CLIENT.send(request.build(), HttpResponse.BodyHandlers.ofString());
     }
 
     private static String callOk(String user, String requestBody) throws Exception {
@@ -314,5 +337,140 @@ public class TestAccessLabels {
             final HttpResponse<String> response = call(USER2, populationRequest("8799800", dataTypeField));
             assertEquals(400, response.statusCode(), "Expected bad request for " + dataTypeField);
         }
+    }
+
+    // Catalog looks up the label of a dataset's type triple, then applies it to everything under that dataset
+
+    private static final String CATALOG_GRAPH = "http://telicent.io/catalog";
+    private static final String CATALOG_DATASET = "http://telicent.io/catalog/datasets#";
+    private static final String CATALOG_DATA = """
+            GRAPH <http://telicent.io/catalog> {
+                <http://telicent.io/catalog/datasets#1b9b5e4a> a <http://www.w3.org/ns/dcat#Dataset> .
+            }""";
+
+    private static String catalogRequest(String datasetId) {
+        return """
+                {
+                  "quads": [
+                    {
+                      "graph": "http://telicent.io/catalog",
+                      "subject": "http://telicent.io/catalog/datasets#%s",
+                      "predicate": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
+                      "object": { "value": "http://www.w3.org/ns/dcat#Dataset" }
+                    }
+                  ]
+                }""".formatted(datasetId);
+    }
+
+    @Test
+    public void givenCatalogDatasetTypeQuery_whenDatasetVisible_thenDatasetLabelReturned() throws Exception {
+        final String body = callOk(USER3, catalogRequest("1b9b5e4a"));
+
+        assertEquals(Set.of(String.join("|", CATALOG_GRAPH, CATALOG_DATASET + "1b9b5e4a",
+                                        "http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
+                                        "http://www.w3.org/ns/dcat#Dataset", "[\"catalogue\"]")), results(body));
+    }
+
+    @Test
+    public void givenCatalogDatasetTypeQuery_whenDatasetHidden_thenResponseIdenticalToNonExistentDataset()
+            throws Exception {
+        final String hidden = callOk(USER1, catalogRequest("1b9b5e4a"));
+        final String nonExistent = callOk(USER3, catalogRequest("00000000"));
+
+        assertEquals(EMPTY_RESPONSE, hidden);
+        assertEquals(nonExistent, hidden);
+    }
+
+    // Comparison with the admin endpoint, /$/labels/<dataset>
+
+    private static String adminCallOk(String requestBody) throws Exception {
+        final HttpResponse<String> response =
+                callWithToken("$/labels/" + DATASET_NAME, LibTestsSCG.tokenForUser("admin", DATASET_NAME),
+                              requestBody);
+        assertEquals(200, response.statusCode(), response.body());
+        return response.body();
+    }
+
+    @Test
+    public void givenVisibleTriples_whenQueryingAdminEndpoint_thenIdenticalResponse() throws Exception {
+        assertEquals(adminCallOk(triplesRequest(null, DBR + "London", COUNTRY, DBR + "United_Kingdom")),
+                     callOk(USER1, triplesRequest(null, DBR + "London", COUNTRY, DBR + "United_Kingdom")));
+        assertEquals(adminCallOk(triplesRequest(EUROPE_GRAPH, DBR + "Rome", COUNTRY, DBR + "Italy")),
+                     callOk(USER2, triplesRequest(EUROPE_GRAPH, DBR + "Rome", COUNTRY, DBR + "Italy")));
+        assertEquals(adminCallOk(catalogRequest("1b9b5e4a")), callOk(USER3, catalogRequest("1b9b5e4a")));
+    }
+
+    @Test
+    public void givenWildcardQuery_whenComparedWithAdminEndpoint_thenOnlyHiddenTriplesMissing() throws Exception {
+        final String request = triplesRequest("*", "*", "*", "*");
+        final Set<String> all = results(adminCallOk(request));
+        final Set<String> visibleToAnyone = new HashSet<>();
+        for (String user : List.of(USER1, USER2, USER3)) {
+            final Set<String> visible = results(callOk(user, request));
+            assertTrue(all.containsAll(visible), user + " got results the admin endpoint didn't: " + visible);
+            visibleToAnyone.addAll(visible);
+        }
+        // Between them the users can see everything, so nothing is lost beyond what each user can't see
+        assertEquals(all, visibleToAnyone);
+    }
+
+    // Authentication and authorization
+
+    @Test
+    public void givenNoToken_whenQuerying_thenUnauthorized() throws Exception {
+        final HttpResponse<String> response =
+                callWithToken(DATASET_NAME + ENDPOINT, null, triplesRequest(null, "*", "*", "*"));
+
+        assertEquals(401, response.statusCode(), response.body());
+    }
+
+    @Test
+    public void givenTokenWithoutRequiredRolesOrPermissions_whenQuerying_thenForbidden() throws Exception {
+        final String readPermission = TelicentPermissions.readPermission(DATASET_NAME);
+        final List<String> tokens = List.of(
+                // No read permission
+                LibTestsSCG.tokenBuilder(USER1)
+                           .claim("roles", List.of("USER"))
+                           .claim("permissions", List.of(TelicentPermissions.writePermission(DATASET_NAME)))
+                           .compact(),
+                // Read permission for a different dataset
+                LibTestsSCG.tokenBuilder(USER1)
+                           .claim("roles", List.of("USER"))
+                           .claim("permissions", List.of(TelicentPermissions.readPermission("securedDataset2")))
+                           .compact(),
+                // No USER role
+                LibTestsSCG.tokenBuilder(USER1)
+                           .claim("roles", List.of())
+                           .claim("permissions", List.of(readPermission))
+                           .compact());
+        for (String token : tokens) {
+            final HttpResponse<String> response =
+                    callWithToken(DATASET_NAME + ENDPOINT, token, triplesRequest(null, "*", "*", "*"));
+
+            assertEquals(403, response.statusCode(), response.body());
+        }
+    }
+
+    @Test
+    public void givenTokenWithOnlyRequiredRolesAndPermissions_whenQuerying_thenVisibleResultsReturned()
+            throws Exception {
+        final String token = LibTestsSCG.tokenBuilder(USER1)
+                                        .claim("roles", List.of("USER"))
+                                        .claim("permissions", List.of(TelicentPermissions.readPermission(DATASET_NAME)))
+                                        .compact();
+        final HttpResponse<String> response =
+                callWithToken(DATASET_NAME + ENDPOINT, token, triplesRequest(null, DBR + "Paris", "*", "*"));
+
+        assertEquals(200, response.statusCode(), response.body());
+        assertEquals(Set.of(country("", "Paris", "France", "everyone")), results(response.body()));
+    }
+
+    @Test
+    public void givenUserNotInAttributeStore_whenQuerying_thenForbidden() throws Exception {
+        final HttpResponse<String> response = call("UnknownUser", triplesRequest("*", "*", "*", "*"));
+
+        assertEquals(403, response.statusCode(), response.body());
+        assertEquals("No request attributes for user = UnknownUser",
+                     MAPPER.readTree(response.body()).get("error").asText());
     }
 }

@@ -14,6 +14,7 @@ import io.telicent.utils.SmartCacheGraphException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.apache.jena.fuseki.servlets.ActionErrorException;
 import org.apache.jena.fuseki.servlets.HttpAction;
 import org.apache.jena.fuseki.system.ActionCategory;
 import org.apache.jena.graph.Node;
@@ -76,7 +77,24 @@ public class AccessLabelsServlet extends HttpServlet {
             LOG.warn("Failed to read request body", ioex);
             handleError(response, OBJECT_MAPPER.createObjectNode(), HttpServletResponse.SC_BAD_REQUEST,
                         "Unable to read request body");
+        } catch (RuntimeException ex) {
+            // ABAC rejects requests it can't evaluate, e.g. a 403 for a user with no attributes, but the rejection
+            // arrives wrapped so would otherwise be reported as a 500
+            final ActionErrorException rejection = findRejection(ex);
+            if (rejection == null) {
+                throw ex;
+            }
+            handleError(response, OBJECT_MAPPER.createObjectNode(), rejection.getRC(), rejection.getMessage());
         }
+    }
+
+    private static ActionErrorException findRejection(Throwable ex) {
+        for (Throwable cause = ex; cause != null; cause = cause.getCause()) {
+            if (cause instanceof ActionErrorException rejection) {
+                return rejection;
+            }
+        }
+        return null;
     }
 
     /**

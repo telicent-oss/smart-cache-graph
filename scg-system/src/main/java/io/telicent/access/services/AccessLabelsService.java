@@ -4,14 +4,9 @@ import io.telicent.jena.abac.core.DatasetGraphABAC;
 import io.telicent.jena.abac.labels.Label;
 import io.telicent.labels.QuadLabels;
 import io.telicent.labels.services.LabelsQueryService;
-import io.telicent.servlet.auth.jwt.servlet5.AuthenticatedHttpServletRequest;
 import io.telicent.smart.cache.security.data.DataAccessAuthorizer;
 import io.telicent.smart.cache.security.data.labels.SecurityLabelsApplicator;
 import io.telicent.smart.cache.security.data.plugins.DataSecurityPlugin;
-import io.telicent.smart.cache.security.data.requests.MinimalRequestContext;
-import io.telicent.smart.cache.security.data.requests.RequestContext;
-import io.telicent.smart.caches.configuration.auth.UserInfo;
-import jakarta.servlet.http.HttpServletRequest;
 import org.apache.jena.atlas.iterator.Iter;
 import org.apache.jena.fuseki.servlets.HttpAction;
 import org.apache.jena.graph.Node;
@@ -24,6 +19,8 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
+
+import static io.telicent.utils.ServletUtils.requestContextFrom;
 
 /**
  * Provides the labels of quads, restricted to the quads that the requesting user is permitted to see.
@@ -116,18 +113,5 @@ public class AccessLabelsService {
             return Quad.create(Quad.defaultGraphIRI, quad.asTriple());
         }
         return quad;
-    }
-
-    private static RequestContext requestContextFrom(HttpAction action) {
-        HttpServletRequest request = action.getRequest();
-        if (!(request instanceof AuthenticatedHttpServletRequest authenticated)) {
-            return null;
-        }
-        UserInfo userInfo = (UserInfo) request.getAttribute(UserInfo.class.getCanonicalName());
-        return MinimalRequestContext.builder()
-                                    .jwt(authenticated.getVerifiedJwt())
-                                    .username(authenticated.getRemoteUser())
-                                    .userInfo(userInfo)
-                                    .build();
     }
 }
