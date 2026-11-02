@@ -246,3 +246,161 @@ paths:
                   error:
                     type: string
                     description: Error message.
+  /{datasetName}/access/labels:
+    post:
+      summary: Find the security labels of the triples/quads visible to the user
+      description: |
+        Access controlled variant of `/$/labels/{datasetName}` (see `labels-api.yaml`), with the same request and
+        response format. Only quads the user can see are returned, and a hidden quad gives the same response as a
+        non-existent one. Unlabelled quads use the dataset's default label (`authz:tripleDefaultAttributes`). The labels
+        graph is never returned.
+
+        Unlike `/$/labels/{datasetName}`, `object.dataType` and `object.language` are honoured, as the object must match
+        the stored term exactly. A literal requested without its `dataType`/`language` won't match a typed or language
+        tagged literal, so it returns no results.
+      parameters:
+        - name: datasetName
+          in: path
+          required: true
+          description: The name of the dataset to query.
+          schema:
+            type: string
+      requestBody:
+        description: The triples/quads to retrieve security labels for.
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Exactly one of `quads` or `triples` must be provided.
+              properties:
+                quads:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/LabelsQuadQuery'
+                triples:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/LabelsQuadQuery'
+              oneOf:
+                - required:
+                    - quads
+                - required:
+                    - triples
+            examples:
+              London_Country:
+                value:
+                  triples:
+                    - subject: http://dbpedia.org/resource/London
+                      predicate: http://dbpedia.org/ontology/country
+                      object:
+                        value: http://dbpedia.org/resource/United_Kingdom
+              London_Population:
+                value:
+                  triples:
+                    - subject: http://dbpedia.org/resource/London
+                      predicate: http://dbpedia.org/ontology/populationTotal
+                      object:
+                        value: "8799800"
+                        dataType: xsd:integer
+              London_All_Graphs:
+                value:
+                  triples:
+                    - graph: "*"
+                      subject: http://dbpedia.org/resource/London
+                      predicate: "*"
+                      object:
+                        value: "*"
+      responses:
+        '200':
+          description: Request processed successfully. Only visible quads are returned.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        subject:
+                          type: string
+                        predicate:
+                          type: string
+                        object:
+                          type: string
+                        graph:
+                          type: string
+                          description: Graph the triple is in. Omitted for the default graph.
+                        labels:
+                          type: array
+                          description: List of the labels.
+                          items:
+                            type: string
+              examples:
+                London_Country:
+                  value:
+                    results:
+                      - subject: http://dbpedia.org/resource/London
+                        predicate: http://dbpedia.org/ontology/country
+                        object: http://dbpedia.org/resource/United_Kingdom
+                        labels:
+                          - everyone
+                Not_Visible_Or_Not_Found:
+                  value:
+                    results: []
+        '400':
+          description: Bad Request, the request body is invalid or couldn't be read.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Error message.
+        '503':
+          description: Dataset temporarily unavailable during a maintenance operation.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Error message.
+components:
+  schemas:
+    LabelsQuadQuery:
+      type: object
+      properties:
+        graph:
+          type: string
+          description: Graph IRI, or `*` for all graphs. Omit for the default graph.
+        subject:
+          type: string
+          description: Subject IRI, or `*`.
+        predicate:
+          type: string
+          description: Predicate IRI, or `*`.
+        object:
+          type: object
+          properties:
+            value:
+              type: string
+              description: |
+                Object value, or `*` for any. Without `dataType` or `language`, a URI if it starts with `http://` or
+                `https://`, otherwise a plain string literal.
+            dataType:
+              type: string
+              description: Literal data type, prefixed (e.g. `xsd:integer`) or a full URI.
+            language:
+              type: string
+              description: Language tag (e.g. `en`). Can't be combined with `dataType`.
+          required:
+            - value
+      required:
+        - subject
+        - predicate
+        - object

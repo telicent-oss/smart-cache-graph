@@ -64,6 +64,9 @@ paths:
         Each triple may optionally specify the `graph` to look in. If omitted the default graph is used. A graph of `*`
         searches the default graph and all named graphs. Any of `graph`, `subject`, `predicate` or `object.value` may be
         `*`, in which case matching triples are found in the dataset and the labels for each are returned.
+
+        `object.dataType` and `object.language` are ignored: a value starting with `http://` or `https://` is a URI,
+        anything else a plain string literal. `/{datasetName}/access/labels` (see `access-api.yaml`) honours them.
       parameters:
         - name: datasetName
           in: path
