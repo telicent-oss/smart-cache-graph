@@ -22,7 +22,7 @@
   <parent>
     <groupId>io.telicent.smart-caches</groupId>
     <artifactId>parent</artifactId>
-    <version>1.10.1</version>
+    <version>1.10.2</version>
     <relativePath />
   </parent>
 
@@ -85,7 +85,7 @@
     <plugin.gpg>3.2.8</plugin.gpg>
     <plugin.install>3.1.1</plugin.install>
     <plugin.jar>3.5.1</plugin.jar>
-    <plugin.jacoco>0.8.15</plugin.jacoco>
+    <plugin.jacoco>0.8.16</plugin.jacoco>
     <plugin.javadoc>3.12.0</plugin.javadoc>
     <plugin.resources>3.5.0</plugin.resources>
     <plugin.shade>3.4.1</plugin.shade>
@@ -119,7 +119,7 @@
     <dependency.jena>6.2.0</dependency.jena>
     <dependency.graphql>0.12.3</dependency.graphql>
     <dependency.jwt-servlet-auth>4.1.4</dependency.jwt-servlet-auth>
-    <dependency.smart-caches-core>1.10.1</dependency.smart-caches-core>
+    <dependency.smart-caches-core>1.10.2</dependency.smart-caches-core>
 
     <!-- External dependencies -->
     <dependency.awaitility>4.3.0</dependency.awaitility>
@@ -137,7 +137,7 @@
 
     <!-- Logging dependencies -->
     <dependency.log4j2>2.26.1</dependency.log4j2>
-    <dependency.logback>1.6.5</dependency.logback>
+    <dependency.logback>1.6.6</dependency.logback>
     <dependency.slf4j>2.0.20</dependency.slf4j>
 
     <!-- Test dependencies -->
