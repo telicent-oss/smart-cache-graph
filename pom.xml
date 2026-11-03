@@ -29,7 +29,7 @@
   <groupId>io.telicent.smart-caches.graph</groupId>
   <artifactId>scg-base</artifactId>
   <packaging>pom</packaging>
-  <version>1.2.4</version>
+  <version>1.2.5-SNAPSHOT</version>
 
   <name>Telicent Smart Cache Graph - Parent</name>
   <description>Telicent Smart Cache Graph</description>
@@ -39,7 +39,7 @@
     <connection>scm:git:git@github.com:Telicent-oss/smart-cache-graph</connection>
     <developerConnection>scm:git:git@github.com:Telicent-oss/smart-cache-graph</developerConnection>
     <url>https://github.com/telicent-oss/smart-cache-graph</url>
-    <tag>1.2.4</tag>
+    <tag>HEAD</tag>
   </scm>
 
   <licenses>
@@ -63,7 +63,7 @@
   <properties>
     <!-- Build properties -->
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <project.build.outputTimestamp>2026-11-03T11:29:48Z</project.build.outputTimestamp>
+    <project.build.outputTimestamp>2026-11-03T11:31:10Z</project.build.outputTimestamp>
     <java.version>21</java.version>
 
     <!-- Skip Test Jar generation -->
