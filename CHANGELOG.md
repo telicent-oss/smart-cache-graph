@@ -1,6 +1,6 @@
 # Smart Cache Graph
 
-## 1.2.4 (unreleased)
+## 1.2.4
 
 - New container memory and disk I/O metrics, read from Graph's own cgroup (v2, or v1 as a fallback) and exported through
   OpenTelemetry: disk bytes read and written, page cache, dirty and writeback pages, the JVM's anonymous memory, the
