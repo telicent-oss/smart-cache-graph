@@ -4,6 +4,7 @@ import org.apache.jena.sparql.core.DatasetGraph;
 import org.apache.jena.sparql.core.DatasetGraphWrapper;
 import org.apache.jena.tdb2.store.DatasetGraphSwitchable;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
 import java.util.WeakHashMap;
@@ -69,6 +70,28 @@ public final class DatasetMaintenanceRegistry {
     private static final class RequestGate {
         int requests;
         boolean switching;
+
+        /**
+         * Waits until no admitted request is still running against this gate's dataset
+         * <p>
+         * Synchronized on the gate itself, which is the monitor every other access to {@link #requests} uses and the
+         * one {@link RequestAdmission#close()} notifies.
+         * </p>
+         *
+         * @param deadline Deadline, as a {@link System#nanoTime()} value
+         * @return True if the dataset went quiet, false if the deadline passed first
+         * @throws InterruptedException If interrupted while waiting
+         */
+        synchronized boolean awaitNoRequests(long deadline) throws InterruptedException {
+            while (this.requests > 0) {
+                long remaining = deadline - System.nanoTime();
+                if (remaining <= 0) {
+                    return false;
+                }
+                java.util.concurrent.TimeUnit.NANOSECONDS.timedWait(this, remaining);
+            }
+            return true;
+        }
     }
 
     /** Holds admission for the whole servlet call, including the gap before its transaction begins. */
@@ -150,16 +173,7 @@ public final class DatasetMaintenanceRegistry {
         }
 
         boolean awaitRequests(long deadline) throws InterruptedException {
-            synchronized (gate) {
-                while (gate.requests > 0) {
-                    long remaining = deadline - System.nanoTime();
-                    if (remaining <= 0) {
-                        return false;
-                    }
-                    java.util.concurrent.TimeUnit.NANOSECONDS.timedWait(gate, remaining);
-                }
-                return true;
-            }
+            return gate.awaitNoRequests(deadline);
         }
 
         @Override
@@ -169,6 +183,32 @@ public final class DatasetMaintenanceRegistry {
                 gate.notifyAll();
             }
         }
+    }
+
+    /**
+     * Waits for requests that were admitted before this maintenance operation began to finish
+     * <p>
+     * Registering a maintenance indicator with {@link #begin(DatasetGraph, String, MaintenanceOperation)} stops
+     * <em>new</em> requests being admitted, but requests admitted just before that are still running against the
+     * stores the operation is about to close and replace.  An operation that does so must drain them first rather
+     * than pull the data out from underneath them.  Because admission is already closed the count can only fall, so
+     * this cannot wait indefinitely on a busy dataset.
+     * </p>
+     * <p>
+     * A handle that is not tracked, i.e. a dataset this registry does not manage, has no requests to wait for and
+     * returns immediately.
+     * </p>
+     *
+     * @param handle  Handle for the in-progress maintenance operation
+     * @param timeout How long to wait
+     * @return True if the dataset went quiet, false if the timeout passed first
+     * @throws InterruptedException If interrupted while waiting
+     */
+    public static boolean awaitRequests(MaintenanceHandle handle, Duration timeout) throws InterruptedException {
+        if (handle == null || !handle.isTracked()) {
+            return true;
+        }
+        return gate(handle.dataset()).awaitNoRequests(System.nanoTime() + timeout.toNanos());
     }
 
     static SwitchWindow beginSwitch(DatasetGraphSwitchable dataset) {
