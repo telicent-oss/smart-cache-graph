@@ -1,5 +1,7 @@
 package io.telicent.access.servlets;
 
+import io.telicent.labels.LabelsQueryParser;
+import io.telicent.labels.LabelsQueryParser.ObjectMode;
 import io.telicent.utils.SmartCacheGraphException;
 import org.apache.jena.datatypes.xsd.XSDDatatype;
 import org.apache.jena.graph.Node;
@@ -33,7 +35,7 @@ public class TestAccessLabelsServletParsing {
     }
 
     private static Node parseObject(String object) throws Exception {
-        final List<Quad> quads = AccessLabelsServlet.parseQuadQueries(stream(request(object)));
+        final List<Quad> quads = LabelsQueryParser.parse(stream(request(object)), ObjectMode.TYPED);
         assertEquals(1, quads.size());
         return quads.getFirst().getObject();
     }
@@ -99,6 +101,6 @@ public class TestAccessLabelsServletParsing {
 
     @Test
     public void givenMalformedJson_whenParsing_thenIOException() {
-        assertThrows(IOException.class, () -> AccessLabelsServlet.parseQuadQueries(stream("not json")));
+        assertThrows(IOException.class, () -> LabelsQueryParser.parse(stream("not json"), ObjectMode.TYPED));
     }
 }

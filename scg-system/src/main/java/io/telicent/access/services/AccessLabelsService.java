@@ -7,7 +7,6 @@ import io.telicent.labels.services.LabelsQueryService;
 import io.telicent.smart.cache.security.data.DataAccessAuthorizer;
 import io.telicent.smart.cache.security.data.labels.SecurityLabelsApplicator;
 import io.telicent.smart.cache.security.data.plugins.DataSecurityPlugin;
-import org.apache.jena.atlas.iterator.Iter;
 import org.apache.jena.fuseki.servlets.HttpAction;
 import org.apache.jena.graph.Node;
 import org.apache.jena.sparql.core.DatasetGraph;
@@ -16,10 +15,10 @@ import org.apache.jena.system.Txn;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 
+import static io.telicent.labels.LabelsFinder.findWithLabels;
 import static io.telicent.utils.ServletUtils.requestContextFrom;
 
 /**
@@ -81,37 +80,5 @@ public class AccessLabelsService {
             }
         }
         return DENY;
-    }
-
-    /**
-     * Finds the quads matching a pattern in the user's view of the dataset and resolves the label for each of them,
-     * skipping any quads in the labels graph since that holds label metadata rather than data
-     */
-    private static void findWithLabels(DatasetGraph datasetGraphForUser, Quad pattern,
-                                       SecurityLabelsApplicator applicator, Node labelsGraph,
-                                       List<QuadLabels> results) {
-        final Iterator<Quad> iter = datasetGraphForUser.find(pattern);
-        try {
-            while (iter.hasNext()) {
-                final Quad q = normaliseDefaultGraph(iter.next());
-                if (labelsGraph != null && labelsGraph.equals(q.getGraph())) {
-                    continue;
-                }
-                results.add(new QuadLabels(q, applicator.labelForQuad(q)));
-            }
-        } finally {
-            Iter.close(iter);
-        }
-    }
-
-    /**
-     * Datasets may report the default graph using a different node, labels are stored against
-     * {@link Quad#defaultGraphIRI} so use that consistently.
-     */
-    private static Quad normaliseDefaultGraph(Quad quad) {
-        if (quad.isDefaultGraph() && !Quad.defaultGraphIRI.equals(quad.getGraph())) {
-            return Quad.create(Quad.defaultGraphIRI, quad.asTriple());
-        }
-        return quad;
     }
 }
