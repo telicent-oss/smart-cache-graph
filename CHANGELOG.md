@@ -1,5 +1,8 @@
 # Smart Cache Graph
 
+## 1.2.5
+- Bumped RDF ABAC v3.2.1 & GraphQL Jena v0.12.4
+
 ## 1.2.4
 
 - New container memory and disk I/O metrics, read from Graph's own cgroup (v2, or v1 as a fallback) and exported through
