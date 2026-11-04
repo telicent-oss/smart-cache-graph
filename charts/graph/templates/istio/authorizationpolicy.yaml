@@ -69,5 +69,6 @@ spec:
         - /ontology/shacl/*
         - /catalog/shacl
         - /catalog/shacl/*
+        - /catalog/access/labels
         - /catalog/access/labels/*
         methods: ["POST"]
