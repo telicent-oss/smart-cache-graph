@@ -61,8 +61,8 @@ spec:
         methods: ["GET", "POST"]
     - operation:
         paths:
-        - /knowledge/graphql
-        - /knowledge/graphql/*
+        - /{*}/graphql
+        - /{*}/graphql/{**}
         - /knowledge/shacl
         - /knowledge/shacl/*
         - /ontology/shacl
