@@ -48,6 +48,7 @@ import org.apache.jena.shacl.ShaclValidator;
 import org.apache.jena.shacl.Shapes;
 import org.apache.jena.shacl.ValidationReport;
 import org.apache.jena.sparql.core.DatasetGraph;
+import org.apache.jena.sparql.core.DatasetGraphWrapper;
 import org.apache.jena.system.Txn;
 import org.bouncycastle.openpgp.PGPException;
 import org.slf4j.Logger;
@@ -565,6 +566,11 @@ public class DatasetBackupService {
     }
 
     static Duration KAFKA_PAUSE_TIMEOUT = Duration.ofSeconds(30);
+
+    /**
+     * How long a restore waits for requests admitted before it started to finish before giving up
+     */
+    static Duration REQUEST_DRAIN_TIMEOUT = Duration.ofSeconds(30);
     /**
      * Used to pause Kafka ingest while restoring, replaceable for testing
      */
@@ -615,7 +621,29 @@ public class DatasetBackupService {
                 response.put(SUCCESS, false);
                 return false;
             }
-            Txn.executeWrite(dsg, () -> applyRestoreMethods(response, dataAccessPoint, restorePath + "/" + datasetName));
+            // New requests have been rejected since the maintenance indicator was registered above, but any admitted
+            // just before that are still reading the stores this restore is about to close and replace.  Wait for
+            // them to finish rather than pulling the data out from underneath them.
+            try {
+                if (!DatasetMaintenanceRegistry.awaitRequests(maintenance.get(), REQUEST_DRAIN_TIMEOUT)) {
+                    response.put(REASON, "Timed out after " + REQUEST_DRAIN_TIMEOUT
+                                            + " waiting for in-flight requests on " + dataAccessPoint.getName()
+                                            + " to finish; aborting restore");
+                    response.put(SUCCESS, false);
+                    return false;
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                response.put(REASON, "Interrupted while waiting for in-flight requests on "
+                                        + dataAccessPoint.getName() + " to finish; aborting restore");
+                response.put(SUCCESS, false);
+                return false;
+            }
+            // Hold a write transaction for the whole restore so that no update can be applied part way through it,
+            // leaving the data and its security labels out of step.  The transaction is deliberately taken on the
+            // dataset's *data* rather than on the labelled dataset itself -- see restoreLockTarget() for why.
+            Txn.executeWrite(restoreLockTarget(dsg),
+                             () -> applyRestoreMethods(response, dataAccessPoint, restorePath + "/" + datasetName));
         } catch (RuntimeException ex) {
             LOG.error("[RESTORE] Error while restoring dataset {}: {}", datasetName, ex.getMessage(), ex);
             response.put(REASON, ex.getMessage());
@@ -657,7 +685,10 @@ public class DatasetBackupService {
             node.put(SUCCESS, false);
         } else {
             try {
-                DatasetGraph dsg = dataAccessPoint.getDataService().getDataset();
+                // NB - Must be the same dataset the restore's write transaction was taken on, see
+                //      restoreLockTarget(); going through the labelled dataset here would ask the labels store about
+                //      a transaction it was deliberately never given
+                final DatasetGraph dsg = restoreLockTarget(dataAccessPoint.getDataService().getDataset());
                 executeRestoreTDB(dsg, tdbRestoreFile);
                 node.put(SUCCESS, true);
             } catch (Exception e) {
@@ -668,7 +699,53 @@ public class DatasetBackupService {
     }
 
     /**
-     * For all registered restore Consumers, apply the restore operation
+     * Finds the dataset graph that a restore should hold its write transaction on
+     * <p>
+     * A restore needs a write transaction held across <em>all</em> of the registered restore methods, so that no
+     * update can be applied part way through and leave the data out of step with its security labels.  It must not,
+     * however, hold that transaction on a labelled dataset: such a dataset propagates its transactions into the
+     * security labels store, and restoring that store closes and reopens it underneath any transaction still open on
+     * it.  For a RocksDB backed labels store that leaves the restoring thread holding a transaction on a database
+     * that has already been freed, and the next use of it aborts the JVM.
+     * </p>
+     * <p>
+     * So where the dataset is a wrapper that adds the security labels, the transaction is taken on what it wraps -
+     * the data - which gives the same exclusion of concurrent writers without ever reaching the labels store.  The
+     * unwrapping is verified rather than assumed: a single level is removed, and only if doing so actually drops the
+     * labels store.  Any other arrangement is left alone and simply locked as-is.
+     * </p>
+     *
+     * @param dsg Dataset to restore
+     * @return Dataset to hold the restore's write transaction on, which may be {@code dsg} itself
+     */
+    DatasetGraph restoreLockTarget(DatasetGraph dsg) {
+        if (dsg instanceof DatasetGraphWrapper wrapper) {
+            final DatasetGraph wrapped = wrapper.getWrapped();
+            if (wrapped != null && hasLabelsStore(dsg) && !hasLabelsStore(wrapped)) {
+                return wrapped;
+            }
+        }
+        return dsg;
+    }
+
+    /**
+     * Determines whether the given dataset exposes a security labels store
+     *
+     * @param dsg Dataset
+     * @return True if a labels store is available for the dataset, false otherwise
+     */
+    private boolean hasLabelsStore(DatasetGraph dsg) {
+        return LabelsMaintenance.backupRestore(dataSecurityPlugin, dsg).isPresent();
+    }
+
+    /**
+     * For all registered restore Consumers, apply the restore operation.
+     * <p>
+     * This runs inside a write transaction on the dataset's data, so that the whole restore is applied without any
+     * update being interleaved with it.  That transaction is <strong>not</strong> held on the security labels store,
+     * which must not be restored from inside a transaction on itself; see
+     * {@link #registerMethods(String, TriConsumer, TriConsumer)} and {@link #restoreLockTarget(DatasetGraph)}.
+     * </p>
      *
      * @param moduleJSON      JSON to update with details
      * @param dataAccessPoint access to the dataset to which to apply
@@ -920,10 +997,18 @@ public class DatasetBackupService {
 
     /**
      * Register both backup/restore methods to apply for the given key.
+     * <p>
+     * A restore consumer runs with a write transaction already held on the dataset's data, so it need not take one
+     * itself in order to exclude concurrent updates.  That transaction is deliberately not held on any store the
+     * consumer replaces wholesale: closing and reopening a store beneath a transaction that is still open on it
+     * leaves that transaction dangling, which for a native store means a crash rather than an error.  A consumer that
+     * replaces its own store must therefore be able to rely on not being called inside a transaction on it.  Backup
+     * consumers are called without any transaction.
+     * </p>
      *
      * @param key             the name of the module being backed up or restored.
      * @param backupConsumer  method that backs up the modules data
-     * @param restoreConsumer method that recovers the module
+     * @param restoreConsumer method that recovers the module, which must manage its own transactions
      */
     public static void registerMethods(String key, TriConsumer<DataAccessPoint, String, ObjectNode> backupConsumer, TriConsumer<DataAccessPoint, String, ObjectNode> restoreConsumer) {
         registerMethod(backupConsumerMap, key, backupConsumer);
