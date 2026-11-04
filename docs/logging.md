@@ -26,3 +26,9 @@ LOG.error("Failed to load configuration", exception);
 Stack trace pattern guidance:
 - Logback: use `%ex{12}` in the pattern.
 - Log4j2: use `%xEx{12}` in the pattern.
+
+Request logging:
+- The default application and Docker configurations emit one INFO access-log summary per HTTP request through `org.apache.jena.fuseki.Request`.
+- `org.apache.jena.fuseki.Fuseki` defaults to WARN to suppress per-request action, query text and completion messages. Warnings and errors remain visible.
+- To diagnose queries, temporarily set `org.apache.jena.fuseki.Fuseki` to DEBUG. GraphQL query text requires the corresponding graphql-jena logging change.
+- The Search API URL is resolved on first use and cached for the process lifetime; restart after changing its configuration. Its configuration message is logged at DEBUG.

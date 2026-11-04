@@ -52,7 +52,7 @@
     </appender>
 
     <!-- Request log -->
-    <logger name="org.apache.jena.fuseki.Request" additivity="false" level="OFF">
+    <logger name="org.apache.jena.fuseki.Request" additivity="false" level="INFO">
         <appender-ref ref="PLAIN" />
     </logger>
 </configuration>
