@@ -58,6 +58,12 @@ spec:
         - /$/compaction/jobs/*
         - /$/compaction/jobs/all
         - /$/compaction/jobs/all/*
+        {{- if .Values.graph.simpleKnowledgeEnabled}}
+        - /simple-knowledge/sparql
+        - /simple-knowledge/sparql/*
+        - /simple-knowledge/query
+        - /simple-knowledge/query/*
+        {{- end }}
         methods: ["GET", "POST"]
     - operation:
         paths:
@@ -69,4 +75,8 @@ spec:
         - /ontology/shacl/*
         - /catalog/shacl
         - /catalog/shacl/*
+        {{- if .Values.graph.simpleKnowledgeEnabled}}
+        - /simple-knowledge/graphql
+        - /simple-knowledge/graphql/*
+        {{- end }}
         methods: ["POST"]
