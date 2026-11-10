@@ -265,7 +265,7 @@ class TestJenaMetrics {
     }
 
     private static void verifyTimingMetric(MetricsCollector collector, MetricReader reader) {
-        reader.forceFlush();
+        reader.forceFlush().join(10, TimeUnit.SECONDS);
 
         Map<String, Map<Attributes, Double>> metrics = collector.getAllMetrics();
         assertFalse(metrics.isEmpty());
