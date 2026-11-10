@@ -19,12 +19,16 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.telicent.smart.cache.sources.kafka.KafkaEventSource;
+import org.apache.jena.fuseki.kafka.FKRegistry;
+import org.apache.jena.fuseki.kafka.FKS;
 import org.apache.jena.fuseki.server.DataAccessPoint;
 import org.apache.jena.fuseki.server.DataService;
 import org.apache.jena.fuseki.server.Endpoint;
 import org.apache.jena.kafka.KConnectorDesc;
 import org.apache.jena.kafka.common.FusekiOffsetStore;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -32,16 +36,36 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static io.telicent.backup.utils.JsonFileUtils.OBJECT_MAPPER;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.*;
 
 public class TestFusekiKafkaSCG {
 
     FMod_FusekiKafkaSCG cut = new FMod_FusekiKafkaSCG();
+
+    private final List<Map.Entry<List<String>, KConnectorDesc>> registrations = new ArrayList<>();
+
+    /**
+     * Registers a connector with Fuseki Kafka's registry, as Fuseki Kafka does when it starts a connector
+     */
+    private void register(KConnectorDesc connector, String... topics) {
+        List<String> topicList = topics.length > 0 ? List.of(topics) : List.of("topic-" + registrations.size());
+        FKRegistry.get().register(topicList, connector);
+        registrations.add(Map.entry(topicList, connector));
+    }
+
+    @AfterEach
+    public void unregisterConnectors() {
+        registrations.forEach(r -> FKRegistry.get().unregister(r.getKey(), r.getValue()));
+        registrations.clear();
+    }
 
     @Test
     public void test_backupKafka_emptyConnectors() {
@@ -118,7 +142,7 @@ public class TestFusekiKafkaSCG {
         when(mockDesc.getStateFile()).thenReturn(stateFile.getAbsolutePath());
         when(mockDesc.getDatasetName()).thenReturn(localPath);
 
-        cut.connectors.put(localPath, mockDesc);
+        register(mockDesc);
 
         DataAccessPoint mockDataAccessPoint = mock(DataAccessPoint.class);
         DataService mockDataService = mock(DataService.class);
@@ -190,8 +214,8 @@ public class TestFusekiKafkaSCG {
         when(mockDesc2.getStateFile()).thenReturn(stateFile.getAbsolutePath());
         when(mockDesc2.getDatasetName()).thenReturn(localPath2);
 
-        cut.connectors.put(localPath, mockDesc);
-        cut.connectors.put(localPath2, mockDesc2);
+        register(mockDesc);
+        register(mockDesc2);
 
         String dataset = "/matchingdataset";
         DataAccessPoint mockDataAccessPoint = mock(DataAccessPoint.class);
@@ -285,9 +309,10 @@ public class TestFusekiKafkaSCG {
         ObjectNode node = OBJECT_MAPPER.createObjectNode();
         KConnectorDesc mockDesc = mock(KConnectorDesc.class);
 
-        String dataset = "matching dataset";
+        String dataset = "/matchingdataset";
+        when(mockDesc.getDatasetName()).thenReturn(dataset);
 
-        cut.connectors.put(dataset, mockDesc);
+        register(mockDesc);
 
         DataAccessPoint mockDataAccessPoint = mock(DataAccessPoint.class);
         DataService mockDataService = mock(DataService.class);
@@ -340,7 +365,7 @@ public class TestFusekiKafkaSCG {
         when(mockDesc.getDatasetName()).thenReturn(localPath);
         when(mockDesc.getConsumerGroupId()).thenReturn("group");
 
-        cut.connectors.put("/matchingdataset", mockDesc);
+        register(mockDesc);
 
         DataAccessPoint mockDataAccessPoint = mock(DataAccessPoint.class);
         DataService mockDataService = mock(DataService.class);
@@ -389,7 +414,7 @@ public class TestFusekiKafkaSCG {
         when(mockDesc.getDatasetName()).thenReturn(localPath);
         when(mockDesc.getConsumerGroupId()).thenReturn("group");
 
-        cut.connectors.put("/matchingdataset", mockDesc);
+        register(mockDesc);
 
         DataAccessPoint mockDataAccessPoint = mock(DataAccessPoint.class);
         DataService mockDataService = mock(DataService.class);
@@ -455,8 +480,8 @@ public class TestFusekiKafkaSCG {
         when(mockDesc2.getDatasetName()).thenReturn(localPath2);
         when(mockDesc2.getConsumerGroupId()).thenReturn("group2");
 
-        cut.connectors.put(localPath, mockDesc);
-        cut.connectors.put(localPath2, mockDesc2);
+        register(mockDesc);
+        register(mockDesc2);
 
         DataAccessPoint mockDataAccessPoint = mock(DataAccessPoint.class);
         DataService mockDataService = mock(DataService.class);
@@ -522,8 +547,8 @@ public class TestFusekiKafkaSCG {
         when(mockDesc2.getDatasetName()).thenReturn(localPath2);
         when(mockDesc2.getConsumerGroupId()).thenReturn("group2");
 
-        cut.connectors.put(localPath, mockDesc);
-        cut.connectors.put(localPath2, mockDesc2);
+        register(mockDesc);
+        register(mockDesc2);
 
         DataAccessPoint mockDataAccessPoint = mock(DataAccessPoint.class);
         DataService mockDataService = mock(DataService.class);
@@ -556,5 +581,99 @@ public class TestFusekiKafkaSCG {
         assertTrue(entryNode2.has("success"));
         assertTrue(entryNode2.get("success").asBoolean());
         assertFalse(entryNode2.has("reason"));
+    }
+
+    @Test
+    public void test_backupKafka_connectorWithMultipleTopics_backedUpOnce() throws IOException {
+        // given
+        Path tempDir = Files.createTempDirectory("test_backup_dir");
+        tempDir.toFile().deleteOnExit();
+        File stateFile = new File(tempDir.toString(), "kafka.state");
+        assertTrue(stateFile.createNewFile());
+        stateFile.deleteOnExit();
+
+        KConnectorDesc mockDesc = mock(KConnectorDesc.class);
+        when(mockDesc.getStateFile()).thenReturn(stateFile.getAbsolutePath());
+        when(mockDesc.getDatasetName()).thenReturn("/matchingdataset/upload");
+        register(mockDesc, "topic-a", "topic-b");
+
+        DataAccessPoint mockDataAccessPoint = mock(DataAccessPoint.class);
+        DataService mockDataService = mock(DataService.class);
+        when(mockDataAccessPoint.getDataService()).thenReturn(mockDataService);
+        Endpoint mockEndpoint = mock(Endpoint.class);
+        when(mockEndpoint.getName()).thenReturn("upload");
+        when(mockDataService.getEndpoints()).thenReturn(List.of(mockEndpoint));
+        when(mockDataAccessPoint.getName()).thenReturn("/matchingdataset");
+
+        // when
+        ObjectNode node = OBJECT_MAPPER.createObjectNode();
+        cut.backupKafka(mockDataAccessPoint, tempDir.toString(), node);
+
+        // then
+        assertEquals(1, node.get("/matchingdataset").size());
+    }
+
+    @Test
+    public void test_backupKafka_connectorForOtherDataset_notBackedUp() {
+        // given
+        KConnectorDesc mockDesc = mock(KConnectorDesc.class);
+        when(mockDesc.getDatasetName()).thenReturn("/otherdataset/upload");
+        register(mockDesc);
+
+        DataAccessPoint mockDataAccessPoint = mock(DataAccessPoint.class);
+        DataService mockDataService = mock(DataService.class);
+        when(mockDataAccessPoint.getDataService()).thenReturn(mockDataService);
+        Endpoint mockEndpoint = mock(Endpoint.class);
+        when(mockEndpoint.getName()).thenReturn("upload");
+        when(mockDataService.getEndpoints()).thenReturn(List.of(mockEndpoint));
+        when(mockDataAccessPoint.getName()).thenReturn("/matchingdataset");
+
+        // when
+        ObjectNode node = OBJECT_MAPPER.createObjectNode();
+        cut.backupKafka(mockDataAccessPoint, "path doesn't matter", node);
+
+        // then
+        assertTrue(node.get("/matchingdataset").isEmpty());
+    }
+
+    @Test
+    public void test_restoreKafka_restoresOffsetsUnderConnectorDatasetName() throws IOException {
+        // given
+        Path tempDir = Files.createTempDirectory("test_restore_dir3");
+        tempDir.toFile().deleteOnExit();
+        File stateFile = new File(tempDir.toString(), "matchingdataset_upload.json");
+        assertTrue(stateFile.createNewFile());
+        stateFile.deleteOnExit();
+        FusekiOffsetStore store = FusekiOffsetStore.builder()
+                                                   .stateFile(stateFile)
+                                                   .datasetName("/matchingdataset")
+                                                   .consumerGroup("group")
+                                                   .build();
+        store.saveOffset(KafkaEventSource.externalOffsetStoreKey("knowledge-lab-v2", 0, "group"), 2227);
+        store.close();
+
+        KConnectorDesc mockDesc = mock(KConnectorDesc.class);
+        when(mockDesc.getDatasetName()).thenReturn("/matchingdataset/upload");
+        when(mockDesc.getConsumerGroupId()).thenReturn("group");
+        register(mockDesc);
+
+        DataAccessPoint mockDataAccessPoint = mock(DataAccessPoint.class);
+        DataService mockDataService = mock(DataService.class);
+        when(mockDataAccessPoint.getDataService()).thenReturn(mockDataService);
+        Endpoint mockEndpoint = mock(Endpoint.class);
+        when(mockEndpoint.getName()).thenReturn("upload");
+        when(mockDataService.getEndpoints()).thenReturn(List.of(mockEndpoint));
+        when(mockDataAccessPoint.getName()).thenReturn("/matchingdataset");
+
+        try (MockedStatic<FKS> fks = mockStatic(FKS.class)) {
+            // when
+            ObjectNode node = OBJECT_MAPPER.createObjectNode();
+            cut.restoreKafka(mockDataAccessPoint, tempDir.toString(), node);
+
+            // then
+            fks.verify(() -> FKS.restoreOffsetForDataset(eq("/matchingdataset/upload"), any()), times(1));
+            fks.verify(() -> FKS.restoreOffsetForDataset(eq("/matchingdataset"), any()), never());
+            assertTrue(node.get("/matchingdataset").get(0).get("success").asBoolean());
+        }
     }
 }

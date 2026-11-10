@@ -29,6 +29,7 @@ import io.telicent.smart.cache.security.data.plugins.DataSecurityPluginLoader;
 import io.telicent.smart.cache.sources.Event;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.jena.atlas.io.IOX;
+import org.apache.jena.fuseki.kafka.FKRegistry;
 import org.apache.jena.fuseki.kafka.FKS;
 import org.apache.jena.fuseki.kafka.FMod_FusekiKafka;
 import org.apache.jena.fuseki.main.FusekiServer;
@@ -65,8 +66,6 @@ public class FMod_FusekiKafkaSCG extends FMod_FusekiKafka {
     public FMod_FusekiKafkaSCG() {
         super();
     }
-
-    Map<String, KConnectorDesc> connectors = new HashMap<>();
 
     @Override
     public void prepare(FusekiServer.Builder builder, Set<String> names, Model configModel) {
@@ -119,17 +118,30 @@ public class FMod_FusekiKafkaSCG extends FMod_FusekiKafka {
         resultNode.set(dataset, nodeList);
     }
 
+    /**
+     * Finds the Kafka connectors writing to a dataset, either directly or via one of its endpoints
+     * <p>
+     * Connectors are looked up in the {@link FKRegistry}, where Fuseki Kafka registers every connector it starts.
+     * </p>
+     *
+     * @param dataset     Dataset name, e.g. {@code /knowledge}
+     * @param dataService Dataset's data service
+     * @return Connectors, in the order: the dataset itself, then its endpoints
+     */
     private List<KConnectorDesc> obtainKafkaConnection(String dataset, DataService dataService) {
-        List<KConnectorDesc> kafkaConnections = new ArrayList<>();
-        KConnectorDesc conn = connectors.get(dataset);
-        if (conn != null) {
-            kafkaConnections.add(conn);
-        }
+        List<String> destinations = new ArrayList<>();
+        destinations.add(DataAccessPoint.canonical(dataset));
         for (Endpoint endpoint : dataService.getEndpoints()) {
-            String path = dataset + "/" + endpoint.getName();
-            conn = connectors.get(path);
-            if (conn != null) {
-                kafkaConnections.add(conn);
+            destinations.add(DataAccessPoint.canonical(dataset + "/" + endpoint.getName()));
+        }
+
+        Collection<KConnectorDesc> registered = FKRegistry.get().getConnectors();
+        List<KConnectorDesc> kafkaConnections = new ArrayList<>();
+        for (String destination : destinations) {
+            for (KConnectorDesc conn : registered) {
+                if (destination.equals(DataAccessPoint.canonical(conn.getDatasetName())) && !kafkaConnections.contains(conn)) {
+                    kafkaConnections.add(conn);
+                }
             }
         }
         return kafkaConnections;
@@ -167,7 +179,7 @@ public class FMod_FusekiKafkaSCG extends FMod_FusekiKafka {
                                                          .consumerGroup(conn.getConsumerGroupId())
                                                          .stateFile(offsetStoreFile)
                                                          .build();
-        FKS.restoreOffsetForDataset(dataset, offsetStore);
+        FKS.restoreOffsetForDataset(conn.getDatasetName(), offsetStore);
         // Convert offsets for result appropriately, there could be many offsets depending on the topic(s) and
         // partitions(s)
         ObjectNode offsets = OBJECT_MAPPER.createObjectNode();
