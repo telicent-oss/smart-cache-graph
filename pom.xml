@@ -118,7 +118,7 @@
     <dependency.fuseki-kafka>3.4.2</dependency.fuseki-kafka>
     <dependency.jena>6.2.0</dependency.jena>
     <dependency.graphql>0.12.4</dependency.graphql>
-    <dependency.jwt-servlet-auth>4.1.4</dependency.jwt-servlet-auth>
+    <dependency.jwt-servlet-auth>5.0.0</dependency.jwt-servlet-auth>
     <dependency.smart-caches-core>1.10.2</dependency.smart-caches-core>
 
     <!-- External dependencies -->
