@@ -139,7 +139,7 @@ public class FMod_FusekiKafkaSCG extends FMod_FusekiKafka {
         List<KConnectorDesc> kafkaConnections = new ArrayList<>();
         for (String destination : destinations) {
             for (KConnectorDesc conn : registered) {
-                if (destination.equals(conn.getDatasetName()) && !kafkaConnections.contains(conn)) {
+                if (destination.equals(DataAccessPoint.canonical(conn.getDatasetName())) && !kafkaConnections.contains(conn)) {
                     kafkaConnections.add(conn);
                 }
             }
