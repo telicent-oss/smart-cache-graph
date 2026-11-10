@@ -58,6 +58,13 @@ public class FMod_QueryConcurrencyLimit implements FusekiModule {
      * Defaults to {@value #DEFAULT_WAIT_MS}, i.e. reject immediately.
      */
     public static final String ENV_WAIT_MS = "MAX_CONCURRENT_QUERIES_WAIT_MS";
+    /**
+     * Default for {@value #ENV_WAIT_MS}.
+     * <p>
+     * {@code 0} means <strong>do not wait</strong>: a query that cannot get a permit immediately is rejected straight
+     * away. A waiting query holds a Jetty request thread.
+     * </p>
+     */
     static final long DEFAULT_WAIT_MS = 0L;
     /**
      * {@code Retry-After} (seconds) sent with the 503 for rejected queries
