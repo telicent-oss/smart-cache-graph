@@ -1483,6 +1483,8 @@ public class TestDatasetBackupService {
         assertTrue(backupSuccessDatasetName.has("labels-success"));
         assertEquals("true", backupSuccessDatasetName.get("labels-success").asText());
 
+        // NB - The restore is wrapped in a write transaction on the dataset, and this data access point has no
+        //      dataset at all, so it fails before any restore method is reached
         assertEquals(0, DatasetBackupService_Test.getCallCount(RESTORE_TDB));
         assertEquals(0, DatasetBackupService_Test.getCallCount(RESTORE_LABELS));
     }
