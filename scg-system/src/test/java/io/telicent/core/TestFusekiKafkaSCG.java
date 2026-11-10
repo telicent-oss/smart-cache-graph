@@ -309,7 +309,7 @@ public class TestFusekiKafkaSCG {
         ObjectNode node = OBJECT_MAPPER.createObjectNode();
         KConnectorDesc mockDesc = mock(KConnectorDesc.class);
 
-        String dataset = "matching dataset";
+        String dataset = "/matchingdataset";
         when(mockDesc.getDatasetName()).thenReturn(dataset);
 
         register(mockDesc);
