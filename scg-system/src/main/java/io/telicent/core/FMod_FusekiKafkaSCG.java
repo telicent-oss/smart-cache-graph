@@ -130,7 +130,7 @@ public class FMod_FusekiKafkaSCG extends FMod_FusekiKafka {
      */
     private List<KConnectorDesc> obtainKafkaConnection(String dataset, DataService dataService) {
         List<String> destinations = new ArrayList<>();
-        destinations.add(dataset);
+        destinations.add(DataAccessPoint.canonical(dataset));
         for (Endpoint endpoint : dataService.getEndpoints()) {
             destinations.add(DataAccessPoint.canonical(dataset + "/" + endpoint.getName()));
         }
