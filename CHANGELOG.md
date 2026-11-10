@@ -1,5 +1,11 @@
 # Smart Cache Graph
 
+## 1.2.6
+- Bumped Jena Kafka to v3.4.4
+- Bug fixes:
+  - Fix restore crash
+  - Correctly acquire kafka connectors for backup/restore
+
 ## 1.2.5
 - Bumped RDF ABAC v3.2.1 & GraphQL Jena v0.12.4
 
