@@ -261,6 +261,16 @@ public class TestDatasetAvailabilityFilter {
                 request("POST", "/ds/graphql", "application/json"), "/ds", service));
         assertTrue(FMod_DatasetAvailabilityFilter.isReadRequest(
                 request("POST", "/ds", "application/sparql-query; charset=utf-8"), "/ds", service));
+        for (String accessPath : new String[] { "query", "triples", "labels" }) {
+            assertTrue(FMod_DatasetAvailabilityFilter.isReadRequest(
+                    request("POST", "/ds/access/" + accessPath, "application/json"), "/ds", service));
+            // Classification must not depend on the data service being known
+            assertTrue(FMod_DatasetAvailabilityFilter.isReadRequest(
+                    request("POST", "/ds/access/" + accessPath, "application/json"), "/ds", null));
+        }
+        assertFalse(FMod_DatasetAvailabilityFilter.isReadRequest(request("POST", "/ds/access", null), "/ds", service));
+        assertFalse(FMod_DatasetAvailabilityFilter.isReadRequest(request("POST", "/ds/access/", null), "/ds", service));
+        assertFalse(FMod_DatasetAvailabilityFilter.isReadRequest(request("POST", "/ds/access/other", null), "/ds", service));
         assertFalse(FMod_DatasetAvailabilityFilter.isReadRequest(request("POST", "/ds", "text/turtle"), "/ds", service));
         assertFalse(FMod_DatasetAvailabilityFilter.isReadRequest(request("POST", "/ds/update", null), "/ds", service));
         assertFalse(FMod_DatasetAvailabilityFilter.isReadRequest(request("POST", "/ds/data", null), "/ds", service));
