@@ -41,6 +41,16 @@ public class FMod_DatasetAvailabilityFilter implements FusekiModule {
     private static final String VERSION =
             Version.versionForClass(FMod_DatasetAvailabilityFilter.class).orElse("<development>");
     private static final String LABELS_PREFIX = "/$/labels/";
+    /**
+     * First path segment, after the dataset name, of the custom access servlets e.g. {@code /<dataset>/access/query}
+     */
+    private static final String ACCESS_SEGMENT = "access";
+    /**
+     * The read-only access servlets. These are plain servlets rather than Fuseki endpoints, so cannot be classified via
+     * the dataset's {@link DataService}. This is deliberately an allow-list so any future access path defaults to being
+     * treated as a write.
+     */
+    static final Set<String> READ_ONLY_ACCESS_PATHS = Set.of("query", "triples", "labels");
     // S3077: Publish immutable snapshots by replacing the volatile reference; do not mutate a published value.
     @SuppressWarnings("java:S3077")
     private volatile Set<String> datasetNames = Set.of();
@@ -137,7 +147,7 @@ public class FMod_DatasetAvailabilityFilter implements FusekiModule {
      * Decides whether a request to a dataset only reads it, so may proceed during an RO Compaction.
      * <p>
      * Reads are: GET, HEAD and OPTIONS requests; POSTs to an endpoint whose operations are all read-only (e.g. a SPARQL
-     * query or GraphQL endpoint); label lookups; and SPARQL queries POSTed to the dataset itself. Anything else, including
+     * query or GraphQL endpoint); label lookups; the read-only {@code /access/*} servlets; and SPARQL queries POSTed to the dataset itself. Anything else, including
      * operations this filter can't classify, is treated as a write.
      * </p>
      *
@@ -166,6 +176,11 @@ public class FMod_DatasetAvailabilityFilter implements FusekiModule {
             String contentType = request.getContentType();
             return (contentType != null && contentType.toLowerCase().startsWith("application/sparql-query"))
                     || request.getParameter("query") != null;
+        }
+        if (ACCESS_SEGMENT.equals(endpointName)) {
+            // The access servlets aren't Fuseki endpoints so the endpoint lookup below can't classify them
+            String accessPath = firstPathSegment(rest.substring(endpointName.length()).replaceFirst("^/+", ""));
+            return accessPath != null && READ_ONLY_ACCESS_PATHS.contains(accessPath);
         }
         if (service == null) {
             return false;
