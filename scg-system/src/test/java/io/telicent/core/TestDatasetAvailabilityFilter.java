@@ -56,10 +56,72 @@ public class TestDatasetAvailabilityFilter {
     void tearDown() {
         FMod_InitialCompaction.CURRENT_COMPACTIONS.clear();
         DatasetMaintenanceRegistry.ACTIVE_MAINTENANCE.clear();
+        RestoreMarkerStore.MARKERS.clear();
         Configurator.reset();
         if (server != null) {
             server.stop();
         }
+    }
+
+    /**
+     * A dataset whose restore never finished may have had some of its stores replaced and not others, so its security
+     * labels may no longer describe its data. Starting up and serving it anyway is exactly the silence this guards
+     * against.
+     */
+    @Test
+    void givenRestoreThatNeverFinished_whenStartingUp_thenTheDatasetIsNotServed() throws IOException, InterruptedException {
+        DatasetGraphSwitchable dsg = createPersistentSwitchableDataset();
+        // Mid-restore, then the service dies: the marker is on disk and nothing is in memory
+        RestoreMarkerStore.begin(dsg, DATASET_NAME, "14");
+        RestoreMarkerStore.MARKERS.clear();
+
+        startServer(dsg);
+
+        HttpRequest request = HttpRequest.newBuilder()
+                                         .uri(URI.create(server.serverURL() + "ds/query?query="
+                                                 + URLEncoder.encode("SELECT * WHERE { ?s ?p ?o }",
+                                                                     StandardCharsets.UTF_8)))
+                                         .GET()
+                                         .build();
+
+        HttpResponse<String> response =
+                HttpEnv.getDftHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+
+        assertEquals(503, response.statusCode());
+        assertTrue(response.body().contains("did not complete"), "Should say why, was: " + response.body());
+        assertTrue(response.body().contains(DATASET_NAME));
+        assertTrue(response.body().contains("INCOMPLETE"), "Should report the restore state, was: " + response.body());
+        assertTrue(response.body().contains("\"backup-id\" : \"14\""),
+                   "Should identify the restore, was: " + response.body());
+        // This is not something that fixes itself, so clients are not told to retry
+        assertTrue(response.headers().firstValue("Retry-After").isEmpty());
+    }
+
+    @Test
+    void givenRestoreThatNeverFinished_whenStartingUp_thenWritesAreRefusedToo() throws IOException, InterruptedException {
+        DatasetGraphSwitchable dsg = createPersistentSwitchableDataset();
+        RestoreMarkerStore.begin(dsg, DATASET_NAME, "14");
+        RestoreMarkerStore.MARKERS.clear();
+
+        startServer(dsg);
+
+        assertEquals(503, send("POST", "ds/update", "application/sparql-update",
+                               "INSERT DATA { <urn:a> <urn:b> <urn:c> }"));
+        assertEquals(503, send("POST", "$/labels/ds", "application/json", "{}"));
+    }
+
+    @Test
+    void givenRestoreThatCompleted_whenStartingUp_thenTheDatasetIsServedNormally() throws IOException, InterruptedException {
+        // A real TDB2 dataset, so a request that gets through the filter is actually answered
+        DatasetGraphSwitchable dsg = (DatasetGraphSwitchable) org.apache.jena.tdb2.DatabaseMgr.connectDatasetGraph(
+                java.nio.file.Files.createTempDirectory("availability-filter-restored").toString());
+        RestoreMarkerStore.begin(dsg, DATASET_NAME, "14");
+        RestoreMarkerStore.complete(dsg, true, null);
+        RestoreMarkerStore.MARKERS.clear();
+
+        startServer(dsg);
+
+        assertEquals(200, send("GET", "ds/query?query=" + q("SELECT * { ?s ?p ?o }"), null, null));
     }
 
     @Test
