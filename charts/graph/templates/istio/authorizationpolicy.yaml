@@ -44,6 +44,8 @@ spec:
         - /$/backups/create/*
         - /$/backups/restore/*
         - /$/backups/restore
+        - /$/backups/restore-state
+        - /$/backups/restore-state/*
         - /$/backups/details/*
         - /$/backups/delete/*
         - /$/backups/validate/*

@@ -1,5 +1,25 @@
 # Smart Cache Graph
 
+## 1.2.7
+
+- A restore that is interrupted no longer leaves a dataset silently inconsistent as it now writes a marker in the
+  dataset's own directory before it touches the first store, and removes it only on success, so a service that dies part
+  way through leaves a record of what was being restored and how far it got. On startup a dataset with such a record is
+  not served: its requests get HTTP 503 explaining that its data and its security labels may not match, rather than
+  being brought up as though nothing had happened.
+    - The state is reported by `GET /$/backups/jobs` and by the new `GET /$/backups/restore-state`, which unlike the
+      async job records survives a restart.
+    - Restoring the dataset successfully returns it to service and clears the record, and is the only thing that does.
+      The reporting endpoints are read-only and need `backup.read`, as the other backup listing endpoints do.
+    - A restore now stops at the first module whose failure abandons the restore's write transaction, instead of going
+      on to replace the remaining stores with nothing protecting them. Replacing the files of the security labels store
+      is not something that can be undone, so this previously meant a corrupt triple store backup could leave a dataset
+      with its original data and its labels replaced, without the service ever dying.
+    - A module that begins changing a store and never reports that it finished now withholds the dataset as well. Such
+      a store is neither in its old state nor its new one, so the dataset's data may be described by labels that do not
+      belong to it; it used to be recorded as a plain failure and served. `FAILED` now means the restore is known to
+      have changed nothing, and the restore state reports `unfinished-modules` when it is not.
+
 ## 1.2.6
 - Bumped Jena Kafka to v3.4.4
 - Bug fixes:
