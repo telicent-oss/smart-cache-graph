@@ -22,6 +22,7 @@ import io.telicent.backup.utils.EncryptionUtils;
 import io.telicent.core.DatasetIngestPause;
 import io.telicent.core.DatasetMaintenanceRegistry;
 import io.telicent.core.LabelsMaintenance;
+import io.telicent.core.RestoreMarkerStore;
 import io.telicent.model.KeyPair;
 import io.telicent.smart.cache.security.data.DataSecurityException;
 import io.telicent.smart.cache.storage.BackupRestoreCapable;
@@ -50,6 +51,7 @@ import org.apache.jena.shacl.ValidationReport;
 import org.apache.jena.sparql.core.DatasetGraph;
 import org.apache.jena.sparql.core.DatasetGraphWrapper;
 import org.apache.jena.system.Txn;
+import org.apache.jena.tdb2.store.DatasetGraphSwitchable;
 import org.bouncycastle.openpgp.PGPException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -119,6 +121,16 @@ public class DatasetBackupService {
 
     private final DataSecurityPlugin dataSecurityPlugin;
 
+    /**
+     * Name of the restore module that replaces the triple store
+     */
+    static final String MODULE_TDB = "tdb";
+
+    /**
+     * Name of the restore module that replaces the security labels store
+     */
+    static final String MODULE_LABELS = "labels";
+
     static final ConcurrentHashMap<String, TriConsumer<DataAccessPoint, String, ObjectNode>> backupConsumerMap = new ConcurrentHashMap<>();
     static final ConcurrentHashMap<String, TriConsumer<DataAccessPoint, String, ObjectNode>> restoreConsumerMap = new ConcurrentHashMap<>();
 
@@ -128,8 +140,8 @@ public class DatasetBackupService {
         this.encryptionUtils = new EncryptionUtils(keyPair.privateKeyUrl().openStream(), keyPair.passphrase());
         this.dapRegistry = dapRegistry;
         this.dataSecurityPlugin = dataSecurityPlugin;
-        registerMethods("tdb", this::backupTDB, this::restoreTDB);
-        registerMethods("labels", this::backupLabelStore, this::restoreLabelStore);
+        registerMethods(MODULE_TDB, this::backupTDB, this::restoreTDB);
+        registerMethods(MODULE_LABELS, this::backupLabelStore, this::restoreLabelStore);
         lock = new ReentrantLock();
     }
 
@@ -139,8 +151,8 @@ public class DatasetBackupService {
         this.encryptionUtils = null;
         this.dapRegistry = dapRegistry;
         this.dataSecurityPlugin = dataSecurityPlugin;
-        registerMethods("tdb", this::backupTDB, this::restoreTDB);
-        registerMethods("labels", this::backupLabelStore, this::restoreLabelStore);
+        registerMethods(MODULE_TDB, this::backupTDB, this::restoreTDB);
+        registerMethods(MODULE_LABELS, this::backupLabelStore, this::restoreLabelStore);
         lock = new ReentrantLock();
     }
 
@@ -606,6 +618,8 @@ public class DatasetBackupService {
             response.put(SUCCESS, false);
             return false;
         }
+        final DatasetGraphSwitchable markerTarget = maintenance.get().dataset();
+        boolean markerWritten = false;
 
         LOG.info("[RESTORE] >>>> Starting restore of dataset {} from {}", datasetName, restorePath + "/" + datasetName);
         // Pause Kafka ingest for this dataset before touching the on-disk stores. The connectors writing into the
@@ -639,6 +653,11 @@ public class DatasetBackupService {
                 response.put(SUCCESS, false);
                 return false;
             }
+            // Record on disk that this dataset is being restored, BEFORE any of its stores are touched. The stores are
+            // not all restored by the same mechanism so a service that dies part way through leaves the two out of
+            // step. The marker is what says so afterwards.
+            RestoreMarkerStore.begin(markerTarget, dataAccessPoint.getName(), backupIdOf(restorePath));
+            markerWritten = true;
             // Hold a write transaction for the whole restore so that no update can be applied part way through it,
             // leaving the data and its security labels out of step.  The transaction is deliberately taken on the
             // dataset's *data* rather than on the labelled dataset itself -- see restoreLockTarget() for why.
@@ -658,16 +677,53 @@ public class DatasetBackupService {
             } finally {
                 DatasetMaintenanceRegistry.end(maintenance.get());
             }
-            if (response.path(SUCCESS).asBoolean(true)
-                    && response.path("tdb").path(SUCCESS).asBoolean(true)) {
+            final boolean succeeded = restoreSucceeded(response);
+            if (markerWritten) {
+                // Only a successful restore removes the marker: a restore that got part way and then failed has left
+                // the dataset in the state the marker describes, whether the process survived to say so
+                RestoreMarkerStore.complete(markerTarget, succeeded, restoreFailureReason(response));
+            }
+            if (succeeded) {
                 LOG.info("[RESTORE] <<<< Finished restoring dataset {} SUCCESSFULLY", datasetName);
             } else {
                 LOG.error("[RESTORE] <<<< Restore of dataset {} FAILED: {}", datasetName,
-                          response.path(REASON).asText(
-                                  response.path("tdb").path(REASON).asText("see operation result for details")));
+                          restoreFailureReason(response));
             }
         }
         return true;
+    }
+
+    /**
+     * Determines whether a dataset's restore result represents a successful restore
+     *
+     * @param response Per-dataset restore result
+     * @return True if the restore succeeded
+     */
+    private static boolean restoreSucceeded(ObjectNode response) {
+        return response.path(SUCCESS).asBoolean(true) && response.path("tdb").path(SUCCESS).asBoolean(true);
+    }
+
+    /**
+     * Extracts why a dataset's restore failed, for logging and for the record left on disk
+     *
+     * @param response Per-dataset restore result
+     * @return A description of the failure
+     */
+    private static String restoreFailureReason(ObjectNode response) {
+        return response.path(REASON)
+                       .asText(response.path("tdb").path(REASON).asText("see operation result for details"));
+    }
+
+    /**
+     * Extracts the backup identifier from the path a restore is reading, which is always the backup directory plus the
+     * identifier
+     *
+     * @param restorePath Path being restored from
+     * @return The backup identifier, or an empty string if it cannot be determined
+     */
+    private static String backupIdOf(String restorePath) {
+        final Path fileName = Path.of(restorePath).getFileName();
+        return fileName == null ? "" : fileName.toString();
     }
 
     /**
@@ -752,6 +808,12 @@ public class DatasetBackupService {
      * @param restorePath     the path to restore from
      */
     public void applyRestoreMethods(ObjectNode moduleJSON, DataAccessPoint dataAccessPoint, String restorePath) {
+        final DatasetGraphSwitchable markerTarget = markerTarget(dataAccessPoint);
+        final DatasetGraph lockTarget = lockTarget(dataAccessPoint);
+        // If a TDB restore fails it takes the shared write transaction with it (Txn.exec aborts and ends it), so
+        // the triple store rolls back while a later consumer would still replace the labels files irreversibly:
+        // the backup's labels over data that is no longer the backup's. Stop at the first one to lose the txn.
+        final boolean transactional = lockTarget != null && lockTarget.isInTransaction();
         for (Map.Entry<String, TriConsumer<DataAccessPoint, String, ObjectNode>> entry : restoreConsumerMap.entrySet()) {
             ObjectNode node = OBJECT_MAPPER.createObjectNode();
             String modRestorePath = restorePath + "/" + entry.getKey() + "/";
@@ -768,7 +830,49 @@ public class DatasetBackupService {
                 }
             }
             moduleJSON.set(entry.getKey(), node);
+            if (node.path(SUCCESS).asBoolean(false)) {
+                // Keep the on-disk record of how far the restore got up to date as each store is replaced
+                RestoreMarkerStore.moduleRestored(markerTarget, entry.getKey());
+            }
+            if (transactional && !lockTarget.isInTransaction()) {
+                LOG.error("[RESTORE] Abandoning the restore of {} after the {} module: its write transaction was "
+                                  + "aborted, so no further store may be touched",
+                          dataAccessPoint.getName(), entry.getKey());
+                moduleJSON.put(REASON, "Restore abandoned after the " + entry.getKey()
+                        + " module aborted the restore's transaction; the remaining stores were left alone");
+                moduleJSON.put(SUCCESS, false);
+                return;
+            }
         }
+    }
+
+    /**
+     * Finds the dataset whose transaction protects a restore, for checking that the transaction is still there
+     *
+     * @param dataAccessPoint Access point being restored, may be {@code null}
+     * @return Dataset the restore's write transaction is held on, or {@code null} if there is none to check
+     */
+    private DatasetGraph lockTarget(DataAccessPoint dataAccessPoint) {
+        if (dataAccessPoint == null || dataAccessPoint.getDataService() == null
+                || dataAccessPoint.getDataService().getDataset() == null) {
+            return null;
+        }
+        return restoreLockTarget(dataAccessPoint.getDataService().getDataset());
+    }
+
+    /**
+     * Finds the dataset that a restore's on-disk marker belongs to, which is the TDB2 dataset underneath whatever
+     * wrappers it has, since that is where the dataset's own files live
+     *
+     * @param dataAccessPoint Access point being restored, may be {@code null}
+     * @return Dataset to record the restore against, or {@code null} if this server does not manage its files
+     */
+    private static DatasetGraphSwitchable markerTarget(DataAccessPoint dataAccessPoint) {
+        if (dataAccessPoint == null || dataAccessPoint.getDataService() == null) {
+            return null;
+        }
+        return DatasetMaintenanceRegistry.getManagedDataset(dataAccessPoint.getDataService().getDataset())
+                                         .orElse(null);
     }
 
     /**
@@ -803,10 +907,17 @@ public class DatasetBackupService {
         final DatasetGraph datasetGraph = dataAccessPoint.getDataService().getDataset();
         final Optional<BackupRestoreCapable> capability = LabelsMaintenance.backupRestore(dataSecurityPlugin, datasetGraph);
         if (capability.isEmpty()) {
+            // Nothing is touched in this case, which is the normal one for a deployment without ABAC, so the restore
+            // must not be recorded as having started changing anything -- that would withhold every such dataset
             node.put(REASON, "No security labels restore store is available");
             node.put(SUCCESS, false);
             return;
         }
+        // Restoring the labels store closes it, replaces its files and reopens it. No transaction covers that, so a
+        // failure part way through leaves a store that is neither the old one nor the new one, and the dataset's data
+        // may now be described by labels that do not belong to it. Record that this has begun BEFORE it begins, so
+        // that a failure -- or the service dying here -- withholds the dataset rather than serving it mislabelled.
+        RestoreMarkerStore.moduleStarted(markerTarget(dataAccessPoint), MODULE_LABELS);
         try {
             RestoreStatus status = capability.get().restore(RestoreConfig.builder().backupLocation(restorePath).build());
             node.put(SUCCESS, status.isSuccess());
