@@ -299,18 +299,28 @@
                 }
             }
         },
+        "startupProbe": {
+            "type": "object",
+            "properties": {
+                "periodSeconds": {
+                    "type": "number",
+                    "description": "How often (in seconds) to perform the startup probe",
+                    "default": 5
+                },
+                "failureThreshold": {
+                    "type": "number",
+                    "description": "Number of failures before the pod is restarted during startup",
+                    "default": 24
+                }
+            }
+        },
         "readinessProbe": {
             "type": "object",
             "properties": {
-                "initialDelaySeconds": {
-                    "type": "number",
-                    "description": "Number of seconds before readiness probe is initiated",
-                    "default": 120
-                },
                 "periodSeconds": {
                     "type": "number",
                     "description": "How often (in seconds) to perform the readiness probe",
-                    "default": 60
+                    "default": 30
                 },
                 "timeoutSeconds": {
                     "type": "number",
@@ -332,11 +342,6 @@
         "livenessProbe": {
             "type": "object",
             "properties": {
-                "initialDelaySeconds": {
-                    "type": "number",
-                    "description": "Number of seconds before liveness probe is initiated",
-                    "default": 120
-                },
                 "periodSeconds": {
                     "type": "number",
                     "description": "How often (in seconds) to perform the liveness probe",
@@ -350,7 +355,7 @@
                 "failureThreshold": {
                     "type": "number",
                     "description": "Number of failures before the pod is restarted",
-                    "default": 3
+                    "default": 5
                 }
             }
         },

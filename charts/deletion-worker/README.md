@@ -84,17 +84,17 @@ Contains configuration parameters that configure aspects of the *Deletion Worker
 
 ### Statefulset Probe Parameters
 
-| Name                                 | Description                                                             | Value |
-| ------------------------------------ | ----------------------------------------------------------------------- | ----- |
-| `readinessProbe.initialDelaySeconds` | Number of seconds before readiness probe is initiated                   | `120` |
-| `readinessProbe.periodSeconds`       | How often (in seconds) to perform the readiness probe                   | `60`  |
-| `readinessProbe.timeoutSeconds`      | Number of seconds after which the readiness probe times out             | `10`  |
-| `readinessProbe.failureThreshold`    | Number of failures before the pod is marked unready                     | `3`   |
-| `readinessProbe.successThreshold`    | Minimum consecutive successes for the probe to be considered successful | `1`   |
-| `livenessProbe.initialDelaySeconds`  | Number of seconds before liveness probe is initiated                    | `120` |
-| `livenessProbe.periodSeconds`        | How often (in seconds) to perform the liveness probe                    | `60`  |
-| `livenessProbe.timeoutSeconds`       | Number of seconds after which the liveness probe times out              | `10`  |
-| `livenessProbe.failureThreshold`     | Number of failures before the pod is restarted                          | `3`   |
+| Name                              | Description                                                             | Value |
+| --------------------------------- | ----------------------------------------------------------------------- | ----- |
+| `startupProbe.periodSeconds`      | How often (in seconds) to perform the startup probe                     | `5`   |
+| `startupProbe.failureThreshold`   | Number of failures before the pod is restarted during startup           | `24`  |
+| `readinessProbe.periodSeconds`    | How often (in seconds) to perform the readiness probe                   | `30`  |
+| `readinessProbe.timeoutSeconds`   | Number of seconds after which the readiness probe times out             | `10`  |
+| `readinessProbe.failureThreshold` | Number of failures before the pod is marked unready                     | `3`   |
+| `readinessProbe.successThreshold` | Minimum consecutive successes for the probe to be considered successful | `1`   |
+| `livenessProbe.periodSeconds`     | How often (in seconds) to perform the liveness probe                    | `60`  |
+| `livenessProbe.timeoutSeconds`    | Number of seconds after which the liveness probe times out              | `10`  |
+| `livenessProbe.failureThreshold`  | Number of failures before the pod is restarted                          | `5`   |
 
 ### Statefulset Resources Parameters - Requests and Limits
 
