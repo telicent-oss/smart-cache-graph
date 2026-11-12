@@ -8,6 +8,8 @@ import org.apache.jena.graph.Node;
 import org.apache.jena.graph.NodeFactory;
 import org.apache.jena.sparql.core.Quad;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -97,6 +99,13 @@ public class TestAccessLabelsServletParsing {
                      () -> parseObject("{ \"value\": \"1\", \"dataType\": \"ex:unknown\" }"));
         assertThrows(SmartCacheGraphException.class,
                      () -> parseObject("{ \"value\": \"1\", \"dataType\": \"http://example.org/unknown\" }"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = { "xsd", "xsd:", ":", "rdf:", "http://" })
+    public void givenMalformedDataType_whenParsing_thenRejected(String dataType) {
+        assertThrows(SmartCacheGraphException.class,
+                     () -> parseObject("{ \"value\": \"1\", \"dataType\": \"" + dataType + "\" }"));
     }
 
     @Test

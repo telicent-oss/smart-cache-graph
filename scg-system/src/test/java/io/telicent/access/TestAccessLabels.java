@@ -333,6 +333,7 @@ public class TestAccessLabels {
     @Test
     public void givenInvalidObjectTypes_whenQuerying_thenBadRequest() throws Exception {
         for (String dataTypeField : List.of(", \"dataType\": \"ex:unknown\"",
+                                            ", \"dataType\": \"xsd:\"",
                                             ", \"dataType\": \"xsd:string\", \"language\": \"en\"")) {
             final HttpResponse<String> response = call(USER2, populationRequest("8799800", dataTypeField));
             assertEquals(400, response.statusCode(), "Expected bad request for " + dataTypeField);

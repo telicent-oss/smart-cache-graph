@@ -137,10 +137,16 @@ public final class LabelsQueryParser {
         if (hasLanguage && hasDataType) {
             throw new SmartCacheGraphException("Cannot have both language and dataType in request object");
         }
-        final TypedObject typedObject = TypedObject.from(object);
-        if (hasLanguage) {
-            return NodeFactory.createLiteralLang(typedObject.value, typedObject.language);
+        try {
+            final TypedObject typedObject = TypedObject.from(object);
+            if (hasLanguage) {
+                return NodeFactory.createLiteralLang(typedObject.value, typedObject.language);
+            }
+            return NodeFactory.createLiteralDT(typedObject.value, typedObject.datatype);
+        } catch (RuntimeException e) {
+            LOG.warn("Invalid object type in labels query", e);
+            throw new SmartCacheGraphException(
+                    "Invalid " + (hasLanguage ? "language: " + object.language : "data type: " + object.dataType));
         }
-        return NodeFactory.createLiteralDT(typedObject.value, typedObject.datatype);
     }
 }
