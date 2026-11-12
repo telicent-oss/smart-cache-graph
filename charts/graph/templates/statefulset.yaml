@@ -147,22 +147,27 @@ spec:
           containerPort: {{ .Values.metrics.service.port }}
         {{- end }}
         
+        startupProbe:
+          httpGet:
+            path: /version-info
+            port: 3030
+            scheme: HTTP
+          periodSeconds: {{ .Values.startupProbe.periodSeconds }}
+          failureThreshold: {{ .Values.startupProbe.failureThreshold }}
         readinessProbe:
           httpGet:
             path: /$/ready
             port: 3030
             scheme: HTTP
-          initialDelaySeconds: {{ .Values.readinessProbe.initialDelaySeconds }}
           periodSeconds: {{ .Values.readinessProbe.periodSeconds }}
           timeoutSeconds: {{ .Values.readinessProbe.timeoutSeconds }}
           failureThreshold: {{ .Values.readinessProbe.failureThreshold }}
           successThreshold: {{ .Values.readinessProbe.successThreshold }}
         livenessProbe:
           httpGet:
-            path: /version-info
+            path: /$/ready
             port: 3030
             scheme: HTTP
-          initialDelaySeconds: {{ .Values.livenessProbe.initialDelaySeconds }}
           periodSeconds: {{ .Values.livenessProbe.periodSeconds }}
           timeoutSeconds: {{ .Values.livenessProbe.timeoutSeconds }}
           failureThreshold: {{ .Values.livenessProbe.failureThreshold }}
