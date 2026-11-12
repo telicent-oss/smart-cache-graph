@@ -1,8 +1,6 @@
 package io.telicent.access.servlets;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.telicent.access.services.AccessLabelsService;
 import io.telicent.labels.LabelsQueryParser;
 import io.telicent.labels.LabelsQueryParser.ObjectMode;
@@ -48,11 +46,7 @@ public class AccessLabelsServlet extends HttpServlet {
             final List<Quad> patterns = LabelsQueryParser.parse(inputStream, ObjectMode.TYPED);
             final HttpAction action = new HttpAction(1L, LOG, ActionCategory.ACTION, request, response);
             final List<QuadLabels> results = labelsService.getLabels(action, patterns);
-            final ArrayNode resultNodeList = OBJECT_MAPPER.createArrayNode();
-            results.forEach(r -> resultNodeList.add(r.toJSONNode()));
-            final ObjectNode resultNode = OBJECT_MAPPER.createObjectNode();
-            resultNode.set("results", resultNodeList);
-            processResponse(response, resultNode);
+            processResponse(response, QuadLabels.toResultsNode(results));
         } catch (SmartCacheGraphException ex) {
             handleError(response, OBJECT_MAPPER.createObjectNode(), HttpServletResponse.SC_BAD_REQUEST, ex.getMessage());
         } catch (JsonProcessingException | IllegalArgumentException ex) {
@@ -65,8 +59,7 @@ public class AccessLabelsServlet extends HttpServlet {
             handleError(response, OBJECT_MAPPER.createObjectNode(), HttpServletResponse.SC_BAD_REQUEST,
                         "Unable to read request body");
         } catch (ActionErrorException ex) {
-            // ABAC rejects requests it can't evaluate, e.g. a 403 for a user with no attributes, which would otherwise
-            // be reported as a 500
+            // ABAC rejects requests it can't evaluate
             handleError(response, OBJECT_MAPPER.createObjectNode(), ex.getRC(), ex.getMessage());
         }
     }

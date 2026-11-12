@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import static io.telicent.labels.LabelsFinder.DENY_LABEL;
 import static io.telicent.labels.LabelsFinder.findWithLabels;
 import static io.telicent.utils.ServletUtils.requestContextFrom;
 
@@ -30,8 +31,6 @@ import static io.telicent.utils.ServletUtils.requestContextFrom;
  * </p>
  */
 public class AccessLabelsService {
-
-    private static final byte[] DENY = "!".getBytes(StandardCharsets.UTF_8);
 
     private final DatasetGraph datasetGraph;
     private final DataSecurityPlugin dataSecurityPlugin;
@@ -79,6 +78,6 @@ public class AccessLabelsService {
                 return label.data();
             }
         }
-        return DENY;
+        return DENY_LABEL.getBytes(StandardCharsets.UTF_8);
     }
 }

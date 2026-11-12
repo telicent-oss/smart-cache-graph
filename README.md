@@ -213,9 +213,8 @@ have them queued behind a deletion.
 ### `ENABLE_LABELS_QUERY`
 
 Setting this to `false` will disable the security label query endpoint at `http://{hostname}/$/labels/{datasetName}`. More
-information about this endpoint can be found in the [API docs](docs/labels-api.yaml). It returns labels regardless of the
-caller's attributes. Non-admin clients should use `http://{hostname}/{datasetName}/access/labels`, which returns only
-what the caller can see ([Access Queries](docs/access-queries.md#access-labels-endpoint)) and is always enabled. You can also run a Docker
+information about this endpoint can be found in the [API docs](docs/labels-api.yaml). Non-admin clients should use `http://{hostname}/{datasetName}/access/labels`, 
+which returns only what the caller can see ([Access Queries](docs/access-queries.md#access-labels-endpoint)) and is always enabled. You can also run a Docker
 container with the endpoint enabled which can be accessed from the API docs by running:
 
 ```commandline

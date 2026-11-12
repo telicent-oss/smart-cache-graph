@@ -13,6 +13,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
+import static io.telicent.labels.LabelsFinder.DENY_LABEL;
 import static io.telicent.labels.LabelsFinder.findWithLabels;
 
 public class LabelsQueryService {
@@ -20,8 +21,6 @@ public class LabelsQueryService {
     private final DatasetGraph datasetGraph;
     private final String datasetName;
     private final DataSecurityPlugin dataSecurityPlugin;
-
-    private static final String DENY = "!";
 
     public LabelsQueryService(DataSecurityPlugin dataSecurityPlugin, DatasetGraph datasetGraph, String datasetName) {
         this.dataSecurityPlugin = dataSecurityPlugin;
@@ -39,7 +38,7 @@ public class LabelsQueryService {
 
     public List<QuadLabels> queryOnlyLabelStore(Quad quad) {
         try (final SecurityLabelsApplicator applicator = dataSecurityPlugin.prepareLabelsApplicator(
-                DENY.getBytes(StandardCharsets.UTF_8), datasetGraph)) {
+                DENY_LABEL.getBytes(StandardCharsets.UTF_8), datasetGraph)) {
             return List.of(new QuadLabels(quad, applicator.labelForQuad(quad)));
         }
     }
@@ -51,7 +50,7 @@ public class LabelsQueryService {
     public List<QuadLabels> queryDSGAndLabelStore(Quad quad) {
         return Txn.calculateRead(datasetGraph, () -> {
             try (final SecurityLabelsApplicator applicator = dataSecurityPlugin.prepareLabelsApplicator(
-                    DENY.getBytes(StandardCharsets.UTF_8), datasetGraph)) {
+                    DENY_LABEL.getBytes(StandardCharsets.UTF_8), datasetGraph)) {
                 final List<QuadLabels> tripleLabels = new ArrayList<>();
                 final Node labelsGraph = dataSecurityPlugin.labelsGraphName().orElse(null);
                 findWithLabels(datasetGraph, quad, applicator, labelsGraph, tripleLabels);

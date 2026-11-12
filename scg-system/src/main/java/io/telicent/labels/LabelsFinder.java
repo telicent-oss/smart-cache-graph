@@ -15,6 +15,11 @@ import java.util.List;
  */
 public final class LabelsFinder {
 
+    /**
+     * Label that nobody can see, used for unlabelled quads when there's no other default
+     */
+    public static final String DENY_LABEL = "!";
+
     private LabelsFinder() {
     }
 

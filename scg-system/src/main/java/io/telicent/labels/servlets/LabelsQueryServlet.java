@@ -1,7 +1,5 @@
 package io.telicent.labels.servlets;
 
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.telicent.labels.LabelsQueryParser;
 import io.telicent.labels.LabelsQueryParser.ObjectMode;
 import io.telicent.labels.QuadLabels;
@@ -18,6 +16,7 @@ import org.slf4j.Logger;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.List;
 
 import static io.telicent.backup.utils.JsonFileUtils.OBJECT_MAPPER;
@@ -40,22 +39,16 @@ public class LabelsQueryServlet extends HttpServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response) {
         try {
             List<Quad> quadQueryList = obtainQuadQueries(request);
-            ObjectNode resultNode = OBJECT_MAPPER.createObjectNode();
-            resultNode.set("results", processQueryList(quadQueryList));
-            processResponse(response, resultNode);
+            processResponse(response, QuadLabels.toResultsNode(processQueryList(quadQueryList)));
         } catch (SmartCacheGraphException ex) {
             handleError(response, OBJECT_MAPPER.createObjectNode(), HttpServletResponse.SC_BAD_REQUEST, "Unable to interpret JSON request");
         }
     }
 
-    ArrayNode processQueryList(List<Quad> quadQueryList) {
-        ArrayNode resultNodeList = OBJECT_MAPPER.createArrayNode();
-        quadQueryList.forEach(quad -> {
-            List<QuadLabels> results = processQuad(quad);
-            results.forEach(r -> resultNodeList.add(r.toJSONNode()));
-        });
-
-        return resultNodeList;
+    List<QuadLabels> processQueryList(List<Quad> quadQueryList) {
+        final List<QuadLabels> results = new ArrayList<>();
+        quadQueryList.forEach(quad -> results.addAll(processQuad(quad)));
+        return results;
     }
 
     List<QuadLabels> processQuad(Quad quad) {
