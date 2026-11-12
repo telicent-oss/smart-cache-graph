@@ -2,6 +2,7 @@ package io.telicent.core.auth;
 
 import io.telicent.servlet.auth.jwt.PathExclusion;
 import io.telicent.smart.caches.configuration.auth.policy.Policy;
+import io.telicent.smart.caches.configuration.auth.policy.TelicentPermissions;
 import jakarta.servlet.http.HttpServletRequest;
 import org.apache.jena.fuseki.server.DataAccessPoint;
 import org.junit.jupiter.api.Assertions;
@@ -10,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -71,6 +73,7 @@ public class TestServletAuthorizationEngine {
                 Arguments.of("/knowledge/", "query"),
                 Arguments.of("/knowledge/", "cqrs"),
                 Arguments.of("/knowledge/access/query", null),
+                Arguments.of("/knowledge/access/labels", null),
                 Arguments.of("/$/labels/knowledge", null),
                 Arguments.of("/knowledge", null),
                 // Administrative endpoints
@@ -144,6 +147,24 @@ public class TestServletAuthorizationEngine {
         Assertions.assertNotNull(permissions);
         Assertions.assertEquals(Policy.DENY_ALL, roles);
         Assertions.assertEquals(Policy.DENY_ALL, permissions);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = { "knowledge", "catalog" })
+    public void givenAccessLabelsPath_whenFindingPolicy_thenDefaultRolesAndDatasetReadPermissionRequired(
+            String datasetName) {
+        // Given
+        ServletAuthorizationContext context = prepareContext("/" + datasetName + "/access/labels", null);
+        InspectableServletAuthorizationEngine engine = createEngine();
+
+        // When
+        Policy roles = engine.findRoles(context);
+        Policy permissions = engine.findPermissions(context);
+
+        // Then
+        Assertions.assertEquals(SCG_AuthPolicy.DEFAULT_ROLES, roles);
+        Assertions.assertArrayEquals(new String[] { TelicentPermissions.readPermission(datasetName) },
+                                     permissions.values());
     }
 
     @Test

@@ -7,6 +7,8 @@ import org.apache.jena.graph.Node;
 import org.apache.jena.graph.Triple;
 import org.apache.jena.sparql.core.Quad;
 
+import java.util.List;
+
 import static io.telicent.backup.utils.JsonFileUtils.OBJECT_MAPPER;
 
 public class QuadLabels {
@@ -36,5 +38,19 @@ public class QuadLabels {
         }
         node.set("labels", labelNode);
         return node;
+    }
+
+    /**
+     * Builds the labels endpoints' response body, {@code {"results": [...]}}, from the quads found
+     *
+     * @param results Quads and their labels
+     * @return Response body
+     */
+    public static ObjectNode toResultsNode(List<QuadLabels> results) {
+        final ArrayNode resultNodeList = OBJECT_MAPPER.createArrayNode();
+        results.forEach(r -> resultNodeList.add(r.toJSONNode()));
+        final ObjectNode resultNode = OBJECT_MAPPER.createObjectNode();
+        resultNode.set("results", resultNodeList);
+        return resultNode;
     }
 }

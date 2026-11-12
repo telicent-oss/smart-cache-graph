@@ -65,6 +65,7 @@ For CI-built diagnostic variants, use the manual GitHub Actions workflow
 - [Compaction API](docs/compaction-api.yaml)
 - [Backups API](docs/backups-api.yaml)
 - [Labels API](docs/labels-api.yaml)
+- [Access API](docs/access-api.yaml)
 
 ## System Configuration
 
@@ -131,6 +132,8 @@ For other endpoints provided by the various Telicent modules added to Fuseki the
 | `/$/compact/<dataset>` | `ADMIN_SYSTEM` | `api.<dataset>.compact`                             |
 | `/$/labels/<dataset>`  | `USER`         | `api.<dataset>.read`                                |
 | `/<dataset>/access/*`  | `USER`         | `api.<dataset>.read`                                |
+
+`/<dataset>/access/*` covers the `query`, `triples` and `labels` access endpoints.
 
 If your Identity Provider is not able to manage roles and permissions information in a way compatible with Smart Cache
 Graph then you can disable this via the aforementioned [`FEATURE_FLAG_AUTHZ`](#feature_flag_authz) environment variable.
@@ -210,7 +213,8 @@ have them queued behind a deletion.
 ### `ENABLE_LABELS_QUERY`
 
 Setting this to `false` will disable the security label query endpoint at `http://{hostname}/$/labels/{datasetName}`. More
-information about this endpoint can be found in the [API docs](docs/labels-api.yaml). You can also run a Docker
+information about this endpoint can be found in the [API docs](docs/labels-api.yaml). Non-admin clients should use `http://{hostname}/{datasetName}/access/labels`, 
+which returns only what the caller can see ([Access Queries](docs/access-queries.md#access-labels-endpoint)) and is always enabled. You can also run a Docker
 container with the endpoint enabled which can be accessed from the API docs by running:
 
 ```commandline

@@ -75,6 +75,8 @@ spec:
         - /ontology/shacl/*
         - /catalog/shacl
         - /catalog/shacl/*
+        - /catalog/access/labels
+        - /catalog/access/labels/*
         {{- if .Values.graph.simpleKnowledgeEnabled}}
         - /simple-knowledge/graphql
         - /simple-knowledge/graphql/*

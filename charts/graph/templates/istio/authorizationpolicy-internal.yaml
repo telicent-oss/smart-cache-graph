@@ -59,6 +59,8 @@ spec:
         paths:
         - /$/labels/catalog
         - /$/labels/catalog/*
+        - /catalog/access/labels
+        - /catalog/access/labels/*
         methods: ["POST"]
   - from:
     - source:

@@ -7,4 +7,9 @@ PREFIX security: <http://telicent.io/security#>
 [] security:user "User2" ;
     security:userAttribute "admin";
     security:userAttribute "census";
+    security:userAttribute "europe";
+    .
+
+[] security:user "User3" ;
+    security:userAttribute "catalogue";
     .

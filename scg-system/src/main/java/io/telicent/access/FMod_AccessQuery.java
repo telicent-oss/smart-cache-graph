@@ -1,6 +1,8 @@
 package io.telicent.access;
 
+import io.telicent.access.services.AccessLabelsService;
 import io.telicent.access.services.AccessQueryService;
+import io.telicent.access.servlets.AccessLabelsServlet;
 import io.telicent.access.servlets.AccessQueryServlet;
 import io.telicent.access.servlets.AccessTriplesServlet;
 import io.telicent.smart.cache.security.data.plugins.DataSecurityPlugin;
@@ -28,6 +30,8 @@ public class FMod_AccessQuery implements FusekiAutoModule {
             final AccessQueryService queryService = new AccessQueryService(dsg, plugin);
             serverBuilder.addServlet(datasetName + "/access/query", new AccessQueryServlet(queryService));
             serverBuilder.addServlet(datasetName + "/access/triples", new AccessTriplesServlet(queryService));
+            serverBuilder.addServlet(datasetName + "/access/labels",
+                                     new AccessLabelsServlet(new AccessLabelsService(dsg, plugin)));
         }
     }
 

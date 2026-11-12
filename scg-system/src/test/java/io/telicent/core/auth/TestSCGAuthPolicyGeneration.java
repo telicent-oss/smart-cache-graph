@@ -57,6 +57,30 @@ public class TestSCGAuthPolicyGeneration {
         }
     }
 
+    /**
+     * Verifies the policy that applies to a concrete request path, which may come from a wildcard path pattern
+     */
+    private Policy findMatchingPolicy(Map<PathExclusion, Policy> policies, String path) {
+        Policy policy = policies.entrySet()
+                                .stream()
+                                .filter(e -> e.getKey().matches(path))
+                                .map(Map.Entry::getValue)
+                                .findFirst()
+                                .orElse(null);
+        Assertions.assertNotNull(policy, "No policy matches path " + path);
+        return policy;
+    }
+
+    private void verifyMatchingPolicy(Map<PathExclusion, Policy> policies, String path, PolicyKind kind,
+                                      String... expected) {
+        Policy policy = findMatchingPolicy(policies, path);
+        Assertions.assertEquals(kind, policy.kind());
+        for (String value : expected) {
+            Assertions.assertTrue(ArrayUtils.contains(policy.values(), value),
+                                  "Missing expected value " + value + " for path " + path);
+        }
+    }
+
     private void verifyNoPolicy(Map<PathExclusion, Policy> policies, String path) {
         PathExclusion pathExclusion = new PathExclusion(path);
         Policy policy = policies.get(pathExclusion);
@@ -79,6 +103,7 @@ public class TestSCGAuthPolicyGeneration {
 
         // Verify permissions generated for Telicent custom endpoints
         verifyPermissions(policies, "/" + datasetName + "/access/*", readPermission);
+        verifyMatchingPolicy(policies, "/" + datasetName + "/access/labels", PolicyKind.REQUIRE_ALL, readPermission);
         verifyPermissions(policies, "/$/labels/" + datasetName, readPermission);
         verifyPermissions(policies, "/$/compact/" + datasetName, compactPermission);
         verifyPermissions(policies, "/$/compaction/jobs/" + datasetName, compactPermission);
@@ -107,6 +132,8 @@ public class TestSCGAuthPolicyGeneration {
 
         // Verify roles generated for Telicent custom endpoints
         verifyRoles(policies, "/" + datasetName + "/access/*", SCG_AuthPolicy.DEFAULT_ROLES.values());
+        verifyMatchingPolicy(policies, "/" + datasetName + "/access/labels", PolicyKind.REQUIRE_ANY,
+                             SCG_AuthPolicy.DEFAULT_ROLES.values());
         verifyRoles(policies, "/$/labels/" + datasetName, SCG_AuthPolicy.DEFAULT_ROLES.values());
         verifyRoles(policies, "/$/compact/" + datasetName, SCG_AuthPolicy.ADMIN_ROLES.values());
         verifyRoles(policies, "/$/compaction/jobs/" + datasetName, SCG_AuthPolicy.ADMIN_ROLES.values());
