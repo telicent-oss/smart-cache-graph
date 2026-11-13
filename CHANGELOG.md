@@ -1,5 +1,13 @@
 # Smart Cache Graph
 
+## 1.2.7
+- Bug fixes:
+  - When routing to named graphs with a lifecycle state file, data for a distribution the lifecycle has never
+    registered is no longer ingested. Previously a distribution missing from the state file was treated as viable, so
+    the `Unregistered` check only applied when the file said so explicitly. Every such event is now dead-lettered (the
+    first one after a grace period for the registration to arrive). See `DISTRIBUTION_REJECT_UNREGISTERED` and
+    `DISTRIBUTION_UNREGISTERED_GRACE` in the README; set the former to `false` for the old behaviour.
+
 ## 1.2.6
 - Bumped Jena Kafka to v3.4.4
 - Bug fixes:

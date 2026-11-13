@@ -38,6 +38,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -51,7 +52,7 @@ public class TestSmartCacheGraphSinkLifecycle {
 
     // Lifecycle states whose data MUST be accepted for ingest (Active is additionally visible at query time).
     private static final String[] VIABLE_STATES = { "Active", "Registered", "Withdrawn" };
-    // Lifecycle states whose data MUST NOT be ingested - the first event is DLQ'd, subsequent ones are dropped.
+    // Lifecycle states whose data MUST NOT be ingested.
     private static final String[] NON_VIABLE_STATES = { "Deleted", "Unregistered" };
 
     /**
@@ -212,21 +213,89 @@ public class TestSmartCacheGraphSinkLifecycle {
     }
 
     @ParameterizedTest
-    @MethodSource("nonViableStatesAndPayloads")
-    public void send_rejectsFirstEvent_thenDropsSubsequent_forNonViableDistribution(String state,
-                                                                                    PayloadType payloadType)
+    @MethodSource("payloadTypes")
+    public void send_rejectsFirstEvent_thenDropsSubsequent_forDeletedDistribution(PayloadType payloadType)
             throws IOException {
-        writeState(stateJson(state));
-        final var sink = new SmartCacheGraphSink(this.labelled, true, lifecycleStateFile());
+        writeState(stateJson("Deleted"));
+        final var sink = lifecycleSink();
 
-        // First event for a non-viable (Deleted/Unregistered) distribution is dead-lettered so the reason is visible.
+        // First event for a deleted distribution is dead-lettered so the reason is visible.
         assertRejected(sink, payloadType.event(DISTRIBUTION_ID),
-                       "First event for a " + state + " distribution must be rejected (DLQ)");
+                       "First event for a Deleted distribution must be rejected (DLQ)");
 
-        // Subsequent events for the same non-viable distribution are silently dropped, not rejected.
+        // Subsequent events for the same deleted distribution are silently dropped, not rejected.
         sink.send(payloadType.event(DISTRIBUTION_ID));
 
-        Assertions.assertTrue(datasetIsEmpty(), "No data should be written for a " + state + " distribution");
+        Assertions.assertTrue(datasetIsEmpty(), "No data should be written for a Deleted distribution");
+    }
+
+    @ParameterizedTest
+    @MethodSource("payloadTypes")
+    public void send_rejectsEveryEvent_forUnregisteredDistribution(PayloadType payloadType) throws IOException {
+        writeState(stateJson("Unregistered"));
+        final var sink = lifecycleSink();
+
+        // Every event is dead-lettered, so data that arrived before its registration can be replayed later
+        for (int i = 0; i < 3; i++) {
+            assertRejected(sink, payloadType.event(DISTRIBUTION_ID),
+                           "Every event for an Unregistered distribution must be rejected (DLQ)");
+        }
+
+        Assertions.assertTrue(datasetIsEmpty(), "No data should be written for an Unregistered distribution");
+    }
+
+    @ParameterizedTest
+    @MethodSource("payloadTypes")
+    public void send_rejectsEveryEvent_forDistributionMissingFromStateFile(PayloadType payloadType)
+            throws IOException {
+        // The state file only knows about a different distribution
+        writeState(stateJson("http://example/other", "Active"));
+        final var sink = lifecycleSink();
+
+        for (int i = 0; i < 3; i++) {
+            assertRejected(sink, payloadType.event(DISTRIBUTION_ID),
+                           "An event for a distribution the lifecycle has never heard of must be rejected (DLQ)");
+        }
+
+        Assertions.assertTrue(datasetIsEmpty(), "No data should be written for an unknown distribution");
+    }
+
+    @ParameterizedTest
+    @MethodSource("payloadTypes")
+    public void send_ingests_forUnknownDistribution_whenRejectUnregisteredDisabled(PayloadType payloadType)
+            throws IOException {
+        writeState(stateJson("http://example/other", "Active"));
+        final var sink = new SmartCacheGraphSink(
+                new DistributionIngestGate(lifecycleStateFile(), false, Duration.ZERO, millis -> { }, System::nanoTime),
+                this.labelled, true);
+
+        sendInWriteTxn(sink, payloadType.event(DISTRIBUTION_ID));
+
+        Assertions.assertFalse(datasetIsEmpty(), "Unknown distribution should be ingested when the check is off");
+    }
+
+    @ParameterizedTest
+    @MethodSource("payloadTypes")
+    public void send_ingests_whenRegistrationReachesStateFileDuringGrace(PayloadType payloadType)
+            throws IOException {
+        writeState(stateJson("http://example/other", "Active"));
+        final int[] sleeps = { 0 };
+        final var gate = new DistributionIngestGate(lifecycleStateFile(), true, Duration.ofSeconds(30), millis -> {
+            // The tracker writes the registration while the sink is waiting
+            if (++sleeps[0] == 2) {
+                try {
+                    writeState(stateJson("Registered"));
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }, System::nanoTime);
+        final var sink = new SmartCacheGraphSink(gate, this.labelled, true);
+
+        sendInWriteTxn(sink, payloadType.event(DISTRIBUTION_ID));
+
+        Assertions.assertFalse(datasetIsEmpty(), "Data should be ingested once the registration arrives");
+        Assertions.assertEquals(2, sleeps[0]);
     }
 
     @ParameterizedTest
@@ -234,7 +303,7 @@ public class TestSmartCacheGraphSinkLifecycle {
     public void send_resumesIngest_whenNonViableDistributionBecomesActiveAgain(String state, PayloadType payloadType)
             throws IOException {
         writeState(stateJson(state));
-        final SmartCacheGraphSink sink = new SmartCacheGraphSink(this.labelled, true, lifecycleStateFile());
+        final SmartCacheGraphSink sink = lifecycleSink();
 
         assertRejected(sink, payloadType.event(DISTRIBUTION_ID),
                        "Pre-condition: first event for a " + state + " distribution is rejected");
@@ -330,14 +399,27 @@ public class TestSmartCacheGraphSinkLifecycle {
         return new DistributionLifecycleStateFile(this.stateFile, null);
     }
 
+    /*
+     * A lifecycle-gated sink with no grace period, so unregistered distributions are rejected without waiting
+     */
+    private SmartCacheGraphSink lifecycleSink() {
+        return new SmartCacheGraphSink(
+                new DistributionIngestGate(lifecycleStateFile(), true, Duration.ZERO, millis -> { }, System::nanoTime),
+                this.labelled, true);
+    }
+
     private static String stateJson(String state) {
+        return stateJson(DISTRIBUTION_ID, state);
+    }
+
+    private static String stateJson(String distributionId, String state) {
         return """
                 {
                   "distributions" : {
                     "%s" : "%s"
                   }
                 }
-                """.formatted(DISTRIBUTION_ID, state);
+                """.formatted(distributionId, state);
     }
 
     private void writeState(String json) throws IOException {

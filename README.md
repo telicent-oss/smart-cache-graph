@@ -195,6 +195,27 @@ state and the event driven view of it get out of step and the lifecycle can no l
 chart therefore defaults it to `/fuseki/databases/distribution-lifecycle-state.json`, alongside the Kafka state files on
 the datasets volume.
 
+### `DISTRIBUTION_REJECT_UNREGISTERED`
+
+Optional, defaulting to `true`. When [`ROUTE_TO_NAMED_GRAPHS`](#route_to_named_graphs) is `true` and a
+[`DISTRIBUTION_LIFECYCLE_STATE_FILE`](#distribution_lifecycle_state_file) is configured, the Kafka sink only ingests
+data for distributions the lifecycle knows about and has not deleted:
+
+- `Registered`, `Active` and `Withdrawn` distributions are ingested (visibility is then decided at query time).
+- `Deleted` distributions are rejected: the first event is dead-lettered and later events are dropped.
+- `Unregistered` distributions, **including any distribution missing from the state file**, are rejected, and every
+  such event is dead-lettered so it can be replayed once the distribution is registered.
+
+Setting this to `false` ingests data for unregistered distributions, as releases before 1.2.7 did.
+
+### `DISTRIBUTION_UNREGISTERED_GRACE`
+
+Optional, an ISO-8601 duration defaulting to `PT30S`. The lifecycle tracker consumes the lifecycle topic alongside the
+data, so data for a newly registered distribution can arrive before its registration reaches the state file. The first
+time an unregistered distribution is seen, ingest re-reads its state every 0.5 s for up to this long before rejecting.
+Later events for it are rejected at once until its state changes. Ingest happens inside a write transaction, so other
+writers wait during this period; readers do not.
+
 ### `DISTRIBUTION_LIFECYCLE_APP_ID`
 
 Optional. The application identifier expected to appear in the `application` field of

@@ -522,9 +522,12 @@ public abstract class AbstractSmartCacheGraphSinkTests {
         String previousRouteToNamedGraphs = System.getProperty("ROUTE_TO_NAMED_GRAPHS");
         String previousStateFile = System.getProperty(DISTRIBUTION_LIFECYCLE_STATE_FILE);
         String previousAppId = System.getProperty(FMod_DistributionLifecycle.DISTRIBUTION_LIFECYCLE_APP_ID);
+        String previousGrace = System.getProperty(DistributionIngestGate.UNREGISTERED_GRACE);
         try {
             Configurator.addSource(SystemPropertiesSource.INSTANCE);
             System.setProperty("ROUTE_TO_NAMED_GRAPHS", "true");
+            // Don't wait for registrations that are never going to arrive
+            System.setProperty(DistributionIngestGate.UNREGISTERED_GRACE, "PT0S");
             System.setProperty(DISTRIBUTION_LIFECYCLE_STATE_FILE, stateFile.toString());
             if (applicationId != null) {
                 System.setProperty(FMod_DistributionLifecycle.DISTRIBUTION_LIFECYCLE_APP_ID, applicationId);
@@ -536,6 +539,7 @@ public abstract class AbstractSmartCacheGraphSinkTests {
             restoreProperty("ROUTE_TO_NAMED_GRAPHS", previousRouteToNamedGraphs);
             restoreProperty(DISTRIBUTION_LIFECYCLE_STATE_FILE, previousStateFile);
             restoreProperty(FMod_DistributionLifecycle.DISTRIBUTION_LIFECYCLE_APP_ID, previousAppId);
+            restoreProperty(DistributionIngestGate.UNREGISTERED_GRACE, previousGrace);
             Files.deleteIfExists(stateFile);
         }
     }
@@ -806,7 +810,7 @@ public abstract class AbstractSmartCacheGraphSinkTests {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"Unregistered", "Deleted"})
+    @ValueSource(strings = {"Deleted"})
     final void processorSCG_namedGraph_invalidDistributionRejectedBeforeWrite_thenSubsequentEventsDropped(String state)
             throws IOException {
         String invalidGraph = "http://example/invalid";
@@ -847,10 +851,55 @@ public abstract class AbstractSmartCacheGraphSinkTests {
         withDistributionLifecycleConfig(lifecycleState, null, () -> runTestProcessorSCGWithAuthNamedGraph(action));
     }
 
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    final void processorSCG_namedGraph_unregisteredDistributionRejectedBeforeWrite_everyEvent(boolean inStateFile)
+            throws IOException {
+        // A distribution missing from the lifecycle state file has never been registered, so is treated exactly like
+        // one the file lists as Unregistered.  Every event is rejected (DLQ), none silently dropped, so data that
+        // arrived before its registration can be replayed later.
+        String deletedGraph = "http://example/deleted";
+        String unregisteredGraph = "http://example/unregistered";
+        Path lifecycleState = Files.createTempFile("distribution-lifecycle", ".json");
+        writeLifecycleStateFile(lifecycleState, inStateFile ? """
+                {
+                  "distributions" : {
+                    "%s" : "Deleted",
+                    "%s" : "Unregistered"
+                  }
+                }
+                """.formatted(deletedGraph, unregisteredGraph) : """
+                {
+                  "distributions" : {
+                    "%s" : "Deleted"
+                  }
+                }
+                """.formatted(deletedGraph));
+
+        TestAction action =
+                (Sink<Event<Bytes, RdfPayload>> proc, FusekiServer server, DatasetGraph dsgBase, DatasetGraph dsg) -> {
+                    for (String value : List.of("value1", "value2")) {
+                        JenaKafkaException ex =
+                                assertThrows(JenaKafkaException.class, () -> sendEventWithDistributionId(proc, """
+                                        PREFIX : <http://example/>
+                                        :s :p "%s" .
+                                        """.formatted(value), WebContent.contentTypeTurtle, attrPermit,
+                                                                                    unregisteredGraph));
+                        assertInstanceOf(IllegalStateException.class, ex.getCause());
+                        assertEquals("Rejecting ingest for Unregistered distribution " + unregisteredGraph,
+                                     ex.getCause().getMessage());
+                    }
+
+                    verifyNamedGraphsEmpty(dsgBase, unregisteredGraph);
+                    checkDatasetSize(dsgBase, 0);
+                };
+
+        withDistributionLifecycleConfig(lifecycleState, null, () -> runTestProcessorSCGWithAuthNamedGraph(action));
+    }
+
     @Test
-    final void processorSCG_namedGraph_unregisteredDistributionIsIngested() throws IOException {
-        // A distribution that is not present in the lifecycle state file at all is treated as unregistered. Per the
-        // ticket, rejecting unregistered distributions is deferred to a later ticket, so ingest must still proceed.
+    final void processorSCG_namedGraph_unregisteredDistributionIsIngested_whenRejectUnregisteredDisabled()
+            throws IOException {
         String deletedGraph = "http://example/deleted";
         String unregisteredGraph = "http://example/unregistered";
         Path lifecycleState = Files.createTempFile("distribution-lifecycle", ".json");
@@ -865,18 +914,23 @@ public abstract class AbstractSmartCacheGraphSinkTests {
         TestAction action =
                 (Sink<Event<Bytes, RdfPayload>> proc, FusekiServer server, DatasetGraph dsgBase, DatasetGraph dsg) -> {
                     dsg.begin(TxnType.WRITE);
-                    // No exception expected - the unregistered distribution is accepted for ingest.
+                    // No exception expected - the old behaviour, unregistered distributions accepted for ingest.
                     sendEventWithDistributionId(proc, """
                             PREFIX : <http://example/>
                             :s :p "value" .
                             """, WebContent.contentTypeTurtle, attrPermit, unregisteredGraph);
                     dsg.commit();
 
-                    // Data is physically written to the underlying store for the unregistered distribution.
                     verifyNamedGraphsHaveData(dsgBase, unregisteredGraph);
                 };
 
-        withDistributionLifecycleConfig(lifecycleState, null, () -> runTestProcessorSCGWithAuthNamedGraph(action));
+        String previousReject = System.getProperty(DistributionIngestGate.REJECT_UNREGISTERED);
+        try {
+            System.setProperty(DistributionIngestGate.REJECT_UNREGISTERED, "false");
+            withDistributionLifecycleConfig(lifecycleState, null, () -> runTestProcessorSCGWithAuthNamedGraph(action));
+        } finally {
+            restoreProperty(DistributionIngestGate.REJECT_UNREGISTERED, previousReject);
+        }
     }
 
     @Test

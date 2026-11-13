@@ -16,7 +16,6 @@
 
 package io.telicent.core;
 
-import io.telicent.smart.cache.distribution.lifecycle.DistributionLifecycleState;
 import io.telicent.smart.cache.payloads.RdfPayload;
 import io.telicent.smart.cache.security.data.distribution.DistributionLifecycleStateFile;
 import io.telicent.smart.cache.security.data.labels.DatasetGraphLabelled;
@@ -36,7 +35,6 @@ import org.slf4j.LoggerFactory;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashSet;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * An event sink that handles incoming events from Fuseki Kafka connector applying them, and their security labels, to a
@@ -48,21 +46,25 @@ public class SmartCacheGraphSink extends FusekiSink<DatasetGraphLabelled> {
     private static final Logger LOGGER = LoggerFactory.getLogger(SmartCacheGraphSink.class);
 
     private final boolean routeToNamedGraphs;
-    private final DistributionLifecycleStateFile lifecycleStateFile;
-    // Tracks distributions whose first event we have already rejected (DLQ'd). The first event for a deleted
-    // distribution throws so it is dead-lettered with a clear reason; subsequent events for the same distribution are
-    // silently dropped. NB - this is in-memory only, so after a restart the first new event for a still-deleted
-    // distribution will be DLQ'd again rather than dropped.
-    private final Set<String> deletedDistributionsAlreadyRejected = ConcurrentHashMap.newKeySet();
+    // Null when ingest is not gated by the distribution lifecycle (not routing, or no state file configured)
+    private final DistributionIngestGate ingestGate;
 
     public SmartCacheGraphSink(DatasetGraphLabelled dataset, boolean routeToNamedGraphs) {
         this(dataset,routeToNamedGraphs,null);
     }
 
     public SmartCacheGraphSink(DatasetGraphLabelled dataset, boolean routeToNamedGraphs, DistributionLifecycleStateFile lifecycleStateFile){
+        this(lifecycleStateFile != null ? DistributionIngestGate.fromConfiguration(lifecycleStateFile) : null, dataset,
+             routeToNamedGraphs);
+    }
+
+    /*
+     * For tests - a pre-configured ingest gate (parameter order differs so a null third argument stays unambiguous)
+     */
+    SmartCacheGraphSink(DistributionIngestGate ingestGate, DatasetGraphLabelled dataset, boolean routeToNamedGraphs) {
         super(dataset);
         this.routeToNamedGraphs = routeToNamedGraphs;
-        this.lifecycleStateFile = lifecycleStateFile;
+        this.ingestGate = ingestGate;
     }
 
     @Override
@@ -144,7 +146,8 @@ public class SmartCacheGraphSink extends FusekiSink<DatasetGraphLabelled> {
     /*
      * Decides whether an event should be skipped before any writes. Returns false when the event should be ingested,
      * true when it should be silently dropped, and throws to reject (DLQ) the event - for a missing distribution id,
-     * unavailable lifecycle state, or the first event of a deleted distribution.
+     * unavailable lifecycle state, an unregistered (or unknown) distribution, or the first event of a deleted
+     * distribution.  See DistributionIngestGate for the rules.
      */
     private boolean ignoreEvent(String distributionId) {
         if (!this.routeToNamedGraphs) {
@@ -154,35 +157,19 @@ public class SmartCacheGraphSink extends FusekiSink<DatasetGraphLabelled> {
         if (StringUtils.isEmpty(distributionId)) {
             throw new IllegalArgumentException("No distribution id specified when in routing mode");
         }
-        if (this.lifecycleStateFile == null) {
+        if (this.ingestGate == null) {
             return false;
         }
 
-        final DistributionLifecycleStateFile.DistributionStateResult stateResult =
-                this.lifecycleStateFile.distributionStateResult(distributionId);
-        if (!stateResult.available()) {
-            throw new IllegalStateException(
-                    "Rejecting ingest because distribution lifecycle state is unavailable for distribution "
-                            + distributionId);
-        }
-
-        final String state = stateResult.state();
-        if(viableState(state)){
-            this.deletedDistributionsAlreadyRejected.remove(distributionId);
-            return false;
-        }
-        if (this.deletedDistributionsAlreadyRejected.add(distributionId)) {
-            throw new IllegalStateException(
-                    "Rejecting ingest for " + state + " distribution " + distributionId);
-        }
-
-        LOGGER.info("Dropping ingest for previously rejected distribution {}", distributionId);
-        return true;
-    }
-
-    private static boolean viableState(String state) {
-        return !DistributionLifecycleState.Deleted.name().equals(state)
-                && !DistributionLifecycleState.Unregistered.name().equals(state);
+        final DistributionIngestGate.Outcome outcome = this.ingestGate.decide(distributionId);
+        return switch (outcome.decision()) {
+            case INGEST -> false;
+            case REJECT -> throw new IllegalStateException(outcome.reason());
+            case DROP -> {
+                LOGGER.info("Dropping ingest for previously rejected distribution {}", distributionId);
+                yield true;
+            }
+        };
     }
 
     @Override
