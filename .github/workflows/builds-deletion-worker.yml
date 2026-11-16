@@ -74,10 +74,16 @@ jobs:
           fail-on-unfixed: true
           github-token: ${{ secrets.GITHUB_TOKEN }}
           download-sbom: "false"
+          allow-mutable-tags: false
+          allow-sha-tag: true
+          allow-development-tag: false
+          allow-version-tag: ${{ github.ref_name == 'main' }}
+          fail-on-unfixed: true
           enable-buildkit-cache: "true"
           build-args: |
             PROJECT_VERSION=${{ needs.maven-build.outputs.version }}
       - name: Package and push Helm chart to ECR
+        if: ${{ github.ref_name == 'main' || github.ref_type == 'tag' }}
         uses: telicent-oss/shared-workflows/.github/actions/push-helm-chart@main
         with:
           app-name: ${{ matrix.chartName }}
