@@ -1,5 +1,12 @@
 # Smart Cache Graph
 
+## 1.2.7
+- Build improvements:
+  - improved liveness probes
+  - removed excess Open Telemetry logging
+  - correct read-only access for relevant POST endpoints
+- Add ABAC filtering to labels endpoint
+
 ## 1.2.6
 - Bumped Jena Kafka to v3.4.4
 - Bug fixes:
