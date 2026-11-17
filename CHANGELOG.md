@@ -1,7 +1,11 @@
 # Smart Cache Graph
 
 ## 1.2.7
-
+- Build improvements:
+  - improved liveness probes
+  - removed excess Open Telemetry logging
+  - correct read-only access for relevant POST endpoints
+- Add ABAC filtering to labels endpoint
 - A restore that is interrupted no longer leaves a dataset silently inconsistent as it now writes a marker in the
   dataset's own directory before it touches the first store, and removes it only on success, so a service that dies part
   way through leaves a record of what was being restored and how far it got. On startup a dataset with such a record is
