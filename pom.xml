@@ -22,7 +22,7 @@
   <parent>
     <groupId>io.telicent.smart-caches</groupId>
     <artifactId>parent</artifactId>
-    <version>1.10.2</version>
+    <version>1.11.0</version>
     <relativePath />
   </parent>
 
@@ -78,7 +78,7 @@
     <plugin.clean>3.3.2</plugin.clean>
     <plugin.compiler>3.16.0</plugin.compiler>
     <plugin.cyclonedx>2.9.3</plugin.cyclonedx>
-    <plugin.buildnumber>3.3.1</plugin.buildnumber>
+    <plugin.buildnumber>3.4.0</plugin.buildnumber>
     <plugin.dependency>3.11.0</plugin.dependency>
     <plugin.deploy>3.2.0</plugin.deploy>
     <plugin.enforcer>3.4.1</plugin.enforcer>
@@ -93,7 +93,7 @@
     <plugin.sonar>5.8.0.7211</plugin.sonar>
     <plugin.source>3.4.0</plugin.source>
     <plugin.surefire>3.6.1</plugin.surefire>
-    <plugin.versions>2.24.0</plugin.versions>
+    <plugin.versions>2.25.2</plugin.versions>
 
     <!-- SonarQube analysis, invoked from CI via mvn sonar:sonar -->
     <sonar.projectKey>telicent-oss_smart-cache-graph</sonar.projectKey>
@@ -119,7 +119,7 @@
     <dependency.jena>6.2.0</dependency.jena>
     <dependency.graphql>0.12.4</dependency.graphql>
     <dependency.jwt-servlet-auth>5.0.0</dependency.jwt-servlet-auth>
-    <dependency.smart-caches-core>1.10.2</dependency.smart-caches-core>
+    <dependency.smart-caches-core>1.11.0</dependency.smart-caches-core>
 
     <!-- External dependencies -->
     <dependency.awaitility>4.3.0</dependency.awaitility>
@@ -127,12 +127,12 @@
     <dependency.commons-codec>1.23.0</dependency.commons-codec>
     <dependency.commons-compress>1.28.0</dependency.commons-compress>
     <dependency.gson>2.15.0</dependency.gson>
-    <dependency.jackson>2.22.4</dependency.jackson>
-    <dependency.jackson3>3.2.4</dependency.jackson3>
-    <dependency.bouncycastle>1.86</dependency.bouncycastle>
+    <dependency.jackson>2.23.0</dependency.jackson>
+    <dependency.jackson3>3.3.0</dependency.jackson3>
+    <dependency.bouncycastle>1.87</dependency.bouncycastle>
     <dependency.kafka>3.9.2</dependency.kafka>
     <dependency.kotlin>2.4.21</dependency.kotlin>
-    <dependency.lz4>1.13.0</dependency.lz4>
+    <dependency.lz4>1.14.0</dependency.lz4>
     <dependency.otel>1.68.0</dependency.otel>
 
     <!-- Logging dependencies -->
@@ -154,7 +154,7 @@
     <!-- CVE-2025-28976 -->
     <dependency.commons-fileupload2>2.0.0-M5</dependency.commons-fileupload2>
     <!-- CVE-2026-1605 -->
-    <dependency.jetty>12.1.14</dependency.jetty>
+    <dependency.jetty>12.1.15</dependency.jetty>
     <dependency.snappy>1.1.10.12</dependency.snappy>
 
 
