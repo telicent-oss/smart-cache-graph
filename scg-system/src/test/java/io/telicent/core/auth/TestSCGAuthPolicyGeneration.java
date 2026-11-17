@@ -17,6 +17,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -233,5 +234,37 @@ public class TestSCGAuthPolicyGeneration {
         verifyPermissions(perms, "/$/backups/restore", SCG_AuthPolicy.BACKUP_RESTORE.values());
         verifyPermissions(perms, "/$/backups/restore/*", SCG_AuthPolicy.BACKUP_RESTORE.values());
         verifyPermissions(perms, "/$/backups/*", SCG_AuthPolicy.BACKUP_READ_ONLY.values());
+    }
+
+    /**
+     * The backup policies overlap - every one of them also matches the {@code /$/backups/*} catch all - and
+     * {@link ServletAuthorizationEngine} resolves that by taking the first match from an insertion ordered map. This
+     * pins down what that actually resolves to, in particular that the read-only restore state endpoints land on
+     * {@code backup.read} rather than acquiring a stricter permission than the {@code /$/backups/jobs} endpoint that
+     * reports the very same records.
+     */
+    @Test
+    public void givenOverlappingBackupPolicies_whenResolvingAPath_thenTheMostSpecificOneWins() {
+        Map<PathExclusion, Policy> roles = new LinkedHashMap<>();
+        Map<PathExclusion, Policy> perms = new LinkedHashMap<>();
+
+        SCG_AuthPolicy.addTelicentEndpointPolicies(roles, perms);
+
+        Assertions.assertSame(SCG_AuthPolicy.BACKUP_RESTORE, firstMatch(perms, "/$/backups/restore/1/ds"));
+        // The restore state endpoints are read-only, and report exactly what /$/backups/jobs reports, so they must
+        // resolve to the same permission it does rather than a stricter one that would protect nothing
+        Assertions.assertSame(SCG_AuthPolicy.BACKUP_READ_ONLY, firstMatch(perms, "/$/backups/restore-state"));
+        Assertions.assertSame(SCG_AuthPolicy.BACKUP_READ_ONLY, firstMatch(perms, "/$/backups/restore-state/ds"));
+        Assertions.assertSame(SCG_AuthPolicy.BACKUP_READ_ONLY, firstMatch(perms, "/$/backups/jobs"));
+        Assertions.assertSame(SCG_AuthPolicy.BACKUP_READ_ONLY, firstMatch(perms, "/$/backups/list"));
+    }
+
+    private static Policy firstMatch(Map<PathExclusion, Policy> policies, String path) {
+        return policies.entrySet()
+                       .stream()
+                       .filter(entry -> entry.getKey().matches(path))
+                       .map(Map.Entry::getValue)
+                       .findFirst()
+                       .orElse(null);
     }
 }

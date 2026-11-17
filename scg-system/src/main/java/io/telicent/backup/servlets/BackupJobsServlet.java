@@ -44,6 +44,9 @@ public class BackupJobsServlet extends HttpServlet {
         final String pathInfo = request.getPathInfo();
         if (pathInfo == null || pathInfo.isBlank() || "/".equals(pathInfo)) {
             resultNode.set("jobs", this.jobManager.listJobs());
+            // Job records are per-process, so a restore that was interrupted by the service stopping has no job here
+            // to report it. The durable record of one does, and it is what says a dataset is not being served.
+            resultNode.set("restore-state", RestoreStateServlet.restoreState());
             processResponse(response, resultNode);
             return;
         }
