@@ -47,6 +47,48 @@ components:
           type: integer
         result:
           type: object
+    RestoreState:
+      type: object
+      description: >
+        The record a restore leaves next to a dataset's own files. It is written before the first of the dataset's
+        stores is touched and removed when the restore succeeds, so one that is still there afterwards means the
+        restore did not finish.
+      properties:
+        dataset-name:
+          type: string
+        state:
+          type: string
+          enum: [IN_PROGRESS, INCOMPLETE, FAILED]
+          description: >
+            `IN_PROGRESS` while a restore is running; `INCOMPLETE` if it never finished, in which case the dataset is
+            withheld from service because its data and its security labels may not match; `FAILED` if it ran to
+            completion and reported a failure, which is recorded but does not withhold the dataset.
+        serving:
+          type: boolean
+          description: Whether the dataset is being served; `false` while the restore state is `INCOMPLETE`.
+        backup-id:
+          type: string
+        started-at:
+          type: string
+          format: date-time
+        updated-at:
+          type: string
+          format: date-time
+        completed-modules:
+          type: array
+          description: The restore modules, e.g. `tdb` and `labels`, that had been applied when this was last written.
+          items:
+            type: string
+        unfinished-modules:
+          type: array
+          description: >-
+            The restore modules that began changing the dataset's own store and never reported that they had finished,
+            so that store is neither in its old state nor its new one. Omitted when there are none. A labels store
+            listed here means the dataset's data may be described by labels that do not belong to it.
+          items:
+            type: string
+        reason:
+          type: string
   responses:
     RestoreResponse:
       description: Dataset restored successfully.
@@ -383,6 +425,14 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/AsyncJobStatus'
+                  restore-state:
+                    type: array
+                    description: >
+                      Durable records of restores that did not complete. Job records only last as long as the process
+                      that ran them, so a restore interrupted by the service stopping is reported here and not under
+                      `jobs`.
+                    items:
+                      $ref: '#/components/schemas/RestoreState'
   /$/backups/jobs/{jobId}:
     get:
       summary: Get asynchronous backup job status
@@ -415,6 +465,60 @@ paths:
                 properties:
                   error:
                     type: string
+
+  /$/backups/restore-state:
+    get:
+      summary: List restores that did not complete
+      description: >
+        Retrieves the durable record of any restore that did not complete. A dataset whose restore was interrupted may
+        have had some of its stores replaced and not others, so its security labels may no longer describe its data;
+        such a dataset is withheld from service and reported here with `state: INCOMPLETE`. Restoring the dataset
+        successfully is the only supported way to return it to service, and clears the record.
+      responses:
+        '200':
+          description: Restore state retrieved successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  date:
+                    type: string
+                    format: date-time
+                  restore-state:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/RestoreState'
+
+  /$/backups/restore-state/{datasetName}:
+    get:
+      summary: Get the restore state of one dataset
+      parameters:
+        - name: datasetName
+          in: path
+          required: true
+          description: The dataset to report on.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Restore state retrieved successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  date:
+                    type: string
+                    format: date-time
+                  dataset-name:
+                    type: string
+                  restore-state:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/RestoreState'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
 
   /$/backups/restore/{datasetName}:
     post:
@@ -723,12 +827,12 @@ paths:
                         type: string
                         format: date-time
                         description: Backup start time
-                        example: "2025-07-29T09:21:06.125229292Z[GMT]"
+                        example: "2025-07-29T09:21:06.125229292Z"
                       end-time:
                         type: string
                         format: date-time
                         description: Backup end time
-                        example: "2025-07-29T09:21:06.133364125Z[GMT]"
+                        example: "2025-07-29T09:21:06.133364125Z"
                       backup-duration:
                         type: string
                         description: Backup duration as a human-readable string

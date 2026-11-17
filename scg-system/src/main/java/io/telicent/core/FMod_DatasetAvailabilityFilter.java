@@ -1,6 +1,8 @@
 package io.telicent.core;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.telicent.jena.graphql.fuseki.SysGraphQL;
+import io.telicent.utils.ServletUtils;
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.FilterConfig;
@@ -29,6 +31,8 @@ import java.util.Map;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
+
+import static io.telicent.backup.utils.JsonFileUtils.OBJECT_MAPPER;
 
 public class FMod_DatasetAvailabilityFilter implements FusekiModule {
 
@@ -96,6 +100,8 @@ public class FMod_DatasetAvailabilityFilter implements FusekiModule {
         }
         this.datasetsByPath = Map.copyOf(datasets);
         this.servicesByPath = Map.copyOf(services);
+        // Before anything is served, find out whether any of these datasets was left part way through a restore
+        datasets.forEach((name, dsg) -> RestoreMarkerStore.recover(dsg, name));
     }
 
     static Optional<String> datasetNameForPath(String requestUri, Set<String> datasetNames) {
@@ -199,17 +205,22 @@ public class FMod_DatasetAvailabilityFilter implements FusekiModule {
         @Override
         public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain chain)
                 throws IOException, ServletException {
-            HttpServletRequest request = (HttpServletRequest) servletRequest;
-            HttpServletResponse response = (HttpServletResponse) servletResponse;
+            final var request = (HttpServletRequest) servletRequest;
+            final var response = (HttpServletResponse) servletResponse;
 
-            Optional<String> datasetName = datasetNameForPath(request.getRequestURI(), datasetNames);
-            DatasetGraphSwitchable dataset = datasetForPath(request.getRequestURI(), datasetNames, datasetsByPath)
+            final Optional<String> datasetName = datasetNameForPath(request.getRequestURI(), datasetNames);
+            final DatasetGraphSwitchable dataset = datasetForPath(request.getRequestURI(), datasetNames, datasetsByPath)
                     .orElse(null);
             if (dataset == null || datasetName.isEmpty()) {
                 chain.doFilter(servletRequest, servletResponse);
                 return;
             }
-            boolean read = isReadRequest(request, datasetName.get(), servicesByPath.get(datasetName.get()));
+            final Optional<RestoreMarker> incompleteRestore = RestoreMarkerStore.quarantine(dataset);
+            if (incompleteRestore.isPresent()) {
+                rejectIncompleteRestore(response, datasetName.get(), incompleteRestore.get());
+                return;
+            }
+            final boolean read = isReadRequest(request, datasetName.get(), servicesByPath.get(datasetName.get()));
             try (DatasetMaintenanceRegistry.RequestAdmission admission =
                          DatasetMaintenanceRegistry.admitRequest(dataset, read)) {
                 if (admission.allowed()) {
@@ -228,6 +239,27 @@ public class FMod_DatasetAvailabilityFilter implements FusekiModule {
                 response.getWriter().write("{\"error\":\"Dataset " + datasetName.get()
                         + " is temporarily unavailable while " + admission.rejection() + " is in progress.\"}");
             }
+        }
+
+        /**
+         * Refuses a request to a dataset whose restore never finished
+         * <p>
+         * Such a dataset may have had some of its stores replaced and not others, so its security labels may no longer
+         * describe its data. Serving it would hand out data under the wrong labels, silently, so it is withheld until
+         * a restore puts it right. This is not a temporary condition, so no {@code Retry-After} is offered.
+         * </p>
+         *
+         * @param response    Response
+         * @param datasetName Dataset name
+         * @param marker      The record of the restore that did not finish
+         */
+        private void rejectIncompleteRestore(HttpServletResponse response, String datasetName, RestoreMarker marker) {
+            final ObjectNode body = OBJECT_MAPPER.createObjectNode();
+            body.set("incomplete-restore", marker.toJson());
+            ServletUtils.handleError(response, body, HttpServletResponse.SC_SERVICE_UNAVAILABLE,
+                                     "Dataset " + datasetName + " is not being served: a restore of it did not "
+                                             + "complete, so its data and its security labels may be inconsistent. "
+                                             + "Restore the dataset again to return it to service.");
         }
 
         @Override
