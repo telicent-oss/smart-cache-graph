@@ -59,6 +59,10 @@ jobs:
     permissions:
       contents: write
       id-token: write
+    env:
+      VERSION: ${{ needs.maven-build.outputs.version }}
+      # SNAPSHOT builds are also published as X.Y.Z-SNAPSHOT.<run>, so each build has a version of its own.
+      BUILD_SUFFIX: ${{ endsWith(needs.maven-build.outputs.version, '-SNAPSHOT') && format('.{0}', github.run_number) || '' }}
     steps:
       - name: Build and push image to ECR
         uses: telicent-oss/shared-workflows/.github/actions/push-container-image@main
@@ -67,6 +71,7 @@ jobs:
           app-name-prefix: ""
           dockerfile: scg-deletion-worker/Dockerfile
           version: ${{ needs.maven-build.outputs.version }}
+          version-suffix: ${{ env.BUILD_SUFFIX }}
           target: ${{ matrix.image }}
           java-version: 21
           uses-maven: true
@@ -81,6 +86,13 @@ jobs:
           enable-buildkit-cache: "true"
           build-args: |
             PROJECT_VERSION=${{ needs.maven-build.outputs.version }}
+      - name: Point the floating SNAPSHOT image tag at this build
+        if: github.ref_name == 'main' && env.BUILD_SUFFIX != ''
+        shell: bash
+        run: docker buildx imagetools create --tag "$IMAGE:$VERSION" "$IMAGE:$VERSION$BUILD_SUFFIX"
+        env:
+          IMAGE: 098669589541.dkr.ecr.eu-west-2.amazonaws.com/${{ matrix.image }}
+
       - name: Package and push Helm chart to ECR
         if: ${{ github.ref_name == 'main' || github.ref_type == 'tag' }}
         uses: telicent-oss/shared-workflows/.github/actions/push-helm-chart@main
@@ -89,6 +101,18 @@ jobs:
           app-name-prefix: ""
           chart: charts/${{ matrix.chartName }}
           registry: aws
-          version: ${{ needs.maven-build.outputs.version }}
-          appVersion: ${{ needs.maven-build.outputs.version }}
+          version: ${{ env.VERSION }}${{ env.BUILD_SUFFIX }}
+          appVersion: ${{ env.VERSION }}${{ env.BUILD_SUFFIX }}
+          replace-chart-versions: true
+
+      - name: Push the floating SNAPSHOT Helm chart to ECR
+        if: github.ref_name == 'main' && env.BUILD_SUFFIX != ''
+        uses: telicent-oss/shared-workflows/.github/actions/push-helm-chart@main
+        with:
+          app-name: ${{ matrix.chartName }}
+          app-name-prefix: ""
+          chart: charts/${{ matrix.chartName }}
+          registry: aws
+          version: ${{ env.VERSION }}
+          appVersion: ${{ env.VERSION }}${{ env.BUILD_SUFFIX }}
           replace-chart-versions: true
