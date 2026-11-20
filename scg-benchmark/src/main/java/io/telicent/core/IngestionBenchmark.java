@@ -5,13 +5,16 @@ import io.telicent.jena.abac.core.AttributesStoreLocal;
 import io.telicent.jena.abac.core.DatasetGraphABAC;
 import io.telicent.jena.abac.labels.Label;
 import io.telicent.jena.abac.labels.Labels;
-import io.telicent.smart.cache.security.data.plugins.rdf.abac.RdfAbacChangesApplyWithLabels;
+import io.telicent.smart.cache.security.data.labels.SecurityLabels;
+import io.telicent.smart.cache.security.data.plugins.DataSecurityPlugin;
+import io.telicent.smart.cache.security.data.plugins.DataSecurityPluginLoader;
 import org.apache.jena.graph.Node;
 import org.apache.jena.graph.NodeFactory;
 import org.apache.jena.sparql.core.DatasetGraphFactory;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
@@ -33,14 +36,17 @@ public class IngestionBenchmark {
     private Node[] subjects;
     private Node[] predicates;
     private Node[] objects;
-    private Label eventSecurityLabel;
+    private DataSecurityPlugin plugin;
+    private SecurityLabels<?> eventSecurityLabel;
 
     private final Random random = new Random(654321);
 
     @Setup(Level.Trial)
     public void setup() {
         graphNode = NodeFactory.createURI("urn:graph:benchmark");
-        eventSecurityLabel = Label.fromText("SEC:A & SEC:B & SEC:C");
+        plugin = DataSecurityPluginLoader.load();
+        eventSecurityLabel = plugin.labelsParser()
+                                   .parseSecurityLabels("SEC:A & SEC:B & SEC:C".getBytes(StandardCharsets.UTF_8));
 
         subjects = new Node[batchSize];
         predicates = new Node[batchSize];
@@ -56,7 +62,8 @@ public class IngestionBenchmark {
     @Benchmark
     public void benchmarkIngestWithLabels(Blackhole bh) {
         DatasetGraphABAC dataset = createDatasetGraphABAC();
-        RdfAbacChangesApplyWithLabels changes = new RdfAbacChangesApplyWithLabels(dataset, eventSecurityLabel);
+        RDFChangesApplyWithLabels changes =
+                new RDFChangesApplyWithLabels(plugin.prepareLabelledDataset(dataset).orElseThrow(), eventSecurityLabel);
 
         changes.txnBegin();
         for (int i = 0; i < batchSize; i++) {
