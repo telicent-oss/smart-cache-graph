@@ -22,7 +22,7 @@
   <parent>
     <groupId>io.telicent.smart-caches</groupId>
     <artifactId>parent</artifactId>
-    <version>1.11.0</version>
+    <version>1.12.0</version>
     <relativePath />
   </parent>
 
@@ -90,7 +90,7 @@
     <plugin.resources>3.5.0</plugin.resources>
     <plugin.shade>3.4.1</plugin.shade>
     <plugin.site>3.9.1</plugin.site>
-    <plugin.sonar>5.8.0.7211</plugin.sonar>
+    <plugin.sonar>5.9.0.7382</plugin.sonar>
     <plugin.source>3.4.0</plugin.source>
     <plugin.surefire>3.6.1</plugin.surefire>
     <plugin.versions>2.25.2</plugin.versions>
@@ -114,12 +114,12 @@
 
     <!-- Dependency versions -->
     <!-- Internal dependencies -->
-    <dependency.rdf-abac>4.2.1</dependency.rdf-abac>
+    <dependency.rdf-abac>4.2.2</dependency.rdf-abac>
     <dependency.fuseki-kafka>3.4.4</dependency.fuseki-kafka>
-    <dependency.jena>6.2.0</dependency.jena>
+    <dependency.jena>6.3.0</dependency.jena>
     <dependency.graphql>0.12.4</dependency.graphql>
     <dependency.jwt-servlet-auth>5.0.0</dependency.jwt-servlet-auth>
-    <dependency.smart-caches-core>1.11.0</dependency.smart-caches-core>
+    <dependency.smart-caches-core>1.12.0</dependency.smart-caches-core>
 
     <!-- External dependencies -->
     <dependency.awaitility>4.3.0</dependency.awaitility>
@@ -132,12 +132,12 @@
     <dependency.bouncycastle>1.87</dependency.bouncycastle>
     <dependency.kafka>3.9.2</dependency.kafka>
     <dependency.kotlin>2.4.21</dependency.kotlin>
-    <dependency.lz4>1.14.0</dependency.lz4>
+    <dependency.lz4>1.14.1</dependency.lz4>
     <dependency.otel>1.68.0</dependency.otel>
 
     <!-- Logging dependencies -->
     <dependency.log4j2>2.26.1</dependency.log4j2>
-    <dependency.logback>1.6.6</dependency.logback>
+    <dependency.logback>1.6.8</dependency.logback>
     <dependency.slf4j>2.0.20</dependency.slf4j>
 
     <!-- Test dependencies -->
