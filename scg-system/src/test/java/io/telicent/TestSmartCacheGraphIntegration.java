@@ -25,7 +25,9 @@ import io.telicent.jena.abac.core.AttributesStore;
 import io.telicent.jena.abac.services.AttributeService;
 import io.telicent.jena.abac.services.LibAuthService;
 import io.telicent.jena.abac.services.SimpleAttributesStore;
+import org.apache.jena.fuseki.main.FusekiMain;
 import org.apache.jena.fuseki.main.FusekiServer;
+import org.apache.jena.fuseki.main.sys.FusekiModules;
 import org.apache.jena.fuseki.system.FusekiLogging;
 import org.apache.jena.graph.Graph;
 import org.apache.jena.riot.RDFParser;
@@ -34,6 +36,8 @@ import org.apache.jena.sparql.exec.RowSetOps;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+
+import java.util.function.Function;
 
 /** Integration tests including mocks the SCG as deployed on AWS (or etc). */
 public class TestSmartCacheGraphIntegration {
@@ -102,6 +106,15 @@ public class TestSmartCacheGraphIntegration {
 
     /** Return the mock server URL */
     public static FusekiServer launchServer(String configFile) {
+        return launchServer(configFile, SmartCacheGraph::construct);
+    }
+
+    /** Launches the same authenticated test server with explicitly supplied module fixtures. */
+    public static FusekiServer launchServer(String configFile, FusekiModules modules) {
+        return launchServer(configFile, args -> FusekiMain.builder(modules, args).enablePing(true).build());
+    }
+
+    private static FusekiServer launchServer(String configFile, Function<String[], FusekiServer> factory) {
         // Remote Attribute Store
         Graph g = RDFParser.source(DIR+"/attribute-store.ttl").toGraph();
         AttributesStore attrStore = Attributes.buildStore(g);
@@ -114,6 +127,6 @@ public class TestSmartCacheGraphIntegration {
         System.setProperty("ABAC_HIERARCHIES_URL", lookupHierarchAttribesURL);
         System.setProperty("AWS_REGION", "eu-west-1");
 
-        return SmartCacheGraph.construct("--port=0", "--conf", DIR+"/"+configFile).start();
+        return factory.apply(new String[] { "--port=0", "--conf", DIR+"/"+configFile }).start();
     }
 }

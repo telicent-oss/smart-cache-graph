@@ -156,6 +156,14 @@ tracker is started. The tracker consumes the distribution lifecycle Kafka topic,
 below and acts on delete events by deleting the corresponding named graph and its labels. When unset, or set to `false`,
 no tracker is started.
 
+When Kafka ingestion and lifecycle tracking are enabled, Kafka connectors start only after the lifecycle tracker
+has completed its startup checks and caught up. The ingest filter then reads the tracker's shared state store.
+HTTP starts first and readiness remains false until lifecycle state is usable; connectors are then started from the
+Kafka module's `serverAfterStarting` step, so `FusekiServer.start()` returns once ingest has started. There is no
+additional startup deadline for slow catch-up, the wait never holds a graph transaction, and shutdown cancels it.
+Tracker startup failures leave HTTP running, the service unready and ingestion stopped. Errors starting the connectors
+themselves, such as duplicate consumer group IDs, stop the server and fail startup.
+
 The Helm chart sets this for you when `graph.routeToNamedGraphs` is enabled — see the
 [chart README](charts/graph/README.md).
 
@@ -194,6 +202,31 @@ The file must be held on persistent storage. If it is lost between restarts then
 state and the event driven view of it get out of step and the lifecycle can no longer be reliably enforced. The Helm
 chart therefore defaults it to `/fuseki/databases/distribution-lifecycle-state.json`, alongside the Kafka state files on
 the datasets volume.
+
+### Distribution acceptance during Kafka ingest
+
+With named-graph routing enabled, Kafka sinks use the shared `DistributionAcceptanceSink` when lifecycle tracking is
+enabled or `DISTRIBUTION_LIFECYCLE_STATE_FILE` is configured. `Registered`, `Active` and `Withdrawn` distributions are
+accepted. The first event for a `Deleted` distribution is rejected for dead-letter handling; subsequent events for that
+distribution are discarded. Accepted events reset the rejection history.
+
+SC-Graph accepts unknown distributions and distributions explicitly marked `Unregistered` by default,
+without waiting for registration. Strict registration is an opt-in:
+
+- `DISTRIBUTION_REJECT_UNREGISTERED`: `false` in SC-Graph; set to `true` to require registration.
+- `DISTRIBUTION_UNREGISTERED_GRACE_PERIOD`: `PT30S`; applied once per unregistered distribution.
+- `DISTRIBUTION_UNREGISTERED_GRACE_CHECK_INTERVAL`: `PT0.5S`; interval between registration checks.
+
+With strict registration enabled, the first unregistered event waits for the grace period before it is rejected;
+subsequent events for that distribution are discarded until registration is observed. This wait currently occurs
+inside the Kafka connector's dataset write transaction, so it can stall other connectors, SPARQL updates and lifecycle
+graph deletions. Moving acceptance checks ahead of transaction creation requires a separate Kafka connector change.
+Both labelled datasets and datasets using the plain Fuseki sink receive the acceptance wrapper.
+
+When the tracker is disabled, externally maintained state files remain supported through a read-only adapter that
+reloads state on demand. Unavailable files, application mismatches and unrecognised state names reject ingest.
+Missing distribution IDs are rejected by the acceptance wrapper. The labelled sink also requires them for named-graph
+routing when lifecycle filtering is disabled.
 
 ### `DISTRIBUTION_LIFECYCLE_APP_ID`
 

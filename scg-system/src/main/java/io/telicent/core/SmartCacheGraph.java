@@ -125,8 +125,9 @@ public class SmartCacheGraph {
             mods.add(compaction);
         }
 
+        FMod_DistributionLifecycle distributionLifecycle = new FMod_DistributionLifecycle();
         if (isKafkaEnabled()) {
-            mods.add(new FMod_FusekiKafkaSCG());
+            mods.add(new FMod_FusekiKafkaSCG(distributionLifecycle));
         }
         mods.addAll(List.of(
                 new FMod_JwtServletAuth()
@@ -138,7 +139,7 @@ public class SmartCacheGraph {
                 , new FMod_JettyOutputBuffer()
                 , new FMod_DatasetAvailabilityFilter()
                 , new FMod_Readiness()
-                , new FMod_DistributionLifecycle()
+                , distributionLifecycle
                 , new FMod_BackupData()
                 , new FMod_LabelsQuery()
                 , new FMod_AccessQuery()

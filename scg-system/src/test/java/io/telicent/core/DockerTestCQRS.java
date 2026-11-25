@@ -41,7 +41,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static io.telicent.TestSmartCacheGraphIntegration.launchServer;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -447,6 +446,8 @@ public class DockerTestCQRS {
         mockDistributionLifecycleTracker(null, false);
         Configurator.addSource(new PropertiesSource(properties));
         server = launchServer(SCG_CQRS_CONFIG);
+        Assertions.assertFalse(DistributionLifecycleReadiness.getInstance().snapshot().ready(),
+                               "An unavailable lifecycle tracker must leave the HTTP server running but unready");
         String u1 = LibTestsSCG.tokenForUser(USER_1, DATASET_NAME);
 
         // When and Then
@@ -471,6 +472,41 @@ public class DockerTestCQRS {
 
         // Then
         verifyDataVisible(url(QUERY_ENDPOINT), NAMED_GRAPHS_QUERY, u1, 1);
+    }
+
+    private FusekiServer launchServer(String configFile) {
+        if (!DistributionLifecycleConfiguration.isEnabled()) {
+            return io.telicent.TestSmartCacheGraphIntegration.launchServer(configFile);
+        }
+        // CQRS request validation reads the registry fixture. The asynchronous ingest path must receive the same
+        // tracker/store, rather than trying to start a separate tracker against a lifecycle topic this test doesn't own.
+        DistributionLifecycleTracker fixture = DistributionLifecycleTrackerRegistry.getInstance();
+        FMod_DistributionLifecycle lifecycle = new FMod_DistributionLifecycle() {
+            @Override
+            DistributionLifecycleTracker createTracker(FusekiServer server, String bootstrap, Properties properties,
+                    String app, String topic, String dlq, String group, String stateFile) {
+                if (fixture == null) {
+                    throw new IllegalStateException("No lifecycle tracker supplied by the CQRS test fixture");
+                }
+                // The real factory only returns after a tracker has caught up with a usable state store.
+                // An unavailable fixture must fail creation rather than publish a null store as ready.
+                if (!fixture.isRunning() || fixture.getStateStore() == null) {
+                    throw new IllegalStateException("CQRS test lifecycle tracker has no usable state");
+                }
+                return fixture;
+            }
+        };
+        var modules = SmartCacheGraph.modules().asList().stream().map(module -> {
+            if (module instanceof FMod_FusekiKafkaSCG) {
+                return new FMod_FusekiKafkaSCG(lifecycle);
+            }
+            if (module instanceof FMod_DistributionLifecycle) {
+                return lifecycle;
+            }
+            return module;
+        }).toList();
+        return io.telicent.TestSmartCacheGraphIntegration.launchServer(configFile,
+                org.apache.jena.fuseki.main.sys.FusekiModules.create(modules));
     }
 
     private static void mockDistributionLifecycleTracker(DistributionLifecycleStateStore stateStore,
