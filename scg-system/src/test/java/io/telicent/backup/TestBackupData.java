@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.telicent.LibTestsSCG;
 import io.telicent.backup.services.DatasetBackupService;
 import io.telicent.backup.services.DatasetBackupService_Test;
+import io.telicent.backup.utils.BackupUtils;
 import io.telicent.core.SmartCacheGraph;
 import io.telicent.jena.abac.core.Attributes;
 import io.telicent.smart.cache.configuration.Configurator;
@@ -36,12 +37,17 @@ import org.apache.jena.fuseki.system.FusekiLogging;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -62,8 +68,15 @@ public class TestBackupData {
 
     private DatasetBackupService mockService;
 
+    @TempDir
+    Path backupDirectory;
+    private String previousBackupDirectory;
+
     @BeforeEach
     public void createAndSetupServerDetails() throws Exception {
+        previousBackupDirectory = BackupUtils.dirBackups;
+        BackupUtils.dirBackups = backupDirectory.toString();
+        DatasetBackupService_Test.clear();
         mockService = mock(DatasetBackupService.class);
         LibTestsSCG.setupAuthentication();
         LibTestsSCG.disableInitialCompaction();
@@ -75,12 +88,18 @@ public class TestBackupData {
 
     @AfterEach
     void clearDown() throws Exception {
-        if (server != null) {
-            server.stop();
+        try {
+            if (server != null) {
+                server.stop();
+            }
+        } finally {
+            server = null;
+            BackupUtils.dirBackups = previousBackupDirectory;
+            DatasetBackupService_Test.clear();
+            LibTestsSCG.teardownAuthentication();
+            Configurator.reset();
+            reset(mockService);
         }
-        LibTestsSCG.teardownAuthentication();
-        Configurator.reset();
-        reset(mockService);
     }
 
     private FusekiModules generateModulesAndReplaceWithTestModule() {
@@ -426,16 +445,28 @@ public class TestBackupData {
         assertEquals(200, createRestoreResponse.statusCode());
     }
 
-    @Test
-    public void test_restoreBackup_emptyGraph() {
+    @ParameterizedTest
+    @ValueSource(booleans = { false, true })
+    public void test_restoreBackup_emptyGraph(boolean staleBackupExists) throws IOException {
         // given
+        if (staleBackupExists) {
+            Files.writeString(backupDirectory.resolve("1.zip.enc"), "stale, encrypted archive");
+        }
         server = buildServer("--port=0", "--empty");
+        HttpResponse<InputStream> backupResponse = makeAuthPOSTCallWithPath(server, "$/backups/create", "test");
+        assertEquals(200, backupResponse.statusCode(), () -> convertToJSON(backupResponse));
+        String backupId = convertToMap(backupResponse).get("backup-id").toString();
+        assertTrue(Files.isRegularFile(backupDirectory.resolve(backupId + ".zip")));
+        if (staleBackupExists) {
+            assertNotEquals("1", backupId, "The backup created by this test must not reuse the stale archive");
+        }
         // when
         HttpResponse<InputStream> createBackupResponse =
-                makeAuthPOSTCallWithPath(server, "$/backups/restore/1", "test");
+                makeAuthPOSTCallWithPath(server, "$/backups/restore/" + backupId, "test");
         // then
         //debug(createBackupResponse);
-        assertEquals(200, createBackupResponse.statusCode());
+        assertEquals(200, createBackupResponse.statusCode(), () -> convertToJSON(createBackupResponse));
+        assertEquals(backupDirectory.resolve(backupId).toString(), convertToMap(createBackupResponse).get("restorePath"));
     }
 
     @Test
@@ -498,6 +529,8 @@ public class TestBackupData {
         Map jobsMap = convertToMap(jobsResponse);
         List<Map<String, Object>> jobs = (List<Map<String, Object>>) jobsMap.get("jobs");
         assertTrue(jobs.stream().anyMatch(job -> submit.get("job-id").equals(job.get("job-id"))));
+        assertEquals("SUCCEEDED", waitForJob((String) submit.get("job-id")).get("status"),
+                     "The async job must finish before its test backup directory is released");
     }
 
     @Test
