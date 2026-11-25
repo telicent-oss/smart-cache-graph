@@ -44,6 +44,8 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -81,9 +83,16 @@ public class FMod_DistributionLifecycle implements FusekiModule {
     private final DistributionLifecycleReadiness readiness = DistributionLifecycleReadiness.getInstance();
     @SuppressWarnings("java:S3077")
     private volatile List<String> filteredDataAccessPoints = List.of();
-    private DistributionLifecycleTracker tracker;
-    private DistributionLifecycleStateStore stateStore;
-    private ExecutorService trackerStarter;
+    // One module instance belongs to one server build; stopped modules must not be reused.
+    private volatile boolean startupInitiated;
+    private final CompletableFuture<DistributionLifecycleStateStore> ingestStateStore = new CompletableFuture<>();
+    @SuppressWarnings("java:S3077")
+    private volatile DistributionLifecycleTracker tracker;
+    @SuppressWarnings("java:S3077")
+    private volatile DistributionLifecycleStateStore stateStore;
+    private volatile boolean stopped;
+    @SuppressWarnings("java:S3077")
+    private volatile ExecutorService trackerStarter;
 
     @Override
     public String name() {
@@ -193,6 +202,7 @@ public class FMod_DistributionLifecycle implements FusekiModule {
 
     @Override
     public void serverBeforeStarting(FusekiServer server) {
+        this.startupInitiated = true;
         configureReadiness();
 
         if (!isEnabled()) {
@@ -215,6 +225,8 @@ public class FMod_DistributionLifecycle implements FusekiModule {
                     "Distribution lifecycle tracker is enabled but no Kafka bootstrap servers could be determined.");
             this.readiness.markFailed(
                     "Distribution lifecycle tracker is enabled but no Kafka bootstrap servers could be determined.");
+            this.ingestStateStore.completeExceptionally(
+                    new IllegalStateException("No Kafka bootstrap servers for distribution lifecycle tracker"));
             return;
         }
         Properties kafkaProperties = connectionPropertiesFor(bootstrapServers);
@@ -240,8 +252,13 @@ public class FMod_DistributionLifecycle implements FusekiModule {
 
     @Override
     public void serverStopped(FusekiServer server) {
-        closeTrackerStarter();
-        closeTracker();
+        this.stopped = true;
+        this.ingestStateStore.completeExceptionally(new IllegalStateException("Distribution lifecycle stopped"));
+        // If startup outlives the bounded shutdown wait, its finally block owns cleanup. Never close a store
+        // underneath a tracker constructor that is still using it.
+        if (closeTrackerStarter()) {
+            closeTracker();
+        }
         this.readiness.reset();
     }
 
@@ -267,16 +284,17 @@ public class FMod_DistributionLifecycle implements FusekiModule {
         }
     }
 
-    private void closeTrackerStarter() {
-        if (this.trackerStarter != null) {
-            this.trackerStarter.shutdownNow();
-            try {
-                this.trackerStarter.awaitTermination(5, TimeUnit.SECONDS);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            } finally {
-                this.trackerStarter = null;
-            }
+    private boolean closeTrackerStarter() {
+        ExecutorService starter = this.trackerStarter;
+        if (starter == null) {
+            return true;
+        }
+        starter.shutdownNow();
+        try {
+            return starter.awaitTermination(5, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return starter.isTerminated();
         }
     }
 
@@ -295,9 +313,15 @@ public class FMod_DistributionLifecycle implements FusekiModule {
         try {
             while (!Thread.currentThread().isInterrupted()) {
                 try {
-                    createTracker(server, bootstrapServers, kafkaProperties, application, topic, dlqTopic,
-                                  consumerGroup, stateFile);
+                    this.tracker = createTracker(server, bootstrapServers, kafkaProperties, application, topic, dlqTopic,
+                                                 consumerGroup, stateFile);
+                    this.stateStore = this.tracker.getStateStore();
+                    if (this.stopped || Thread.currentThread().isInterrupted()) {
+                        return;
+                    }
                     this.readiness.markReady();
+                    // Publish only after catch-up succeeds. Failed attempts close their stores and are never exposed.
+                    this.ingestStateStore.complete(this.stateStore);
                     LOGGER.info(
                             "Distribution lifecycle tracker enabled: consuming topic '{}' from {} (consumer group '{}', application '{}')",
                             topic, bootstrapServers, consumerGroup, application);
@@ -310,6 +334,7 @@ public class FMod_DistributionLifecycle implements FusekiModule {
                         LOGGER.warn("Distribution lifecycle tracker is still catching up; retrying startup", e);
                         Thread.sleep(TRACKER_STARTUP_RETRY_DELAY_MS);
                     } else {
+                        this.ingestStateStore.completeExceptionally(e);
                         this.readiness.markFailed("Distribution lifecycle tracker is unavailable: " + rootMessage(e));
                         LOGGER.error(
                                 "Failed to start distribution lifecycle tracker; lifecycle events will NOT be processed",
@@ -319,8 +344,12 @@ public class FMod_DistributionLifecycle implements FusekiModule {
                 }
             }
         } catch (InterruptedException e) {
+            this.ingestStateStore.completeExceptionally(e);
             Thread.currentThread().interrupt();
         } finally {
+            if (this.stopped) {
+                closeTracker();
+            }
             starter.shutdown();
             if (this.trackerStarter == starter) {
                 this.trackerStarter = null;
@@ -328,9 +357,9 @@ public class FMod_DistributionLifecycle implements FusekiModule {
         }
     }
 
-    private void createTracker(FusekiServer server, String bootstrapServers, Properties kafkaProperties,
-                               String application, String topic, String dlqTopic, String consumerGroup,
-                               String stateFile) {
+    DistributionLifecycleTracker createTracker(FusekiServer server, String bootstrapServers, Properties kafkaProperties,
+                                               String application, String topic, String dlqTopic, String consumerGroup,
+                                               String stateFile) {
         this.stateStore =
                 AppDistributionLifecycleStoreFile.builder().app(application).stateFile(new File(stateFile)).build();
 
@@ -349,18 +378,54 @@ public class FMod_DistributionLifecycle implements FusekiModule {
                                                                                SmartCacheGraph.VERSION, this.stateStore,
                                                                                graphDeletion);
 
-        this.tracker = DistributionLifecycleConfiguration.createTracker(kafkaConfig, application, this.stateStore,
-                                                                        listenerThreads(), List.of(listener));
+        DistributionLifecycleTracker created = DistributionLifecycleConfiguration.createTracker(
+                kafkaConfig, application, this.stateStore, listenerThreads(), List.of(listener));
         // NB - Only replace the registered tracker once ours has been successfully created, a failed (or retried)
         //      startup attempt must not close and clear whatever tracker is currently registered
         DistributionLifecycleTrackerRegistry.reset();
-        DistributionLifecycleTrackerRegistry.setInstance(this.tracker);
+        DistributionLifecycleTrackerRegistry.setInstance(created);
+        return created;
+    }
+
+    /**
+     * Indicates whether Fuseki has called {@link #serverBeforeStarting(FusekiServer)} on this instance, i.e. whether
+     * it is registered with the server
+     *
+     * @return True if startup has been initiated
+     */
+    boolean startupInitiated() {
+        return this.startupInitiated;
+    }
+
+    /**
+     * Waits until the tracker has caught up and its state store is usable for ingest filtering.  Called from the Kafka
+     * module's {@code serverAfterStarting()}, i.e. after HTTP is up and never inside a dataset transaction.  Throws
+     * {@link IllegalStateException} if the tracker fails to start or the server stops.
+     *
+     * @return Shared state store
+     */
+    DistributionLifecycleStateStore awaitIngestStateStore() {
+        try {
+            return this.ingestStateStore.get();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Interrupted waiting for distribution lifecycle state", e);
+        } catch (ExecutionException e) {
+            throw new IllegalStateException("Cannot start Kafka ingest without usable distribution lifecycle state", e);
+        }
+    }
+
+    void ingestStartupFailed(Throwable error) {
+        if (!this.stopped) {
+            this.readiness.markFailed("Kafka ingest could not start: " + rootMessage(error));
+        }
     }
 
     private void configureReadiness() {
         String configuredStateFile = Configurator.get(DISTRIBUTION_LIFECYCLE_STATE_FILE);
-        boolean filteringEnabled = StringUtils.isNotBlank(configuredStateFile) && routeToNamedGraphsEnabled();
-        boolean trackerEnabled = filteringEnabled && isEnabled();
+        boolean trackerEnabled = routeToNamedGraphsEnabled() && isEnabled();
+        boolean filteringEnabled = routeToNamedGraphsEnabled()
+                                   && (StringUtils.isNotBlank(configuredStateFile) || trackerEnabled);
         DistributionLifecycleStateFile stateFile = filteringEnabled ?
                                                    new DistributionLifecycleStateFile(Path.of(stateFilePath()),
                                                                                       Configurator.get(

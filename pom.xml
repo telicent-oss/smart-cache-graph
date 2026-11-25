@@ -119,7 +119,7 @@
     <dependency.jena>6.2.0</dependency.jena>
     <dependency.graphql>0.12.4</dependency.graphql>
     <dependency.jwt-servlet-auth>5.0.0</dependency.jwt-servlet-auth>
-    <dependency.smart-caches-core>1.11.0</dependency.smart-caches-core>
+    <dependency.smart-caches-core>1.12.0</dependency.smart-caches-core>
 
     <!-- External dependencies -->
     <dependency.awaitility>4.3.0</dependency.awaitility>

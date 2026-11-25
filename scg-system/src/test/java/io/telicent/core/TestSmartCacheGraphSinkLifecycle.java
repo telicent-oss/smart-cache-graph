@@ -10,7 +10,11 @@ import io.telicent.jena.abac.labels.Label;
 import io.telicent.jena.abac.labels.Labels;
 import io.telicent.jena.abac.labels.LabelsStore;
 import io.telicent.smart.cache.payloads.RdfPayload;
-import io.telicent.smart.cache.security.data.distribution.DistributionLifecycleStateFile;
+import io.telicent.smart.cache.distribution.lifecycle.config.DistributionLifecycleConfiguration;
+import io.telicent.smart.cache.projectors.Sink;
+import io.telicent.smart.cache.projectors.SinkException;
+import io.telicent.smart.cache.configuration.Configurator;
+import io.telicent.smart.cache.configuration.sources.PropertiesSource;
 import io.telicent.smart.cache.security.data.labels.DatasetGraphLabelled;
 import io.telicent.smart.cache.security.data.plugins.DataSecurityPluginLoader;
 import io.telicent.smart.cache.sources.Event;
@@ -40,6 +44,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -55,7 +60,7 @@ public class TestSmartCacheGraphSinkLifecycle {
     private static final String[] NON_VIABLE_STATES = { "Deleted", "Unregistered" };
 
     /**
-     * The two payload shapes a {@link SmartCacheGraphSink} can receive. Both are gated by the same lifecycle logic but flow
+     * The two payload shapes a {@link SmartCacheGraphSink} can receive. Both are gated by the acceptance wrapper but flow
      * through different code paths ({@code applyDatasetEvent} vs {@code applyRdfPatchEvent}), so every scenario is run
      * against both.
      */
@@ -122,6 +127,10 @@ public class TestSmartCacheGraphSinkLifecycle {
 
     @BeforeEach
     public void setUp() throws IOException {
+        Properties config = new Properties();
+        config.setProperty(DistributionLifecycleConfiguration.UNREGISTERED_GRACE_PERIOD, "PT0.005S");
+        config.setProperty(DistributionLifecycleConfiguration.UNREGISTERED_GRACE_CHECK_INTERVAL, "PT0.001S");
+        Configurator.setSingleSource(new PropertiesSource(config));
         this.labelsStore = spy(Labels.createLabelsStoreMem());
         this.dataset = ABAC.authzDataset(DatasetGraphFactory.createTxnMem(),
                                          AEX.strALLOW,
@@ -134,6 +143,7 @@ public class TestSmartCacheGraphSinkLifecycle {
 
     @AfterEach
     public void tearDown() throws IOException {
+        Configurator.reset();
         Files.deleteIfExists(this.stateFile);
         Files.deleteIfExists(Path.of(this.stateFile + ".tmp"));
         Files.deleteIfExists(Path.of(this.stateFile + ".bak"));
@@ -144,7 +154,7 @@ public class TestSmartCacheGraphSinkLifecycle {
     @ParameterizedTest
     @MethodSource("payloadTypes")
     public void send_ingests_whenNotRouting_evenWithoutLifecycleStateFile(PayloadType payloadType) {
-        final var sink = new SmartCacheGraphSink(this.labelled, false, null);
+        final var sink = new SmartCacheGraphSink(this.labelled, false);
 
         sendInWriteTxn(sink, payloadType.event(null));
 
@@ -159,7 +169,7 @@ public class TestSmartCacheGraphSinkLifecycle {
                             PayloadType.TRIPLE_P, PayloadType.TRIPLE_O));
         final Event<Bytes, RdfPayload> event = new SimpleEvent<>(
                 List.of(new Header(TelicentHeaders.SECURITY_LABEL, "PERMIT")), null, RdfPayload.of(dsg));
-        final var sink = new SmartCacheGraphSink(this.labelled, false, null);
+        final var sink = new SmartCacheGraphSink(this.labelled, false);
 
         sendInWriteTxn(sink, event);
 
@@ -171,7 +181,7 @@ public class TestSmartCacheGraphSinkLifecycle {
     @ParameterizedTest
     @MethodSource("payloadTypes")
     public void send_rejects_whenRoutingWithoutDistributionId(PayloadType payloadType) {
-        final var sink = new SmartCacheGraphSink(this.labelled, true, null);
+        final var sink = new SmartCacheGraphSink(this.labelled, true);
 
         Assertions.assertThrows(JenaKafkaException.class, () -> sink.send(payloadType.event(null)));
     }
@@ -179,7 +189,7 @@ public class TestSmartCacheGraphSinkLifecycle {
     @ParameterizedTest
     @MethodSource("payloadTypes")
     public void send_ingests_whenRoutingWithoutLifecycleStateFile(PayloadType payloadType) {
-        final var sink = new SmartCacheGraphSink(this.labelled, true, null);
+        final var sink = new SmartCacheGraphSink(this.labelled, true);
 
         sendInWriteTxn(sink, payloadType.event(DISTRIBUTION_ID));
 
@@ -192,7 +202,7 @@ public class TestSmartCacheGraphSinkLifecycle {
     @MethodSource("viableStatesAndPayloads")
     public void send_ingests_whenDistributionViable(String state, PayloadType payloadType) throws IOException {
         writeState(stateJson(state));
-        final var sink = new SmartCacheGraphSink(this.labelled, true, lifecycleStateFile());
+        final var sink = acceptanceSink(this.stateFile);
 
         sendInWriteTxn(sink, payloadType.event(DISTRIBUTION_ID));
 
@@ -204,10 +214,10 @@ public class TestSmartCacheGraphSinkLifecycle {
     public void send_rejects_whenLifecycleStateUnavailable(PayloadType payloadType) {
         // Remove every candidate so the state file cannot be loaded -> state is unavailable -> fail closed.
         final var missingStateFile = Path.of("/no", "/such", "state.json");
-        final var sink = new SmartCacheGraphSink(this.labelled, true, new DistributionLifecycleStateFile(missingStateFile, null));
+        final var sink = acceptanceSink(missingStateFile);
 
-        assertRejected(sink, payloadType.event(DISTRIBUTION_ID),
-                       "Ingest must be rejected (DLQ) when lifecycle state is unavailable");
+        Assertions.assertThrows(IllegalStateException.class, () -> sink.send(payloadType.event(DISTRIBUTION_ID)),
+                                "Ingest must be rejected when lifecycle state is unavailable");
         Assertions.assertTrue(datasetIsEmpty(), "Nothing should be written when the event is rejected");
     }
 
@@ -217,7 +227,7 @@ public class TestSmartCacheGraphSinkLifecycle {
                                                                                     PayloadType payloadType)
             throws IOException {
         writeState(stateJson(state));
-        final var sink = new SmartCacheGraphSink(this.labelled, true, lifecycleStateFile());
+        final var sink = acceptanceSink(this.stateFile);
 
         // First event for a non-viable (Deleted/Unregistered) distribution is dead-lettered so the reason is visible.
         assertRejected(sink, payloadType.event(DISTRIBUTION_ID),
@@ -234,7 +244,7 @@ public class TestSmartCacheGraphSinkLifecycle {
     public void send_resumesIngest_whenNonViableDistributionBecomesActiveAgain(String state, PayloadType payloadType)
             throws IOException {
         writeState(stateJson(state));
-        final SmartCacheGraphSink sink = new SmartCacheGraphSink(this.labelled, true, lifecycleStateFile());
+        final Sink<Event<Bytes, RdfPayload>> sink = acceptanceSink(this.stateFile);
 
         assertRejected(sink, payloadType.event(DISTRIBUTION_ID),
                        "Pre-condition: first event for a " + state + " distribution is rejected");
@@ -324,10 +334,94 @@ public class TestSmartCacheGraphSinkLifecycle {
                                                        PayloadType.TRIPLE_O)), Label.fromText("clearance=O"));
     }
 
+    @ParameterizedTest
+    @MethodSource("payloadTypes")
+    public void unknownDistributionIsRejectedWhenStrictRegistrationIsEnabled(PayloadType payloadType) throws IOException {
+        writeState("{\"distributions\":{}}");
+        var sink = acceptanceSink(this.stateFile);
+        assertRejected(sink, payloadType.event(DISTRIBUTION_ID), "Unknown distributions require registration");
+        sink.send(payloadType.event(DISTRIBUTION_ID));
+        Assertions.assertTrue(datasetIsEmpty());
+    }
+
+    @ParameterizedTest
+    @MethodSource("payloadTypes")
+    public void externalFileFailureDoesNotPreventRecovery(PayloadType payloadType) throws IOException {
+        writeState("invalid JSON");
+        var sink = acceptanceSink(this.stateFile);
+        Assertions.assertThrows(IllegalStateException.class, () -> sink.send(payloadType.event(DISTRIBUTION_ID)));
+        writeState(stateJson("Active"));
+        sendInWriteTxn(sink, payloadType.event(DISTRIBUTION_ID));
+        Assertions.assertFalse(datasetIsEmpty());
+    }
+
+    @ParameterizedTest
+    @MethodSource("payloadTypes")
+    public void unrecognisedExternalStateFailsClosed(PayloadType payloadType) throws IOException {
+        writeState(stateJson("Unrecognised"));
+        var sink = acceptanceSink(this.stateFile);
+        Assertions.assertThrows(IllegalArgumentException.class, () -> sink.send(payloadType.event(DISTRIBUTION_ID)));
+        Assertions.assertTrue(datasetIsEmpty());
+    }
+
+    @ParameterizedTest
+    @MethodSource("payloadTypes")
+    public void commonConfigurationCanAcceptUnregisteredDistributions(PayloadType payloadType) throws IOException {
+        writeState("{\"distributions\":{}}");
+        Properties config = new Properties();
+        config.setProperty(FMod_DistributionLifecycle.ROUTE_TO_NAMED_GRAPHS, "true");
+        config.setProperty(DistributionLifecycleConfiguration.DISTRIBUTION_LIFECYCLE_STATE_FILE, this.stateFile.toString());
+        config.setProperty(DistributionLifecycleConfiguration.REJECT_UNREGISTERED, "false");
+        Configurator.setSingleSource(new PropertiesSource(config));
+        var sink = new FMod_FusekiKafkaSCG().getSinkBuilder().apply(this.dataset);
+        sendInWriteTxn(sink, payloadType.event(DISTRIBUTION_ID));
+        Assertions.assertFalse(datasetIsEmpty());
+    }
+
+    @ParameterizedTest
+    @MethodSource("payloadTypes")
+    public void acceptanceWrapperRejectsMissingDistributionId(PayloadType payloadType) throws IOException {
+        writeState(stateJson("Active"));
+        var sink = acceptanceSink(this.stateFile);
+        Assertions.assertThrows(SinkException.class, () -> sink.send(payloadType.event(null)));
+        Assertions.assertTrue(datasetIsEmpty());
+    }
+
+    @ParameterizedTest
+    @MethodSource("payloadTypes")
+    public void unknownDistributionIsAcceptedByDefault(PayloadType payloadType) throws IOException {
+        writeState("{\"distributions\":{}}");
+        var sink = acceptanceSink(this.stateFile, false);
+        sendInWriteTxn(sink, payloadType.event(DISTRIBUTION_ID));
+        Assertions.assertFalse(datasetIsEmpty());
+    }
+
+    @ParameterizedTest
+    @MethodSource("payloadTypes")
+    public void explicitUnregisteredStateIsAcceptedByDefault(PayloadType payloadType) throws IOException {
+        writeState(stateJson("Unregistered"));
+        var sink = acceptanceSink(this.stateFile, false);
+        sendInWriteTxn(sink, payloadType.event(DISTRIBUTION_ID));
+        Assertions.assertFalse(datasetIsEmpty());
+    }
+
     // --- Helpers ----------------------------------------------------------------------------------------------------
 
-    private DistributionLifecycleStateFile lifecycleStateFile() {
-        return new DistributionLifecycleStateFile(this.stateFile, null);
+    private Sink<Event<Bytes, RdfPayload>> acceptanceSink(Path path) {
+        return acceptanceSink(path, true);
+    }
+
+    private Sink<Event<Bytes, RdfPayload>> acceptanceSink(Path path, boolean strict) {
+        Properties config = new Properties();
+        config.setProperty(FMod_DistributionLifecycle.ROUTE_TO_NAMED_GRAPHS, "true");
+        config.setProperty(DistributionLifecycleConfiguration.DISTRIBUTION_LIFECYCLE_STATE_FILE, path.toString());
+        config.setProperty(DistributionLifecycleConfiguration.UNREGISTERED_GRACE_PERIOD, "PT0.005S");
+        config.setProperty(DistributionLifecycleConfiguration.UNREGISTERED_GRACE_CHECK_INTERVAL, "PT0.001S");
+        if (strict) {
+            config.setProperty(DistributionLifecycleConfiguration.REJECT_UNREGISTERED, "true");
+        }
+        Configurator.setSingleSource(new PropertiesSource(config));
+        return new FMod_FusekiKafkaSCG().getSinkBuilder().apply(this.dataset);
     }
 
     private static String stateJson(String state) {
@@ -344,7 +438,7 @@ public class TestSmartCacheGraphSinkLifecycle {
         Files.writeString(this.stateFile, json, StandardCharsets.UTF_8);
     }
 
-    private void sendInWriteTxn(SmartCacheGraphSink sink, Event<Bytes, RdfPayload> event) {
+    private void sendInWriteTxn(Sink<Event<Bytes, RdfPayload>> sink, Event<Bytes, RdfPayload> event) {
         // The sink writes directly to the dataset, which is transactional, so drive it inside a write transaction.
         Txn.executeWrite(this.dataset, () -> sink.send(event));
     }
@@ -353,8 +447,8 @@ public class TestSmartCacheGraphSinkLifecycle {
         return Txn.calculateRead(this.dataset, () -> this.dataset.stream().findAny().isEmpty());
     }
 
-    private static void assertRejected(SmartCacheGraphSink sink, Event<Bytes, RdfPayload> event, String message) {
-        Assertions.assertThrows(JenaKafkaException.class, () -> sink.send(event), message);
+    private static void assertRejected(Sink<Event<Bytes, RdfPayload>> sink, Event<Bytes, RdfPayload> event, String message) {
+        Assertions.assertThrows(SinkException.class, () -> sink.send(event), message);
     }
 
 }

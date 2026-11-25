@@ -18,7 +18,7 @@ import io.telicent.smart.cache.configuration.Configurator;
 import io.telicent.smart.cache.configuration.sources.SystemPropertiesSource;
 import io.telicent.smart.cache.payloads.RdfPayload;
 import io.telicent.smart.cache.projectors.Sink;
-import io.telicent.smart.cache.security.data.distribution.DistributionLifecycleStateFile;
+import io.telicent.smart.cache.projectors.SinkException;
 import io.telicent.smart.cache.security.data.labels.DatasetGraphLabelled;
 import io.telicent.smart.cache.security.data.plugins.DataSecurityPluginLoader;
 import io.telicent.smart.cache.sources.Event;
@@ -26,7 +26,6 @@ import io.telicent.smart.cache.sources.EventHeader;
 import io.telicent.smart.cache.sources.Header;
 import io.telicent.smart.cache.sources.TelicentHeaders;
 import io.telicent.smart.cache.sources.memory.SimpleEvent;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.jena.fuseki.main.FusekiServer;
 import org.apache.jena.fuseki.server.DataService;
 import org.apache.jena.fuseki.server.Operation;
@@ -519,11 +518,24 @@ public abstract class AbstractSmartCacheGraphSinkTests {
 
     private static void withDistributionLifecycleConfig(Path stateFile, String applicationId, ThrowingRunnable action)
             throws IOException {
+        withDistributionLifecycleConfig(stateFile, applicationId, false, action);
+    }
+
+    private static void withDistributionLifecycleConfig(Path stateFile, String applicationId, boolean strict,
+                                                        ThrowingRunnable action) throws IOException {
+        String previousEnabled = System.getProperty("DISTRIBUTION_LIFECYCLE_ENABLED");
+        String previousReject = System.getProperty("DISTRIBUTION_REJECT_UNREGISTERED");
+        String previousGrace = System.getProperty("DISTRIBUTION_UNREGISTERED_GRACE_PERIOD");
+        String previousInterval = System.getProperty("DISTRIBUTION_UNREGISTERED_GRACE_CHECK_INTERVAL");
         String previousRouteToNamedGraphs = System.getProperty("ROUTE_TO_NAMED_GRAPHS");
         String previousStateFile = System.getProperty(DISTRIBUTION_LIFECYCLE_STATE_FILE);
         String previousAppId = System.getProperty(FMod_DistributionLifecycle.DISTRIBUTION_LIFECYCLE_APP_ID);
         try {
             Configurator.addSource(SystemPropertiesSource.INSTANCE);
+            System.setProperty("DISTRIBUTION_LIFECYCLE_ENABLED", "false");
+            System.setProperty("DISTRIBUTION_REJECT_UNREGISTERED", Boolean.toString(strict));
+            System.setProperty("DISTRIBUTION_UNREGISTERED_GRACE_PERIOD", "PT0.005S");
+            System.setProperty("DISTRIBUTION_UNREGISTERED_GRACE_CHECK_INTERVAL", "PT0.001S");
             System.setProperty("ROUTE_TO_NAMED_GRAPHS", "true");
             System.setProperty(DISTRIBUTION_LIFECYCLE_STATE_FILE, stateFile.toString());
             if (applicationId != null) {
@@ -533,6 +545,10 @@ public abstract class AbstractSmartCacheGraphSinkTests {
             }
             action.run();
         } finally {
+            restoreProperty("DISTRIBUTION_LIFECYCLE_ENABLED", previousEnabled);
+            restoreProperty("DISTRIBUTION_REJECT_UNREGISTERED", previousReject);
+            restoreProperty("DISTRIBUTION_UNREGISTERED_GRACE_PERIOD", previousGrace);
+            restoreProperty("DISTRIBUTION_UNREGISTERED_GRACE_CHECK_INTERVAL", previousInterval);
             restoreProperty("ROUTE_TO_NAMED_GRAPHS", previousRouteToNamedGraphs);
             restoreProperty(DISTRIBUTION_LIFECYCLE_STATE_FILE, previousStateFile);
             restoreProperty(FMod_DistributionLifecycle.DISTRIBUTION_LIFECYCLE_APP_ID, previousAppId);
@@ -662,7 +678,7 @@ public abstract class AbstractSmartCacheGraphSinkTests {
         FusekiServer server = SmartCacheGraph.serverBuilder().port(0).add(dsName, dataSrv).add(dsBase, dsgBase).build();
         server.start();
         try {
-            try (FusekiSink<?> sink = createNamedGraphSink(dsgz)) {
+            try (Sink<Event<Bytes, RdfPayload>> sink = createNamedGraphSink(dsgz)) {
                 execTestAction.execTest(sink, server, dsgBase, dsgz);
             }
         } finally {
@@ -674,13 +690,11 @@ public abstract class AbstractSmartCacheGraphSinkTests {
         return DataSecurityPluginLoader.load().prepareLabelledDataset(abac).orElseThrow();
     }
 
-    private SmartCacheGraphSink createNamedGraphSink(DatasetGraphABAC dataset) {
-        String lifecycleStateFile = Configurator.get(DISTRIBUTION_LIFECYCLE_STATE_FILE);
-        String applicationId = Configurator.get(FMod_DistributionLifecycle.DISTRIBUTION_LIFECYCLE_APP_ID);
-        DistributionLifecycleStateFile lifecycleState =
-                StringUtils.isNotBlank(lifecycleStateFile) ?
-                new DistributionLifecycleStateFile(Path.of(lifecycleStateFile), applicationId) : null;
-        return new SmartCacheGraphSink(labelled(dataset), true, lifecycleState);
+    private Sink<Event<Bytes, RdfPayload>> createNamedGraphSink(DatasetGraphABAC dataset) {
+        if (Configurator.get(DISTRIBUTION_LIFECYCLE_STATE_FILE) != null) {
+            return new FMod_FusekiKafkaSCG().getSinkBuilder().apply(dataset);
+        }
+        return new SmartCacheGraphSink(labelled(dataset), true);
     }
 
     /**
@@ -821,14 +835,12 @@ public abstract class AbstractSmartCacheGraphSinkTests {
 
         TestAction action =
                 (Sink<Event<Bytes, RdfPayload>> proc, FusekiServer server, DatasetGraph dsgBase, DatasetGraph dsg) -> {
-                    JenaKafkaException ex =
-                            assertThrows(JenaKafkaException.class, () -> sendEventWithDistributionId(proc, """
+                    SinkException ex =
+                            assertThrows(SinkException.class, () -> sendEventWithDistributionId(proc, """
                                     PREFIX : <http://example/>
                                     :s :p "value1" .
                                     """, WebContent.contentTypeTurtle, attrPermit, invalidGraph));
-                    assertInstanceOf(IllegalStateException.class, ex.getCause());
-                    assertEquals("Rejecting ingest for " + state + " distribution " + invalidGraph,
-                                 ex.getCause().getMessage());
+                    assertTrue(ex.getMessage().contains(invalidGraph));
 
                     sendEventWithDistributionId(proc, """
                             PREFIX : <http://example/>
@@ -844,13 +856,12 @@ public abstract class AbstractSmartCacheGraphSinkTests {
                     verifyDefaultGraphEmpty(URL);
                 };
 
-        withDistributionLifecycleConfig(lifecycleState, null, () -> runTestProcessorSCGWithAuthNamedGraph(action));
+        withDistributionLifecycleConfig(lifecycleState, null, true, () -> runTestProcessorSCGWithAuthNamedGraph(action));
     }
 
     @Test
     final void processorSCG_namedGraph_unregisteredDistributionIsIngested() throws IOException {
-        // A distribution that is not present in the lifecycle state file at all is treated as unregistered. Per the
-        // ticket, rejecting unregistered distributions is deferred to a later ticket, so ingest must still proceed.
+        // SC-Graph preserves permissive registration by default.
         String deletedGraph = "http://example/deleted";
         String unregisteredGraph = "http://example/unregistered";
         Path lifecycleState = Files.createTempFile("distribution-lifecycle", ".json");
@@ -864,15 +875,10 @@ public abstract class AbstractSmartCacheGraphSinkTests {
 
         TestAction action =
                 (Sink<Event<Bytes, RdfPayload>> proc, FusekiServer server, DatasetGraph dsgBase, DatasetGraph dsg) -> {
-                    dsg.begin(TxnType.WRITE);
-                    // No exception expected - the unregistered distribution is accepted for ingest.
-                    sendEventWithDistributionId(proc, """
+                    Txn.executeWrite(dsg, () -> sendEventWithDistributionId(proc, """
                             PREFIX : <http://example/>
                             :s :p "value" .
-                            """, WebContent.contentTypeTurtle, attrPermit, unregisteredGraph);
-                    dsg.commit();
-
-                    // Data is physically written to the underlying store for the unregistered distribution.
+                            """, WebContent.contentTypeTurtle, attrPermit, unregisteredGraph));
                     verifyNamedGraphsHaveData(dsgBase, unregisteredGraph);
                 };
 
@@ -886,16 +892,12 @@ public abstract class AbstractSmartCacheGraphSinkTests {
 
         TestAction action =
                 (Sink<Event<Bytes, RdfPayload>> proc, FusekiServer server, DatasetGraph dsgBase, DatasetGraph dsg) -> {
-                    JenaKafkaException ex =
-                            assertThrows(JenaKafkaException.class, () -> sendEventWithDistributionId(proc, """
+                    IllegalStateException ex =
+                            assertThrows(IllegalStateException.class, () -> sendEventWithDistributionId(proc, """
                                     PREFIX : <http://example/>
                                     :s :p "value" .
                                     """, WebContent.contentTypeTurtle, attrPermit, graph));
-                    assertInstanceOf(IllegalStateException.class, ex.getCause());
-                    assertEquals(
-                            "Rejecting ingest because distribution lifecycle state is unavailable for distribution "
-                            + graph,
-                            ex.getCause().getMessage());
+                    assertEquals("Distribution lifecycle state is unavailable for " + graph, ex.getMessage());
 
                     verifyNamedGraphsEmpty(dsgBase, graph);
                     verifyDefaultGraphEmpty(dsgBase);
@@ -1070,7 +1072,9 @@ public abstract class AbstractSmartCacheGraphSinkTests {
         TestAction action =
                 (Sink<Event<Bytes, RdfPayload>> proc, FusekiServer server, DatasetGraph dsgBase, DatasetGraph dsg) -> {
                     dsg.begin(TxnType.WRITE);
-                    sendEventWithDistributionId(proc, """
+                    // Seed data directly: this test verifies query filtering even for states ingest would reject.
+                    var seedSink = new SmartCacheGraphSink(labelled((DatasetGraphABAC) dsg), true);
+                    sendEventWithDistributionId(seedSink, """
                             PREFIX : <http://example/>
                             :s :p "value" .
                             """, WebContent.contentTypeTurtle, attrPermit, graph);
@@ -1180,16 +1184,12 @@ public abstract class AbstractSmartCacheGraphSinkTests {
 
         TestAction action =
                 (Sink<Event<Bytes, RdfPayload>> proc, FusekiServer server, DatasetGraph dsgBase, DatasetGraph dsg) -> {
-                    JenaKafkaException ex =
-                            assertThrows(JenaKafkaException.class, () -> sendEventWithDistributionId(proc, """
+                    IllegalStateException ex =
+                            assertThrows(IllegalStateException.class, () -> sendEventWithDistributionId(proc, """
                                     PREFIX : <http://example/>
                                     :s :p "value" .
                                     """, WebContent.contentTypeTurtle, attrPermit, graph));
-                    assertInstanceOf(IllegalStateException.class, ex.getCause());
-                    assertEquals(
-                            "Rejecting ingest because distribution lifecycle state is unavailable for distribution "
-                            + graph,
-                            ex.getCause().getMessage());
+                    assertEquals("Distribution lifecycle state is unavailable for " + graph, ex.getMessage());
 
                     verifyNamedGraphsEmpty(dsgBase, graph);
                     String URL = server.datasetURL(dsName);
@@ -1443,21 +1443,19 @@ public abstract class AbstractSmartCacheGraphSinkTests {
 
         TestAction action =
                 (Sink<Event<Bytes, RdfPayload>> proc, FusekiServer server, DatasetGraph dsgBase, DatasetGraph dsg) -> {
-                    JenaKafkaException ex =
-                            assertThrows(JenaKafkaException.class, () -> sendEventWithDistributionId(proc, """
+                    SinkException ex =
+                            assertThrows(SinkException.class, () -> sendEventWithDistributionId(proc, """
                                     TX .
                                     A <http://example/s> <http://example/p> "value1" .
                                     TC .
                                     """, WebContent.contentTypePatch, attrPermit, violableGraph));
-                    assertInstanceOf(IllegalStateException.class, ex.getCause());
-                    assertEquals("Rejecting ingest for " + state + " distribution " + violableGraph,
-                                 ex.getCause().getMessage());
+                    assertTrue(ex.getMessage().contains(violableGraph));
 
                     verifyNamedGraphsEmpty(dsgBase, violableGraph);
                     verifyDefaultGraphEmpty(dsgBase);
                 };
 
-        withDistributionLifecycleConfig(lifecycleState, null, () -> runTestProcessorSCGWithAuthNamedGraph(action));
+        withDistributionLifecycleConfig(lifecycleState, null, true, () -> runTestProcessorSCGWithAuthNamedGraph(action));
     }
 
     @Test
