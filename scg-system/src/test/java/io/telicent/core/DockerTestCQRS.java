@@ -446,6 +446,8 @@ public class DockerTestCQRS {
         mockDistributionLifecycleTracker(null, false);
         Configurator.addSource(new PropertiesSource(properties));
         server = launchServer(SCG_CQRS_CONFIG);
+        Assertions.assertFalse(DistributionLifecycleReadiness.getInstance().snapshot().ready(),
+                               "An unavailable lifecycle tracker must leave the HTTP server running but unready");
         String u1 = LibTestsSCG.tokenForUser(USER_1, DATASET_NAME);
 
         // When and Then
@@ -485,6 +487,11 @@ public class DockerTestCQRS {
                     String app, String topic, String dlq, String group, String stateFile) {
                 if (fixture == null) {
                     throw new IllegalStateException("No lifecycle tracker supplied by the CQRS test fixture");
+                }
+                // The real factory only returns after a tracker has caught up with a usable state store.
+                // An unavailable fixture must fail creation rather than publish a null store as ready.
+                if (!fixture.isRunning() || fixture.getStateStore() == null) {
+                    throw new IllegalStateException("CQRS test lifecycle tracker has no usable state");
                 }
                 return fixture;
             }
