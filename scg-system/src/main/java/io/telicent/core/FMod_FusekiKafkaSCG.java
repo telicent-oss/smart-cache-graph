@@ -67,6 +67,7 @@ public class FMod_FusekiKafkaSCG extends FMod_FusekiKafka {
     private final FMod_DistributionLifecycle distributionLifecycle;
     @SuppressWarnings("java:S3077")
     private volatile DistributionLifecycleStateStore ingestStateStore;
+    private ExternalDistributionLifecycleStateStore externalStateStore;
     private boolean lifecycleGated;
     private volatile boolean stopped;
 
@@ -143,7 +144,28 @@ public class FMod_FusekiKafkaSCG extends FMod_FusekiKafka {
     @Override
     public void serverStopped(FusekiServer server) {
         this.stopped = true;
-        super.serverStopped(server);
+        try {
+            super.serverStopped(server);
+        } finally {
+            closeExternalStateStore();
+        }
+    }
+
+    private synchronized ExternalDistributionLifecycleStateStore externalStateStore(Path path, String application) {
+        if (this.stopped) {
+            throw new IllegalStateException("Kafka module is stopped");
+        }
+        if (this.externalStateStore == null) {
+            this.externalStateStore = new ExternalDistributionLifecycleStateStore(path, application);
+        }
+        return this.externalStateStore;
+    }
+
+    private synchronized void closeExternalStateStore() {
+        if (this.externalStateStore != null) {
+            this.externalStateStore.close();
+            this.externalStateStore = null;
+        }
     }
 
     private static boolean isLifecycleGated() {
@@ -163,7 +185,7 @@ public class FMod_FusekiKafkaSCG extends FMod_FusekiKafka {
                                                "Lifecycle tracker must be ready before building Kafka sinks");
         } else {
             stateStore = StringUtils.isNotBlank(lifecycleStateFileName)
-                         ? new ExternalDistributionLifecycleStateStore(Path.of(lifecycleStateFileName),
+                         ? externalStateStore(Path.of(lifecycleStateFileName),
                                  Configurator.get(FMod_DistributionLifecycle.DISTRIBUTION_LIFECYCLE_APP_ID)) : null;
         }
         return dsg -> {
@@ -177,7 +199,7 @@ public class FMod_FusekiKafkaSCG extends FMod_FusekiKafka {
             }
             var acceptance = DistributionLifecycleConfiguration.<Bytes, RdfPayload>acceptanceSinkBuilder(stateStore);
             // SC-Graph retains its existing permissive registration policy unless strict registration is opted into.
-            if (!Configurator.get(DistributionLifecycleConfiguration.REJECT_UNREGISTERED, Boolean::parseBoolean, false)) {
+            if (!Boolean.parseBoolean(Configurator.get(DistributionLifecycleConfiguration.REJECT_UNREGISTERED))) {
                 acceptance.acceptUnregistered();
             }
             return acceptance.destination(sink).build();

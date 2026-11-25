@@ -27,6 +27,7 @@ import io.telicent.smart.cache.sources.Header;
 import io.telicent.smart.cache.sources.TelicentHeaders;
 import io.telicent.smart.cache.sources.memory.SimpleEvent;
 import org.apache.jena.fuseki.kafka.FKS;
+import org.apache.jena.fuseki.kafka.FKRegistry;
 import org.apache.jena.fuseki.main.FusekiServer;
 import org.apache.jena.fuseki.main.sys.FusekiModules;
 import org.apache.jena.kafka.JenaKafkaException;
@@ -46,6 +47,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.file.Path;
+import java.nio.file.Files;
 import java.time.Duration;
 import java.util.List;
 import java.util.Properties;
@@ -413,6 +415,49 @@ class TestDistributionAcceptanceStartup {
             assertFalse(DistributionLifecycleReadiness.getInstance().snapshot().ready());
         } finally {
             lifecycle.serverStopped(server);
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = { false, true })
+    void moduleClosesExternalStateStoreEvenWhenParentShutdownFails(boolean parentShutdownFails) throws Exception {
+        configure(false);
+        String distribution = "http://example/distribution";
+        Files.writeString(directory.resolve("state.json"),
+                          "{\"distributions\":{\"" + distribution + "\":\"Active\"}}");
+        var kafka = new FMod_FusekiKafkaSCG();
+        var server = mock(FusekiServer.class);
+        var registry = FKRegistry.get();
+        var model = connectorConfig("external-store-group");
+        try (var ignored = mockStatic(FKS.class)) {
+            kafka.prepare(FusekiServer.create(), Set.of(), model);
+            var connector = registry.getConnectorDescriptor("topic-0");
+            try (var sink = kafka.getSinkBuilder().apply(DatasetGraphFactory.createTxnMem());
+                 var otherSink = kafka.getSinkBuilder().apply(DatasetGraphFactory.createTxnMem())) {
+                var event = new SimpleEvent<Bytes, RdfPayload>(
+                        List.of(new Header(TelicentHeaders.DISTRIBUTION_ID, distribution)), null,
+                        RdfPayload.of(DatasetGraphFactory.create()));
+                assertDoesNotThrow(() -> sink.send(event), "The store must remain open while sinks are active");
+                if (parentShutdownFails) {
+                    try (var mockedRegistry = mockStatic(FKRegistry.class)) {
+                        mockedRegistry.when(FKRegistry::get).thenThrow(new IllegalStateException("Parent shutdown failed"));
+                        var error = assertThrows(IllegalStateException.class, () -> kafka.serverStopped(server));
+                        assertEquals("Parent shutdown failed", error.getMessage());
+                    }
+                } else {
+                    kafka.serverStopped(server);
+                }
+                assertEquals("State store is closed",
+                             assertThrows(IllegalStateException.class, () -> sink.send(event)).getMessage());
+                assertEquals("State store is closed",
+                             assertThrows(IllegalStateException.class, () -> otherSink.send(event)).getMessage());
+                assertThrows(IllegalStateException.class, kafka::getSinkBuilder,
+                             "A stopped module must not reopen the external store");
+            } finally {
+                registry.unregister(connector.getTopics(), connector);
+            }
+        } finally {
+            model.close();
         }
     }
 }
