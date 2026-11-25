@@ -272,9 +272,15 @@ final class ROCompaction {
     @SuppressWarnings("java:S3011")
     private static Field findExclusivityLock() {
         try {
-            Field field = DatasetGraphTxnCtl.class.getDeclaredField("exclusivitylock");
+            Field field;
+            try {
+                field = DatasetGraphTxnCtl.class.getDeclaredField("exclusivityLock");
+            } catch (NoSuchFieldException e) {
+                // Jena versions before 6.3 used the all-lowercase name.
+                field = DatasetGraphTxnCtl.class.getDeclaredField("exclusivitylock");
+            }
             if (!ReadWriteLock.class.isAssignableFrom(field.getType())) {
-                throw new NoSuchFieldException("exclusivitylock is a " + field.getType());
+                throw new NoSuchFieldException(field.getName() + " is a " + field.getType());
             }
             field.setAccessible(true);
             return field;

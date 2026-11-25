@@ -999,16 +999,19 @@ public class TestInitialCompaction {
     }
 
     @Test
-    public void test_findDatabaseSize_withTmpDataDirectoryReturnsUnknown() throws IOException {
+    public void test_findDatabaseSize_withTmpDataDirectoryReturnsCurrentSize() throws IOException {
         // given
         DatasetGraphSwitchable dsg = createPersistentSwitchableDataset();
-        Files.createDirectories(dsg.getContainerPath().resolve("Data-0002-tmp"));
+        long currentSize = FMod_InitialCompaction.findDatabaseSize(dsg);
+        assertTrue(currentSize >= 0);
+        Path tmp = Files.createDirectories(dsg.getContainerPath().resolve("Data-0002-tmp"));
+        Files.writeString(tmp.resolve("partial-copy"), "An incomplete compaction must not count towards the active size");
 
         // when
         long size = FMod_InitialCompaction.findDatabaseSize(dsg);
 
         // then
-        assertEquals(-1, size);
+        assertEquals(currentSize, size);
     }
 
     // ---------------------------------------------------------------------------------------------------------------
