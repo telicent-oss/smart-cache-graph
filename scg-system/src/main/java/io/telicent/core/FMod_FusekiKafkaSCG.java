@@ -198,7 +198,9 @@ public class FMod_FusekiKafkaSCG extends FMod_FusekiKafka {
                 return sink;
             }
             var acceptance = DistributionLifecycleConfiguration.<Bytes, RdfPayload>acceptanceSinkBuilder(stateStore);
-            // SC-Graph retains its existing permissive registration policy unless strict registration is opted into.
+            // SC-Graph retains its existing policy of ingesting events for distributions it has no state for, unless
+            // strict registration is opted into.  Effectively the state store contract now treats "unknown" and
+            // "Unregistered" as the same state. Previously the sink rejected explicitly Unregistered distributions.
             if (!Boolean.parseBoolean(Configurator.get(DistributionLifecycleConfiguration.REJECT_UNREGISTERED))) {
                 acceptance.acceptUnregistered();
             }
