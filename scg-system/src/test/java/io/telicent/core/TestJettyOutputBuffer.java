@@ -37,7 +37,7 @@ public class TestJettyOutputBuffer {
 
     @Test
     public void givenNoOverride_whenStarting_thenFusekiDefaultIsKept() {
-        assertEquals(5 * 1024 * 1024, startAndGetOutputBufferSize(this, new Properties()));
+        assertEquals(2 * 1024 * 1024, startAndGetOutputBufferSize(this, new Properties()));
     }
 
     @Test
@@ -51,6 +51,6 @@ public class TestJettyOutputBuffer {
     public void givenInvalidOverride_whenStarting_thenFusekiDefaultIsKept() {
         Properties properties = new Properties();
         properties.put(FMod_JettyOutputBuffer.ENV_OUTPUT_BUFFER_SIZE, "0");
-        assertEquals(5 * 1024 * 1024, startAndGetOutputBufferSize(this, properties));
+        assertEquals(2 * 1024 * 1024, startAndGetOutputBufferSize(this, properties));
     }
 }

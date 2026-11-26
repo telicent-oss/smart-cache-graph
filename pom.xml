@@ -114,12 +114,12 @@
 
     <!-- Dependency versions -->
     <!-- Internal dependencies -->
-    <dependency.rdf-abac>4.2.1</dependency.rdf-abac>
+    <dependency.rdf-abac>4.2.3</dependency.rdf-abac>
     <dependency.fuseki-kafka>3.4.4</dependency.fuseki-kafka>
-    <dependency.jena>6.2.0</dependency.jena>
+    <dependency.jena>6.3.0</dependency.jena>
     <dependency.graphql>0.12.4</dependency.graphql>
     <dependency.jwt-servlet-auth>5.0.0</dependency.jwt-servlet-auth>
-    <dependency.smart-caches-core>1.12.0</dependency.smart-caches-core>
+    <dependency.smart-caches-core>1.12.1</dependency.smart-caches-core>
 
     <!-- External dependencies -->
     <dependency.awaitility>4.3.0</dependency.awaitility>

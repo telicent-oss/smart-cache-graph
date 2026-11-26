@@ -20,6 +20,7 @@ import java.util.Properties;
 import static io.telicent.backup.utils.JsonFileUtils.OBJECT_MAPPER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class TestVersionInfoServlet {
@@ -37,6 +38,8 @@ class TestVersionInfoServlet {
 
     @Test
     void versionInfoEndpoint_whenServerRunning_returnsVersionInformation() throws IOException, InterruptedException {
+        assertNotNull(getClass().getResource("/scg-system.version"),
+                      "Missing build metadata: run Maven generate-resources before running this test");
         startServer();
 
         HttpResponse<String> response = getVersionInfo();

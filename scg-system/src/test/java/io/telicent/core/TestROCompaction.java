@@ -71,6 +71,12 @@ public class TestROCompaction {
     }
 
     @Test
+    void givenSupportedJena_whenFindingExclusivityLock_thenTimedSwitchIsAvailable() throws IOException {
+        assertNotNull(ROCompaction.exclusivityLock(createDataset()),
+                      "Continuous readers need a timed lock acquisition rather than polling for an idle moment");
+    }
+
+    @Test
     void givenCopyFailed_whenRetrying_thenNoDataIsLost() throws Exception {
         // Given: a compaction whose copy fails part way, after the temporary store has been created and written to
         DatasetGraphSwitchable dsg = createDataset();
