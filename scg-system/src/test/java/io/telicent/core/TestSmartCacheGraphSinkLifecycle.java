@@ -110,6 +110,10 @@ public class TestSmartCacheGraphSinkLifecycle {
         return statesAndPayloads(NON_VIABLE_STATES);
     }
 
+    public static Object[][] unregisteredStatesAndPayloads() {
+        return statesAndPayloads(new String[] { null, "Unregistered" });
+    }
+
     private static Object[][] statesAndPayloads(String[] states) {
         final List<Object[]> combos = new ArrayList<>();
         for (String state : states) {
@@ -338,7 +342,7 @@ public class TestSmartCacheGraphSinkLifecycle {
     @MethodSource("payloadTypes")
     public void unknownDistributionIsRejectedWhenStrictRegistrationIsEnabled(PayloadType payloadType) throws IOException {
         writeState("{\"distributions\":{}}");
-        var sink = acceptanceSink(this.stateFile);
+        var sink = acceptanceSink(this.stateFile, true);
         assertRejected(sink, payloadType.event(DISTRIBUTION_ID), "Unknown distributions require registration");
         sink.send(payloadType.event(DISTRIBUTION_ID));
         Assertions.assertTrue(datasetIsEmpty());
@@ -365,9 +369,10 @@ public class TestSmartCacheGraphSinkLifecycle {
     }
 
     @ParameterizedTest
-    @MethodSource("payloadTypes")
-    public void commonConfigurationCanAcceptUnregisteredDistributions(PayloadType payloadType) throws IOException {
-        writeState("{\"distributions\":{}}");
+    @MethodSource("unregisteredStatesAndPayloads")
+    public void commonConfigurationCanAcceptUnregisteredDistributions(String state, PayloadType payloadType)
+            throws IOException {
+        writeState(state == null ? "{\"distributions\":{}}" : stateJson(state));
         Properties config = new Properties();
         config.setProperty(FMod_DistributionLifecycle.ROUTE_TO_NAMED_GRAPHS, "true");
         config.setProperty(DistributionLifecycleConfiguration.DISTRIBUTION_LIFECYCLE_STATE_FILE, this.stateFile.toString());
@@ -389,35 +394,37 @@ public class TestSmartCacheGraphSinkLifecycle {
 
     @ParameterizedTest
     @MethodSource("payloadTypes")
-    public void unknownDistributionIsAcceptedByDefault(PayloadType payloadType) throws IOException {
+    public void unknownDistributionIsRejectedByDefault(PayloadType payloadType) throws IOException {
         writeState("{\"distributions\":{}}");
-        var sink = acceptanceSink(this.stateFile, false);
-        sendInWriteTxn(sink, payloadType.event(DISTRIBUTION_ID));
-        Assertions.assertFalse(datasetIsEmpty());
+        var sink = acceptanceSink(this.stateFile);
+        assertRejected(sink, payloadType.event(DISTRIBUTION_ID), "Unknown distributions require registration by default");
+        sink.send(payloadType.event(DISTRIBUTION_ID));
+        Assertions.assertTrue(datasetIsEmpty());
     }
 
     @ParameterizedTest
     @MethodSource("payloadTypes")
-    public void explicitUnregisteredStateIsAcceptedByDefault(PayloadType payloadType) throws IOException {
+    public void explicitUnregisteredStateIsRejectedByDefault(PayloadType payloadType) throws IOException {
         writeState(stateJson("Unregistered"));
-        var sink = acceptanceSink(this.stateFile, false);
-        sendInWriteTxn(sink, payloadType.event(DISTRIBUTION_ID));
-        Assertions.assertFalse(datasetIsEmpty());
+        var sink = acceptanceSink(this.stateFile);
+        assertRejected(sink, payloadType.event(DISTRIBUTION_ID), "Unregistered distributions require registration by default");
+        sink.send(payloadType.event(DISTRIBUTION_ID));
+        Assertions.assertTrue(datasetIsEmpty());
     }
 
     // --- Helpers ----------------------------------------------------------------------------------------------------
 
     private Sink<Event<Bytes, RdfPayload>> acceptanceSink(Path path) {
-        return acceptanceSink(path, true);
+        return acceptanceSink(path, false);
     }
 
-    private Sink<Event<Bytes, RdfPayload>> acceptanceSink(Path path, boolean strict) {
+    private Sink<Event<Bytes, RdfPayload>> acceptanceSink(Path path, boolean explicitlyRequireRegistration) {
         Properties config = new Properties();
         config.setProperty(FMod_DistributionLifecycle.ROUTE_TO_NAMED_GRAPHS, "true");
         config.setProperty(DistributionLifecycleConfiguration.DISTRIBUTION_LIFECYCLE_STATE_FILE, path.toString());
         config.setProperty(DistributionLifecycleConfiguration.UNREGISTERED_GRACE_PERIOD, "PT0.005S");
         config.setProperty(DistributionLifecycleConfiguration.UNREGISTERED_GRACE_CHECK_INTERVAL, "PT0.001S");
-        if (strict) {
+        if (explicitlyRequireRegistration) {
             config.setProperty(DistributionLifecycleConfiguration.REJECT_UNREGISTERED, "true");
         }
         Configurator.setSingleSource(new PropertiesSource(config));

@@ -210,18 +210,22 @@ enabled or `DISTRIBUTION_LIFECYCLE_STATE_FILE` is configured. `Registered`, `Act
 accepted. The first event for a `Deleted` distribution is rejected for dead-letter handling; subsequent events for that
 distribution are discarded. Accepted events reset the rejection history.
 
-SC-Graph accepts unknown distributions and distributions explicitly marked `Unregistered` by default,
-without waiting for registration. Strict registration is an opt-in:
+SC-Graph uses the shared Smart Caches registration policy: unknown distributions and distributions explicitly marked
+`Unregistered` are rejected by default, subject to the registration grace period. Accepting unregistered distributions
+is an explicit opt-in:
 
-- `DISTRIBUTION_REJECT_UNREGISTERED`: `false` in SC-Graph; set to `true` to require registration.
+- `DISTRIBUTION_REJECT_UNREGISTERED`: `true`; set to `false` to accept unregistered distributions without waiting.
 - `DISTRIBUTION_UNREGISTERED_GRACE_PERIOD`: `PT30S`; applied once per unregistered distribution.
 - `DISTRIBUTION_UNREGISTERED_GRACE_CHECK_INTERVAL`: `PT0.5S`; interval between registration checks.
 
-With strict registration enabled, the first unregistered event waits for the grace period before it is rejected;
+By default, the first unregistered event waits for the grace period before it is rejected;
 subsequent events for that distribution are discarded until registration is observed. This wait currently occurs
 inside the Kafka connector's dataset write transaction, so it can stall other connectors, SPARQL updates and lifecycle
 graph deletions. Moving acceptance checks ahead of transaction creation requires a separate Kafka connector change.
 Both labelled datasets and datasets using the plain Fuseki sink receive the acceptance wrapper.
+
+This changes SC-Graph's previous behaviour of accepting unknown distributions. Producers must register distributions
+before ingest, or deployments must explicitly set `DISTRIBUTION_REJECT_UNREGISTERED=false` to accept unregistered data.
 
 When the tracker is disabled, externally maintained state files remain supported through a read-only adapter that
 reloads state on demand. Unavailable files, application mismatches and unrecognised state names reject ingest.
