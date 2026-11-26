@@ -518,7 +518,7 @@ public abstract class AbstractSmartCacheGraphSinkTests {
 
     private static void withDistributionLifecycleConfig(Path stateFile, String applicationId, ThrowingRunnable action)
             throws IOException {
-        withDistributionLifecycleConfig(stateFile, applicationId, false, action);
+        withDistributionLifecycleConfig(stateFile, applicationId, true, action);
     }
 
     private static void withDistributionLifecycleConfig(Path stateFile, String applicationId, boolean strict,
@@ -860,8 +860,8 @@ public abstract class AbstractSmartCacheGraphSinkTests {
     }
 
     @Test
-    final void processorSCG_namedGraph_unregisteredDistributionIsIngested() throws IOException {
-        // SC-Graph preserves permissive registration by default.
+    final void processorSCG_namedGraph_unregisteredDistributionIsIngestedWhenOptedIn() throws IOException {
+        // Accepting unregistered distributions requires an explicit configuration opt-in.
         String deletedGraph = "http://example/deleted";
         String unregisteredGraph = "http://example/unregistered";
         Path lifecycleState = Files.createTempFile("distribution-lifecycle", ".json");
@@ -882,7 +882,7 @@ public abstract class AbstractSmartCacheGraphSinkTests {
                     verifyNamedGraphsHaveData(dsgBase, unregisteredGraph);
                 };
 
-        withDistributionLifecycleConfig(lifecycleState, null, () -> runTestProcessorSCGWithAuthNamedGraph(action));
+        withDistributionLifecycleConfig(lifecycleState, null, false, () -> runTestProcessorSCGWithAuthNamedGraph(action));
     }
 
     @Test
